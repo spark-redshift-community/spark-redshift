@@ -104,8 +104,8 @@ trait IntegrationSuiteBase
       // Bypass Hadoop's FileSystem caching mechanism so that we don't cache the credentials:
       conf.setBoolean("fs.s3.impl.disable.cache", true)
       conf.setBoolean("fs.s3n.impl.disable.cache", true)
-      conf.set("fs.s3.impl", classOf[NativeS3FileSystem].getCanonicalName)
-      conf.set("fs.s3n.impl", classOf[NativeS3FileSystem].getCanonicalName)
+      conf.set("fs.s3.impl", classOf[MockLocalS3AFileSystem].getCanonicalName)
+      conf.set("fs.s3n.impl", classOf[MockLocalS3AFileSystem].getCanonicalName)
       val fs = FileSystem.get(URI.create(tempDir), conf)
       fs.delete(new Path(tempDir), true)
       fs.close()
