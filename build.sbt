@@ -85,6 +85,9 @@ lazy val root = Project("spark-redshift", file("."))
         exclude("org.apache.hadoop", "hadoop-common")
         exclude("com.amazonaws", "aws-java-sdk-s3")  force(),
 
+//      "io.findify" %% "s3mock" % "0.2.4" % "test"
+//        exclude("com.amazonaws", "aws-java-sdk") force(),
+
       "org.apache.spark" %% "spark-core" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-sql" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-hive" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),

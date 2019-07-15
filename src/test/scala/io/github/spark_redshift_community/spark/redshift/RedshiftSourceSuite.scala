@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift
 
 import java.io.{ByteArrayInputStream, OutputStreamWriter}
 import java.net.URI
 
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.http.client.methods.HttpRequestBase
 import org.mockito.Matchers._
 import org.mockito.Mockito
@@ -35,7 +36,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import com.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import com.amazonaws.services.s3.AmazonS3Client
 
 
@@ -557,7 +557,7 @@ class RedshiftSourceSuite
       "forward_spark_s3_credentials" -> "true")
 
     val e1 = intercept[IllegalArgumentException] {
-      expectedDataDF.write.format("com.spark_redshift_community.spark.redshift")
+      expectedDataDF.write.format("io.github.spark_redshift_community.spark.redshift")
         .options(invalidParams)
         .save()
     }
@@ -568,14 +568,14 @@ class RedshiftSourceSuite
     val invalidParams = Map("dbtable" -> "foo") // missing tempdir and url
 
     val e1 = intercept[IllegalArgumentException] {
-      expectedDataDF.write.format("com.spark_redshift_community.spark.redshift")
+      expectedDataDF.write.format("io.github.spark_redshift_community.spark.redshift")
         .options(invalidParams)
         .save()
     }
     assert(e1.getMessage.contains("tempdir"))
 
     val e2 = intercept[IllegalArgumentException] {
-      expectedDataDF.write.format("com.spark_redshift_community.spark.redshift")
+      expectedDataDF.write.format("io.github.spark_redshift_community.spark.redshift")
         .options(invalidParams)
         .save()
     }
@@ -590,7 +590,7 @@ class RedshiftSourceSuite
     val params = defaultParams + ("tempdir" -> defaultParams("tempdir").replace("s3a", "s3"))
     val e = intercept[IllegalArgumentException] {
       expectedDataDF.write
-        .format("com.spark_redshift_community.spark.redshift")
+        .format("io.github.spark_redshift_community.spark.redshift")
         .mode("append")
         .options(params)
         .save()
@@ -601,7 +601,7 @@ class RedshiftSourceSuite
   test("Loads throw error message if S3 Block FileSystem would be used") {
     val params = defaultParams + ("tempdir" -> defaultParams("tempdir").replace("s3a", "s3"))
     val e = intercept[IllegalArgumentException] {
-      testSqlContext.read.format("com.spark_redshift_community.spark.redshift")
+      testSqlContext.read.format("io.github.spark_redshift_community.spark.redshift")
         .options(params)
         .load()
     }
