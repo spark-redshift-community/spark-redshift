@@ -76,7 +76,7 @@ class RedshiftSourceSuite
   override def beforeAll(): Unit = {
     super.beforeAll()
     sc = new SparkContext("local", "RedshiftSourceSuite")
-    sc.hadoopConfiguration.set("fs.s3a.impl", classOf[MockLocalS3AFileSystem].getName)
+    sc.hadoopConfiguration.set("fs.s3a.impl", classOf[MockS3AFileSystem].getName)
     // We need to use a DirectOutputCommitter to work around an issue which occurs with renames
     // while using the mocked S3 filesystem.
     sc.hadoopConfiguration.set("spark.sql.sources.outputCommitterClass",
