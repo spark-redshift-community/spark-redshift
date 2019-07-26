@@ -62,7 +62,7 @@ class RedshiftSourceSuite
 
   private var s3FileSystem: FileSystem = _
 
-  private val s3TempDir: String = "s3a://test-bucket/temp-dir/"
+  private val s3TempDir: String = "s3a://" + InMemoryS3AFileSystem.BUCKET + "/temp-dir/"
 
   private var unloadedData: String = ""
 
@@ -76,7 +76,7 @@ class RedshiftSourceSuite
   override def beforeAll(): Unit = {
     super.beforeAll()
     sc = new SparkContext("local", "RedshiftSourceSuite")
-    sc.hadoopConfiguration.set("fs.s3a.impl", classOf[MockS3AFileSystem].getName)
+    sc.hadoopConfiguration.set("fs.s3a.impl", classOf[InMemoryS3AFileSystem].getName)
     // We need to use a DirectOutputCommitter to work around an issue which occurs with renames
     // while using the mocked S3 filesystem.
     sc.hadoopConfiguration.set("spark.sql.sources.outputCommitterClass",
@@ -105,19 +105,7 @@ class RedshiftSourceSuite
         new Rule().withPrefix("").withStatus(BucketLifecycleConfiguration.ENABLED)
       ))
 
-//    when(mockS3Client.getObjectMetadata(anyString(), anyString())).thenReturn(
-//      new ObjectMetadata()
-//    )
-
     val mockManifest = Mockito.mock(classOf[S3Object], Mockito.RETURNS_SMART_NULLS)
-
-//    when(mockManifest.getObjectMetadata).thenAnswer {
-//      new Answer[ObjectMetadata] {
-//        override def answer(invocation: InvocationOnMock): ObjectMetadata = {
-//          new ObjectMetadata()
-//        }
-//      }
-//    }
 
     when(mockManifest.getObjectContent).thenAnswer {
       new Answer[S3ObjectInputStream] {
