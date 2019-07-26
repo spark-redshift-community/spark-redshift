@@ -108,7 +108,6 @@ trait IntegrationSuiteBase
       conf.setBoolean("fs.s3n.impl.disable.cache", true)
       conf.setBoolean("fs.s3a.impl.disable.cache", true)
       conf.set("fs.s3.impl", classOf[MockLocalS3AFileSystem].getCanonicalName)
-//      conf.set("fs.s3n.impl", classOf[MockLocalS3AFileSystem].getCanonicalName)
       conf.set("fs.s3a.impl", classOf[MockLocalS3AFileSystem].getCanonicalName)
       val fs = FileSystem.get(URI.create(tempDir), conf)
       fs.delete(new Path(tempDir), true)
