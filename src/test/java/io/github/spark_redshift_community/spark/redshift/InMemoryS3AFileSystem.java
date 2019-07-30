@@ -23,13 +23,18 @@ import java.net.URI;
 import java.util.*;
 
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.s3a.S3AFileStatus;
-import org.apache.hadoop.fs.s3a.S3AFileSystem;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.util.Progressable;
 
 
-public class InMemoryS3AFileSystem extends S3AFileSystem {
+/**
+ * A stub implementation of NativeFileSystemStore for testing
+ * S3AFileSystem without actually connecting to S3.
+ */
+public class InMemoryS3AFileSystem extends FileSystem {
     public static final String BUCKET = "test-bucket";
     public static final URI FS_URI = URI.create("s3a://" + BUCKET + "/");
 
@@ -49,6 +54,12 @@ public class InMemoryS3AFileSystem extends S3AFileSystem {
     @Override
     public Path getWorkingDirectory() {
         return new Path(root, "work");
+    }
+
+    @Override
+    public boolean mkdirs(Path f, FsPermission permission) throws IOException {
+        // Not implemented
+        return false;
     }
 
     @Override
@@ -112,6 +123,24 @@ public class InMemoryS3AFileSystem extends S3AFileSystem {
     }
 
     @Override
+    public FSDataOutputStream create(Path f, FsPermission permission, boolean overwrite, int bufferSize, short replication, long blockSize, Progressable progress) throws IOException {
+        // Not Implemented
+        return null;
+    }
+
+    @Override
+    public FSDataOutputStream append(Path f, int bufferSize, Progressable progress) throws IOException {
+        // Not Implemented
+        return null;
+    }
+
+    @Override
+    public boolean rename(Path src, Path dst) throws IOException {
+        dataMap.put(toS3Key(dst), dataMap.get(toS3Key(src)));
+        return true;
+    }
+
+    @Override
     public boolean delete(Path f, boolean recursive) throws IOException {
         dataMap.remove(toS3Key(f));
         return true;
@@ -150,6 +179,11 @@ public class InMemoryS3AFileSystem extends S3AFileSystem {
             statuses[0] = this.getFileStatus(f);
             return statuses;
         }
+    }
+
+    @Override
+    public void setWorkingDirectory(Path new_dir) {
+        // Not implemented
     }
 
     private boolean isDir(Path f) throws IOException{

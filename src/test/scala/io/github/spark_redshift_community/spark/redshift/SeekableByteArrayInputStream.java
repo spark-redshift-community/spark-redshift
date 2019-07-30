@@ -16,7 +16,7 @@
  */
 
 /*
-   Testing Code copied from
+   SeekableByteArrayInputStream copied from
    https://github.com/apache/accumulo/blob/master/core/src/test/java/org/apache/accumulo/core/file/rfile/RFileTest.java
  */
 

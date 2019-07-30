@@ -19,6 +19,7 @@ package io.github.spark_redshift_community.spark.redshift
 import java.io.{ByteArrayInputStream, OutputStreamWriter}
 import java.net.URI
 
+import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
@@ -36,7 +37,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import com.amazonaws.services.s3.AmazonS3Client
 
 
 /**
@@ -407,7 +407,6 @@ class RedshiftSourceSuite
       "COPY \"PUBLIC\".\"test_table.*\"".r,
       ".*FROM stl_load_errors.*".r
     )
-//    testSqlContext = Mockito.mock(classOf[SQLContext])
 
     val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
     intercept[Exception] {
