@@ -120,10 +120,12 @@ private[redshift] object Utils {
    * Checks whether the S3 bucket for the given UI has an object lifecycle configuration to
    * ensure cleanup of temporary files. If no applicable configuration is found, this method logs
    * a helpful warning for the user.
+   * @return {Boolean} true if check has been executed or
+   *                   false if an error prevent the check (useful for testing).
    */
   def checkThatBucketHasObjectLifecycleConfiguration(
       tempDir: String,
-      s3Client: AmazonS3Client): Unit = {
+      s3Client: AmazonS3Client): Boolean = {
     try {
       val s3URI = createS3URI(Utils.fixS3Url(tempDir))
       val bucket = s3URI.getBucket
@@ -137,7 +139,8 @@ private[redshift] object Utils {
           // Note: this only checks that there is an active rule which matches the temp directory;
           // it does not actually check that the rule will delete the files. This check is still
           // better than nothing, though, and we can always improve it later.
-          rule.getStatus == BucketLifecycleConfiguration.ENABLED && key.startsWith(rule.getPrefix)
+          rule.getStatus == BucketLifecycleConfiguration.ENABLED &&
+            (rule.getPrefix == null || key.startsWith(rule.getPrefix))
         }
       }
       if (!hasMatchingBucketLifecycleRule) {
@@ -147,9 +150,11 @@ private[redshift] object Utils {
           "expiration period. For more information, see " +
           "https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html")
       }
+      true
     } catch {
       case NonFatal(e) =>
         log.warn("An error occurred while trying to read the S3 bucket lifecycle configuration", e)
+        false
     }
   }
 
