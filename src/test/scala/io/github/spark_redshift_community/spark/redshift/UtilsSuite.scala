@@ -18,7 +18,13 @@ package io.github.spark_redshift_community.spark.redshift
 
 import java.net.URI
 
+import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
+import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
+import org.mockito.Matchers.anyString
+import org.mockito.Mockito
 import org.scalatest.{FunSuite, Matchers}
+import org.mockito.Mockito._
 
 /**
  * Unit tests for helper functions
@@ -72,5 +78,17 @@ class UtilsSuite extends FunSuite with Matchers {
       "jdbc:redshift://example.secret.us-west-2.redshift.amazonaws.com:5439/database"
     assert(Utils.getRegionForRedshiftCluster("mycluster.example.com") === None)
     assert(Utils.getRegionForRedshiftCluster(redshiftUrl) === Some("us-west-2"))
+  }
+
+  test("checkThatBucketHasObjectLifecycleConfiguration with no prefix") {
+    // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
+    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+
+    when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
+      new BucketLifecycleConfiguration().withRules(
+        new Rule().withStatus(BucketLifecycleConfiguration.ENABLED)
+      ))
+    assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
+      "s3n://bucket/path/to/temp/dir", mockS3Client) === true)
   }
 }
