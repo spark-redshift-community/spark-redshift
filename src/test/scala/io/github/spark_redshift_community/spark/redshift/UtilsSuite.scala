@@ -80,15 +80,49 @@ class UtilsSuite extends FunSuite with Matchers {
     assert(Utils.getRegionForRedshiftCluster(redshiftUrl) === Some("us-west-2"))
   }
 
-  test("checkThatBucketHasObjectLifecycleConfiguration with no prefix") {
+  test("checkThatBucketHasObjectLifecycleConfiguration when no rule") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
     val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
       new BucketLifecycleConfiguration().withRules(
-        new Rule().withStatus(BucketLifecycleConfiguration.ENABLED)
+        new Rule().withStatus(BucketLifecycleConfiguration.DISABLED)
       ))
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      "s3n://bucket/path/to/temp/dir", mockS3Client) === true)
+      "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
+  }
+
+  test("checkThatBucketHasObjectLifecycleConfiguration when rule with prefix") {
+    // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
+    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+
+    when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
+      new BucketLifecycleConfiguration().withRules(
+        new Rule().withPrefix("/path/")withStatus(BucketLifecycleConfiguration.ENABLED)
+      ))
+    assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
+      "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
+  }
+
+  test("checkThatBucketHasObjectLifecycleConfiguration when rule without prefix") {
+    // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
+    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+
+    when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
+      new BucketLifecycleConfiguration().withRules(
+        new Rule()withStatus(BucketLifecycleConfiguration.ENABLED)
+      ))
+    assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
+      "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
+  }
+
+  test("checkThatBucketHasObjectLifecycleConfiguration when error in checking") {
+    // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
+    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+
+    when(mockS3Client.getBucketLifecycleConfiguration(anyString()))
+      .thenThrow(new NullPointerException())
+    assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
+      "s3a://bucket/path/to/temp/dir", mockS3Client) === false)
   }
 }
