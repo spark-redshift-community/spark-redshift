@@ -98,7 +98,7 @@ class UtilsSuite extends FunSuite with Matchers {
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
       new BucketLifecycleConfiguration().withRules(
-        new Rule().withPrefix("/path/")withStatus(BucketLifecycleConfiguration.ENABLED)
+        new Rule().withPrefix("/path/").withStatus(BucketLifecycleConfiguration.ENABLED)
       ))
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
       "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
@@ -110,7 +110,7 @@ class UtilsSuite extends FunSuite with Matchers {
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
       new BucketLifecycleConfiguration().withRules(
-        new Rule()withStatus(BucketLifecycleConfiguration.ENABLED)
+        new Rule().withStatus(BucketLifecycleConfiguration.ENABLED)
       ))
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
       "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
