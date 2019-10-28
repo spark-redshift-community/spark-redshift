@@ -143,7 +143,8 @@ private[redshift] case class RedshiftRelation(
           Utils.fixS3Url(Utils.removeCredentialsFromURI(URI.create(tempDir)).toString)
         val s3URI = Utils.createS3URI(cleanedTempDirUri)
         val s3Client = s3ClientFactory(creds)
-        val is = s3Client.getObject(s3URI.getBucket, s3URI.getKey + "manifest").getObjectContent
+        val manifestPath = s3URI.getKey + "manifest"
+        val is = s3Client.getObject(s3URI.getBucket, manifestPath).getObjectContent
         val s3Files =
           try {
             try {
@@ -154,7 +155,11 @@ private[redshift] case class RedshiftRelation(
               is.close()
             }
           } catch {
-            case _: AmazonS3Exception => Seq()
+            case _: AmazonS3Exception => {
+              log.info(s"Query did not find a manifest file at $manifestPath." +
+                s" Returning an empty dataset.")
+              Seq()
+            }
           }
         // The filenames in the manifest are of the form s3://bucket/key, without credentials.
         // If the S3 credentials were originally specified in the tempdir's URI, then we need to
