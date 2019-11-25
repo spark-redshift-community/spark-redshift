@@ -20,7 +20,6 @@ import java.net.URI
 import java.sql.{Connection, Date, SQLException, Timestamp}
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.services.s3.AmazonS3Client
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.TaskContext
@@ -57,7 +56,7 @@ import scala.util.control.NonFatal
  */
 private[redshift] class RedshiftWriter(
     jdbcWrapper: JDBCWrapper,
-    s3ClientFactory: AWSCredentialsProvider => AmazonS3Client) {
+    s3ClientFactory: AWSS3ClientFactory) {
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -431,4 +430,4 @@ private[redshift] class RedshiftWriter(
 
 object DefaultRedshiftWriter extends RedshiftWriter(
   DefaultJDBCWrapper,
-  awsCredentials => new AmazonS3Client(awsCredentials))
+  new AWSS3ClientFactory())

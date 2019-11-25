@@ -60,6 +60,8 @@ class RedshiftSourceSuite
 
   private var mockS3Client: AmazonS3Client = _
 
+  private var mockS3ClientFactory: AWSS3ClientFactory = _
+
   private var s3FileSystem: FileSystem = _
 
   private val s3TempDir: String = "s3a://" + InMemoryS3AFileSystem.BUCKET + "/temp-dir/"
@@ -99,6 +101,10 @@ class RedshiftSourceSuite
 
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
     mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+
+    mockS3ClientFactory = Mockito.mock(classOf[AWSS3ClientFactory], Mockito.RETURNS_SMART_NULLS)
+
+    when(mockS3ClientFactory.apply(anyObject())).thenReturn(mockS3Client)
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
       new BucketLifecycleConfiguration().withRules(
@@ -172,7 +178,7 @@ class RedshiftSourceSuite
       Map(TableName.parseFromEscaped("test_table").toString -> TestUtils.testSchema))
 
     // Assert that we've loaded and converted all data in the test file
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, mockS3ClientFactory)
     val relation = source.createRelation(testSqlContext, defaultParams)
     val df = testSqlContext.baseRelationToDataFrame(relation)
 
@@ -205,7 +211,7 @@ class RedshiftSourceSuite
       val mockRedshift =
         new MockRedshift(defaultParams("url"), Map(params("dbtable") -> querySchema))
       val relation = new DefaultSource(
-        mockRedshift.jdbcWrapper, _ => mockS3Client).createRelation(testSqlContext, params)
+        mockRedshift.jdbcWrapper, mockS3ClientFactory).createRelation(testSqlContext, params)
       assert(testSqlContext.baseRelationToDataFrame(relation).collect() === expectedValues)
       mockRedshift.verifyThatConnectionsWereClosed()
       mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedJDBCQuery))
@@ -216,7 +222,7 @@ class RedshiftSourceSuite
       val params = defaultParams - "dbtable" + ("query" -> query)
       val mockRedshift = new MockRedshift(defaultParams("url"), Map(s"($query)" -> querySchema))
       val relation = new DefaultSource(
-        mockRedshift.jdbcWrapper, _ => mockS3Client).createRelation(testSqlContext, params)
+        mockRedshift.jdbcWrapper, mockS3ClientFactory).createRelation(testSqlContext, params)
       assert(testSqlContext.baseRelationToDataFrame(relation).collect() === expectedValues)
       mockRedshift.verifyThatConnectionsWereClosed()
       mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedJDBCQuery))
@@ -242,7 +248,7 @@ class RedshiftSourceSuite
     val mockRedshift =
       new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
     // Construct the source with a custom schema
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, mockS3ClientFactory)
     val relation = source.createRelation(testSqlContext, defaultParams, TestUtils.testSchema)
     val resultSchema =
       StructType(Seq(StructField("testbyte", ByteType), StructField("testbool", BooleanType)))
@@ -285,7 +291,7 @@ class RedshiftSourceSuite
       Map(TableName.parseFromEscaped("test_table").toString -> TestUtils.testSchema))
 
     // Construct the source with a custom schema
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, mockS3ClientFactory)
     val relation = source.createRelation(testSqlContext, defaultParams, TestUtils.testSchema)
     val resultSchema =
       StructType(Seq(StructField("testbyte", ByteType), StructField("testbool", BooleanType)))
@@ -316,7 +322,7 @@ class RedshiftSourceSuite
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
       Map(TableName.parseFromEscaped("test_table").toString -> TestUtils.testSchema))
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, mockS3ClientFactory)
     val params = defaultParams ++ Map(
       "preactions" ->
         """
@@ -358,7 +364,7 @@ class RedshiftSourceSuite
 
     val relation = RedshiftRelation(
       mockRedshift.jdbcWrapper,
-      _ => mockS3Client,
+      mockS3ClientFactory,
       Parameters.mergeParameters(params),
       userSchema = None)(testSqlContext)
     relation.asInstanceOf[InsertableRelation].insert(expectedDataDF, overwrite = true)
@@ -381,7 +387,7 @@ class RedshiftSourceSuite
 
     val schema = StructType(Seq(StructField("a", IntegerType), StructField("A", IntegerType)))
     val df = testSqlContext.createDataFrame(sc.emptyRDD[Row], schema)
-    val writer = new RedshiftWriter(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val writer = new RedshiftWriter(mockRedshift.jdbcWrapper, mockS3ClientFactory)
 
     intercept[IllegalArgumentException] {
       writer.saveToRedshift(
@@ -408,7 +414,7 @@ class RedshiftSourceSuite
       ".*FROM stl_load_errors.*".r
     )
 
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, mockS3ClientFactory)
     intercept[Exception] {
       source.createRelation(testSqlContext, SaveMode.Overwrite, params, expectedDataDF)
     }
@@ -427,7 +433,7 @@ class RedshiftSourceSuite
       defaultParams("url"),
       Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> null))
 
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, mockS3ClientFactory)
     source.createRelation(testSqlContext, SaveMode.Append, defaultParams, expectedDataDF)
 
     // This test is "appending" to an empty table, so we expect all our test data to be
@@ -517,7 +523,7 @@ class RedshiftSourceSuite
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
       Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> null))
-    val errIfExistsSource = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val errIfExistsSource = new DefaultSource(mockRedshift.jdbcWrapper, mockS3ClientFactory)
     intercept[Exception] {
       errIfExistsSource.createRelation(
         testSqlContext, SaveMode.ErrorIfExists, defaultParams, expectedDataDF)
@@ -530,7 +536,7 @@ class RedshiftSourceSuite
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
       Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> null))
-    val ignoreSource = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val ignoreSource = new DefaultSource(mockRedshift.jdbcWrapper, mockS3ClientFactory)
     ignoreSource.createRelation(testSqlContext, SaveMode.Ignore, defaultParams, expectedDataDF)
     mockRedshift.verifyThatConnectionsWereClosed()
     mockRedshift.verifyThatExpectedQueriesWereIssued(Seq.empty)
