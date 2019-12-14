@@ -442,20 +442,20 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
   }
 
-  test("Include Column List adds the schema columns to the COPY query") {
-    val copyCommand =
-          "COPY \"PUBLIC\".\"test_table\" \\(\"testbyte\",\"testbool\",\"testdate\"," +
+  test("include_column_list=true adds the schema columns to the COPY query") {
+    val expectedCommands = Seq(
+        "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
+
+        ("COPY \"PUBLIC\".\"test_table\" \\(\"testbyte\",\"testbool\",\"testdate\"," +
           "\"testdouble\",\"testfloat\",\"testint\",\"testlong\",\"testshort\",\"teststring\"," +
-          "\"testtimestamp\"\\) FROM .*"
-    val expectedCommands =
-      Seq("CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
-          copyCommand.r)
+          "\"testtimestamp\"\\) FROM .*").r
+    )
 
     val params = defaultParams ++ Map("include_column_list" -> "true")
 
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
-      Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> null))
+      Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> TestUtils.testSchema))
 
     val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
     source.createRelation(testSqlContext, SaveMode.Append, params, expectedDataDF)
