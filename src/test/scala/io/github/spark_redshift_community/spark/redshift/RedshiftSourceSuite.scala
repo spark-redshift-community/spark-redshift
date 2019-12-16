@@ -442,6 +442,46 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
   }
 
+  test("include_column_list=true adds the schema columns to the COPY query") {
+    val expectedCommands = Seq(
+        "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
+
+        ("COPY \"PUBLIC\".\"test_table\" \\(\"testbyte\",\"testbool\",\"testdate\"," +
+          "\"testdouble\",\"testfloat\",\"testint\",\"testlong\",\"testshort\",\"teststring\"," +
+          "\"testtimestamp\"\\) FROM .*").r
+    )
+
+    val params = defaultParams ++ Map("include_column_list" -> "true")
+
+    val mockRedshift = new MockRedshift(
+      defaultParams("url"),
+      Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> TestUtils.testSchema))
+
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    source.createRelation(testSqlContext, SaveMode.Append, params, expectedDataDF)
+
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
+  }
+
+  test("include_column_list=false (default) does not add the schema columns to the COPY query") {
+    val expectedCommands = Seq(
+      "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
+
+      "COPY \"PUBLIC\".\"test_table\" FROM .*".r
+    )
+
+    val mockRedshift = new MockRedshift(
+      defaultParams("url"),
+      Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> TestUtils.testSchema))
+
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    source.createRelation(testSqlContext, SaveMode.Append, defaultParams, expectedDataDF)
+
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
+  }
+
   test("configuring maxlength on string columns") {
     val longStrMetadata = new MetadataBuilder().putLong("maxlength", 512).build()
     val shortStrMetadata = new MetadataBuilder().putLong("maxlength", 10).build()
