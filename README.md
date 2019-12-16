@@ -14,8 +14,7 @@ The main upgrade is spark 2.4 compatibility.
 ## Disclaimer
 
 Our intent is to do the best job possible supporting the minimal set of features
- that the community needs. Other non-essential features may be dropped before the
- first non-snapshot release. 
+ that the community needs. 
 
 This is currently not tested on EMR. Some tests have been temporarily disabled and some features removed.
 
@@ -23,9 +22,23 @@ This is currently not tested on EMR. Some tests have been temporarily disabled a
 
 Community's contributions are very welcome! Feel free to:
 
-- Open an issue on github
-- Open a PR on github. Make sure tests pass.
-- Contact the developers in the 'developers' section in the build.sbt file.
+* Open an issue on github.
+* Open a PR on github. To ensure a smooth code review process, plese follow these steps:
+  * Run unit tests: `./build/sbt test` 
+  * Run integration tests:
+    * Export the following environment variables with your values:
+      ```
+      export AWS_REDSHIFT_USER=<your AWS_REDSHIFT_USER>
+      export AWS_REDSHIFT_PASSWORD=<your AWS_REDSHIFT_PASSWORD>
+      export AWS_REDSHIFT_JDBC_URL=<your AWS_REDSHIFT_JDBC_URL>
+      export AWS_ACCESS_KEY_ID=<your AWS_ACCESS_KEY_ID>
+      export AWS_SECRET_ACCESS_KEY=<your AWS_SECRET_ACCESS_KEY>
+      export AWS_S3_CROSS_REGION_SCRATCH_SPACE=<your AWS_S3_CROSS_REGION_SCRATCH_SPACE>
+      export STS_ROLE_ARN=<your STS_ROLE_ARN>
+      export AWS_S3_SCRATCH_SPACE=<your AWS_S3_SCRATCH_SPACE>
+      ```
+     * run `./build/sbt it:test`
+   * Get a team member to review your code on github (if possible). This speeds up the PR approval for the admins.
 
 ## About
 
