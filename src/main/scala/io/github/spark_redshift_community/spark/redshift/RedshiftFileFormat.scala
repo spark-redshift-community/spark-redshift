@@ -102,4 +102,6 @@ private[redshift] class RedshiftFileFormat extends FileFormat {
   }
 
   override def supportDataType(dataType: DataType, isReadPath: Boolean): Boolean = true
+  
+  def shouldPrefetchData(sparkSession: SparkSession,s1: StructType,s2: StructType): Boolean = false
 }
