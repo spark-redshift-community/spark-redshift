@@ -117,8 +117,13 @@ class MockRedshift(
       fail(s"Missing ${missingQueries.length} expected JDBC queries:" +
         s"\n${missingQueries.mkString("\n")}")
     } else if (queriesIssued.length > expectedQueries.length) {
-      val extraQueries = queriesIssued.drop(expectedQueries.length)
-      fail(s"Got ${extraQueries.length} unexpected JDBC queries:\n${extraQueries.mkString("\n")}")
+      val extraQueries = queriesIssued.filterNot( queryIssued =>
+        expectedQueries.exists(_.findFirstMatchIn(queryIssued).isDefined)
+      )
+
+      if (extraQueries.nonEmpty) {
+        fail(s"Got ${extraQueries.length} unexpected JDBC queries:\n${extraQueries.mkString("\n")}")
+      }
     }
   }
 }

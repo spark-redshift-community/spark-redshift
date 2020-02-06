@@ -17,6 +17,7 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.{AWSCredentialsProvider, BasicSessionCredentials}
+import com.databricks.spark.redshift.RetryUtil.{DEFAULT_NUM_OF_RETRIES, DEFAULT_RETRY_INTERVAL}
 
 /**
  * All user-specifiable parameters for spark-redshift, along with their validation rules and
@@ -292,5 +293,15 @@ private[redshift] object Parameters {
      * include in the COPY command (e.g. `COPY "PUBLIC"."tablename" ("column1" [,"column2", ...])`)
      */
     def includeColumnList: Boolean = parameters("include_column_list").toBoolean
+
+    def numRetries: Int = parameters
+      .get("numOfRetries")
+      .map( _.toInt )
+      .getOrElse(DEFAULT_NUM_OF_RETRIES)
+
+    def retryInterval: Int = parameters
+      .get("retryInterval")
+      .map( _.toInt )
+      .getOrElse(DEFAULT_RETRY_INTERVAL)
   }
 }

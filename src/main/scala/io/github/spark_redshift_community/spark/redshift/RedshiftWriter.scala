@@ -21,6 +21,7 @@ import java.sql.{Connection, Date, SQLException, Timestamp}
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3Client
+import com.databricks.spark.redshift.RetryUtil.retry
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.TaskContext
@@ -418,7 +419,14 @@ private[redshift] class RedshiftWriter(
         }
       }
       log.info(s"Loading new Redshift data to: $table")
-      doRedshiftLoad(conn, data, params, creds, manifestUrl)
+
+      retry(params.numRetries)(
+        fn = doRedshiftLoad(conn, data, params, creds, manifestUrl),
+        retryMessage = s"There was an exception while attempting to write $table.",
+        failureMessage = s"Giving up after ${params.numRetries} failed attempts to write $table.",
+        retryInterval = params.retryInterval
+      )
+
       conn.commit()
     } catch {
       case NonFatal(e) =>
