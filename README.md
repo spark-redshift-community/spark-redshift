@@ -91,7 +91,7 @@ You may use this library in your applications with the following dependency info
       --deploy-mode cluster \
       --master yarn \
       --jars https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.36.1060/RedshiftJDBC42-no-awssdk-1.2.36.1060.jar\
-      --packages org.apache.spark:spark-avro_2.11:2.4.2,io.github.spark-redshift-community:spark-redshift_2.11:4.0.0 \
+      --packages org.apache.spark:spark-avro_2.11:2.4.2,io.github.spark-redshift-community:spark-redshift_2.11:4.0.1 \
       my_script.py
     ```
 
@@ -102,20 +102,17 @@ You may use this library in your applications with the following dependency info
     <dependency>
         <groupId>io.github.spark-redshift-community</groupId>
         <artifactId>spark-redshift_2.11</artifactId>
-        <version>4.0.0</version>
+        <version>4.0.1</version>
     </dependency>
     ```
 
 - **In SBT**:
 
     ```SBT
-    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.11" % "4.0.0"
+    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.11" % "4.0.1"
     ```
 
 ### Snapshot builds
-
-Master snapshot builds of this library are built using [jitpack.io](https://jitpack.io/). In order
-to use these snapshots in your build, you'll need to add the JitPack repository to your build file.
 
 - **Without build tool**:
     ```bash
@@ -123,40 +120,23 @@ to use these snapshots in your build, you'll need to add the JitPack repository 
       --deploy-mode cluster \
       --master yarn \
       --jars https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.36.1060/RedshiftJDBC42-no-awssdk-1.2.36.1060.jar \
-      --repositories https://jitpack.io \
-      --packages org.apache.spark:spark-avro_2.11:2.4.2,io.github.spark-redshift-community:spark-redshift:master-SNAPSHOT \
+      --packages org.apache.spark:spark-avro_2.11:2.4.2,io.github.spark-redshift-community:spark-redshift_2.11:4.0.0-SNAPSHOT \
       my_script.py
     ```
 
 - **In Maven**:
    ```XML
-   <repositories>
-      <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-      </repository>
-   </repositories>
-   ```
-
-   then
-
-   ```XML
    <dependency>
      <groupId>io.github.spark-redshift-community</groupId>
-     <artifactId>spark-redshift</artifactId>
-     <version>master-SNAPSHOT</version>
+     <artifactId>spark-redshift_2.11</artifactId>
+     <version>4.0.0-SNAPSHOT</version>
    </dependency>
    ```
 
 - **In SBT**:
-   ```SBT
-   resolvers += "jitpack" at "https://jitpack.io"
-   ```
-
-   then
 
    ```SBT
-   libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift" % "master-SNAPSHOT"
+   libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.11" % "4.0.0-SNAPSHOT"
    ```
 
 You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommend that you use [their driver](http://docs.aws.amazon.com/redshift/latest/mgmt/configure-jdbc-connection.html), which is distributed as a JAR that is hosted on Amazon's website. This library has also been successfully tested using the Postgres JDBC driver.
