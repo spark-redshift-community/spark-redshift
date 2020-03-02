@@ -51,7 +51,7 @@ lazy val root = Project("spark-redshift", file("."))
     // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
     // https://stackoverflow.com/a/49510602/2544874
     // https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws/2.7.7
-    testAWSJavaSDKVersion := sys.props.get("aws.testVersion").getOrElse("1.7.4"),
+    testAWSJavaSDKVersion := sys.props.get("aws.testVersion").getOrElse("1.11.679"),
 
     spName := "spark-redshift-community/spark-redshift",
     sparkComponents ++= Seq("sql", "hive"),

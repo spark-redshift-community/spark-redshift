@@ -20,7 +20,6 @@ import java.io.InputStreamReader
 import java.net.URI
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.services.s3.AmazonS3Client
 import com.eclipsesource.json.Json
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.spark.rdd.RDD
@@ -37,7 +36,7 @@ import scala.collection.JavaConverters._
  */
 private[redshift] case class RedshiftRelation(
     jdbcWrapper: JDBCWrapper,
-    s3ClientFactory: AWSCredentialsProvider => AmazonS3Client,
+    s3ClientFactory: AWSS3ClientFactory,
     params: MergedParameters,
     userSchema: Option[StructType])
     (@transient val sqlContext: SQLContext)
