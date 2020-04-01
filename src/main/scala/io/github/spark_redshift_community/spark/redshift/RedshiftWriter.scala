@@ -18,6 +18,7 @@ package io.github.spark_redshift_community.spark.redshift
 
 import java.net.URI
 import java.sql.{Connection, Date, SQLException, Timestamp}
+import scala.collection.JavaConverters._
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3Client
@@ -29,7 +30,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.util.control.NonFatal
 
 /**
@@ -245,11 +245,11 @@ private[redshift] class RedshiftWriter(
 
     // Use Spark accumulators to determine which partitions were non-empty.
     val nonEmptyPartitions =
-      sqlContext.sparkContext.accumulableCollection(mutable.HashSet.empty[Int])
+      sqlContext.sparkContext.collectionAccumulator[Int]
 
     val convertedRows: RDD[Row] = data.rdd.mapPartitions { iter: Iterator[Row] =>
       if (iter.hasNext) {
-        nonEmptyPartitions += TaskContext.get.partitionId()
+        nonEmptyPartitions.add(TaskContext.get.partitionId())
       }
       iter.map { row =>
         val convertedValues: Array[Any] = new Array(conversionFunctions.length)
@@ -313,7 +313,7 @@ private[redshift] class RedshiftWriter(
       val fs = FileSystem.get(URI.create(tempDir), sqlContext.sparkContext.hadoopConfiguration)
       val partitionIdRegex = "^part-(?:r-)?(\\d+)[^\\d+].*$".r
       val filesToLoad: Seq[String] = {
-        val nonEmptyPartitionIds = nonEmptyPartitions.value.toSet
+        val nonEmptyPartitionIds = nonEmptyPartitions.value.asScala.toSet
         fs.listStatus(new Path(tempDir)).map(_.getPath.getName).collect {
           case file @ partitionIdRegex(id) if nonEmptyPartitionIds.contains(id.toInt) => file
         }

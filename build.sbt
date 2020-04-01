@@ -23,6 +23,8 @@ import sbtrelease.ReleasePlugin.autoImport._
 import sbtsparkpackage.SparkPackagePlugin.autoImport._
 import scoverage.ScoverageKeys
 
+resolvers in ThisBuild += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+
 val testSparkVersion = settingKey[String]("Spark version to test against")
 val testHadoopVersion = settingKey[String]("Hadoop version to test against")
 val testAWSJavaSDKVersion = settingKey[String]("AWS Java SDK version to test against")
@@ -40,8 +42,8 @@ lazy val root = Project("spark-redshift", file("."))
   .settings(
     name := "spark-redshift",
     organization := "io.github.spark-redshift-community",
-    scalaVersion := "2.11.12",
-    sparkVersion := "2.4.3",
+    scalaVersion := "2.12.10",
+    sparkVersion := "3.0.0",
     testSparkVersion := sys.props.get("spark.testVersion").getOrElse(sparkVersion.value),
 
     // Spark 2.4.x should be compatible with hadoop >= 2.7.x
