@@ -46,40 +46,43 @@ class RedshiftPreProcessor(spark: SparkSession,
     requiredColumns: Array[String],
     filters: Array[Filter],
     creds: AWSCredentialsProvider): (String, String) = {
-    assert(!requiredColumns.isEmpty)
-    val tempDir = params.createPerQueryTempDir()
+    assert(schemaOpt.isDefined)
     val whereClause = FilterPushdown.buildWhereClause(schemaOpt.get, filters)
     val tableNameOrSubquery = params.getTableNameOrSubquery
-    // Always quote column names:
-    val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
-    val credsString: String =
-      AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.getCredentials)
+    val tempDir = params.createPerQueryTempDir()
+
     val query = {
+      val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
       // Since the query passed to UNLOAD will be enclosed in single quotes, we need to escape
       // any backslashes and single quotes that appear in the query itself
       val escapedTableNameOrSubqury = tableNameOrSubquery.replace("\\", "\\\\").replace("'", "\\'")
       s"SELECT $columnList FROM $escapedTableNameOrSubqury $whereClause"
     }
+    val credsString: String =
+      AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.getCredentials)
     // We need to remove S3 credentials from the unload path URI because they will conflict with
     // the credentials passed via `credsString`.
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
 
     val sql = if (params.getUnloadFormat == "csv") {
       s"""
-          |UNLOAD ('$query') TO '$fixedUrl'
-          |WITH CREDENTIALS '$credsString'
-          |MANIFEST
-          |ESCAPE
-          |""".stripMargin
+         |UNLOAD ('$query') TO '$fixedUrl'
+         |WITH CREDENTIALS '$credsString'
+         |MANIFEST
+         |ESCAPE
+         |NULL AS '${params.nullString}'
+         |""".stripMargin
 
     } else {
       s"""
-          |UNLOAD ('$query') TO '$fixedUrl'
-          |WITH CREDENTIALS '$credsString'
-          |FORMAT AS PARQUET
-          |MANIFEST
-          |""".stripMargin
+         |UNLOAD ('$query') TO '$fixedUrl'
+         |WITH CREDENTIALS '$credsString'
+         |FORMAT AS PARQUET
+         |MANIFEST
+         |""".stripMargin
     }
+  // Always quote column names:
+
     (sql, tempDir)
   }
 
@@ -109,7 +112,7 @@ class RedshiftPreProcessor(spark: SparkSession,
       val schema = schemaOpt.get
       val prunedSchema = pruneSchema(schema, requiredSchema.map(_.name))
       val (unloadSql, tempDir) = buildUnloadStmt(prunedSchema,
-        Array.empty, creds)
+        pushedFilters, creds)
       val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
       try {
         jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
@@ -141,12 +144,10 @@ class RedshiftPreProcessor(spark: SparkSession,
       // val prunedSchema = pruneSchema(schema, schema.map(_.name).toArray)
       filesToRead
     } else {
-      {
         // In the special case where no columns were requested, issue a `count(*)` against Redshift
         // rather than unloading data.
-        // Fixme: add where clause
-
-        val countQuery = s"SELECT count(*) FROM ${params.getTableNameOrSubquery}"
+        val whereClause = FilterPushdown.buildWhereClause(requiredSchema, pushedFilters)
+        val countQuery = s"SELECT count(*) FROM ${params.getTableNameOrSubquery} $whereClause"
         log.info(countQuery)
         val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
         try {
@@ -167,14 +168,16 @@ class RedshiftPreProcessor(spark: SparkSession,
         } finally {
           conn.close()
         }
-      }
     }
   }
 
   private def pruneSchema(schema: StructType, columns: Seq[String]): Array[String] = {
-    val fieldMap = Map(schema.fields.map(x => x.name -> x): _*)
-    // FIXME handle exceptions
-    columns.map(name => fieldMap(name).name).toArray
+    if (columns.isEmpty) {
+      Array(schema.head.name)
+    } else {
+      val fieldMap = Map(schema.fields.map(x => x.name -> x): _*)
+      columns.map(name => fieldMap(name).name).toArray
+    }
   }
 
   def process(): Seq[String] = {

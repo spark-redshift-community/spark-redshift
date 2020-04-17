@@ -42,9 +42,10 @@ case class RedshiftScan(scan: FileScan, schema: StructType,
 
   override def fileIndex: PartitioningAwareFileIndex = scan.fileIndex
 
-  override def readDataSchema: StructType = scan.readDataSchema
+  // check prunecolumns
+  override def readDataSchema: StructType = schema
 
-  override def readPartitionSchema: StructType = scan.readPartitionSchema
+  override def readPartitionSchema: StructType = StructType(Seq())
 
   override def partitionFilters: Seq[Expression] = scan.partitionFilters
 

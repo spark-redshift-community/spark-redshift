@@ -45,16 +45,17 @@ case class RedshiftScanBuilder(
     val convertedReadSchema = StructType(readDataSchema()
       .copy().map(field => field.copy(dataType = StringType)))
     val convertedDataSchema = StructType(dataSchema.copy().map(x => x.copy(dataType = StringType)))
-    val delegate = if (params.parameters.getOrElse("unloadformat", "csv").toLowerCase()== "csv") {
+    if (params.parameters.getOrElse("unloadformat", "csv").toLowerCase()== "csv") {
       val options = (params.parameters + ("delimiter" -> "|")).asOptions
-      CSVScan(spark, index, convertedDataSchema, convertedReadSchema,
+      val delegate = CSVScan(spark, index, convertedDataSchema, convertedReadSchema,
         readPartitionSchema(), options, pushedFilters())
+      RedshiftScan(delegate, readDataSchema(), params)
     } else {
       val options = params.parameters.asOptions
-      ParquetScan(spark, spark.sessionState.newHadoopConf(), index, dataSchema,
-        readDataSchema(), readPartitionSchema(), pushedFilters(), options)
+      val delegate = ParquetScan(spark, spark.sessionState.newHadoopConf(), index, dataSchema,
+          readDataSchema(), readPartitionSchema(), pushedFilters(), options)
+      RedshiftScan(delegate, readDataSchema(), params)
     }
-    RedshiftScan(delegate, readDataSchema(), params)
   }
 
   private def preBuild(): PartitioningAwareFileIndex = {
@@ -77,6 +78,4 @@ case class RedshiftScanBuilder(
   override def pushedFilters(): Array[Filter] = {
     filters
   }
-
-
 }
