@@ -44,8 +44,6 @@ lazy val root = Project("spark-redshift", file("."))
     organization := "io.github.spark-redshift-community",
     scalaVersion := "2.12.10",
     sparkVersion := "3.0.0",
-    javaOptions in IntegrationTest ++=
-      Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
     testSparkVersion := sys.props.get("spark.testVersion").getOrElse(sparkVersion.value),
 
     // Spark 2.4.x should be compatible with hadoop >= 2.7.x
@@ -101,9 +99,7 @@ lazy val root = Project("spark-redshift", file("."))
     testOptions in Test += Tests.Argument("-oF"),
     fork in Test := true,
     javaOptions in Test ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M"),
-    parallelExecution in IntegrationTest := false,
 
-    // javaOptions in Runtime ++= Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
 
     /********************
      * Release settings *
