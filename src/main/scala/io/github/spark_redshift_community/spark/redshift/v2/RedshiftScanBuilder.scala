@@ -59,7 +59,7 @@ case class RedshiftScanBuilder(
   }
 
   private def preBuild(): PartitioningAwareFileIndex = {
-    val preProcessor = new RedshiftPreProcessor(spark, Some(dataSchema), readDataSchema(),
+    val preProcessor = new RedshiftPreProcessor(Some(dataSchema), readDataSchema(),
       params, pushedFilters())
     val paths = preProcessor.process()
     // This is a non-streaming file based datasource.

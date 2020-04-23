@@ -26,16 +26,13 @@ import com.eclipsesource.json.Json
 import io.github.spark_redshift_community.spark.redshift.{AWSCredentialsUtils, DefaultJDBCWrapper, FilterPushdown, JDBCWrapper, Utils}
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.spark.internal.Logging
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.SparkSession
 
 import scala.collection.JavaConverters._
 
-class RedshiftPreProcessor(spark: SparkSession,
-    schemaOpt: Option[StructType],
+class RedshiftPreProcessor(schemaOpt: Option[StructType],
     requiredSchema: StructType,
     params: MergedParameters,
     pushedFilters: Array[Filter]) extends Logging {
@@ -81,12 +78,12 @@ class RedshiftPreProcessor(spark: SparkSession,
          |MANIFEST
          |""".stripMargin
     }
-  // Always quote column names:
 
     (sql, tempDir)
   }
 
   def unloadDataToS3(): Seq[String] = {
+    assert(SparkSession.getActiveSession.isDefined, "SparkSession not initialized")
     val conf = SparkSession.getActiveSession.get.sparkContext.hadoopConfiguration
     val creds = AWSCredentialsUtils.load(params, conf)
     val s3ClientFactory: AWSCredentialsProvider => AmazonS3Client =
@@ -116,6 +113,9 @@ class RedshiftPreProcessor(spark: SparkSession,
       val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
       try {
         jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
+      } catch {
+        case e: Exception =>
+            logInfo("Error occurred when unloading data", e)
       } finally {
         conn.close()
       }
@@ -141,33 +141,9 @@ class RedshiftPreProcessor(spark: SparkSession,
         }
       }
 
-      // val prunedSchema = pruneSchema(schema, schema.map(_.name).toArray)
       filesToRead
     } else {
-        // In the special case where no columns were requested, issue a `count(*)` against Redshift
-        // rather than unloading data.
-        val whereClause = FilterPushdown.buildWhereClause(requiredSchema, pushedFilters)
-        val countQuery = s"SELECT count(*) FROM ${params.getTableNameOrSubquery} $whereClause"
-        log.info(countQuery)
-        val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
-        try {
-          val results = jdbcWrapper.executeQueryInterruptibly(conn.prepareStatement(countQuery))
-          if (results.next()) {
-            val numRows = results.getLong(1)
-            val parallelism = spark.conf.get("spark.sql.shuffle.partitions", "200").toInt
-            val emptyRow = RowEncoder(StructType(Seq.empty)).toRow(Row(Seq.empty))
-            spark.sparkContext
-              .parallelize(1L to numRows, parallelism)
-              .map(_ => emptyRow)
-              .asInstanceOf[RDD[Row]]
-          } else {
-            throw new IllegalStateException("Could not read count from Redshift")
-          }
-          // FIXME
-          Seq.empty[String]
-        } finally {
-          conn.close()
-        }
+      Seq.empty[String]
     }
   }
 
