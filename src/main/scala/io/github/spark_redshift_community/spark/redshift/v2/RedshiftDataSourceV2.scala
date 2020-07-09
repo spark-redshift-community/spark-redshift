@@ -29,7 +29,7 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 
 import scala.collection.JavaConverters._
 
-class RedshiftDatasourceV2 extends FileDataSourceV2 with DataSourceRegister with Logging {
+class RedshiftDataSourceV2 extends FileDataSourceV2 with DataSourceRegister with Logging {
 
   /**
    * Returns a V1 [[FileFormat]] class of the same file data source.
