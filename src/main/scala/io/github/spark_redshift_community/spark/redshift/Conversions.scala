@@ -135,7 +135,7 @@ private[redshift] object Conversions {
     // As a performance optimization, re-use the same mutable row / array:
     val converted: Array[Any] = Array.fill(schema.length)(null)
     val externalRow = new GenericRow(converted)
-    val encoder = RowEncoder(schema)
+    val serializer = RowEncoder(schema).createSerializer()
     (inputRow: Array[String]) => {
       var i = 0
       while (i < schema.length) {
@@ -152,7 +152,7 @@ private[redshift] object Conversions {
         }
         i += 1
       }
-      encoder.toRow(externalRow)
+      serializer(externalRow)
     }
   }
 }

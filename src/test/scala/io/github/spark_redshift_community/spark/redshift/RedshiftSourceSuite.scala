@@ -250,7 +250,7 @@ class RedshiftSourceSuite
     val rdd = relation.asInstanceOf[PrunedFilteredScan]
       .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
       .mapPartitions { iter =>
-        val fromRow = RowEncoder(resultSchema).resolveAndBind().fromRow _
+        val fromRow = RowEncoder(resultSchema).resolveAndBind().createDeserializer
         iter.asInstanceOf[Iterator[InternalRow]].map(fromRow)
       }
     val prunedExpectedValues = Array(
@@ -303,7 +303,7 @@ class RedshiftSourceSuite
     val rdd = relation.asInstanceOf[PrunedFilteredScan]
       .buildScan(Array("testbyte", "testbool"), filters)
       .mapPartitions { iter =>
-        val fromRow = RowEncoder(resultSchema).resolveAndBind().fromRow _
+        val fromRow = RowEncoder(resultSchema).resolveAndBind().createDeserializer
         iter.asInstanceOf[Iterator[InternalRow]].map(fromRow)
       }
 
