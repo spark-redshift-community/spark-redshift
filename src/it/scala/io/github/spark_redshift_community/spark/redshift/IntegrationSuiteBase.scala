@@ -20,9 +20,8 @@ import java.net.URI
 import java.sql.Connection
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.s3native.NativeS3FileSystem
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql._
 import org.apache.spark.sql.hive.test.TestHiveContext
 import org.apache.spark.sql.types.StructType
@@ -85,7 +84,7 @@ trait IntegrationSuiteBase
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    sc = new SparkContext("local", "RedshiftSourceSuite")
+    sc = new SparkContext(getSparkConf)
     // Bypass Hadoop's FileSystem caching mechanism so that we don't cache the credentials:
     sc.hadoopConfiguration.setBoolean("fs.s3.impl.disable.cache", true)
     sc.hadoopConfiguration.setBoolean("fs.s3n.impl.disable.cache", true)
@@ -127,7 +126,7 @@ trait IntegrationSuiteBase
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    sqlContext = new TestHiveContext(sc, loadTestTables = false)
+    sqlContext = new TestHiveContext(sc)
   }
 
   /**
@@ -191,6 +190,18 @@ trait IntegrationSuiteBase
     }
   }
 
+  protected def withUnloadFormat[T](body: () => T): Unit = {
+    getUnloadFormats.foreach {
+      format =>
+        try {
+          read.option("unloadformat", format)
+          body()
+        } catch {
+          case _ =>
+        }
+    }
+  }
+
   /**
    * Save the given DataFrame to Redshift, then load the results back into a DataFrame and check
    * that the returned DataFrame matches the one that we saved.
@@ -226,5 +237,16 @@ trait IntegrationSuiteBase
     } finally {
       conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
     }
+  }
+
+  def getSparkConf: SparkConf = {
+    val conf = new SparkConf()
+    conf.setMaster("local")
+    conf.setAppName("RedshiftSourceSuite")
+    conf
+  }
+
+  def getUnloadFormats: Seq[String] = {
+    Seq("csv")
   }
 }

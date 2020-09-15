@@ -23,6 +23,8 @@ import sbtrelease.ReleasePlugin.autoImport._
 import sbtsparkpackage.SparkPackagePlugin.autoImport._
 import scoverage.ScoverageKeys
 
+resolvers in ThisBuild += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+
 val testSparkVersion = settingKey[String]("Spark version to test against")
 val testHadoopVersion = settingKey[String]("Hadoop version to test against")
 val testAWSJavaSDKVersion = settingKey[String]("AWS Java SDK version to test against")
@@ -40,8 +42,8 @@ lazy val root = Project("spark-redshift", file("."))
   .settings(
     name := "spark-redshift",
     organization := "io.github.spark-redshift-community",
-    scalaVersion := "2.11.12",
-    sparkVersion := "2.4.3",
+    scalaVersion := "2.12.10",
+    sparkVersion := "3.0.0",
     testSparkVersion := sys.props.get("spark.testVersion").getOrElse(sparkVersion.value),
 
     // Spark 2.4.x should be compatible with hadoop >= 2.7.x
@@ -54,7 +56,7 @@ lazy val root = Project("spark-redshift", file("."))
     testAWSJavaSDKVersion := sys.props.get("aws.testVersion").getOrElse("1.7.4"),
 
     spName := "spark-redshift-community/spark-redshift",
-    sparkComponents ++= Seq("sql", "hive"),
+    sparkComponents ++= Seq("sql"),
     spIgnoreProvided := true,
     licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0"),
     credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
@@ -88,6 +90,7 @@ lazy val root = Project("spark-redshift", file("."))
       "org.apache.spark" %% "spark-core" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-sql" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-hive" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
+      "org.apache.spark" %% "spark-hive" % testSparkVersion.value % "test" classifier "tests"  exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-avro" % testSparkVersion.value % "test" exclude("org.apache.avro", "avro-mapred") force()
     ),
     ScoverageKeys.coverageHighlighting := true,
@@ -96,6 +99,7 @@ lazy val root = Project("spark-redshift", file("."))
     testOptions in Test += Tests.Argument("-oF"),
     fork in Test := true,
     javaOptions in Test ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M"),
+
 
     /********************
      * Release settings *
