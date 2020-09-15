@@ -109,7 +109,7 @@ You may use this library in your applications with the following dependency info
 - **In SBT**:
 
     ```SBT
-    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.11" % "4.0.1"
+    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift" % "4.0.1"
     ```
 
 ### Snapshot builds
