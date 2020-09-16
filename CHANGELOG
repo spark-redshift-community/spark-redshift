@@ -1,5 +1,9 @@
 # spark-redshift Changelog
 
+## 4.1.1
+
+- Cross publish for scala 2.12 in addition to 2.11
+
 ## 4.1.0
 
 - Add `include_column_list` parameter
