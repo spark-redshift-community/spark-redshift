@@ -100,6 +100,4 @@ private[redshift] class RedshiftFileFormat extends FileFormat {
       iter.map(converter)
     }
   }
-
-  override def supportDataType(dataType: DataType, isReadPath: Boolean): Boolean = true
 }

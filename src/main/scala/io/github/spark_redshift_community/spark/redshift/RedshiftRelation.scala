@@ -114,7 +114,7 @@ private[redshift] case class RedshiftRelation(
         if (results.next()) {
           val numRows = results.getLong(1)
           val parallelism = sqlContext.getConf("spark.sql.shuffle.partitions", "200").toInt
-          val emptyRow = RowEncoder(StructType(Seq.empty)).toRow(Row(Seq.empty))
+          val emptyRow = RowEncoder(StructType(Seq.empty)).createSerializer().apply(Row(Seq.empty))
           sqlContext.sparkContext
             .parallelize(1L to numRows, parallelism)
             .map(_ => emptyRow)

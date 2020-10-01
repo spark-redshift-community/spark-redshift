@@ -40,12 +40,12 @@ lazy val root = Project("spark-redshift", file("."))
   .settings(
     name := "spark-redshift",
     organization := "io.github.spark-redshift-community",
-    scalaVersion := "2.11.12",
+    scalaVersion := "2.12.11",
     crossScalaVersions := Seq(
       "2.11.12",
       "2.12.11"
     ),
-    sparkVersion := "2.4.5",
+    sparkVersion := "3.0.1",
     testSparkVersion := sys.props.get("spark.testVersion").getOrElse(sparkVersion.value),
 
     // Spark 2.4.x should be compatible with hadoop >= 2.7.x
