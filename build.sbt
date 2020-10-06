@@ -41,10 +41,6 @@ lazy val root = Project("spark-redshift", file("."))
     name := "spark-redshift",
     organization := "io.github.spark-redshift-community",
     scalaVersion := "2.12.11",
-    crossScalaVersions := Seq(
-      "2.11.12",
-      "2.12.11"
-    ),
     sparkVersion := "3.0.1",
     testSparkVersion := sys.props.get("spark.testVersion").getOrElse(sparkVersion.value),
 
