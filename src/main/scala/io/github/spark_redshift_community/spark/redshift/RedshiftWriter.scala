@@ -244,12 +244,12 @@ private[redshift] class RedshiftWriter(
     }
 
     // Use Spark accumulators to determine which partitions were non-empty.
-    val nonEmptyPartitions =
-      sqlContext.sparkContext.accumulableCollection(mutable.HashSet.empty[Int])
+    val nonEmptyPartitions = new SetAccumulator[Int]
+    sqlContext.sparkContext.register(nonEmptyPartitions)
 
     val convertedRows: RDD[Row] = data.rdd.mapPartitions { iter: Iterator[Row] =>
       if (iter.hasNext) {
-        nonEmptyPartitions += TaskContext.get.partitionId()
+        nonEmptyPartitions.add(TaskContext.get.partitionId())
       }
       iter.map { row =>
         val convertedValues: Array[Any] = new Array(conversionFunctions.length)
