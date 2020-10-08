@@ -152,7 +152,7 @@ private[redshift] object Conversions {
         }
         i += 1
       }
-      encoder.toRow(externalRow)
+      encoder.createSerializer().apply(externalRow)
     }
   }
 }

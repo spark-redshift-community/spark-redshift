@@ -28,11 +28,11 @@ class FilterPushdownSuite extends FunSuite {
   }
 
   test("buildWhereClause with no filters that can be pushed down") {
-    assert(buildWhereClause(StructType(Nil), Seq(NewFilter, NewFilter)) === "")
+    assert(buildWhereClause(StructType(Nil), Seq(AlwaysTrue, AlwaysTrue)) === "")
   }
 
   test("buildWhereClause with with some filters that cannot be pushed down") {
-    val whereClause = buildWhereClause(testSchema, Seq(EqualTo("test_int", 1), NewFilter))
+    val whereClause = buildWhereClause(testSchema, Seq(EqualTo("test_int", 1), AlwaysTrue))
     assert(whereClause === """WHERE "test_int" = 1""")
   }
 
@@ -88,8 +88,4 @@ class FilterPushdownSuite extends FunSuite {
     StructField("test_string", StringType),
     StructField("test_timestamp", TimestampType)))
 
-  /** A new filter subclasss which our pushdown logic does not know how to handle */
-  private case object NewFilter extends Filter {
-    override def references: Array[String] = Array.empty
-  }
 }
