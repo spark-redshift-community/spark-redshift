@@ -23,7 +23,7 @@ This is currently not tested on EMR. Some tests have been temporarily disabled a
 Community's contributions are very welcome! Feel free to:
 
 * Open an issue on github.
-* Open a PR on github. To ensure a smooth code review process, plese follow these steps:
+* Open a PR on github. To ensure a smooth code review process, please follow these steps:
   * Run unit tests: `./build/sbt test` 
   * Run integration tests:
     * Export the following environment variables with your values:
@@ -344,7 +344,7 @@ The following describes how each connection can be authenticated:
     Spark connects to S3 using both the Hadoop FileSystem interfaces and directly using the Amazon
     Java SDK's S3 client.
 
-    This connection can be authenticated using either AWS keys or IAM roles (DBFS mountpoints are
+    This connection can be authenticated using either AWS keys or IAM roles (DBFS mount points are
     not currently supported, so Databricks users who do not want to rely on AWS keys should use
     cluster IAM roles instead).
 
