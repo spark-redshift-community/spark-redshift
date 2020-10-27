@@ -1,5 +1,37 @@
 # spark-redshift Changelog
 
+## 4.1.1
+
+- Cross publish for scala 2.12 in addition to 2.11
+
+## 4.1.0
+
+- Add `include_column_list` parameter
+
+## 4.0.2
+
+- Trim SQL text for preactions and postactions, to fix empty SQL queries bug.
+
+## 4.0.1
+
+- Fix bug when parsing microseconds from Redshift
+
+## 4.0.0
+
+This major release makes spark-redshift compatible with spark 2.4. This was tested in production.
+
+While upgrading the package we droped some features due to time constraints.
+
+- Support for hadoop 1.x has been dropped.
+- STS and IAM authentication support has been dropped.
+- postgresql driver tests are inactive.
+- SaveMode tests (or functionality?) are broken. This is a bit scary but I'm not sure we use the functionality
+ and fixing them didn't make it in this version (spark-snowflake removed them too).
+- S3Native has been deprecated. We created an InMemoryS3AFileSystem to test S3A.
+
+## 4.0.0-SNAPSHOT
+- SNAPSHOT version to test publishing to Maven Central.
+
 ## 4.0.0-preview20190730 (2019-07-30)
 
 - The library is tested in production using spark2.4

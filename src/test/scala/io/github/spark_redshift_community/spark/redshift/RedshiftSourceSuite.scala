@@ -250,7 +250,7 @@ class RedshiftSourceSuite
     val rdd = relation.asInstanceOf[PrunedFilteredScan]
       .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
       .mapPartitions { iter =>
-        val fromRow = RowEncoder(resultSchema).resolveAndBind().fromRow _
+        val fromRow = RowEncoder(resultSchema).resolveAndBind().createDeserializer().apply(_)
         iter.asInstanceOf[Iterator[InternalRow]].map(fromRow)
       }
     val prunedExpectedValues = Array(
@@ -303,7 +303,7 @@ class RedshiftSourceSuite
     val rdd = relation.asInstanceOf[PrunedFilteredScan]
       .buildScan(Array("testbyte", "testbool"), filters)
       .mapPartitions { iter =>
-        val fromRow = RowEncoder(resultSchema).resolveAndBind().fromRow _
+        val fromRow = RowEncoder(resultSchema).resolveAndBind().createDeserializer().apply(_)
         iter.asInstanceOf[Iterator[InternalRow]].map(fromRow)
       }
 
@@ -438,6 +438,46 @@ class RedshiftSourceSuite
     val dirWithAvroFiles = s3FileSystem.listStatus(new Path(s3TempDir)).head.getPath.toUri.toString
     val written = testSqlContext.read.format("com.databricks.spark.avro").load(dirWithAvroFiles)
     checkAnswer(written, TestUtils.expectedDataWithConvertedTimesAndDates)
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
+  }
+
+  test("include_column_list=true adds the schema columns to the COPY query") {
+    val expectedCommands = Seq(
+        "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
+
+        ("COPY \"PUBLIC\".\"test_table\" \\(\"testbyte\",\"testbool\",\"testdate\"," +
+          "\"testdouble\",\"testfloat\",\"testint\",\"testlong\",\"testshort\",\"teststring\"," +
+          "\"testtimestamp\"\\) FROM .*").r
+    )
+
+    val params = defaultParams ++ Map("include_column_list" -> "true")
+
+    val mockRedshift = new MockRedshift(
+      defaultParams("url"),
+      Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> TestUtils.testSchema))
+
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    source.createRelation(testSqlContext, SaveMode.Append, params, expectedDataDF)
+
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
+  }
+
+  test("include_column_list=false (default) does not add the schema columns to the COPY query") {
+    val expectedCommands = Seq(
+      "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
+
+      "COPY \"PUBLIC\".\"test_table\" FROM .*".r
+    )
+
+    val mockRedshift = new MockRedshift(
+      defaultParams("url"),
+      Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> TestUtils.testSchema))
+
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    source.createRelation(testSqlContext, SaveMode.Append, defaultParams, expectedDataDF)
+
     mockRedshift.verifyThatConnectionsWereClosed()
     mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
   }

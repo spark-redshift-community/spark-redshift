@@ -94,12 +94,10 @@ private[redshift] class RedshiftFileFormat extends FileFormat {
       // Ensure that the record reader is closed upon task completion. It will ordinarily
       // be closed once it is completely iterated, but this is necessary to guard against
       // resource leaks in case the task fails or is interrupted.
-      Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => iter.close()))
+      Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => iter.close()))
       val converter = Conversions.createRowConverter(requiredSchema,
         options.getOrElse("nullString", Parameters.DEFAULT_PARAMETERS("csvnullstring")))
       iter.map(converter)
     }
   }
-
-  override def supportDataType(dataType: DataType, isReadPath: Boolean): Boolean = true
 }

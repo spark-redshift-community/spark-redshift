@@ -86,6 +86,7 @@ private[redshift] class RedshiftWriter(
    */
   private def copySql(
       sqlContext: SQLContext,
+      schema: StructType,
       params: MergedParameters,
       creds: AWSCredentialsProvider,
       manifestUrl: String): String = {
@@ -96,7 +97,13 @@ private[redshift] class RedshiftWriter(
       case "AVRO" => "AVRO 'auto'"
       case csv if csv == "CSV" || csv == "CSV GZIP" => csv + s" NULL AS '${params.nullString}'"
     }
-    s"COPY ${params.table.get} FROM '$fixedUrl' CREDENTIALS '$credsString' FORMAT AS " +
+    val columns = if (params.includeColumnList) {
+        "(" + schema.fieldNames.map(name => s""""$name"""").mkString(",") + ") "
+    } else {
+      ""
+    }
+
+    s"COPY ${params.table.get} ${columns}FROM '$fixedUrl' CREDENTIALS '$credsString' FORMAT AS " +
       s"${format} manifest ${params.extraCopyOptions}"
   }
 
@@ -138,7 +145,7 @@ private[redshift] class RedshiftWriter(
 
     manifestUrl.foreach { manifestUrl =>
       // Load the temporary data into the new file
-      val copyStatement = copySql(data.sqlContext, params, creds, manifestUrl)
+      val copyStatement = copySql(data.sqlContext, data.schema, params, creds, manifestUrl)
       log.info(copyStatement)
       try {
         jdbcWrapper.executeInterruptibly(conn.prepareStatement(copyStatement))
@@ -237,12 +244,12 @@ private[redshift] class RedshiftWriter(
     }
 
     // Use Spark accumulators to determine which partitions were non-empty.
-    val nonEmptyPartitions =
-      sqlContext.sparkContext.accumulableCollection(mutable.HashSet.empty[Int])
+    val nonEmptyPartitions = new SetAccumulator[Int]
+    sqlContext.sparkContext.register(nonEmptyPartitions)
 
     val convertedRows: RDD[Row] = data.rdd.mapPartitions { iter: Iterator[Row] =>
       if (iter.hasNext) {
-        nonEmptyPartitions += TaskContext.get.partitionId()
+        nonEmptyPartitions.add(TaskContext.get.partitionId())
       }
       iter.map { row =>
         val convertedValues: Array[Any] = new Array(conversionFunctions.length)
