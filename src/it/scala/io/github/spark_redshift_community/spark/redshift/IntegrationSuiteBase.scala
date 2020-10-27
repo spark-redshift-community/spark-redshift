@@ -20,11 +20,9 @@ import java.net.URI
 import java.sql.Connection
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.s3native.NativeS3FileSystem
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
-import org.apache.spark.sql.hive.test.TestHiveContext
 import org.apache.spark.sql.types.StructType
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 
@@ -127,7 +125,7 @@ trait IntegrationSuiteBase
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    sqlContext = new TestHiveContext(sc, loadTestTables = false)
+    sqlContext = SparkSession.builder().enableHiveSupport().getOrCreate().sqlContext
   }
 
   /**
