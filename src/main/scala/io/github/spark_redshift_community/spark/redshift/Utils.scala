@@ -153,7 +153,7 @@ private[redshift] object Utils {
       true
     } catch {
       case NonFatal(e) =>
-        log.warn("An error occurred while trying to read the S3 bucket lifecycle configuration", e)
+        log.warn("An error occurred while trying to read the S3 bucket lifecycle configuration")
         false
     }
   }
