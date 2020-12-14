@@ -23,11 +23,12 @@ import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
-import org.apache.http.client.methods.HttpRequestBase
+import com.amazonaws.thirdparty.apache.http.client.methods.HttpRequestBase
 import org.mockito.Matchers._
 import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.fs.UnsupportedFileSystemException
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
@@ -615,23 +616,23 @@ class RedshiftSourceSuite
 
   test("Saves throw error message if S3 Block FileSystem would be used") {
     val params = defaultParams + ("tempdir" -> defaultParams("tempdir").replace("s3a", "s3"))
-    val e = intercept[IllegalArgumentException] {
+    val e = intercept[UnsupportedFileSystemException] {
       expectedDataDF.write
         .format("io.github.spark_redshift_community.spark.redshift")
         .mode("append")
         .options(params)
         .save()
     }
-    assert(e.getMessage.contains("Block FileSystem"))
+    assert(e.getMessage.contains("No FileSystem for scheme"))
   }
 
   test("Loads throw error message if S3 Block FileSystem would be used") {
     val params = defaultParams + ("tempdir" -> defaultParams("tempdir").replace("s3a", "s3"))
-    val e = intercept[IllegalArgumentException] {
+    val e = intercept[UnsupportedFileSystemException] {
       testSqlContext.read.format("io.github.spark_redshift_community.spark.redshift")
         .options(params)
         .load()
     }
-    assert(e.getMessage.contains("Block FileSystem"))
+    assert(e.getMessage.contains("No FileSystem for scheme"))
   }
 }

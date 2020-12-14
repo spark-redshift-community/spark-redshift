@@ -46,7 +46,7 @@ lazy val root = Project("spark-redshift", file("."))
 
     // Spark 2.4.x should be compatible with hadoop >= 2.7.x
     // https://spark.apache.org/downloads.html
-    testHadoopVersion := sys.props.get("hadoop.testVersion").getOrElse("2.7.7"),
+    testHadoopVersion := sys.props.get("hadoop.testVersion").getOrElse("3.2.1"),
 
     // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
     // https://stackoverflow.com/a/49510602/2544874
