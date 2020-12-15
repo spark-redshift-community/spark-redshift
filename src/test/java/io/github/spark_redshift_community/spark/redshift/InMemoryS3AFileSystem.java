@@ -110,6 +110,7 @@ public class InMemoryS3AFileSystem extends FileSystem {
 
     @Override
     public FSDataOutputStream create(Path f) throws IOException {
+        // TODO: This could possibly be wrong
         FileSystem.Statistics statistics = new FileSystem.Statistics("test-ouput-stream");
 
         if (exists(f)) {
@@ -196,20 +197,23 @@ public class InMemoryS3AFileSystem extends FileSystem {
 
     @Override
     public S3AFileStatus getFileStatus(Path f) throws IOException {
+        System.out.printf("prince is dir: ");
+        System.out.println(isDir(f));
 
         if (!exists(f)) throw new FileNotFoundException();
-        Tristate state = Tristate.fromBool(dataMap.tailMap(toS3Key(f)).size() == 1 && dataMap.containsKey(toS3Key(f)));
+
 
         if (isDir(f)) {
             FileStatus fileStatus = new FileStatus(
-                dataMap.tailMap(toS3Key(f)).size(), true, 1,
-                this.getDefaultBlockSize(), System.currentTimeMillis(), f
+                    dataMap.tailMap(toS3Key(f)).size(), true, 1,
+                    this.getDefaultBlockSize(), System.currentTimeMillis(), f
             );
-            return S3AFileStatus.fromFileStatus(
-                fileStatus, Tristate.fromBool(
-                    dataMap.tailMap(toS3Key(f)).size() == 1 && dataMap.containsKey(toS3Key(f))
-                )
+            S3AFileStatus status = S3AFileStatus.fromFileStatus(
+                    fileStatus, Tristate.fromBool(
+                            dataMap.tailMap(toS3Key(f)).size() == 1 && dataMap.containsKey(toS3Key(f))
+                    )
             );
+            return status;
         }
         else {
             return new S3AFileStatus(

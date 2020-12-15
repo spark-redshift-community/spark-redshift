@@ -24,10 +24,16 @@ import org.apache.spark.sql.{Row, SaveMode}
 /**
  * End-to-end tests of features which depend on per-column metadata (such as comments, maxlength).
  */
+// 1. Creates schema with metadata.
+// 2. Write a dataframe to the redshift table
+// 3. Load the data from redshift table and checks if data is same
+// 4. Also verifies if data larger than allowed metadata length is written, Sql-exception is thrown.
 class ColumnMetadataSuite extends IntegrationSuiteBase {
 
   test("configuring maxlength on string columns") {
     val tableName = s"configuring_maxlength_on_string_column_$randomSuffix"
+    // TODO: How to access the redshift table? Caused by: java.sql.SQLException: [Amazon](500310) Invalid operation: Load into table 'configuring_maxlength_on_string_column_8609520816019020421' failed.
+    //  Check 'stl_load_errors' system table for details.;
     try {
       val metadata = new MetadataBuilder().putLong("maxlength", 512).build()
       val schema = StructType(
@@ -50,6 +56,8 @@ class ColumnMetadataSuite extends IntegrationSuiteBase {
     }
   }
 
+  // LZO encoding: High compression ratio and performance. Good for char and varchar columns
+  // Checking if encoding works
   test("configuring compression on columns") {
     val tableName = s"configuring_compression_on_columns_$randomSuffix"
     try {
@@ -61,7 +69,10 @@ class ColumnMetadataSuite extends IntegrationSuiteBase {
         .mode(SaveMode.ErrorIfExists)
         .save()
       assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      // Loading table data in spark and comparing the answer.
       checkAnswer(read.option("dbtable", tableName).load(), Seq(Row("a" * 128)))
+      // TODO: Not sure how is this different from sqlcontext.read().load() an read.load()?
+      // why it is reading fro pg_table_def?
       val encodingDF = sqlContext.read
         .format("jdbc")
         .option("url", jdbcUrl)
@@ -87,6 +98,7 @@ class ColumnMetadataSuite extends IntegrationSuiteBase {
         .save()
       assert(DefaultJDBCWrapper.tableExists(conn, tableName))
       checkAnswer(read.option("dbtable", tableName).load(), Seq(Row("a" * 128)))
+      // what is pg_catalog?
       val tableDF = sqlContext.read
         .format("jdbc")
         .option("url", jdbcUrl)

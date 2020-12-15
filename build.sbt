@@ -70,6 +70,15 @@ lazy val root = Project("spark-redshift", file("."))
       "com.amazon.redshift" % "jdbc41" % "1.2.27.1051" % "test" from "https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.27.1051/RedshiftJDBC41-no-awssdk-1.2.27.1051.jar",
 
       "com.google.guava" % "guava" % "14.0.1" % "test",
+
+      "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion.value excludeAll
+        (ExclusionRule(organization = "com.fasterxml.jackson.core"))
+        exclude("com.amazonaws", "aws-java-sdk-s3")  force(),
+
+      "org.apache.hadoop" % "hadoop-common" % testHadoopVersion.value excludeAll
+        (ExclusionRule(organization = "com.fasterxml.jackson.core")) force(),
+
+      "org.apache.hadoop" % "hadoop-auth" % testHadoopVersion.value,
       "org.scalatest" %% "scalatest" % "3.0.5" % "test",
       "org.mockito" % "mockito-core" % "1.10.19" % "test",
 
@@ -82,12 +91,15 @@ lazy val root = Project("spark-redshift", file("."))
 
       "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion.value excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core"))
-        exclude("org.apache.hadoop", "hadoop-common")
         exclude("com.amazonaws", "aws-java-sdk-s3")  force(),
 
-      "org.apache.spark" %% "spark-core" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
-      "org.apache.spark" %% "spark-sql" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
-      "org.apache.spark" %% "spark-hive" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
+      "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion.value excludeAll
+        (ExclusionRule(organization = "com.fasterxml.jackson.core"))
+        exclude("com.amazonaws", "aws-java-sdk-s3")  force(),
+
+      "org.apache.spark" %% "spark-core" % testSparkVersion.value % "test" excludeAll(ExclusionRule(organization = "com.apache.hadoop")) force(),
+      "org.apache.spark" %% "spark-avro" % testSparkVersion.value % "test" excludeAll(ExclusionRule(organization = "com.apache.hadoop")) force(),
+      "org.apache.spark" %% "spark-sql" % testSparkVersion.value % "test" excludeAll(ExclusionRule(organization = "com.apache.hadoop")) force(),
       "org.apache.spark" %% "spark-avro" % testSparkVersion.value % "test" exclude("org.apache.avro", "avro-mapred") force()
     ),
     ScoverageKeys.coverageHighlighting := true,

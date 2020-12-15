@@ -23,6 +23,9 @@ import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
  * This suite performs basic integration tests where the Redshift credentials have been
  * specified via `spark-redshift`'s configuration rather than as part of the JDBC URL.
  */
+// creds' through sr's configuration instead of jdbc url?
+// how do we provide configuration today?
+
 class RedshiftCredentialsInConfIntegrationSuite extends IntegrationSuiteBase {
 
   test("roundtrip save and load") {

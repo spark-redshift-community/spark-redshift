@@ -20,24 +20,23 @@ import java.io.{ByteArrayInputStream, OutputStreamWriter}
 import java.net.URI
 
 import com.amazonaws.services.s3.AmazonS3Client
-import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
 import com.amazonaws.thirdparty.apache.http.client.methods.HttpRequestBase
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import org.apache.hadoop.fs.{FileSystem, Path, UnsupportedFileSystemException}
+import org.apache.spark.SparkContext
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.sources._
+import org.apache.spark.sql.types._
 import org.mockito.Matchers._
 import org.mockito.Mockito
 import org.mockito.Mockito.when
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.fs.UnsupportedFileSystemException
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.sources._
-import org.apache.spark.sql._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
 
 
 /**
@@ -97,6 +96,11 @@ class RedshiftSourceSuite
     testSqlContext = new SQLContext(sc)
     expectedDataDF =
       testSqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testSchema)
+    printf("prince df %s ", expectedDataDF.show(1));
+    print( expectedDataDF.show(1));
+    println( expectedDataDF.show(1));
+    println( expectedDataDF.count());
+    print("end \n")
 
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
     mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
@@ -616,6 +620,7 @@ class RedshiftSourceSuite
 
   test("Saves throw error message if S3 Block FileSystem would be used") {
     val params = defaultParams + ("tempdir" -> defaultParams("tempdir").replace("s3a", "s3"))
+    printf("prince params after replacing %s", params)
     val e = intercept[UnsupportedFileSystemException] {
       expectedDataDF.write
         .format("io.github.spark_redshift_community.spark.redshift")
@@ -623,6 +628,8 @@ class RedshiftSourceSuite
         .options(params)
         .save()
     }
+    // TODO: check if block filesystem was changed;
+    // assert(e.getMessage.contains("Block FileSystem"))
     assert(e.getMessage.contains("No FileSystem for scheme"))
   }
 
@@ -633,6 +640,7 @@ class RedshiftSourceSuite
         .options(params)
         .load()
     }
+    System.out.printf("prince %s", e.getMessage);
     assert(e.getMessage.contains("No FileSystem for scheme"))
   }
 }
