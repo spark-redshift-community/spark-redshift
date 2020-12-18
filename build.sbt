@@ -69,7 +69,7 @@ lazy val root = Project("spark-redshift", file("."))
       // http://docs.aws.amazon.com/redshift/latest/mgmt/configure-jdbc-connection.html
       "com.amazon.redshift" % "jdbc41" % "1.2.27.1051" % "test" from "https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.27.1051/RedshiftJDBC41-no-awssdk-1.2.27.1051.jar",
 
-      "com.google.guava" % "guava" % "14.0.1" % "test",
+      "com.google.guava" % "guava" % "27.0.1-jre" % "test",
       "org.scalatest" %% "scalatest" % "3.0.5" % "test",
       "org.mockito" % "mockito-core" % "1.10.19" % "test",
 
