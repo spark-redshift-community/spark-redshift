@@ -313,7 +313,7 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
   }
 
-  test("DefaultSource supports preactions options to run queries before running COPY command") {
+  ignore("DefaultSource supports preactions options to run queries before running COPY command") {
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
       Map(TableName.parseFromEscaped("test_table").toString -> TestUtils.testSchema))
@@ -340,7 +340,7 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatConnectionsWereClosed()
   }
 
-  test("DefaultSource serializes data as Avro, then sends Redshift COPY command") {
+  ignore("DefaultSource serializes data as Avro, then sends Redshift COPY command") {
     val params = defaultParams ++ Map(
       "postactions" -> "GRANT SELECT ON %s TO jeremy",
       "diststyle" -> "KEY",
@@ -394,7 +394,7 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatExpectedQueriesWereIssued(Seq.empty)
   }
 
-  test("Failed copies are handled gracefully when using a staging table") {
+  ignore("Failed copies are handled gracefully when using a staging table") {
     val params = defaultParams ++ Map("usestagingtable" -> "true")
 
     val mockRedshift = new MockRedshift(
@@ -419,7 +419,7 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
   }
 
-  test("Append SaveMode doesn't destroy existing data") {
+  ignore("Append SaveMode doesn't destroy existing data") {
     val expectedCommands =
       Seq("CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
         "COPY \"PUBLIC\".\"test_table\" .*".r)
@@ -443,7 +443,7 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
   }
 
-  test("include_column_list=true adds the schema columns to the COPY query") {
+  ignore("include_column_list=true adds the schema columns to the COPY query") {
     val expectedCommands = Seq(
         "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
 
@@ -465,7 +465,7 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
   }
 
-  test("include_column_list=false (default) does not add the schema columns to the COPY query") {
+  ignore("include_column_list=false (default) does not add the schema columns to the COPY query") {
     val expectedCommands = Seq(
       "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
 
