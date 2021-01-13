@@ -3,6 +3,7 @@ package io.github.spark_redshift_community.spark.redshift
 import java.io.FileNotFoundException
 
 import org.apache.hadoop.fs.{FileAlreadyExistsException, FileStatus, Path}
+import org.apache.hadoop.fs.s3a.Tristate
 import org.scalatest.{FunSuite, Matchers}
 
 class InMemoryS3AFileSystemSuite extends FunSuite with Matchers  {
@@ -64,7 +65,7 @@ class InMemoryS3AFileSystemSuite extends FunSuite with Matchers  {
       "s3a://test-bucket/temp-dir/ba7e0bf3-25a0-4435-b7a5-fdb6b3d2d328")
     val dirPathFileStatus = inMemoryS3AFileSystem.getFileStatus(dirPath)
     assert(dirPathFileStatus.isDirectory === true)
-    assert(dirPathFileStatus.isEmptyDirectory === false)
+    assert(dirPathFileStatus.isEmptyDirectory === Tristate.FALSE)
 
   }
 
