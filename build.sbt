@@ -46,12 +46,12 @@ lazy val root = Project("spark-redshift", file("."))
 
     // Spark 2.4.x should be compatible with hadoop >= 2.7.x
     // https://spark.apache.org/downloads.html
-    testHadoopVersion := sys.props.get("hadoop.testVersion").getOrElse("2.7.7"),
+    testHadoopVersion := sys.props.get("hadoop.testVersion").getOrElse("3.2.1"),
 
     // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
     // https://stackoverflow.com/a/49510602/2544874
     // https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws/2.7.7
-    testAWSJavaSDKVersion := sys.props.get("aws.testVersion").getOrElse("1.7.4"),
+    testAWSJavaSDKVersion := sys.props.get("aws.testVersion").getOrElse("1.11.375"),
 
     spName := "spark-redshift-community/spark-redshift",
     sparkComponents ++= Seq("sql", "hive"),
@@ -69,7 +69,7 @@ lazy val root = Project("spark-redshift", file("."))
       // http://docs.aws.amazon.com/redshift/latest/mgmt/configure-jdbc-connection.html
       "com.amazon.redshift" % "jdbc41" % "1.2.27.1051" % "test" from "https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.27.1051/RedshiftJDBC41-no-awssdk-1.2.27.1051.jar",
 
-      "com.google.guava" % "guava" % "14.0.1" % "test",
+      "com.google.guava" % "guava" % "27.0.1-jre" % "test",
       "org.scalatest" %% "scalatest" % "3.0.5" % "test",
       "org.mockito" % "mockito-core" % "1.10.19" % "test",
 

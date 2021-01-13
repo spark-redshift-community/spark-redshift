@@ -1,5 +1,13 @@
 # spark-redshift Changelog
 
+## 5.0.0 (2021-01-13)
+
+- Upgrade spark-redshift to support hadoop3
+
+## 4.2.0 (2020-10-08)
+
+- Make spark-redshift Spark 3.0.1 compatible
+
 ## 4.1.1
 
 - Cross publish for scala 2.12 in addition to 2.11
