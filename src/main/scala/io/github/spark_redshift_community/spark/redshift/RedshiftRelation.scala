@@ -21,6 +21,7 @@ import java.net.URI
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.model.AmazonS3Exception
 import com.eclipsesource.json.Json
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.spark.rdd.RDD
@@ -142,13 +143,24 @@ private[redshift] case class RedshiftRelation(
           Utils.fixS3Url(Utils.removeCredentialsFromURI(URI.create(tempDir)).toString)
         val s3URI = Utils.createS3URI(cleanedTempDirUri)
         val s3Client = s3ClientFactory(creds)
-        val is = s3Client.getObject(s3URI.getBucket, s3URI.getKey + "manifest").getObjectContent
-        val s3Files = try {
-          val entries = Json.parse(new InputStreamReader(is)).asObject().get("entries").asArray()
-          entries.iterator().asScala.map(_.asObject().get("url").asString()).toSeq
-        } finally {
-          is.close()
-        }
+        val manifestPath = s3URI.getKey + "manifest"
+        val is = s3Client.getObject(s3URI.getBucket, manifestPath).getObjectContent
+        val s3Files =
+          try {
+            try {
+              val entries = Json.parse(new InputStreamReader(is))
+                .asObject().get("entries").asArray()
+              entries.iterator().asScala.map(_.asObject().get("url").asString()).toSeq
+            } finally {
+              is.close()
+            }
+          } catch {
+            case _: AmazonS3Exception => {
+              log.info(s"Query did not find a manifest file at $manifestPath." +
+                s" Returning an empty dataset.")
+              Seq()
+            }
+          }
         // The filenames in the manifest are of the form s3://bucket/key, without credentials.
         // If the S3 credentials were originally specified in the tempdir's URI, then we need to
         // reintroduce them here
