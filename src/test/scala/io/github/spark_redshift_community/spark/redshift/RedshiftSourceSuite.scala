@@ -340,7 +340,7 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatConnectionsWereClosed()
   }
 
-  ("DefaultSource serializes data as Avro, then sends Redshift COPY command") {
+  test("DefaultSource serializes data as Avro, then sends Redshift COPY command") {
     val params = defaultParams ++ Map(
       "postactions" -> "GRANT SELECT ON %s TO jeremy",
       "diststyle" -> "KEY",
