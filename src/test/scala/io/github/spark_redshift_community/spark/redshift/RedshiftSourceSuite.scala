@@ -313,7 +313,7 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
   }
 
-  ignore("DefaultSource supports preactions options to run queries before running COPY command") {
+  test("DefaultSource supports preactions options to run queries before running COPY command") {
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
       Map(TableName.parseFromEscaped("test_table").toString -> TestUtils.testSchema))
@@ -340,7 +340,7 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatConnectionsWereClosed()
   }
 
-  ignore("DefaultSource serializes data as Avro, then sends Redshift COPY command") {
+  ("DefaultSource serializes data as Avro, then sends Redshift COPY command") {
     val params = defaultParams ++ Map(
       "postactions" -> "GRANT SELECT ON %s TO jeremy",
       "diststyle" -> "KEY",
@@ -394,7 +394,7 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatExpectedQueriesWereIssued(Seq.empty)
   }
 
-  ignore("Failed copies are handled gracefully when using a staging table") {
+  test("Failed copies are handled gracefully when using a staging table") {
     val params = defaultParams ++ Map("usestagingtable" -> "true")
 
     val mockRedshift = new MockRedshift(
