@@ -192,8 +192,10 @@ private[redshift] case class RedshiftRelation(
     // the credentials passed via `credsString`.
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
 
+    val kmsKey = params.sseKmsKey.map(keyId => s"KMS_KEY_ID '$keyId' ENCRYPTED").getOrElse("")
+
     s"UNLOAD ('$query') TO '$fixedUrl' WITH CREDENTIALS '$credsString'" +
-      s" ESCAPE MANIFEST NULL AS '${params.nullString}'"
+      s" ESCAPE MANIFEST NULL AS '${params.nullString}' $kmsKey"
   }
 
   private def pruneSchema(schema: StructType, columns: Array[String]): StructType = {

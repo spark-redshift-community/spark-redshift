@@ -29,7 +29,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.util.control.NonFatal
 
 /**
@@ -216,7 +215,8 @@ private[redshift] class RedshiftWriter(
       data: DataFrame,
       tempDir: String,
       tempFormat: String,
-      nullString: String): Option[String] = {
+      nullString: String,
+      kmsKeyId: Option[String]): Option[String] = {
     // spark-avro does not support Date types. In addition, it converts Timestamps into longs
     // (milliseconds since the Unix epoch). Redshift is capable of loading timestamps in
     // 'epochmillisecs' format but there's no equivalent format for dates. To work around this, we
@@ -286,6 +286,20 @@ private[redshift] class RedshiftWriter(
         case other => other
       }
     )
+
+    // If an AWS KMS key is specified, update Hadoop configs to use KMS encryption
+    kmsKeyId.foreach { keyId =>
+      Map(
+        "fs.s3.server-side-encryption-algorithm" -> "SSE-KMS",
+        "fs.s3n.server-side-encryption-algorithm" -> "SSE-KMS",
+        "fs.s3a.server-side-encryption-algorithm" -> "SSE-KMS",
+        "fs.s3.server-side-encryption.key" -> keyId,
+        "fs.s3n.server-side-encryption.key" -> keyId,
+        "fs.s3a.server-side-encryption.key" -> keyId
+      ).foreach {
+        case (key, value) => sqlContext.sparkContext.hadoopConfiguration.set(key, value)
+      }
+    }
 
     val writer = sqlContext.createDataFrame(convertedRows, convertedSchema).write
     (tempFormat match {
@@ -402,7 +416,8 @@ private[redshift] class RedshiftWriter(
       data,
       tempDir = params.createPerQueryTempDir(),
       tempFormat = params.tempFormat,
-      nullString = params.nullString)
+      nullString = params.nullString,
+      kmsKeyId = params.sseKmsKey)
     val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
     conn.setAutoCommit(false)
     try {

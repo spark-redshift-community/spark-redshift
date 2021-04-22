@@ -446,6 +446,8 @@ The following describes how each connection can be authenticated:
 - **Encrypting `UNLOAD` data stored in S3 (data stored when reading from Redshift)**: According to the Redshift documentation
     on [_Unloading Data to S3_](http://docs.aws.amazon.com/redshift/latest/dg/t_Unloading_tables.html),
     "UNLOAD automatically encrypts data files using Amazon S3 server-side encryption (SSE-S3)."
+    
+    Server-side encryption using an AWS KMS Key is also supported by specifying the `sse_kms_key` option.
 
     Redshift also supports client-side encryption with a custom key
     (see: [_Unloading Encrypted Data Files_](http://docs.aws.amazon.com/redshift/latest/dg/t_unloading_encrypted_files.html))
@@ -667,6 +669,18 @@ for other options).</p>
 
 <p>Note that since these options are appended to the end of the <tt>COPY</tt> command, only options that make sense
 at the end of the command can be used, but that should cover most possible use cases.</p>
+    </td>
+ </tr>
+  <tr>
+    <td><tt>sse_kms_key</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+<p>KMS key ID to use for server-side encryption in the S3 `tempdir` during Redshift <tt>UNLOAD</tt> and <tt>COPY</tt> operations rather than the default
+encryption. During S3 writes (Redshift for <tt>UNLOAD</tt> and Spark for <tt>COPY</tt>), the writer must have permissions to the KMS key.
+Reading the encrypted data requires no changes (AWS handles this under-the-hood) so long as the reader has permissions to the KMS key for decryption.</p> 
+
+<p>See the <a href="https://docs.aws.amazon.com/redshift/latest/dg/t_unloading_encrypted_files.html">Redshift docs</a> for more information.</p>
     </td>
  </tr>
  <tr>
