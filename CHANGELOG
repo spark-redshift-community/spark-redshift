@@ -1,5 +1,9 @@
 # spark-redshift Changelog
 
+## 5.0.1 (2021-04-30)
+
+- Address low performance issue while reading csv files (#87)
+
 ## 5.0.0 (2021-01-13)
 
 - Upgrade spark-redshift to support hadoop3
