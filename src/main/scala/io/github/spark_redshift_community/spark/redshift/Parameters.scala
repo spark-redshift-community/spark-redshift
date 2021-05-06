@@ -295,7 +295,7 @@ private[redshift] object Parameters {
     def includeColumnList: Boolean = parameters("include_column_list").toBoolean
 
     /**
-     * The AWS SSE-KMS key to use for encryption during UNLOAD operations 
+     * The AWS SSE-KMS key to use for encryption during UNLOAD operations
      * instead of AWS's default encryption
      */
     def sseKmsKey: Option[String] = parameters.get("sse_kms_key")
