@@ -128,7 +128,7 @@ private[redshift] case class RedshiftRelation(
     } else {
       // Unload data from Redshift into a temporary directory in S3:
       val tempDir = params.createPerQueryTempDir()
-      val unloadSql = buildUnloadStmt(requiredColumns, filters, tempDir, creds)
+      val unloadSql = buildUnloadStmt(requiredColumns, filters, tempDir, creds, params.sseKmsKey)
       val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
       try {
         jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
@@ -174,7 +174,8 @@ private[redshift] case class RedshiftRelation(
       requiredColumns: Array[String],
       filters: Array[Filter],
       tempDir: String,
-      creds: AWSCredentialsProvider): String = {
+      creds: AWSCredentialsProvider,
+      sseKmsKey: Option[String]): String = {
     assert(!requiredColumns.isEmpty)
     // Always quote column names:
     val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
@@ -192,8 +193,10 @@ private[redshift] case class RedshiftRelation(
     // the credentials passed via `credsString`.
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
 
+    val sseKmsClause = sseKmsKey.map(key => s"KMS_KEY_ID '$key' ENCRYPTED").getOrElse("")
     s"UNLOAD ('$query') TO '$fixedUrl' WITH CREDENTIALS '$credsString'" +
-      s" ESCAPE MANIFEST NULL AS '${params.nullString}'"
+      s" ESCAPE MANIFEST NULL AS '${params.nullString}'" +
+      s" $sseKmsClause"
   }
 
   private def pruneSchema(schema: StructType, columns: Array[String]): StructType = {
