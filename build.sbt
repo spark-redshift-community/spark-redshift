@@ -20,16 +20,18 @@ import sbt.Keys._
 import sbt._
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import sbtrelease.ReleasePlugin.autoImport._
-import sbtsparkpackage.SparkPackagePlugin.autoImport._
 import scoverage.ScoverageKeys
 
-val testSparkVersion = settingKey[String]("Spark version to test against")
-val testHadoopVersion = settingKey[String]("Hadoop version to test against")
-val testAWSJavaSDKVersion = settingKey[String]("AWS Java SDK version to test against")
+val sparkVersion = "3.0.1"
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.
 lazy val IntegrationTest = config("it") extend Test
+val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
+val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.2.1")
+// DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
+val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.375")
+
 
 lazy val root = Project("spark-redshift", file("."))
   .configs(IntegrationTest)
@@ -41,21 +43,6 @@ lazy val root = Project("spark-redshift", file("."))
     name := "spark-redshift",
     organization := "io.github.spark-redshift-community",
     scalaVersion := "2.12.11",
-    sparkVersion := "3.0.1",
-    testSparkVersion := sys.props.get("spark.testVersion").getOrElse(sparkVersion.value),
-
-    // Spark 2.4.x should be compatible with hadoop >= 2.7.x
-    // https://spark.apache.org/downloads.html
-    testHadoopVersion := sys.props.get("hadoop.testVersion").getOrElse("3.2.1"),
-
-    // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
-    // https://stackoverflow.com/a/49510602/2544874
-    // https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws/2.7.7
-    testAWSJavaSDKVersion := sys.props.get("aws.testVersion").getOrElse("1.11.375"),
-
-    spName := "spark-redshift-community/spark-redshift",
-    sparkComponents ++= Seq("sql", "hive"),
-    spIgnoreProvided := true,
     licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0"),
     credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
     scalacOptions ++= Seq("-target:jvm-1.8"),
@@ -73,22 +60,22 @@ lazy val root = Project("spark-redshift", file("."))
       "org.scalatest" %% "scalatest" % "3.0.5" % "test",
       "org.mockito" % "mockito-core" % "1.10.19" % "test",
 
-      "com.amazonaws" % "aws-java-sdk" % testAWSJavaSDKVersion.value % "provided" excludeAll
+      "com.amazonaws" % "aws-java-sdk" % testAWSJavaSDKVersion % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core")),
 
-      "org.apache.hadoop" % "hadoop-client" % testHadoopVersion.value % "test" exclude("javax.servlet", "servlet-api") force(),
-      "org.apache.hadoop" % "hadoop-common" % testHadoopVersion.value % "test" exclude("javax.servlet", "servlet-api") force(),
-      "org.apache.hadoop" % "hadoop-common" % testHadoopVersion.value % "test" classifier "tests" force(),
+      "org.apache.hadoop" % "hadoop-client" % testHadoopVersion % "provided" exclude("javax.servlet", "servlet-api") force(),
+      "org.apache.hadoop" % "hadoop-common" % testHadoopVersion % "provided" exclude("javax.servlet", "servlet-api") force(),
+      "org.apache.hadoop" % "hadoop-common" % testHadoopVersion % "provided" classifier "tests" force(),
 
-      "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion.value excludeAll
+      "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core"))
         exclude("org.apache.hadoop", "hadoop-common")
         exclude("com.amazonaws", "aws-java-sdk-s3")  force(),
 
-      "org.apache.spark" %% "spark-core" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
-      "org.apache.spark" %% "spark-sql" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
-      "org.apache.spark" %% "spark-hive" % testSparkVersion.value % "test" exclude("org.apache.hadoop", "hadoop-client") force(),
-      "org.apache.spark" %% "spark-avro" % testSparkVersion.value % "test" exclude("org.apache.avro", "avro-mapred") force()
+      "org.apache.spark" %% "spark-core" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
+      "org.apache.spark" %% "spark-sql" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
+      "org.apache.spark" %% "spark-hive" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
+      "org.apache.spark" %% "spark-avro" % testSparkVersion % "provided" exclude("org.apache.avro", "avro-mapred") force()
     ),
     ScoverageKeys.coverageHighlighting := true,
     logBuffered := false,

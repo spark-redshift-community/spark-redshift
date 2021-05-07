@@ -190,7 +190,7 @@ class RedshiftSourceSuite
         |  \(select testbyte, testbool
         |    from test_table
         |    where teststring = \\'\\\\\\\\Unicode\\'\\'s樂趣\\'\) '\)
-      """.stripMargin.lines.map(_.trim).mkString(" ").trim.r
+      """.stripMargin.lines.map(_.trim).toArray.mkString(" ").trim.r
     val query =
       """select testbyte, testbool from test_table where teststring = '\\Unicode''s樂趣'"""
     unloadedData = "1|t"
