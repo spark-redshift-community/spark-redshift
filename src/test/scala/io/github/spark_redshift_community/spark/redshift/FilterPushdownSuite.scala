@@ -71,7 +71,7 @@ class FilterPushdownSuite extends FunSuite {
         |AND "test_int" <= 43
         |AND "test_int" IS NOT NULL
         |AND "test_int" IS NULL
-      """.stripMargin.lines.mkString(" ").trim
+      """.stripMargin.lines.toArray.mkString(" ").trim
     // scalastyle:on
     assert(whereClause === expectedWhereClause)
   }
