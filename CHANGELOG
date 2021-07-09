@@ -1,5 +1,9 @@
 # spark-redshift Changelog
 
+## 5.0.4 (2021-07-08)
+
+- Upgrade spark version to 3.0.2 and to latest test aws java sdk version to latest
+
 ## 5.0.3 (2021-05-10)
 
 - Remove sbt-spark-package plugin dependency (#90)
