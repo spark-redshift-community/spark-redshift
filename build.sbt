@@ -22,7 +22,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import sbtrelease.ReleasePlugin.autoImport._
 import scoverage.ScoverageKeys
 
-val sparkVersion = "3.0.1"
+val sparkVersion = "3.0.2"
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.
@@ -30,7 +30,7 @@ lazy val IntegrationTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.2.1")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
-val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.375")
+val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.1033")
 
 
 lazy val root = Project("spark-redshift", file("."))
