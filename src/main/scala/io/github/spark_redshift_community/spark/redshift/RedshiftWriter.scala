@@ -18,6 +18,7 @@ package io.github.spark_redshift_community.spark.redshift
 
 import java.net.URI
 import java.sql.{Connection, Date, SQLException, Timestamp}
+import java.time.{Instant, LocalDate}
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3Client
@@ -232,12 +233,18 @@ private[redshift] class RedshiftWriter(
         case DateType =>
           val dateFormat = Conversions.createRedshiftDateFormat()
           (v: Any) => {
-            if (v == null) null else dateFormat.format(v.asInstanceOf[Date])
+            if (v == null) null else v match {
+              case value: LocalDate => dateFormat.format(Date.valueOf(value))
+              case _ => dateFormat.format(v.asInstanceOf[Date])
+            }
           }
         case TimestampType =>
           val timestampFormat = Conversions.createRedshiftTimestampFormat()
           (v: Any) => {
-            if (v == null) null else timestampFormat.format(v.asInstanceOf[Timestamp])
+            if (v == null) null else v match {
+              case value: Instant => timestampFormat.format(Timestamp.from(value))
+              case _ => timestampFormat.format(v.asInstanceOf[Timestamp])
+            }
           }
         case _ => (v: Any) => v
       }
