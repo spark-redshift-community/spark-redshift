@@ -1,5 +1,9 @@
 # spark-redshift Changelog
 
+## 5.0.5 (2021-11-09)
+
+- Avoid warning when tmp bucket is configured with a lifecycle without prefix.
+
 ## 5.0.4 (2021-07-08)
 
 - Upgrade spark version to 3.0.2 and to latest test aws java sdk version to latest
