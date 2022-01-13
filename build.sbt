@@ -48,7 +48,7 @@ lazy val root = Project("spark-redshift", file("."))
     scalacOptions ++= Seq("-target:jvm-1.8"),
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api" % "1.7.5",
+      "org.slf4j" % "slf4j-api" % "1.7.32",
       "com.eclipsesource.minimal-json" % "minimal-json" % "0.9.4",
 
       // A Redshift-compatible JDBC driver must be present on the classpath for spark-redshift to work.
