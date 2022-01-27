@@ -22,7 +22,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import sbtrelease.ReleasePlugin.autoImport._
 import scoverage.ScoverageKeys
 
-val sparkVersion = "3.0.2"
+val sparkVersion = "3.2.0"
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.
@@ -42,7 +42,7 @@ lazy val root = Project("spark-redshift", file("."))
   .settings(
     name := "spark-redshift",
     organization := "io.github.spark-redshift-community",
-    scalaVersion := "2.12.11",
+    scalaVersion := "2.12.15",
     licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0"),
     credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
     scalacOptions ++= Seq("-target:jvm-1.8"),
