@@ -326,7 +326,7 @@ private[redshift] class RedshiftWriter(
         s"""{"url":"$sanitizedTempDir/$file", "mandatory":true}"""
       }
       val manifest = s"""{"entries": [${manifestEntries.mkString(",\n")}]}"""
-      val manifestPath = sanitizedTempDir + "/manifest.json"
+      val manifestPath = tempDir + "manifest.json"
       val fsDataOut = fs.create(new Path(manifestPath))
       try {
         fsDataOut.write(manifest.getBytes("utf-8"))
