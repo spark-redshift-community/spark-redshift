@@ -308,6 +308,7 @@ private[redshift] class JDBCWrapper {
       case java.sql.Types.NCHAR         => StringType
       case java.sql.Types.NVARCHAR      => StringType
       case java.sql.Types.VARCHAR       => StringType
+      case java.sql.Types.LONGVARCHAR   => StringType
 
       // Datetime Types
       case java.sql.Types.DATE          => DateType
