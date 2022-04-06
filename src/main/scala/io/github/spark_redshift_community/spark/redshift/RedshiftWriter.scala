@@ -333,7 +333,7 @@ private[redshift] class RedshiftWriter(
       } finally {
         fsDataOut.close()
       }
-      Some(manifestPath)
+      Some(s"$sanitizedTempDir/manifest.json")
     }
   }
 
