@@ -16,15 +16,15 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.sql.Timestamp
+import java.sql.{Date, Timestamp}
 import java.text.{DecimalFormat, DecimalFormatSymbols, SimpleDateFormat}
-import java.time.{DateTimeException, LocalDateTime, ZonedDateTime}
+import java.time.{DateTimeException, LocalDateTime, ZoneId, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.GenericRow
+import org.apache.spark.sql.catalyst.util.{DateTimeConstants, DateTimeUtils}
 import org.apache.spark.sql.types._
 
 /**
@@ -153,6 +153,43 @@ private[redshift] object Conversions {
         i += 1
       }
       toRow.apply(externalRow)
+    }
+  }
+
+  def parquetDataTypeConvert(from: Any, dataType: DataType): Any = {
+    dataType match {
+      case DoubleType if from!= null => from.asInstanceOf[Number].doubleValue
+      case FloatType if from!= null => from.asInstanceOf[Number].floatValue
+      case IntegerType if from!=null => from.asInstanceOf[Number].intValue
+      case LongType if from!=null => from.asInstanceOf[Number].longValue
+      case ShortType if from!=null => from.asInstanceOf[Number].shortValue
+      case DecimalType() if from!=null =>
+        org.apache.spark.sql.types.Decimal(from.asInstanceOf[java.math.BigDecimal])
+      case StringType if from!=null =>
+        org.apache.spark.unsafe.types.UTF8String.fromString(
+          from.asInstanceOf[String]
+        )
+
+      // For date or timestamp without time zone, Redshift unloads timestamps
+      // to Parquet as if they were UTC even if they are intended to represent local times.
+      // We need to convert 17:00 UTC to 17:00 Spark time zone.
+      case DateType if from!=null && from.isInstanceOf[Timestamp] =>
+        DateTimeUtils.microsToDays(
+          from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS,
+          ZoneId.of("UTC"))
+      case DateType if from!=null && from.isInstanceOf[Date] =>
+        DateTimeUtils.microsToDays(
+          from.asInstanceOf[Date].getTime * DateTimeConstants.MICROS_PER_MILLIS,
+          ZoneId.of("UTC"))
+      case TimestampType if from!=null && from.isInstanceOf[Timestamp] =>
+        Timestamp
+          .valueOf(
+            DateTimeUtils.microsToLocalDateTime(
+              from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS)
+          )
+          .getTime * DateTimeConstants.MICROS_PER_MILLIS
+
+      case _ => from
     }
   }
 }

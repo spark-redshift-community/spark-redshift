@@ -16,6 +16,8 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
+import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, Identifier}
+
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -26,6 +28,8 @@ private[redshift] case class TableName(unescapedSchemaName: String, unescapedTab
   def escapedSchemaName: String = quote(unescapedSchemaName)
   def escapedTableName: String = quote(unescapedTableName)
   override def toString: String = s"$escapedSchemaName.$escapedTableName"
+  def toStatement: Identifier = Identifier(s"$escapedSchemaName.$escapedTableName")
+  def toConstantString: ConstantString = ConstantString(s"$escapedSchemaName.$escapedTableName")
 }
 
 private[redshift] object TableName {

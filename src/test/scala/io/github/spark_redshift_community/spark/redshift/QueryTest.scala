@@ -30,7 +30,7 @@ trait QueryTest extends FunSuite {
    * @param df the [[DataFrame]] to be executed
    * @param expectedAnswer the expected result in a [[Seq]] of [[Row]]s.
    */
-  def checkAnswer(df: DataFrame, expectedAnswer: Seq[Row]): Unit = {
+  def checkAnswer(df: DataFrame, expectedAnswer: Seq[Row], trim: Boolean = false): Unit = {
     val isSorted = df.queryExecution.logical.collect { case s: logical.Sort => s }.nonEmpty
     def prepareAnswer(answer: Seq[Row]): Seq[Row] = {
       // Converts data to types that we can do equality comparison using Scala collections.
@@ -42,6 +42,7 @@ trait QueryTest extends FunSuite {
         Row.fromSeq(s.toSeq.map {
           case d: java.math.BigDecimal => BigDecimal(d)
           case b: Array[Byte] => b.toSeq
+          case s: String if trim => s.trim()
           case o => o
         })
       }

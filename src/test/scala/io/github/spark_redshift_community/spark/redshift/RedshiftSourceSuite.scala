@@ -134,6 +134,7 @@ class RedshiftSourceSuite
     }
 
     when(mockS3Client.getObject(anyString(), endsWith("manifest"))).thenReturn(mockManifest)
+    when(mockS3Client.doesObjectExist(anyString(), endsWith("manifest"))).thenReturn(true)
   }
 
   override def afterEach(): Unit = {

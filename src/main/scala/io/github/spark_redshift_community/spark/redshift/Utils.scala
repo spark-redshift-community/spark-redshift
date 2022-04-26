@@ -18,7 +18,6 @@ package io.github.spark_redshift_community.spark.redshift
 
 import java.net.URI
 import java.util.UUID
-
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.{AmazonS3Client, AmazonS3URI}
 import org.apache.hadoop.conf.Configuration
@@ -28,12 +27,34 @@ import org.slf4j.LoggerFactory
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
+
+object RedshiftFailMessage {
+  // Note: don't change the message context except necessary
+  final val FAIL_PUSHDOWN_STATEMENT = "pushdown failed"
+  final val FAIL_PUSHDOWN_GENERATE_QUERY = "pushdown failed in generateQueries"
+  final val FAIL_PUSHDOWN_SET_TO_EXPR = "pushdown failed in setToExpr"
+  final val FAIL_PUSHDOWN_AGGREGATE_EXPRESSION = "pushdown failed for aggregate expression"
+  final val FAIL_PUSHDOWN_UNSUPPORTED_CONVERSION = "pushdown failed for unsupported conversion"
+  final val FAIL_PUSHDOWN_UNSUPPORTED_UNION = "pushdown failed for Spark feature: UNION by name"
+}
+
+class RedshiftPushdownException(message: String)
+  extends Exception(message)
+
+class RedshiftPushdownUnsupportedException(message: String,
+                                            val unsupportedOperation: String,
+                                            val details: String,
+                                            val isKnownUnsupportedOperation: Boolean)
+  extends Exception(message)
+
 /**
  * Various arbitrary helper functions
  */
 private[redshift] object Utils {
 
   private val log = LoggerFactory.getLogger(getClass)
+
+  var lastBuildStmt: String = _
 
   def classForName(className: String): Class[_] = {
     val classLoader =

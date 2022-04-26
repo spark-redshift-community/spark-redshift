@@ -1,5 +1,9 @@
 # spark-redshift Changelog
 
+## 5.10.0 (2022-06-06)
+
+- Support autopushdown as did in Spark Snowflake Connector
+
 ## 5.0.5 (2021-11-09)
 
 - Avoid warning when tmp bucket is configured with a lifecycle without prefix.
