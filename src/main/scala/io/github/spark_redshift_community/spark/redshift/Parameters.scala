@@ -40,7 +40,8 @@ private[redshift] object Parameters {
     "usestagingtable" -> "true",
     "preactions" -> ";",
     "postactions" -> ";",
-    "include_column_list" -> "false"
+    "include_column_list" -> "false",
+    "enable_case_sensitive_identifier" -> "false"
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
@@ -227,6 +228,11 @@ private[redshift] object Parameters {
      * Defaults to true.
      */
     def useStagingTable: Boolean = parameters("usestagingtable").toBoolean
+
+    /**
+     * Enable case sensitiveness of column identifiers.
+     */
+    def enableCaseSensitiveIdentifier: Boolean = parameters("enable_case_sensitive_identifier").toBoolean
 
     /**
      * Extra options to append to the Redshift COPY command (e.g. "MAXERROR 100").
