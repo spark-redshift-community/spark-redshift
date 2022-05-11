@@ -216,7 +216,8 @@ private[redshift] class RedshiftWriter(
       data: DataFrame,
       tempDir: String,
       tempFormat: String,
-      nullString: String): Option[String] = {
+      nullString: String,
+      enableCaseSensitiveIdentifier: Boolean): Option[String] = {
     // spark-avro does not support Date types. In addition, it converts Timestamps into longs
     // (milliseconds since the Unix epoch). Redshift is capable of loading timestamps in
     // 'epochmillisecs' format but there's no equivalent format for dates. To work around this, we
@@ -265,7 +266,7 @@ private[redshift] class RedshiftWriter(
     // Convert all column names to lowercase, which is necessary for Redshift to be able to load
     // those columns (see #51).
     val schemaWithLowercaseColumnNames: StructType =
-      StructType(data.schema.map(f => f.copy(name = f.name)))
+      StructType(data.schema.map(f => f.copy(name = f.name.toLowerCase)))
 
     if (schemaWithLowercaseColumnNames.map(_.name).toSet.size != data.schema.size) {
       throw new IllegalArgumentException(
@@ -402,7 +403,8 @@ private[redshift] class RedshiftWriter(
       data,
       tempDir = params.createPerQueryTempDir(),
       tempFormat = params.tempFormat,
-      nullString = params.nullString)
+      nullString = params.nullString,
+      enableCaseSensitiveIdentifier = params.enableCaseSensitiveIdentifier)
     val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
     conn.setAutoCommit(false)
     try {
