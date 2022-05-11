@@ -265,8 +265,9 @@ private[redshift] class RedshiftWriter(
 
     // Convert all column names to lowercase, which is necessary for Redshift to be able to load
     // those columns (see #51).
-    val schemaWithLowercaseColumnNames: StructType =
-      StructType(data.schema.map(f => f.copy(name = f.name.toLowerCase)))
+    val schemaWithLowercaseColumnNames: StructType = if enableCaseSensitiveIdentifier == true
+     StructType(data.schema.map(f => f.copy(name = f.name)))
+      else StructType(data.schema.map(f => f.copy(name = f.name.toLowerCase)))
 
     if (schemaWithLowercaseColumnNames.map(_.name).toSet.size != data.schema.size) {
       throw new IllegalArgumentException(
