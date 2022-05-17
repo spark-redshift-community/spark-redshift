@@ -230,7 +230,7 @@ private[redshift] object Parameters {
     def useStagingTable: Boolean = parameters("usestagingtable").toBoolean
 
     /**
-     * Enable case sensitiveness of column identifiers.
+     * Enable case sensitiveness of column identifiers if enable_case_sensitive_identifier property is true in Redshift.
      */
     def enableCaseSensitiveIdentifier: Boolean = parameters("enable_case_sensitive_identifier").toBoolean
 
