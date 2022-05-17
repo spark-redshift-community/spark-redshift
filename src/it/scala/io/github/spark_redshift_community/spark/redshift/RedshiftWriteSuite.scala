@@ -183,7 +183,7 @@ class CSVGZIPCaseSensitiveRedshiftWriteSuite extends BaseRedshiftWriteSuite {
         .save()
 
       assert(DefaultJDBCWrapper.tableExists(conn, tableName))
-      data = read.option("dbtable", tableName).load()
+      val data = read.option("dbtable", tableName).load()
       checkAnswer(data, TestUtils.expectedData)
       assert(data.schema === TestUtils.testCaseSensitiveSchema)
     } finally {
@@ -207,7 +207,7 @@ class CSVGZIPCaseInsensitiveRedshiftWriteSuite extends BaseRedshiftWriteSuite {
         .save()
 
       assert(DefaultJDBCWrapper.tableExists(conn, tableName))
-      data = read.option("dbtable", tableName).load()
+      val data = read.option("dbtable", tableName).load()
       checkAnswer(data, TestUtils.expectedData)
       assert(data.schema === TestUtils.testSchema)
     } finally {
