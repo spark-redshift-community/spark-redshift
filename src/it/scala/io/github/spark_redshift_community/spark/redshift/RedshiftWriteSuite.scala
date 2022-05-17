@@ -167,3 +167,51 @@ class CSVGZIPRedshiftWriteSuite extends IntegrationSuiteBase {
     }
   }
 }
+
+class CSVGZIPCaseSensitiveRedshiftWriteSuite extends BaseRedshiftWriteSuite {
+  override protected def write(df: DataFrame): DataFrameWriter[Row] =
+    super.write(df).option("tempformat", "CSV GZIP").option("enable_case_sensitive_identifier", "true")
+
+  test("roundtrip save and load case sensitive") {
+    // This test can be simplified once #98 is fixed.
+    val tableName = s"roundtrip_save_and_load_case_sensitive_$randomSuffix"
+    try {
+      write(
+        sqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testCaseSensitiveSchema))
+        .option("dbtable", tableName)
+        .mode(SaveMode.ErrorIfExists)
+        .save()
+
+      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      data = read.option("dbtable", tableName).load()
+      checkAnswer(data, TestUtils.expectedData)
+      assert(data.schema === TestUtils.testCaseSensitiveSchema)
+    } finally {
+      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+    }
+  }
+}
+
+class CSVGZIPCaseInsensitiveRedshiftWriteSuite extends BaseRedshiftWriteSuite {
+  override protected def write(df: DataFrame): DataFrameWriter[Row] =
+    super.write(df).option("tempformat", "CSV GZIP").option("enable_case_sensitive_identifier", "false")
+
+  test("roundtrip save and load case insensitive") {
+    // This test can be simplified once #98 is fixed.
+    val tableName = s"roundtrip_save_and_load_case_insensitive_$randomSuffix"
+    try {
+      write(
+        sqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testCaseSensitiveSchema))
+        .option("dbtable", tableName)
+        .mode(SaveMode.ErrorIfExists)
+        .save()
+
+      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      data = read.option("dbtable", tableName).load()
+      checkAnswer(data, TestUtils.expectedData)
+      assert(data.schema === TestUtils.testSchema)
+    } finally {
+      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+    }
+  }
+}

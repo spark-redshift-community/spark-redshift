@@ -46,6 +46,24 @@ object TestUtils {
       StructField("testtimestamp", TimestampType)))
   }
 
+  /**
+   * Simple schema that includes all data types we support
+   */
+  val testCaseSensitiveSchema: StructType = {
+    // These column names need to be lowercase; see #51
+    StructType(Seq(
+      StructField("testByte", ByteType),
+      StructField("testBool", BooleanType),
+      StructField("testDate", DateType),
+      StructField("testDouble", DoubleType),
+      StructField("testFloat", FloatType),
+      StructField("testInt", IntegerType),
+      StructField("testLong", LongType),
+      StructField("testShort", ShortType),
+      StructField("testString", StringType),
+      StructField("testTimestamp", TimestampType)))
+  }
+
   // scalastyle:off
   /**
    * Expected parsed output corresponding to the output of testData.
