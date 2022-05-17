@@ -47,7 +47,7 @@ object TestUtils {
   }
 
   /**
-   * Simple schema that includes all data types we support
+   * Simple schema that includes all data types we support for case sensitiveness
    */
   val testCaseSensitiveSchema: StructType = {
     // These column names need to be lowercase; see #51
