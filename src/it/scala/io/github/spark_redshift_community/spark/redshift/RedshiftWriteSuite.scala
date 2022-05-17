@@ -169,6 +169,8 @@ class CSVGZIPRedshiftWriteSuite extends IntegrationSuiteBase {
 }
 
 class CSVGZIPCaseSensitiveRedshiftWriteSuite extends BaseRedshiftWriteSuite {
+  override protected val tempformat: String = "CSV"
+
   override protected def write(df: DataFrame): DataFrameWriter[Row] =
     super.write(df).option("tempformat", "CSV GZIP").option("enable_case_sensitive_identifier", "true")
 
@@ -193,6 +195,8 @@ class CSVGZIPCaseSensitiveRedshiftWriteSuite extends BaseRedshiftWriteSuite {
 }
 
 class CSVGZIPCaseInsensitiveRedshiftWriteSuite extends BaseRedshiftWriteSuite {
+  override protected val tempformat: String = "CSV"
+
   override protected def write(df: DataFrame): DataFrameWriter[Row] =
     super.write(df).option("tempformat", "CSV GZIP").option("enable_case_sensitive_identifier", "false")
 
