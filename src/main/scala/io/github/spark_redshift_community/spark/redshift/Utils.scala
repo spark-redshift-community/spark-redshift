@@ -16,14 +16,14 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.net.URI
-import java.util.UUID
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.{AmazonS3Client, AmazonS3URI}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.slf4j.LoggerFactory
 
+import java.net.URI
+import java.util.UUID
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
@@ -228,6 +228,29 @@ private[redshift] object Utils {
     url match {
       case regionRegex(region) => Some(region)
       case _ => None
+    }
+  }
+
+  def checkRedshiftAndS3OnSameRegion(jdbcUrl: String,
+                                     tempDir: String,
+                                     s3Client: AmazonS3Client): Unit = {
+    for (
+      redshiftRegion <- Utils.getRegionForRedshiftCluster(jdbcUrl);
+      s3Region <- Utils.getRegionForS3Bucket(tempDir, s3Client)
+    ) {
+      if (redshiftRegion != s3Region) {
+        // We don't currently support `extraunloadoptions`, so even if Amazon _did_ add a `region`
+        // option for this we wouldn't be able to pass in the new option. However, we choose to
+        // err on the side of caution and don't throw an exception because we don't want to break
+        // existing workloads in case the region detection logic is wrong.
+        log.error("The Redshift cluster and S3 bucket are in different regions " +
+          s"($redshiftRegion and $s3Region, respectively). Redshift's UNLOAD command requires " +
+          s"that the Redshift cluster and Amazon S3 bucket be located in the same region, so " +
+          s"this read will fail.")
+
+      } else {
+
+      }
     }
   }
 }

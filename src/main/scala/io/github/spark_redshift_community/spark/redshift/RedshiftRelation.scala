@@ -22,6 +22,7 @@ import com.eclipsesource.json.Json
 import io.github.spark_redshift_community.spark.redshift.Conversions.parquetDataTypeConvert
 import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper.DataBaseOperations
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.Utils.checkRedshiftAndS3OnSameRegion
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftSQLStatement, SqlToS3TempCache}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -90,7 +91,7 @@ private[redshift] case class RedshiftRelation(
 
   override def buildScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[Row] = {
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
-    checkRedshiftAndS3OnSameRegion(creds)
+    checkRedshiftAndS3OnSameRegion(params.jdbcUrl, params.rootTempDir, s3ClientFactory(creds))
     Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
 
     if (requiredColumns.isEmpty) {
@@ -230,7 +231,7 @@ def buildScanFromSQL[Row](statement: RedshiftSQLStatement,
     val resultSchema: StructType = getResultSchema(statement, schema, conn)
 
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
-    checkRedshiftAndS3OnSameRegion(creds)
+    checkRedshiftAndS3OnSameRegion(params.jdbcUrl, params.rootTempDir, s3ClientFactory(creds))
     Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
 
     // If the same query was run before, get the result s3 path from the cache.
@@ -272,27 +273,6 @@ def buildScanFromSQL[Row](statement: RedshiftSQLStatement,
       conn.close()
     }
     Some(newTempDir)
-  }
-
-  private def checkRedshiftAndS3OnSameRegion(creds: AWSCredentialsProvider): Unit = {
-    for (
-      redshiftRegion <- Utils.getRegionForRedshiftCluster(params.jdbcUrl);
-      s3Region <- Utils.getRegionForS3Bucket(params.rootTempDir, s3ClientFactory(creds))
-    ) {
-      if (redshiftRegion != s3Region) {
-        // We don't currently support `extraunloadoptions`, so even if Amazon _did_ add a `region`
-        // option for this we wouldn't be able to pass in the new option. However, we choose to
-        // err on the side of caution and don't throw an exception because we don't want to break
-        // existing workloads in case the region detection logic is wrong.
-        log.error("The Redshift cluster and S3 bucket are in different regions " +
-          s"($redshiftRegion and $s3Region, respectively). Redshift's UNLOAD command requires " +
-          s"that the Redshift cluster and Amazon S3 bucket be located in the same region, so " +
-          s"this read will fail.")
-
-      } else {
-
-      }
-    }
   }
 
   private def readRDD[T](resultSchema: StructType, filesToRead: Seq[String]): RDD[T] = {

@@ -1,7 +1,7 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, RedshiftSQLStatement}
-import org.apache.spark.sql.catalyst.expressions.{AddMonths, Attribute, DateAdd, DateSub, Expression, Month, Quarter, TruncDate, TruncTimestamp, Year}
+import org.apache.spark.sql.catalyst.expressions.{AddMonths, Attribute, DateAdd, DateSub, Expression, TruncTimestamp}
 
 /** Extractor for boolean expressions (return true or false). */
 private[querygeneration] object DateStatement {
@@ -33,8 +33,9 @@ private[querygeneration] object DateStatement {
 
       // AddMonths can't be pushdown to redshift because their functionality is different.
       // For example,
-      // On spark 2.3/2.4, "2015-02-28" +1 month -> "2015-03-31"
-      // On spark 3.0 and Redshift,     "2015-02-28" +1 month -> "2015-03-28"
+      //     SELECT ADD_MONTHS (CAST ( '2015-02-28' AS DATE ) , 1 )
+      // On Redshift, the result is "2015-03-31"
+      // On spark 3, the result is "2015-03-28"
       case AddMonths(_, _) => null
 
       case _: TruncTimestamp =>
