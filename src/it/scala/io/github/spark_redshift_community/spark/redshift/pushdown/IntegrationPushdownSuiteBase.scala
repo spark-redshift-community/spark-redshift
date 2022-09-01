@@ -6,16 +6,19 @@ import org.apache.spark.sql.DataFrameReader
 
 class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected val test_table: String = s""""PUBLIC"."pushdown_suite_test_table_$randomSuffix""""
+  protected val test_table_safe_null = s""""PUBLIC"."pushdown_suite_test_safe_null_$randomSuffix""""
   protected val s3format: String = "DEFAULT"
   override def beforeAll(): Unit = {
     super.beforeAll()
     conn.prepareStatement(s"drop table if exists $test_table").executeUpdate()
+    conn.prepareStatement(s"drop table if exists $test_table_safe_null").executeUpdate()
     createTestDataInRedshift(test_table)
   }
 
   override def afterAll(): Unit = {
     try {
       conn.prepareStatement(s"drop table if exists $test_table").executeUpdate()
+      conn.prepareStatement(s"drop table if exists $test_table_safe_null").executeUpdate()
     } finally {
       super.afterAll()
     }

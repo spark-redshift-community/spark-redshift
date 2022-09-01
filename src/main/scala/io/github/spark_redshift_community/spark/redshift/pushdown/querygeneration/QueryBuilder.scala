@@ -12,7 +12,6 @@ import org.apache.spark.sql.types.{StructField, StructType}
 import org.slf4j.LoggerFactory
 
 import java.io.{PrintWriter, StringWriter}
-import java.util.NoSuchElementException
 import scala.reflect.ClassTag
 
 /** This class takes a Spark LogicalPlan and attempts to generate
@@ -80,7 +79,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
       // any redshift tables in the query plan - e.g. join with non-redshift table
       case e: RedshiftPushdownUnsupportedException => {
         if (foundRedshiftRelation) {
-          LOG.warn(e.getMessage)
+          LOG.warn(s"""Unsupported pushdown: ${e.unsupportedOperation} - ${e.details}""")
 
           if(LOG.isDebugEnabled()) {
             LOG.debug(plan.toString(), e)
@@ -173,6 +172,11 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
                     LeftSemiJoinQuery(l, r, condition, isAntiJoin = false, alias)
                   case LeftAnti =>
                     LeftSemiJoinQuery(l, r, condition, isAntiJoin = true, alias)
+                  case Cross => throw new RedshiftPushdownUnsupportedException(
+                    RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_JOIN,
+                    joinType.sql,
+                    joinType.getClass.getName,
+                    true)
                   case _ => throw new MatchError
                 }
             }
@@ -185,8 +189,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
         // refer to the comment and example at Spark function: DataSet.unionByName()
         if (byName || allowMissingCol) {
           // This exception is not a real issue. It will be caught in
-          // QueryBuilder.treeRoot and a telemetry message will be sent if
-          // there are any redshift tables in the query.
+          // QueryBuilder.treeRoot
           throw new RedshiftPushdownUnsupportedException(
             RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_UNION,
             s"${plan.nodeName} with byName=$byName allowMissingCol=$allowMissingCol",
@@ -197,17 +200,9 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
           Some(UnionQuery(children, alias.next))
         }
 
-      case Expand(projections, output, child) =>
-        val children = projections.map { p =>
-          val proj = convertProjections(p, output)
-          Project(proj, child)
-        }
-        Some(UnionQuery(children, alias.next, Some(output)))
-
       case _ =>
         // This exception is not a real issue. It will be caught in
-        // QueryBuilder.treeRoot and a telemetry message will be sent if
-        // there are any redshift tables in the query.
+        // QueryBuilder.treeRoot.
         throw new RedshiftPushdownUnsupportedException(
           RedshiftFailMessage.FAIL_PUSHDOWN_GENERATE_QUERY,
           plan.nodeName,

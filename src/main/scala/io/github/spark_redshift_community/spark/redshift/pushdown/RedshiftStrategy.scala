@@ -1,5 +1,6 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
+import io.github.spark_redshift_community.spark.redshift.RedshiftPushdownUnsupportedException
 import io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration.QueryBuilder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -8,10 +9,8 @@ import org.apache.spark.sql.Strategy
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 
-/** Clean up the plan, then try to generate a query from it for Redshift.
- * The Try-Catch is unnecessary and may obfuscate underlying problems,
- * but in beta mode we'll do it for safety and let Spark use other strategies
- * in case of unexpected failure.
+/**
+ * Clean up the plan, then try to generate a query from it for Redshift.
  */
 class RedshiftStrategy extends Strategy {
 
@@ -28,7 +27,7 @@ class RedshiftStrategy extends Strategy {
         Nil
 
       case e: Exception =>
-        log.warn(s"Pushdown failed :${e.getMessage}", e)
+        log.warn(s"Pushdown failed:${e.getMessage}", e)
         Nil
     }
   }

@@ -1,7 +1,7 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
 import io.github.spark_redshift_community.spark.redshift.pushdown._
-import org.apache.spark.sql.catalyst.expressions.{And, Attribute, BinaryOperator, Expression, Literal, Or}
+import org.apache.spark.sql.catalyst.expressions.{And, Attribute, BinaryOperator, BitwiseAnd, BitwiseNot, BitwiseOr, BitwiseXor, EqualNullSafe, Expression, Literal, Or}
 import org.apache.spark.sql.types._
 
 import scala.language.postfixOps
@@ -43,6 +43,11 @@ private[querygeneration] object BasicStatement {
             fields
           )
         )
+      case BitwiseAnd(left, right) => null
+      case BitwiseOr(left, right) => null
+      case BitwiseXor(left, right) => null
+      case BitwiseNot(child) => null
+      case EqualNullSafe(left, right) => null
       case b: BinaryOperator =>
         blockStatement(
           convertStatement(b.left, fields) + b.symbol + convertStatement(
@@ -88,7 +93,6 @@ private[querygeneration] object BasicStatement {
               case _ => ConstantStringVal(l.value) !
             }
         }
-
       case _ => null
     })
   }

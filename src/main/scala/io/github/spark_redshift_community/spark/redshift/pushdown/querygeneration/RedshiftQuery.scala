@@ -1,7 +1,7 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
-import io.github.spark_redshift_community.spark.redshift.RedshiftRelation
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, RedshiftSQLStatement}
+import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException, RedshiftRelation}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -47,8 +47,17 @@ private[querygeneration] abstract sealed class RedshiftQuery {
   def getStatement(useAlias: Boolean = false): RedshiftSQLStatement = {
     log.debug(s"""Generating a query of type: ${getClass.getSimpleName}""")
 
+    def getCols = {
+      val cols = helper.columns
+      if(cols.isEmpty || cols.get.isEmpty) {
+        ConstantString("*") !
+      } else {
+        cols.get
+      }
+    }
+
     val stmt =
-      ConstantString("SELECT") + helper.columns.getOrElse(ConstantString("*") !) + "FROM" +
+      ConstantString("SELECT") + getCols + "FROM" +
         helper.sourceStatement + suffixStatement
 
     if (useAlias) {
@@ -361,6 +370,13 @@ case class UnionQuery(children: Seq[LogicalPlan],
     new QueryBuilder(child).treeRoot
   }
 
+  if(queries.contains(null)) {
+    throw new RedshiftPushdownUnsupportedException(
+      RedshiftFailMessage.FAIL_PUSHDOWN_STATEMENT,
+      "Union",
+      "Not all Union children query supported",
+      false)
+  }
   override val helper: QueryHelper =
     QueryHelper(
       children = queries,

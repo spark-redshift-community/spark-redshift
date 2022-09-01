@@ -306,6 +306,28 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
          |""".stripMargin
     )
   }
+
+  test("Filter EqualNullSafe not supported: operator <=>") {
+
+    conn.createStatement().executeUpdate(
+      s""" create table $test_table_safe_null(c1 varchar, c2 varchar)""")
+    conn.createStatement().executeUpdate(
+      s"insert into $test_table_safe_null values(null, null), ('a', null), ('a', 'a')")
+
+    read
+      .option("dbtable", test_table_safe_null)
+      .load()
+      .createOrReplaceTempView("test_table_safenull")
+
+    checkAnswer(
+      sqlContext.sql("""select * from test_table_safenull where c1 <=> c2"""),
+      Seq(Row(null, null), Row("a", "a"))
+    )
+    checkSqlStatement(
+      s"""SELECT "c1", "c2" FROM $test_table_safe_null"""
+    )
+
+  }
 }
 
 class DefaultPushdownFilterSuite extends PushdownFilterSuite {

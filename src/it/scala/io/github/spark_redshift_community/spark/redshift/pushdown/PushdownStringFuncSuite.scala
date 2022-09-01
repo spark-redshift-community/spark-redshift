@@ -36,7 +36,24 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
   test("Substring pushdown") {
     checkAnswer(
       sqlContext.sql(
-        """SELECT Substring(testString, 1, 2)
+        """SELECT SUBSTRING(testString, 1, 2)
+          |FROM test_table WHERE testString='asdf'""".stripMargin),
+      Seq(Row("as"))
+    )
+
+    checkSqlStatement(
+      s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTSTRING" , 1 , 2  ) ) AS "SUBQUERY_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SUBQUERY_1"""".stripMargin
+    )
+  }
+
+  test("Substr pushdown") {
+    checkAnswer(
+      sqlContext.sql(
+        """SELECT SUBSTR(testString, 1, 2)
           |FROM test_table WHERE testString='asdf'""".stripMargin),
       Seq(Row("as"))
     )
