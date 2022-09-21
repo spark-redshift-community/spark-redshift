@@ -319,13 +319,17 @@ private[redshift] class RedshiftWriter(
         }
       }
       // It's possible that tempDir contains AWS access keys. We shouldn't save those credentials to
-      // S3, so let's first sanitize `tempdir` and make sure that it uses the s3:// scheme:
-      val sanitizedTempDir = Utils.fixS3Url(
-        Utils.removeCredentialsFromURI(URI.create(tempDir)).toString).stripSuffix("/")
+      // S3, so let's first sanitize `tempdir`
+      val sanitizedTempDir = Utils.removeCredentialsFromURI(URI.create(tempDir)).toString.stripSuffix("/")
+      // For file paths inside the manifest file, they are required to have s3:// scheme, so make sure
+      // that it is the case
+      val schemeFixedTempDir = Utils.fixS3Url(sanitizedTempDir).stripSuffix("/")
       val manifestEntries = filesToLoad.map { file =>
-        s"""{"url":"$sanitizedTempDir/$file", "mandatory":true}"""
+        s"""{"url":"$schemeFixedTempDir/$file", "mandatory":true}"""
       }
       val manifest = s"""{"entries": [${manifestEntries.mkString(",\n")}]}"""
+      // For the path to the manifest file itself it is required to have the original s3a/s3n scheme
+      // so don't used the fixed URL here
       val manifestPath = sanitizedTempDir + "/manifest.json"
       val fsDataOut = fs.create(new Path(manifestPath))
       try {
