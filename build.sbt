@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 
-import com.typesafe.sbt.pgp.PgpKeys
-import org.scalastyle.sbt.ScalastylePlugin.rawScalastyleSettings
 import sbt.Keys._
 import sbt._
-import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
-import sbtrelease.ReleasePlugin.autoImport._
-import scoverage.ScoverageKeys
 
 val sparkVersion = "3.2.0"
 
@@ -35,8 +30,6 @@ val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.103
 
 lazy val root = Project("spark-redshift", file("."))
   .configs(IntegrationTest)
-  .settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
-  .settings(Project.inConfig(IntegrationTest)(rawScalastyleSettings()): _*)
   .settings(Defaults.coreDefaultSettings: _*)
   .settings(Defaults.itSettings: _*)
   .settings(
@@ -77,7 +70,6 @@ lazy val root = Project("spark-redshift", file("."))
       "org.apache.spark" %% "spark-hive" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-avro" % testSparkVersion % "provided" exclude("org.apache.avro", "avro-mapred") force()
     ),
-    ScoverageKeys.coverageHighlighting := true,
     logBuffered := false,
     // Display full-length stacktraces from ScalaTest:
     testOptions in Test += Tests.Argument("-oF"),
@@ -97,9 +89,7 @@ lazy val root = Project("spark-redshift", file("."))
     },
 
     publishMavenStyle := true,
-    releaseCrossBuild := true,
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
-    releasePublishArtifactsAction := PgpKeys.publishSigned.value,
 
     pomExtra :=
     <url>https://github.com:spark_redshift_community/spark.redshift</url>
@@ -130,19 +120,5 @@ lazy val root = Project("spark-redshift", file("."))
       </developer>
     </developers>,
 
-    bintrayReleaseOnPublish in ThisBuild := false,
 
-    // Add publishing to spark packages as another step.
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-      publishArtifacts,
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
-    )
   )
