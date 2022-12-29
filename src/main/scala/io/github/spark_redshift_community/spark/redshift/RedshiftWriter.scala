@@ -29,7 +29,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.util.control.NonFatal
 
 /**
@@ -320,8 +319,10 @@ private[redshift] class RedshiftWriter(
       }
       // It's possible that tempDir contains AWS access keys. We shouldn't save those credentials to
       // S3, so let's first sanitize `tempdir`
-      val sanitizedTempDir = Utils.removeCredentialsFromURI(URI.create(tempDir)).toString.stripSuffix("/")
-      // For file paths inside the manifest file, they are required to have s3:// scheme, so make sure
+      val sanitizedTempDir = Utils.removeCredentialsFromURI(URI.create(tempDir))
+        .toString.stripSuffix("/")
+      // For file paths inside the manifest file, they are required
+      // to have s3:// scheme, so make sure
       // that it is the case
       val schemeFixedTempDir = Utils.fixS3Url(sanitizedTempDir).stripSuffix("/")
       val manifestEntries = filesToLoad.map { file =>

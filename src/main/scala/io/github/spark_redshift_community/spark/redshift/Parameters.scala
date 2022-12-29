@@ -40,10 +40,13 @@ private[redshift] object Parameters {
     "usestagingtable" -> "true",
     "preactions" -> ";",
     "postactions" -> ";",
-    "include_column_list" -> "false"
+    "include_column_list" -> "false",
+    "unloadformat" -> "csv"
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
+
+  val VALID_UNLOAD_FORMATS = Seq("csv", "parquet")
 
   /**
    * Merge user parameters with the defaults, preferring user parameters if specified
@@ -81,7 +84,12 @@ private[redshift] object Parameters {
       throw new IllegalArgumentException(
         "You must specify credentials in either the URL or as user/password options")
     }
-
+    if (userParameters.contains("unloadformat") &&
+      !VALID_UNLOAD_FORMATS.contains(userParameters("unloadformat").toLowerCase())) {
+      throw new IllegalArgumentException(
+        s"""Invalid temp format: ${userParameters("unloadformat")}; """ +
+          s"valid formats are: ${VALID_UNLOAD_FORMATS.mkString(", ")}")
+    }
     MergedParameters(DEFAULT_PARAMETERS ++ userParameters)
   }
 
@@ -293,6 +301,17 @@ private[redshift] object Parameters {
      * include in the COPY command (e.g. `COPY "PUBLIC"."tablename" ("column1" [,"column2", ...])`)
      */
     def includeColumnList: Boolean = parameters("include_column_list").toBoolean
+
+    /**
+     * Format with which data should be unloaded by Redshift
+     * Valid values for format: csv, parquet
+     * Defaults to csv
+     */
+    def getUnloadFormat: String = parameters("unloadformat")
+
+    def getTableNameOrSubquery: String = {
+      query.map(q => s"($q)").orElse(table.map(_.toString)).get
+    }
 
     /**
      * The AWS SSE-KMS key to use for encryption during UNLOAD operations
