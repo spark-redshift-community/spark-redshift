@@ -52,13 +52,13 @@ class RedshiftDataSourceV2 extends FileDataSourceV2 with DataSourceRegister with
   override def getTable(options: CaseInsensitiveStringMap): Table = {
     initParams(options)
     // FIXME
-    val tblName = getTableName(Seq(params.getTableNameOrSubquery))
+    val tblName = getTableName(options, Seq(params.getTableNameOrSubquery))
     RedshiftTable(tblName, sparkSession, options,
     jdbcWrapper, schema, fallbackFileFormat)
   }
   override def getTable(options: CaseInsensitiveStringMap, schema: StructType): Table = {
     initParams(options, Some(schema))
-    val tblName = getTableName(Seq(params.getTableNameOrSubquery))
+    val tblName = getTableName(options, Seq(params.getTableNameOrSubquery))
     RedshiftTable(tblName,
       sparkSession, options, jdbcWrapper, Some(schema), fallbackFileFormat)
   }
