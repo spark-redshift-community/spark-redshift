@@ -60,6 +60,7 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
     // We need to remove S3 credentials from the unload path URI because they will conflict with
     // the credentials passed via `credsString`.
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
+    logWarning(fixedUrl)
 
     val sql = if (params.getUnloadFormat == "csv") {
       s"""
