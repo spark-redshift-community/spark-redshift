@@ -41,7 +41,8 @@ private[redshift] object Parameters {
     "preactions" -> ";",
     "postactions" -> ";",
     "include_column_list" -> "false",
-    "unloadformat" -> "csv"
+    "unloadformat" -> "csv",
+    "table_minutes_ttl" -> "-1"
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
@@ -133,6 +134,9 @@ private[redshift] object Parameters {
      * Creates a per-query subdirectory in the [[rootTempDir]], with a random UUID.
      */
     def createPerQueryTempDir(): String = Utils.makeTempPath(rootTempDir)
+    
+    def createPerTableTempDir(table: String, query: String): String =
+      Utils.makeTempPathFromQuery(rootTempDir, table, query)
 
     /**
      * The Redshift table to be used as the target when loading or writing data.
@@ -310,13 +314,16 @@ private[redshift] object Parameters {
     def getUnloadFormat: String = parameters("unloadformat")
 
     def getTableNameOrSubquery: String = {
-      query.map(q => s"($q)").orElse(table.map(_.toString)).get
-    }
-
+      query.map(q => s"($q)").orElse(table.map(_.toString)).get }
     /**
      * The AWS SSE-KMS key to use for encryption during UNLOAD operations
      * instead of AWS's default encryption
      */
     def sseKmsKey: Option[String] = parameters.get("sse_kms_key")
+    
+    /**
+     * The Int value to write for nulls when using CSV.
+     */
+    def tableMinutesTTL: Int = parameters("table_minutes_ttl").toInt
   }
 }

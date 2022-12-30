@@ -17,6 +17,7 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import java.net.URI
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
@@ -24,7 +25,6 @@ import com.amazonaws.services.s3.{AmazonS3Client, AmazonS3URI}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.slf4j.LoggerFactory
-
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
@@ -115,7 +115,29 @@ private[redshift] object Utils {
     lastTempPathGenerated = Utils.joinUrls(tempRoot, UUID.randomUUID().toString)
     lastTempPathGenerated
   }
-
+  
+  /**
+   * Creates a temp directory path for intermediate data representing
+   * root/table/query/timestamp
+   */
+  def makeTempPathFromQuery(tempRoot: String, table: String, query: String): String = {
+    val formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd'T'HH:mm:ss")
+    Utils.joinUrls(tempRoot, table.hashCode.toString + "/"
+                             + query.hashCode.toString + "/"
+                             + formatter.format(java.time.LocalDateTime.now))
+  }
+  
+  /**
+   * Given a s3 path such s3://example/key
+   * returns (example, key/)
+   */
+  def splitS3Path(s3Path: String): (String, String) = {
+    val splits = s3Path.split("/+")
+    val s3Bucket = splits(1)
+    val s3Key = splits.drop(1).drop(1).mkString("", "/", "/")
+    (s3Bucket, s3Key)
+  }
+  
   /**
    * Checks whether the S3 bucket for the given UI has an object lifecycle configuration to
    * ensure cleanup of temporary files. If no applicable configuration is found, this method logs

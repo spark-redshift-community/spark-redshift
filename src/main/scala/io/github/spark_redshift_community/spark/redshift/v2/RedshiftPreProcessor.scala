@@ -19,6 +19,8 @@ package io.github.spark_redshift_community.spark.redshift.v2
 
 import java.io.InputStreamReader
 import java.net.URI
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3Client
@@ -31,7 +33,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import scala.collection.JavaConverters._
 
-import com.amazonaws.services.s3.model.AmazonS3Exception
+import com.amazonaws.services.s3.model.{AmazonS3Exception, ListObjectsV2Request}
 
 class RedshiftPreProcessor(schemaOpt: Option[StructType],
     requiredSchema: StructType,
@@ -47,7 +49,6 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
     assert(schemaOpt.isDefined)
     val whereClause = FilterPushdown.buildWhereClause(schemaOpt.get, filters)
     val tableNameOrSubquery = params.getTableNameOrSubquery
-    val tempDir = params.createPerQueryTempDir()
 
     val query = {
       val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
@@ -56,6 +57,8 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
       val escapedTableNameOrSubqury = tableNameOrSubquery.replace("\\", "\\\\").replace("'", "\\'")
       s"SELECT $columnList FROM $escapedTableNameOrSubqury $whereClause"
     }
+    val tempDir = params.createPerTableTempDir(tableNameOrSubquery, query)
+    
     val credsString: String =
       AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.getCredentials)
     // We need to remove S3 credentials from the unload path URI because they will conflict with
@@ -103,12 +106,34 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
     s3Client.putObject(s3Bucket, s3Key + "manifest", manifestContent)
   }
   
+  private def considerCache(s3Client: AmazonS3Client, tempDir: String, tableMinutesTTL: Int) = {
+    val (s3Bucket, s3Key) = Utils.splitS3Path(tempDir)
+    val objectQuery = new ListObjectsV2Request()
+      .withBucketName(s3Bucket)
+      .withPrefix(s3Key.replaceAll("[^/]+/?$", "")) // look for all datetime in prefix
+      .withDelimiter("/")
+    // TODO: get all summaries https://stackoverflow.com/a/72140508/3865083
+    val candidate = s3Client.listObjectsV2(objectQuery).getCommonPrefixes().asScala
+      .map(obj => (obj, java.time.LocalDateTime.parse(obj.split("/").last)))
+      // keep only date > TTL
+       .filter(date => java.time.LocalDateTime.now.minusMinutes(tableMinutesTTL).isBefore(date._2))
+      // sort by date desc
+      .sortWith(_._2 isAfter _._2)
+    if (candidate.isEmpty) tempDir
+    else {
+      val cachedPath = s"s3://$s3Bucket/" + candidate.head._1
+      logWarning(s"Reuse cached unload: $cachedPath")
+      cachedPath
+    }
+  }
+  
   def unloadDataToS3(): Seq[String] = {
     assert(SparkSession.getActiveSession.isDefined, "SparkSession not initialized")
     val conf = SparkSession.getActiveSession.get.sparkContext.hadoopConfiguration
     val creds = AWSCredentialsUtils.load(params, conf)
     val s3ClientFactory: AWSCredentialsProvider => AmazonS3Client =
       awsCredentials => new AmazonS3Client(awsCredentials)
+    val s3Client = s3ClientFactory(creds)
     for (
       redshiftRegion <- Utils.getRegionForRedshiftCluster(params.jdbcUrl);
       s3Region <- Utils.getRegionForS3Bucket(params.rootTempDir, s3ClientFactory(creds))
@@ -131,22 +156,26 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
       val prunedSchema = pruneSchema(schema, requiredSchema.map(_.name))
       val (unloadSql, tempDir) = buildUnloadStmt(prunedSchema,
         pushedFilters, creds)
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
-      try {
-        jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
-      } catch {
-        case e: Exception =>
-            logInfo("Error occurred when unloading data", e)
-      } finally {
-        conn.close()
+      val candidateTempDir = if (params.tableMinutesTTL > 0) {
+        considerCache(s3Client, tempDir, params.tableMinutesTTL)
+      } else tempDir
+      if (candidateTempDir == tempDir){ // when cache has no candidate dataset then unload
+        val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
+        try {
+          jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
+        } catch {
+          case e: Exception =>
+              logInfo("Error occurred when unloading data", e)
+        } finally {
+          conn.close()
+        }
       }
       // Read the MANIFEST file to get the list of S3 part files that were written by Redshift.
       // We need to use a manifest in order to guard against S3's eventually-consistent listings.
       val filesToRead: Seq[String] = {
         val cleanedTempDirUri =
-          Utils.fixS3Url(Utils.removeCredentialsFromURI(URI.create(tempDir)).toString)
+          Utils.fixS3Url(Utils.removeCredentialsFromURI(URI.create(candidateTempDir)).toString)
         val s3URI = Utils.createS3URI(cleanedTempDirUri)
-        val s3Client = s3ClientFactory(creds)
         // In parquet file mode, empty results in nothing on s3.
         // As a workaround we write en empty parquet file and get its file listing
         if(params.getUnloadFormat.equals("parquet")) {
@@ -171,7 +200,7 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
         // If the S3 credentials were originally specified in the tempdir's URI, then we need to
         // reintroduce them here
         s3Files.map { file =>
-          tempDir.stripSuffix("/") + '/' + file.stripPrefix(cleanedTempDirUri).stripPrefix("/")
+          candidateTempDir.stripSuffix("/") + '/' + file.stripPrefix(cleanedTempDirUri).stripPrefix("/")
         }
       }
 
