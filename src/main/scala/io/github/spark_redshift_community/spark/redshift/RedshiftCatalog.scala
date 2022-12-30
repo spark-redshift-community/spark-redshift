@@ -35,7 +35,6 @@ class RedshiftCatalog extends JDBCTableCatalog {
   override def loadTable(ident: Identifier): SparkTable = {
         val optionsWithTableName = new JDBCOptions(
           options.parameters + (JDBCOptions.JDBC_TABLE_NAME -> getTableName(ident)))
-          logWarning(optionsWithTableName.asProperties.toString)
         try {
           val map = mapAsJavaMap(optionsWithTableName.parameters.toMap)
           new RedshiftDataSourceV2()

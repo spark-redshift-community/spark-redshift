@@ -29,40 +29,31 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.SparkSession
+
 import scala.collection.JavaConverters._
 
 class RedshiftPreProcessor(schemaOpt: Option[StructType],
     requiredSchema: StructType,
     params: MergedParameters,
-    pushedFilters: Array[Filter],
-    pushedAggregateList: Array[String],
-    pushedGroupByCols: Option[Array[String]]) extends Logging {
+    pushedFilters: Array[Filter]) extends Logging {
 
   val jdbcWrapper: JDBCWrapper = DefaultJDBCWrapper
 
   private def buildUnloadStmt(
     requiredColumns: Array[String],
     filters: Array[Filter],
-    pushedAggregateList: Array[String],
-    pushedGroupByCols: Option[Array[String]],
     creds: AWSCredentialsProvider): (String, String) = {
     assert(schemaOpt.isDefined)
     val whereClause = FilterPushdown.buildWhereClause(schemaOpt.get, filters)
     val tableNameOrSubquery = params.getTableNameOrSubquery
     val tempDir = params.createPerQueryTempDir()
-    val columnList = if (pushedGroupByCols.isEmpty){
-      requiredColumns.map(col => s""""$col"""").mkString(", ")}
-    else pushedAggregateList.map(col => s""""$col"""").mkString(", ")
-    
-    val groupByList = if (pushedGroupByCols.isEmpty) {""} else {
-      pushedGroupByCols.get.map(col => s""""$col"""").mkString(",")
-    }
-  
+
     val query = {
+      val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
       // Since the query passed to UNLOAD will be enclosed in single quotes, we need to escape
       // any backslashes and single quotes that appear in the query itself
-      val escapedTableNameOrSubquery = tableNameOrSubquery.replace("\\", "\\\\").replace("'", "\\'")
-      s"SELECT $columnList FROM $escapedTableNameOrSubquery $whereClause $groupByList"
+      val escapedTableNameOrSubqury = tableNameOrSubquery.replace("\\", "\\\\").replace("'", "\\'")
+      s"SELECT $columnList FROM $escapedTableNameOrSubqury $whereClause"
     }
     val credsString: String =
       AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.getCredentials)
@@ -89,7 +80,6 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
          |""".stripMargin
     }
 
-    logWarning(sql)
     (sql, tempDir)
   }
 
@@ -120,7 +110,7 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
       val schema = schemaOpt.get
       val prunedSchema = pruneSchema(schema, requiredSchema.map(_.name))
       val (unloadSql, tempDir) = buildUnloadStmt(prunedSchema,
-        pushedFilters, pushedAggregateList, pushedGroupByCols, creds)
+        pushedFilters, creds)
       val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
       try {
         jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
