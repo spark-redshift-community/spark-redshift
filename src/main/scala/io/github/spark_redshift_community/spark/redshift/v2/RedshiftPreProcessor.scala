@@ -28,9 +28,10 @@ import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParame
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.SparkSession
-
+import org.apache.spark.sql.{SaveMode, SparkSession}
 import scala.collection.JavaConverters._
+
+import com.amazonaws.services.s3.model.AmazonS3Exception
 
 class RedshiftPreProcessor(schemaOpt: Option[StructType],
     requiredSchema: StructType,
@@ -82,7 +83,26 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
 
     (sql, tempDir)
   }
-
+  
+  private def writeEmptyParquetAndManifest(s3Client: AmazonS3Client, s3Bucket: String,
+    s3Key: String, spark: SparkSession, requiredSchema: StructType): Unit = {
+    logWarning(s"Writing empty parquet file, because no rows matched in redshift")
+    val emptyDf = spark.createDataFrame(spark.emptyDataFrame.rdd, requiredSchema)
+    val targetS3Path = s"s3://$s3Bucket/$s3Key/"
+    emptyDf.write.mode(SaveMode.Overwrite).parquet(targetS3Path)
+    // get the unique parquet file url
+    val parquetUrl = spark.read.parquet(targetS3Path).inputFiles(0)
+    val manifestContent =
+      s"""
+      |{
+      |  "entries": [
+      |    {"url":"$parquetUrl", "meta": { "content_length": 0 }}
+      |  ]
+      |}
+      |""".stripMargin
+    s3Client.putObject(s3Bucket, s3Key + "manifest", manifestContent)
+  }
+  
   def unloadDataToS3(): Seq[String] = {
     assert(SparkSession.getActiveSession.isDefined, "SparkSession not initialized")
     val conf = SparkSession.getActiveSession.get.sparkContext.hadoopConfiguration
@@ -127,6 +147,19 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
           Utils.fixS3Url(Utils.removeCredentialsFromURI(URI.create(tempDir)).toString)
         val s3URI = Utils.createS3URI(cleanedTempDirUri)
         val s3Client = s3ClientFactory(creds)
+        // In parquet file mode, empty results in nothing on s3.
+        // As a workaround we write en empty parquet file and get its file listing
+        if(params.getUnloadFormat.equals("parquet")) {
+          try {
+            s3Client.getObject(s3URI.getBucket, s3URI.getKey + "manifest").getObjectContent
+          } catch {
+            case _: AmazonS3Exception => writeEmptyParquetAndManifest(
+              s3Client,
+              s3URI.getBucket, s3URI.getKey,
+              SparkSession.getActiveSession.get,
+              this.requiredSchema)
+          }
+        }
         val is = s3Client.getObject(s3URI.getBucket, s3URI.getKey + "manifest").getObjectContent
         val s3Files = try {
           val entries = Json.parse(new InputStreamReader(is)).asObject().get("entries").asArray()
