@@ -20,7 +20,7 @@ package io.github.spark_redshift_community.spark.redshift.v2
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.connector.read.{Scan, SupportsPushDownFilters}
+import org.apache.spark.sql.connector.read.{Scan, SupportsPushDownAggregates, SupportsPushDownFilters}
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Implicits.OptionsHelper
 import org.apache.spark.sql.execution.datasources.v2.FileScanBuilder
 import org.apache.spark.sql.execution.datasources.v2.csv.CSVScan
@@ -28,6 +28,11 @@ import org.apache.spark.sql.execution.datasources.v2.parquet.ParquetScan
 import org.apache.spark.sql.execution.datasources.{FileStatusCache, InMemoryFileIndex, PartitioningAwareFileIndex}
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.types.{StringType, StructType}
+import org.apache.spark.sql.connector.expressions.aggregate.Aggregation
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
+import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.internal.Logging
+
 
 case class RedshiftScanBuilder(
     spark: SparkSession,
@@ -35,9 +40,12 @@ case class RedshiftScanBuilder(
     schema: StructType,
     dataSchema: StructType,
     params: MergedParameters)
-  extends FileScanBuilder(spark, fileIndex, dataSchema) with SupportsPushDownFilters{
+  extends FileScanBuilder(spark, fileIndex, dataSchema) with SupportsPushDownFilters
+    with SupportsPushDownAggregates with Logging{
 
   private var filters: Array[Filter] = Array.empty
+  private var pushedAggregateList: Array[String] = Array()
+  private var pushedGroupByCols: Option[Array[String]] = None
 
   override def build(): Scan = {
     val index = preBuild()
@@ -60,7 +68,7 @@ case class RedshiftScanBuilder(
 
   private def preBuild(): PartitioningAwareFileIndex = {
     val preProcessor = new RedshiftPreProcessor(Some(dataSchema), readDataSchema(),
-      params, pushedFilters())
+      params, pushedFilters(), pushedAggregateList, pushedGroupByCols)
     val paths = preProcessor.process()
     // This is a non-streaming file based datasource.
     val rootPathsSpecified = paths.map(p => new Path(p))
@@ -78,4 +86,21 @@ case class RedshiftScanBuilder(
   override def pushedFilters(): Array[Filter] = {
     filters
   }
+  override def pushAggregation(aggregation: Aggregation)
+  : Boolean = {
+    val dialect = JdbcDialects.get(this.params.jdbcUrl)
+    val compiledAgg = JDBCRDD.compileAggregates(aggregation.aggregateExpressions, dialect)
+    if (compiledAgg.isEmpty) return false
+    
+    val groupByCols = aggregation.groupByColumns.map { col =>
+      if (col.fieldNames.length != 1) return false
+      col.fieldNames.head
+    }
+  
+    pushedAggregateList = groupByCols ++ compiledAgg.get
+    pushedGroupByCols = Some(groupByCols)
+  
+    true
+  }
+  
 }
