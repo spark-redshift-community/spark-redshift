@@ -15,6 +15,7 @@ import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
+import io.github.spark_redshift_community.spark.redshift
 
 
 class RedshiftCatalog extends JDBCTableCatalog {
@@ -38,7 +39,7 @@ class RedshiftCatalog extends JDBCTableCatalog {
         try {
           val map = mapAsJavaMap(optionsWithTableName.parameters.toMap)
           new RedshiftDataSourceV2()
-            .getTable(new  CaseInsensitiveStringMap(map))
+            .getTable(new CaseInsensitiveStringMap(map))
         } catch {
           case _: SQLException => throw QueryCompilationErrors.noSuchTableError(ident)
         }
@@ -55,9 +56,11 @@ class RedshiftCatalog extends JDBCTableCatalog {
   override def renameTable(oldIdent: Identifier, newIdent: Identifier): Unit =
     throw new UnsupportedOperationException("Rename table is not supported.")
   override def createTable(ident: Identifier, schema: StructType, partitions: Array[Transform],
-    properties: util .Map[String, String]): SparkTable =
-    throw new UnsupportedOperationException("Create table is not supported.")
-
+    properties: util.Map[String, String]): SparkTable = {
+    logWarning("useing create table catalog")
+    new RedshiftDataSourceV2().getTable(new CaseInsensitiveStringMap(properties), schema)
+  }
+  
   override def alterTable(ident: Identifier, changes: TableChange*): SparkTable =
     throw new UnsupportedOperationException("Purge table is not supported.")
   override def dropNamespace(namespace: Array[String]): Boolean =

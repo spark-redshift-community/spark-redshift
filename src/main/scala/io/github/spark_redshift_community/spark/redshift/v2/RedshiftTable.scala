@@ -17,18 +17,21 @@
 
 package io.github.spark_redshift_community.spark.redshift.v2
 
+import java.util
+
+import scala.collection.JavaConverters._
+
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import io.github.spark_redshift_community.spark.redshift.{JDBCWrapper, Parameters}
-import org.apache.hadoop.fs.FileStatus
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.connector.catalog.TableCapability.{BATCH_READ, V1_BATCH_WRITE}
+import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}
-import org.apache.spark.sql.execution.datasources.v2.FileTable
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcOptionsInWrite
 import org.apache.spark.sql.execution.datasources.{FileFormat, FileStatusCache, InMemoryFileIndex}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-
-import scala.collection.JavaConverters._
 
 case class RedshiftTable(tableName: String,
     spark: SparkSession,
@@ -36,18 +39,10 @@ case class RedshiftTable(tableName: String,
     JDBCWrapper: JDBCWrapper,
     userSpecifiedSchema: Option[StructType],
     fallbackFileFormat: Class[_ <: FileFormat])
-  extends FileTable(spark, options, Seq.empty, userSpecifiedSchema) {
+  extends Table with SupportsRead with SupportsWrite {
 
   val params: MergedParameters = Parameters.mergeParameters(options.asScala.toMap)
 
-  /**
-   * When possible, this method should return the schema of the given `files`.  When the format
-   * does not support inference, or no valid files are given should return None.  In these cases
-   * Spark will require that user specify the schema manually.
-   */
-  override def inferSchema(files: Seq[FileStatus]): Option[StructType] = {
-    userSpecifiedSchema
-  }
 
   /**
    * The string that represents the format that this data source provider uses. This is
@@ -57,16 +52,13 @@ case class RedshiftTable(tableName: String,
    *   override def formatName(): String = "ORC"
    * }}}
    */
-  override def formatName: String = {
-    "redshift"
-  }
 
   override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder = {
     val fileStatusCache = FileStatusCache.getOrCreate(spark)
     val index = new InMemoryFileIndex(
       spark, Seq.empty, params.parameters, userSpecifiedSchema, fileStatusCache)
 
-    RedshiftScanBuilder(spark, index, schema, dataSchema, params)
+    RedshiftScanBuilder(spark, index, schema, userSpecifiedSchema.get, params)
   }
 
   /**
@@ -76,6 +68,10 @@ case class RedshiftTable(tableName: String,
   override def name(): String = "redshift"
 
   override def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder = {
-    null
+    val mergedOptions = new JdbcOptionsInWrite(
+      params.parameters ++ info.options.asCaseSensitiveMap().asScala)
+    RedshiftWriteBuilder(schema, mergedOptions)
   }
+  override def schema(): StructType = userSpecifiedSchema.get
+  override def capabilities(): util.Set[TableCapability] = Set(BATCH_READ, V1_BATCH_WRITE).asJava
 }
