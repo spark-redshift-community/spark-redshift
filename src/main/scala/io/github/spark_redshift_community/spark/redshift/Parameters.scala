@@ -45,7 +45,7 @@ private[redshift] object Parameters {
     "table_minutes_ttl" -> "-1"
   )
 
-  val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
+  val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP", "PARQUET")
 
   val VALID_UNLOAD_FORMATS = Seq("csv", "parquet")
 

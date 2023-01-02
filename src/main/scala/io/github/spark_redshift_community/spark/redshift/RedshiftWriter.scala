@@ -94,6 +94,7 @@ private[redshift] class RedshiftWriter(
     val fixedUrl = Utils.fixS3Url(manifestUrl)
     val format = params.tempFormat match {
       case "AVRO" => "AVRO 'auto'"
+      case "PARQUET" => "PARQUET"
       case csv if csv == "CSV" || csv == "CSV GZIP" => csv + s" NULL AS '${params.nullString}'"
     }
     val columns = if (params.includeColumnList) {
@@ -102,7 +103,7 @@ private[redshift] class RedshiftWriter(
       ""
     }
 
-    s"COPY ${params.table.get} ${columns}FROM '$fixedUrl' CREDENTIALS '$credsString' FORMAT AS " +
+    s"COPY ${params.table.get} ${columns} FROM '$fixedUrl' CREDENTIALS '$credsString' FORMAT AS " +
       s"${format} manifest ${params.extraCopyOptions}"
   }
 
@@ -290,6 +291,8 @@ private[redshift] class RedshiftWriter(
     (tempFormat match {
       case "AVRO" =>
         writer.format("avro")
+      case "PARQUET" =>
+        writer.format("parquet")
       case "CSV" =>
         writer.format("csv")
           .option("escape", "\"")
@@ -311,10 +314,15 @@ private[redshift] class RedshiftWriter(
       // The partition filenames are of the form part-r-XXXXX-UUID.fileExtension.
       val fs = FileSystem.get(URI.create(tempDir), sqlContext.sparkContext.hadoopConfiguration)
       val partitionIdRegex = "^part-(?:r-)?(\\d+)[^\\d+].*$".r
-      val filesToLoad: Seq[String] = {
+      val filesToLoad: Seq[(String, Long)] = {
         val nonEmptyPartitionIds = nonEmptyPartitions.value.toSet
-        fs.listStatus(new Path(tempDir)).map(_.getPath.getName).collect {
-          case file @ partitionIdRegex(id) if nonEmptyPartitionIds.contains(id.toInt) => file
+        fs.listStatus(new Path(tempDir))
+          .map(status => (status.getPath.getName, status.getLen)).collect {
+          case (fileName, size) if {
+            fileName match {
+              case partitionIdRegex(id) if nonEmptyPartitionIds.contains(id.toInt) => true
+              case _ => false
+            }} => (fileName, size)
         }
       }
       // It's possible that tempDir contains AWS access keys. We shouldn't save those credentials to
@@ -326,7 +334,7 @@ private[redshift] class RedshiftWriter(
       // that it is the case
       val schemeFixedTempDir = Utils.fixS3Url(sanitizedTempDir).stripSuffix("/")
       val manifestEntries = filesToLoad.map { file =>
-        s"""{"url":"$schemeFixedTempDir/$file", "mandatory":true}"""
+        s"""{"url":"$schemeFixedTempDir/${file._1}", "mandatory":true, "meta": {"content_length": ${file._2}} }"""
       }
       val manifest = s"""{"entries": [${manifestEntries.mkString(",\n")}]}"""
       // For the path to the manifest file itself it is required to have the original s3a/s3n scheme
