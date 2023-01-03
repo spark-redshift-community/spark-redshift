@@ -284,6 +284,43 @@ df <- read.df(
    url = "jdbc:redshift://redshifthost:5439/database?user=username&password=pass")
 ```
 
+### Spark Catalog
+
+You can leverage the spark catalog plugin to connect to redshift.
+
+```
+spark-sql \
+--jars spark-redshift_2.12-5.1.0.jar,https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.36.1060/RedshiftJDBC42-no-awssdk-1.2.36.1060.jar,https://repo1.maven.org/maven2/com/eclipsesource/minimal-json/minimal-json/0.9.4/minimal-json-0.9.4.jar  \
+--conf spark.sql.catalog.redshift=io.github.spark_redshift_community.spark.redshift.RedshiftCatalog \
+--conf spark.sql.catalog.redshift.url=<jdbc-url> \
+--conf spark.sql.catalog.redshift.driver=com.amazon.redshift.jdbc42.Driver \
+--conf spark.sql.catalog.redshift.user=<user> \
+--conf spark.sql.catalog.redshift.password=<password> \
+--conf spark.sql.catalog.redshift.pushDownAggregate=true \
+--conf spark.sql.catalog.redshift.pushDownLimit=true \
+--conf spark.sql.catalog.redshift.pushDownOffset=true \
+--conf spark.sql.catalog.redshift.pushDownTableSample=true \
+--conf spark.sql.catalog.redshift.tempdir=<s3-temp-dir> \
+--conf spark.sql.catalog.redshift.unloadformat=parquet \
+--conf spark.sql.catalog.redshift.aws_iam_role=<iam-role> \
+--conf spark.sql.catalog.redshift.table_minutes_ttl=2 \
+--conf spark.sql.catalog.redshift.tempformat=PARQUET
+```
+
+You can then list, read, alter and write within redshift, from spark:
+
+```
+use redshift;
+show databases;
+use db1;
+show tables;
+select count(*) from redshift_tbl1;
+insert into redshift_tbl1 select * from redshift_tbl1;
+refresh table redshift_tbl1;
+select count(*) from redshift_tbl1;
+alter table redshift_tbl1 add column col1 int;
+```
+
 ### Hadoop InputFormat
 
 The library contains a Hadoop input format for Redshift tables unloaded with the ESCAPE option,
@@ -569,6 +606,12 @@ and use that as a temp location for this data.
     <td>No</td>
     <td>Determined by the JDBC URL's subprotocol</td>
     <td>The class name of the JDBC driver to use. This class must be on the classpath. In most cases, it should not be necessary to specify this option, as the appropriate driver classname should automatically be determined by the JDBC URL's subprotocol.</td>
+ </tr>
+ <tr>
+    <td><tt>table_ttl_minutes</tt></td>
+    <td>No</td>
+    <td>No cache by default</td>
+    <td>If the same query has been run previously (within TTL), then spark will read the dataset from s3 and won't call redshift again. To invalidate the cache, you can run refresh table</td>
  </tr>
  <tr>
     <td><tt>diststyle</tt></td>
