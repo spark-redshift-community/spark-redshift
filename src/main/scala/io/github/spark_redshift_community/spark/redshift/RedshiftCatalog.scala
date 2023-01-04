@@ -1,21 +1,16 @@
 package io.github.spark_redshift_community.spark.redshift;
 
 import java.sql.SQLException
-import java.util
 
-import scala.collection.JavaConverters.mapAsScalaMapConverter
-import scala.collection.JavaConverters.mapAsJavaMap
+import scala.collection.JavaConverters.{mapAsJavaMap, mapAsScalaMapConverter}
 
-import io.github.spark_redshift_community.spark.redshift.v2.{RedshiftDataSourceV2}
-import org.apache.spark.sql.connector.catalog.{Identifier, TableChange, Table => SparkTable}
-import org.apache.spark.sql.connector.expressions.Transform
+import io.github.spark_redshift_community.spark.redshift.v2.RedshiftDataSourceV2
+import org.apache.spark.sql.connector.catalog.{Identifier, Table => SparkTable}
 import org.apache.spark.sql.errors.QueryCompilationErrors
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
-import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import io.github.spark_redshift_community.spark.redshift
 
 
 class RedshiftCatalog extends JDBCTableCatalog {
@@ -51,18 +46,4 @@ class RedshiftCatalog extends JDBCTableCatalog {
   override def invalidateTable(ident: Identifier): Unit = {
     // TODO  When refresh table, then drop the s3 folder
   }
-  override def dropTable(ident: Identifier): Boolean =
-    throw new UnsupportedOperationException("Drop table is not supported.")
-  override def renameTable(oldIdent: Identifier, newIdent: Identifier): Unit =
-    throw new UnsupportedOperationException("Rename table is not supported.")
-  override def createTable(ident: Identifier, schema: StructType, partitions: Array[Transform],
-    properties: util.Map[String, String]): SparkTable = {
-    logWarning("useing create table catalog")
-    new RedshiftDataSourceV2().getTable(new CaseInsensitiveStringMap(properties), schema)
-  }
-  
-  override def alterTable(ident: Identifier, changes: TableChange*): SparkTable =
-    throw new UnsupportedOperationException("Purge table is not supported.")
-  override def dropNamespace(namespace: Array[String]): Boolean =
-    throw new UnsupportedOperationException("Drop namespace is not supported.")
 }
