@@ -4,13 +4,12 @@ import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3Client
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import io.github.spark_redshift_community.spark.redshift.{JDBCWrapper, RedshiftWriter}
+import org.apache.spark.internal.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.connector.write._
-import org.apache.spark.sql.execution.datasources.jdbc.{JdbcOptionsInWrite, JdbcUtils}
-import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcOptionsInWrite
 import org.apache.spark.sql.sources.InsertableRelation
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.internal.Logging
 
 case class RedshiftWriteBuilder(schema: StructType, options: JdbcOptionsInWrite)
   extends WriteBuilder with SupportsTruncate with Logging{

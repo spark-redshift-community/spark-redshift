@@ -54,8 +54,8 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
       val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
       // Since the query passed to UNLOAD will be enclosed in single quotes, we need to escape
       // any backslashes and single quotes that appear in the query itself
-      val escapedTableNameOrSubqury = tableNameOrSubquery.replace("\\", "\\\\").replace("'", "\\'")
-      s"SELECT $columnList FROM $escapedTableNameOrSubqury $whereClause"
+      val escapedTableNameOrSubquery = tableNameOrSubquery.replace("\\", "\\\\").replace("'", "\\'")
+      s"SELECT $columnList FROM $escapedTableNameOrSubquery $whereClause"
     }
     val tempDir = params.createPerTableTempDir(tableNameOrSubquery, query)
     
@@ -64,7 +64,6 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
     // We need to remove S3 credentials from the unload path URI because they will conflict with
     // the credentials passed via `credsString`.
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
-    logWarning(fixedUrl)
 
     val sql = if (params.getUnloadFormat == "csv") {
       s"""
@@ -122,7 +121,7 @@ class RedshiftPreProcessor(schemaOpt: Option[StructType],
     if (candidate.isEmpty) tempDir
     else {
       val cachedPath = s"s3://$s3Bucket/" + candidate.head._1
-      logWarning(s"Reuse cached unload: $cachedPath")
+      logWarning(s"Reuse cached unloaded: $cachedPath")
       cachedPath
     }
   }
