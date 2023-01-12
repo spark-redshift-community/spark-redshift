@@ -17,12 +17,13 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.sql.{ResultSet, PreparedStatement, Connection, Driver, DriverManager, ResultSetMetaData, SQLException}
+import java.sql.{Connection, Driver, DriverManager, PreparedStatement, ResultSet, ResultSetMetaData, SQLException}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ThreadFactory, Executors}
+import java.util.concurrent.{Executors, ThreadFactory}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import scala.util.Try
@@ -165,6 +166,7 @@ private[redshift] class JDBCWrapper {
     // the underlying JDBC driver implementation implements PreparedStatement.getMetaData() by
     // executing the query. It looks like the standard Redshift and Postgres JDBC drivers don't do
     // this but we leave the LIMIT condition here as a safety-net to guard against perf regressions.
+    val comments = resolveComments(conn, table)
     val ps = conn.prepareStatement(s"SELECT * FROM $table LIMIT 1")
     try {
       val rsmd = executeInterruptibly(ps, _.getMetaData)
@@ -179,7 +181,12 @@ private[redshift] class JDBCWrapper {
         val isSigned = rsmd.isSigned(i + 1)
         val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
         val columnType = getCatalystType(dataType, fieldSize, fieldScale, isSigned)
+        val comment = comments.get(columnName)
+        if(!comment.isEmpty){
+        fields(i) = StructField(columnName, columnType, nullable, comment.get)
+        } else {
         fields(i) = StructField(columnName, columnType, nullable)
+        }
         i = i + 1
       }
       new StructType(fields)
@@ -187,7 +194,35 @@ private[redshift] class JDBCWrapper {
       ps.close()
     }
   }
-
+  
+  private def resolveComments(conn: Connection, qualifiedName: String) = {
+    val splittedName = qualifiedName.replace("\"", "").split("\\.")
+    // It's important to leave the `LIMIT 1` clause in order to limit the work of the query in case
+    // the underlying JDBC driver implementation implements PreparedStatement.getMetaData() by
+    // executing the query. It looks like the standard Redshift and Postgres JDBC drivers don't do
+    // this but we leave the LIMIT condition here as a safety-net to guard against perf regressions.
+    val dbName = splittedName(0)
+    val tableName = splittedName(1)
+    val sql = s"select column_name, remarks " +
+              s"from svv_redshift_columns " +
+              s"where table_name = '$tableName' and schema_name = '$dbName';"
+    val ps = conn.prepareStatement(sql)
+    try {
+      val fields = scala.collection.mutable.HashMap[String, Metadata]()
+      val rs = ps.executeQuery()
+      while (rs.next()) {
+        val columnName = rs.getString(1)
+        val comment = rs.getString(2)
+        if(comment != null) {
+           fields.put(columnName, new MetadataBuilder().putString("comment", comment).build())
+        }
+      }
+      fields
+    } finally {
+      ps.close()
+    }
+  }
+  
   /**
    * Given a driver string and a JDBC url, load the specified driver and return a DB connection.
    *

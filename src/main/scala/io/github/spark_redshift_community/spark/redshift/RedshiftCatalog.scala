@@ -4,7 +4,6 @@ import java.sql.SQLException
 
 import scala.collection.JavaConverters.{mapAsJavaMap, mapAsScalaMapConverter}
 
-import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import io.github.spark_redshift_community.spark.redshift.v2.RedshiftDataSourceV2
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.catalog.{Identifier, Table => SparkTable}
@@ -47,8 +46,9 @@ class RedshiftCatalog extends JDBCTableCatalog {
       }
   
   override def invalidateTable(ident: Identifier): Unit = {
-    import org.apache.hadoop.fs.{FileSystem, Path}
     import java.net.URI
+
+    import org.apache.hadoop.fs.{FileSystem, Path}
     val parameters = Parameters.mergeParameters(options.parameters.toMap)
     val rootDir = parameters.rootTempDir
     val tableName = (ident.namespace() :+ ident.name()).map(dialect.quoteIdentifier).mkString(".")
