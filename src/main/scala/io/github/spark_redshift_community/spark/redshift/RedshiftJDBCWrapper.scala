@@ -167,7 +167,7 @@ private[redshift] class JDBCWrapper {
     // executing the query. It looks like the standard Redshift and Postgres JDBC drivers don't do
     // this but we leave the LIMIT condition here as a safety-net to guard against perf regressions.
     val comments = resolveComments(conn, table)
-    val ps = conn.prepareStatement(s"SELECT * FROM $table LIMIT 1")
+    val ps = conn.prepareStatement(s"SELECT * FROM $table LIMIT 0")
     try {
       val rsmd = executeInterruptibly(ps, _.getMetaData)
       val ncols = rsmd.getColumnCount
@@ -197,10 +197,6 @@ private[redshift] class JDBCWrapper {
   
   private def resolveComments(conn: Connection, qualifiedName: String) = {
     val splittedName = qualifiedName.replace("\"", "").split("\\.")
-    // It's important to leave the `LIMIT 1` clause in order to limit the work of the query in case
-    // the underlying JDBC driver implementation implements PreparedStatement.getMetaData() by
-    // executing the query. It looks like the standard Redshift and Postgres JDBC drivers don't do
-    // this but we leave the LIMIT condition here as a safety-net to guard against perf regressions.
     val dbName = splittedName(0)
     val tableName = splittedName(1)
     val sql = s"select column_name, remarks " +
