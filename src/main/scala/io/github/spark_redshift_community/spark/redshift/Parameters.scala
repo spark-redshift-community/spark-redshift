@@ -16,6 +16,8 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
+import java.time.LocalDateTime
+
 import com.amazonaws.auth.{AWSCredentialsProvider, BasicSessionCredentials}
 
 /**
@@ -135,8 +137,8 @@ private[redshift] object Parameters {
      */
     def createPerQueryTempDir(): String = Utils.makeTempPath(rootTempDir)
     
-    def createPerTableTempDir(table: String, query: String): String =
-      Utils.makeTempPathFromQuery(rootTempDir, table, query)
+    def createPerTableTempDir(table: String, query: String, now: LocalDateTime): String =
+      Utils.makeTempPathFromQuery(rootTempDir, table, query, now)
 
     /**
      * The Redshift table to be used as the target when loading or writing data.
