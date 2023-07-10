@@ -684,6 +684,19 @@ for more information.</p>
     </td>
  </tr>
  <tr>
+    <td><tt>unload_s3_format</tt></td>
+    <td>No</td>
+    <td>DEFAULT</td>
+    <td>
+        <p>
+        DEFAULT - unload the query result to text file format.
+        </p>
+        <p>
+        PARQUET - unload the query result to parquet file format.
+        </p>
+    </td>
+ </tr> 
+ <tr>
     <td><tt>tempformat</tt>  (Experimental)</td>
     <td>No</td>
     <td><tt>AVRO</tt></td>
@@ -730,19 +743,6 @@ for more information.</p>
     <td>No</td>
     <td>True</td>
     <td>Cache the query SQL to unload data S3 path mapping in memory so that the same query don't need to execute again in the same Spark session.</td>
- </tr>
- <tr>
-    <td><tt>autopushdown.unload_s3_format</tt>  (Experimental)</td>
-    <td>No</td>
-    <td>DEFAULT</td>
-    <td>
-        <p>
-        DEFAULT - unload the query result to text file format.
-        </p>
-        <p>
-        PARQUET - unload the query result to parquet file format.
-        </p>
-    </td>
  </tr>
 </table>
 
@@ -836,11 +836,11 @@ val eventsDF = sqlContext.read
 eventsDF.show()
 ```
 
-By default, the query result is unload to S3 as text file.  There is an experimental option as below to unload the result as parquet format. According to Redshift database developer guide, Parquet format is up to 2x faster to unload and consumes up to 6x less storage in Amazon S3, compared with text formats.
+By default, the query result is unload to S3 as text file.  There is an option as below to unload the result as parquet format. According to Redshift database developer guide, Parquet format is up to 2x faster to unload and consumes up to 6x less storage in Amazon S3, compared with text formats.
 
 ```scala
     .option("autopushdown", "true")
-    .option("autopushdown.unload_s3_format", "PARQUET")
+    .option("unload_s3_format", "PARQUET")
 ```
 
 Refer to integration test cases for supported operations for pushdown.

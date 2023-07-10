@@ -16,7 +16,7 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import io.github.spark_redshift_community.spark.redshift.{IntegrationSuiteBase, Utils}
-import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_PUSHDOWN_UNLOAD_S3_FORMAT}
+import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_UNLOAD_S3_FORMAT}
 import org.apache.spark.sql.{DataFrameReader, SQLContext}
 
 import java.time.format.DateTimeFormatter
@@ -26,8 +26,7 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected val test_table_safe_null = s""""PUBLIC"."pushdown_suite_test_safe_null_$randomSuffix""""
   // This flag controls whether auto pushdown operations into Redshift is enabled.
   protected val auto_pushdown: String = "true"
-  // This flag is useful only if auto pushdown is enabled.
-  // Otherwise, the s3 format will always be default.
+  // This flag controls whether to unload data as parquet or default pipe-delimited text.
   protected val s3format: String = "DEFAULT"
   // This flag controls whether to use preloaded Redshift correctness test dataset on cluster.
   protected val preloaded_data: String = "false"
@@ -73,7 +72,7 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
       .option("tempdir", tempDir)
       .option("forward_spark_s3_credentials", "true")
       .option(PARAM_AUTO_PUSHDOWN, auto_pushdown)
-      .option(PARAM_PUSHDOWN_UNLOAD_S3_FORMAT, s3format)
+      .option(PARAM_UNLOAD_S3_FORMAT, s3format)
   }
 
   def checkSqlStatement(expectedAnswer: String): Unit = {

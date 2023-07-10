@@ -296,6 +296,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
 
 class DefaultPushdownDateTimeSuite extends PushdownDateTimeSuite {
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "true"
 
   test("Test timestamptz datatype support") {
     val test_tz_table: String = s""""PUBLIC"."pushdown_suite_tz_test_table_$randomSuffix""""
@@ -410,9 +411,15 @@ class DefaultPushdownDateTimeSuite extends PushdownDateTimeSuite {
 
 class ParquetPushdownDateTimeSuite extends PushdownDateTimeSuite {
   override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "true"
 }
 
 class DefaultNoPushdownDateTimeSuite extends DefaultPushdownDateTimeSuite {
-  override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "false"
+}
+
+class ParquetNoPushdownDateTimeSuite extends PushdownDateTimeSuite {
+  override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "false"
 }

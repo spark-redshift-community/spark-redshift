@@ -29,7 +29,7 @@ private[redshift] object Parameters {
 
   val PARAM_AUTO_PUSHDOWN: String = "autopushdown"
   val PARAM_PUSHDOWN_S3_RESULT_CACHE: String = "autopushdown.s3_result_cache"
-  val PARAM_PUSHDOWN_UNLOAD_S3_FORMAT: String = "autopushdown.unload_s3_format"
+  val PARAM_UNLOAD_S3_FORMAT: String = "unload_s3_format"
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
@@ -50,7 +50,7 @@ private[redshift] object Parameters {
     "include_column_list" -> "false",
     PARAM_AUTO_PUSHDOWN -> "false",
     PARAM_PUSHDOWN_S3_RESULT_CACHE -> "true",
-    PARAM_PUSHDOWN_UNLOAD_S3_FORMAT -> "DEFAULT" // values: DEFAULT, PARQUET
+    PARAM_UNLOAD_S3_FORMAT -> "DEFAULT" // values: DEFAULT, PARQUET
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
@@ -312,7 +312,7 @@ private[redshift] object Parameters {
 
     def autoPushdown: Boolean = parameters(PARAM_AUTO_PUSHDOWN).toBoolean
     def pushdownS3ResultCache: Boolean = parameters(PARAM_PUSHDOWN_S3_RESULT_CACHE).toBoolean
-    def pushdownUnloadS3Format: String = parameters(PARAM_PUSHDOWN_UNLOAD_S3_FORMAT).toUpperCase
+    def unloadS3Format: String = parameters(PARAM_UNLOAD_S3_FORMAT).toUpperCase
 
   }
 }

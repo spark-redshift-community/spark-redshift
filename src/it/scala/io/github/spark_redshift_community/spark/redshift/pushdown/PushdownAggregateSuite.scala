@@ -190,14 +190,20 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
 
 class DefaultPushdownAggregateSuite extends PushdownAggregateSuite {
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "true"
 }
 
 class ParquetPushdownAggregateSuite extends PushdownAggregateSuite {
   override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "true"
 }
 
 class DefaultNoPushdownAggregateSuite extends PushdownAggregateSuite {
-  override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "false"
 }
 
+class ParquetNoPushdownAggregateSuite extends PushdownAggregateSuite {
+  override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "false"
+}

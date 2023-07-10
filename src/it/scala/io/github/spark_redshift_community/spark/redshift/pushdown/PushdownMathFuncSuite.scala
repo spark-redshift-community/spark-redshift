@@ -274,13 +274,20 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
 
 class DefaultPushdownMathFuncSuite extends PushdownMathFuncSuite {
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "true"
 }
 
 class ParquetPushdownMathFuncSuite extends PushdownMathFuncSuite {
   override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "true"
 }
 
 class DefaultNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
-  override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "false"
+}
+
+class ParquetNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
+  override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "false"
 }

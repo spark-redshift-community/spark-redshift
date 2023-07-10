@@ -317,13 +317,20 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
 class DefaultPushdownStringFuncSuite extends PushdownStringFuncSuite {
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "true"
 }
 
 class ParquetPushdownStringFuncSuite extends PushdownStringFuncSuite {
   override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "true"
 }
 
 class DefaultNoPushdownStringFuncSuite extends PushdownStringFuncSuite {
-  override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "false"
+}
+
+class ParquetNoPushdownStringFuncSuite extends PushdownStringFuncSuite {
+  override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "false"
 }
