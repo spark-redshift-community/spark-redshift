@@ -51,10 +51,7 @@ abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuit
   test("Test super data type") {
     // (id, result)
     val testCases = List(
-      // Super types should return nulls in JSON format which is the string literal "null".
-      // Parquet doesn't handle this properly and returns null values instead.
-      // Comment out until [Redshift-7247] is addressed.
-//      (0, "null"),
+      (0, "null"),
       (1, "true"),
       (2, "124"),
       (3, "3.14"),
