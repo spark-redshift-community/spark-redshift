@@ -542,7 +542,7 @@ class RedshiftSourceSuite
       DefaultRedshiftWriter.createTableSql(df, MergedParameters.apply(defaultParams)).trim
     val expectedCreateTableCommand =
       """CREATE TABLE IF NOT EXISTS "PUBLIC"."test_table" ("long_str" VARCHAR(512),""" +
-        """ "short_str" VARCHAR(10), "default_str" TEXT)"""
+        """ "short_str" VARCHAR(10), "default_str" VARCHAR(MAX))"""
     assert(createTableCommand === expectedCreateTableCommand)
   }
 
@@ -558,8 +558,8 @@ class RedshiftSourceSuite
     val createTableCommand =
       DefaultRedshiftWriter.createTableSql(df, MergedParameters.apply(defaultParams)).trim
     val expectedCreateTableCommand =
-      """CREATE TABLE IF NOT EXISTS "PUBLIC"."test_table" ("lzo_str" TEXT  ENCODE LZO,""" +
-        """ "runlength_str" TEXT  ENCODE RUNLENGTH, "default_str" TEXT)"""
+      """CREATE TABLE IF NOT EXISTS "PUBLIC"."test_table" ("lzo_str" VARCHAR(MAX)  ENCODE LZO,""" +
+        """ "runlength_str" VARCHAR(MAX)  ENCODE RUNLENGTH, "default_str" VARCHAR(MAX))"""
     assert(createTableCommand === expectedCreateTableCommand)
   }
 
@@ -596,7 +596,7 @@ class RedshiftSourceSuite
       DefaultRedshiftWriter.createTableSql(df, MergedParameters.apply(defaultParams)).trim
     val expectedCreateTableCommand =
       """CREATE TABLE IF NOT EXISTS "PUBLIC"."test_table" ("bpchar_str" BPCHAR(2),""" +
-        """ "bpchar_str" NVARCHAR(123), "default_str" TEXT)"""
+        """ "bpchar_str" NVARCHAR(123), "default_str" VARCHAR(MAX))"""
     assert(createTableCommand === expectedCreateTableCommand)
   }
 

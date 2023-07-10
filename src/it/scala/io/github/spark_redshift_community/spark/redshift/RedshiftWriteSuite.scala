@@ -94,7 +94,7 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
   test("informative error message when saving a table with string that is longer than max length") {
     val tableName = s"error_message_when_string_too_long_$randomSuffix"
     try {
-      val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row("a" * 512))),
+      val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row("a" * 65536))),
         StructType(StructField("A", StringType) :: Nil))
       val e = intercept[SQLException] {
         write(df)
