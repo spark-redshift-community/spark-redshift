@@ -76,34 +76,7 @@ private[redshift] object AWSCredentialsUtils {
 
     uriScheme match {
       case "s3" | "s3n" | "s3a" =>
-        // WARNING: credentials in the URI is a potentially unsafe practice. I'm removing the test
-        // AWSCredentialsInUriIntegrationSuite, so the following might or might not work.
-
-        // This matches what S3A does, with one exception: we don't support anonymous credentials.
-        // First, try to parse from URI:
-        Option(uri.getUserInfo).flatMap { userInfo =>
-          if (userInfo.contains(":")) {
-            val Array(accessKey, secretKey) = userInfo.split(":")
-            Some(staticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-          } else {
-            None
-          }
-        }.orElse {
-          // Next, try to read from configuration
-          val accessKeyConfig = if (uriScheme == "s3a") "access.key" else "awsAccessKeyId"
-          val secretKeyConfig = if (uriScheme == "s3a") "secret.key" else "awsSecretAccessKey"
-
-          val accessKey = hadoopConfiguration.get(s"fs.$uriScheme.$accessKeyConfig", null)
-          val secretKey = hadoopConfiguration.get(s"fs.$uriScheme.$secretKeyConfig", null)
-          if (accessKey != null && secretKey != null) {
-            Some(staticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-          } else {
-            None
-          }
-        }.getOrElse {
-          // Finally, fall back on the instance profile provider
          new DefaultAWSCredentialsProviderChain()
-        }
       case other =>
         throw new IllegalArgumentException(s"Unrecognized scheme $other; expected s3, s3n, or s3a")
     }
