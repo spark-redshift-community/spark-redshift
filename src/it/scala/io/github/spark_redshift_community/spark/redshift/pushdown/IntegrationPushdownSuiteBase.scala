@@ -18,8 +18,9 @@ package io.github.spark_redshift_community.spark.redshift.pushdown
 import io.github.spark_redshift_community.spark.redshift.{IntegrationSuiteBase, Utils}
 import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_UNLOAD_S3_FORMAT}
 import org.apache.spark.sql.{DataFrameReader, SQLContext}
-
 import java.time.format.DateTimeFormatter
+
+import org.apache.spark.SparkContext
 
 class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected var test_table: String = setTestTableName()
@@ -75,10 +76,20 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
       .option(PARAM_UNLOAD_S3_FORMAT, s3format)
   }
 
-  def checkSqlStatement(expectedAnswer: String): Unit = {
+  def checkSqlStatement(
+		  expectedAnswerSpark3_2: String = "",
+      expectedAnswerSpark3_3: String = ""
+  ): Unit = {
     // If there is no operation pushed down into Redshift, there is no need to
     // validate executed statement in Redshift as it will be a simple select * statement.
     if (auto_pushdown.toBoolean) {
+      val sparkVersion = sc.version
+      var expectedAnswer = expectedAnswerSpark3_2 // default
+
+      if (sparkVersion == "3.3.0" && expectedAnswerSpark3_3 != "") {
+        expectedAnswer = expectedAnswerSpark3_3
+      }
+
       assert(
         Utils.lastBuildStmt.replaceAll("\\s", "")
           ==
@@ -94,6 +105,6 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
       sqlContext.sql(tc.sparkStatement),
       tc.expectedResult
     )
-    checkSqlStatement(tc.expectedPushdownStatement)
+    checkSqlStatement(tc.expectedAnswerSpark3_2, tc.expectedAnswerSpark3_3)
   }
 }
