@@ -206,30 +206,34 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
 
   }
 
-  // Precision return w/o pushdown is different.
-  // When running this test without pushdown, the result is 2.7182818284590455.
-  // Issue is tracked in SIM [Redshift-7037].
-  ignore("Exp pushdown") {
-    checkAnswer(
-      sqlContext.sql(
-        """SELECT EXP(testbyte) FROM test_table WHERE testbool = true """.stripMargin),
-      Seq(Row(2.718281828459045))
+  test("Exponential precision on float") {
+    // "Column name" and result size
+    val input = List(
+      (0.9, "DECIMAL(12,1)", Seq(Row(1.1051709180756477))),
+      (0.99, "DECIMAL(13,2)", Seq(Row(1.010050167084168))),
+      (0.999, "DECIMAL(14,3)", Seq(Row(1.0010005001667084))),
+      (0.9999, "DECIMAL(15,4)", Seq(Row(1.0001000050001667))),
+      (0.99999, "DECIMAL(16,5)", Seq(Row(1.00001000005)))
     )
+    input.foreach(test_case => {
+      val add_on = test_case._1
+      val cast_type = test_case._2
+      val expected_res = test_case._3
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT EXP(testbyte - $add_on) FROM test_table
+             | WHERE testbool = true """.stripMargin),
+        expected_res)
 
-    checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( EXP ( CAST ( "SUBQUERY_1"."TESTBYTE" AS FLOAT8 ) ) )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
-         |""".stripMargin,
-    expectedAnswerSpark3_3 = s"""SELECT ( EXP ( CAST ( "SUBQUERY_1"."TESTBYTE" AS FLOAT8 ) ) )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
-         |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
-         |""".stripMargin
-    )
+      checkSqlStatement(
+        expectedAnswerSpark3_3 =
+          s"""SELECT ( EXP ( CAST ( CAST ( ( CAST ( "SUBQUERY_1"."TESTBYTE" AS $cast_type )
+             |- $add_on ) AS $cast_type ) AS FLOAT8 ) ) ) AS "SUBQUERY_2_COL_0"
+             |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+             |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
+             |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
+             |""".stripMargin)
+    })
   }
 
   test("Arithmetic add pushdown") {
@@ -322,9 +326,41 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
 class DefaultMathFuncPushdownSuite extends PushdownMathFuncSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "true"
+
+  // Precision return w/o pushdown is different.
+  // When running this test without pushdown, the result is 2.7182818284590455.
+  // Issue is tracked in SIM [Redshift-7037].
+  test("Exponential precision on int2") {
+    // "Column name" and result size
+    val input = List(
+      (0, Seq(Row(2.718281828459045))),
+      (1, Seq(Row(7.38905609893065))),
+      (2, Seq(Row(20.085536923187668))),
+      (100, Seq(Row(7.307059979368067E43))),
+      (1000, Seq(Row(Double.PositiveInfinity)))
+    )
+    input.foreach(test_case => {
+      val add_on = test_case._1
+      val expected_res = test_case._2
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT EXP(testbyte + $add_on) FROM test_table
+             | WHERE testbool = true """.stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        expectedAnswerSpark3_3 =
+          s"""SELECT ( EXP ( CAST ( ( "SUBQUERY_1"."TESTBYTE" + $add_on) AS FLOAT8 ) ) )
+             |AS "SUBQUERY_2_COL_0"
+             |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+             |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
+             |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
+             |""".stripMargin)
+    })
+  }
 }
 
-class ParquetMathFuncPushdownSuite extends PushdownMathFuncSuite {
+class ParquetMathFuncPushdownSuite extends DefaultMathFuncPushdownSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -332,9 +368,41 @@ class ParquetMathFuncPushdownSuite extends PushdownMathFuncSuite {
 class DefaultNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "false"
+
+  // Precision return w/o pushdown is different.
+  // When running this test without pushdown, the result is 2.7182818284590455.
+  // Issue is tracked in SIM [Redshift-7037].
+  test("Exponential precision on int2") {
+    // "Column name" and result size
+    val input = List(
+      (0, Seq(Row(2.7182818284590455))),
+      (1, Seq(Row(7.38905609893065))),
+      (2, Seq(Row(20.085536923187668))),
+      (100, Seq(Row(7.307059979368068E43))),
+      (1000, Seq(Row(Double.PositiveInfinity)))
+    )
+    input.foreach(test_case => {
+      val add_on = test_case._1
+      val expected_res = test_case._2
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT EXP(testbyte + $add_on) FROM test_table
+             | WHERE testbool = true """.stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        expectedAnswerSpark3_3 =
+          s"""SELECT ( EXP ( CAST ( ( "SUBQUERY_1"."TESTBYTE" + $add_on) AS FLOAT8 ) ) )
+             |AS "SUBQUERY_2_COL_0"
+             |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+             |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
+             |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
+             |""".stripMargin)
+    })
+  }
 }
 
-class ParquetNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
+class ParquetNoPushdownMathFuncSuite extends DefaultNoPushdownMathFuncSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
