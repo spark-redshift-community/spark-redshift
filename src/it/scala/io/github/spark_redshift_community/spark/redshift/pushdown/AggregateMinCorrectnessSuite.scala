@@ -19,6 +19,7 @@ import org.apache.spark.sql.Row
 
 import java.sql.Date
 import java.sql.Timestamp
+import java.time.ZonedDateTime
 
 trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
   val testMin00: TestCase = TestCase(
@@ -816,7 +817,8 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
   val testMin100: TestCase = TestCase(
     """SELECT MIN(col_timestamptz_raw) FROM test_table""".stripMargin, // sparkStatement
-    Seq(Row(Timestamp.valueOf("1970-01-10 01:00:12.0"))), // expectedResult
+    Seq(Row(Timestamp.from(ZonedDateTime.parse("1970-01-10 09:00:12 UTC", formatter).toInstant))),
+    // expectedResult
     s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_RAW" ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
@@ -825,7 +827,8 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
   val testMin101: TestCase = TestCase(
     """SELECT MIN(col_timestamptz_bytedict) FROM test_table""".stripMargin, // sparkStatement
-    Seq(Row(Timestamp.valueOf("1970-01-08 15:00:15.0"))), // expectedResult
+    Seq(Row(Timestamp.from(ZonedDateTime.parse("1970-01-08 23:00:15 UTC", formatter).toInstant))),
+    // expectedResult
     s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_BYTEDICT" ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
@@ -834,7 +837,8 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
   val testMin102: TestCase = TestCase(
     """SELECT MIN(col_timestamptz_delta) FROM test_table""".stripMargin, // sparkStatement
-    Seq(Row(Timestamp.valueOf("1969-12-31 20:50:02.0"))), // expectedResult
+    Seq(Row(Timestamp.from(ZonedDateTime.parse("1970-01-01 04:50:02 UTC", formatter).toInstant))),
+    // expectedResult
     s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_DELTA" ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
@@ -843,7 +847,8 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
   val testMin103: TestCase = TestCase(
     """SELECT MIN(col_timestamptz_delta32k) FROM test_table""".stripMargin, // sparkStatement
-    Seq(Row(Timestamp.valueOf("1969-12-31 17:40:18.0"))), // expectedResult
+    Seq(Row(Timestamp.from(ZonedDateTime.parse("1970-01-01 01:40:18 UTC", formatter).toInstant))),
+    // expectedResult
     s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_DELTA32K" ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
@@ -852,7 +857,8 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
   val testMin104: TestCase = TestCase(
     """SELECT MIN(col_timestamptz_lzo) FROM test_table""".stripMargin, // sparkStatement
-    Seq(Row(Timestamp.valueOf("1970-01-03 07:24:06.0"))), // expectedResult
+    Seq(Row(Timestamp.from(ZonedDateTime.parse("1970-01-03 15:24:06 UTC", formatter).toInstant))),
+    // expectedResult
     s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_LZO" ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
@@ -861,7 +867,8 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
   val testMin105: TestCase = TestCase(
     """SELECT MIN(col_timestamptz_runlength) FROM test_table""".stripMargin, // sparkStatement
-    Seq(Row(Timestamp.valueOf("1970-01-06 03:54:44.0"))), // expectedResult
+    Seq(Row(Timestamp.from(ZonedDateTime.parse("1970-01-06 11:54:44 UTC", formatter).toInstant))),
+    // expectedResult
     s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
@@ -870,7 +877,8 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
   val testMin106: TestCase = TestCase(
     """SELECT MIN(col_timestamptz_zstd) FROM test_table""".stripMargin, // sparkStatement
-    Seq(Row(Timestamp.valueOf("1969-12-31 23:08:06.0"))), // expectedResult
+    Seq(Row(Timestamp.from(ZonedDateTime.parse("1970-01-01 07:08:06 UTC", formatter).toInstant))),
+    // expectedResult
     s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
@@ -881,11 +889,16 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
     """SELECT col_timestamptz_zstd, MIN(col_timestamptz_lzo) FROM test_table
       | group by col_timestamptz_zstd
       | order by col_timestamptz_zstd limit 5""".stripMargin, // sparkStatement
-    Seq(Row(Timestamp.valueOf("1969-12-31 23:08:06.0"), Timestamp.valueOf("2001-09-28 12:24:00.0")),
-      Row(Timestamp.valueOf("1970-01-01 09:04:44.0"), Timestamp.valueOf("1976-01-07 23:53:08.0")),
-      Row(Timestamp.valueOf("1970-01-02 15:12:59.0"), Timestamp.valueOf("1988-06-22 08:43:27.0")),
-      Row(Timestamp.valueOf("1970-01-06 20:12:15.0"), Timestamp.valueOf("2006-01-12 16:40:53.0")),
-      Row(Timestamp.valueOf("1970-01-14 21:54:50.0"), Timestamp.valueOf("2014-05-20 22:54:35.0"))),
+    Seq(Row(Timestamp.from(ZonedDateTime.parse("1970-01-01 07:08:06 UTC", formatter).toInstant),
+      Timestamp.from(ZonedDateTime.parse("2001-09-28 19:24:00 UTC", formatter).toInstant)),
+      Row(Timestamp.from(ZonedDateTime.parse("1970-01-01 17:04:44 UTC", formatter).toInstant),
+        Timestamp.from(ZonedDateTime.parse("1976-01-08 07:53:08 UTC", formatter).toInstant)),
+      Row(Timestamp.from(ZonedDateTime.parse("1970-01-02 23:12:59 UTC", formatter).toInstant),
+        Timestamp.from(ZonedDateTime.parse("1988-06-22 15:43:27 UTC", formatter).toInstant)),
+      Row(Timestamp.from(ZonedDateTime.parse("1970-01-07 04:12:15 UTC", formatter).toInstant),
+        Timestamp.from(ZonedDateTime.parse("2006-01-13 00:40:53 UTC", formatter).toInstant)),
+      Row(Timestamp.from(ZonedDateTime.parse("1970-01-15 05:54:50 UTC", formatter).toInstant),
+        Timestamp.from(ZonedDateTime.parse("2014-05-21 05:54:35 UTC", formatter).toInstant))),
     // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
        | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
