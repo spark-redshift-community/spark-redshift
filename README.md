@@ -689,10 +689,10 @@ for more information.</p>
     <td>TEXT</td>
     <td>
         <p>
-        TEXT - unload the query result to pipe-delimited text file format.
+        PARQUET - unload the query result to parquet file format.
         </p>
         <p>
-        PARQUET - unload the query result to parquet file format.
+        TEXT - unload the query result to pipe-delimited text file format.
         </p>
     </td>
  </tr> 
