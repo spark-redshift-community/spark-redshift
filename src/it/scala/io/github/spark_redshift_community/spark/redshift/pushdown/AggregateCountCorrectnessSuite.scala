@@ -19,6 +19,7 @@ import org.apache.spark.sql.Row
 
 import java.sql.Date
 import java.sql.Timestamp
+import java.time.ZonedDateTime
 
 trait AggregateCountCorrectnessSuite extends IntegrationPushdownSuiteBase {
   val testCount00: TestCase = TestCase(
@@ -1019,11 +1020,17 @@ trait AggregateCountCorrectnessSuite extends IntegrationPushdownSuiteBase {
     """SELECT col_timestamptz_zstd, COUNT(col_timestamptz_zstd) FROM test_table
       | group by col_timestamptz_zstd
       | order by col_timestamptz_zstd limit 5""".stripMargin, // sparkStatement
-    Seq(Row(Timestamp.valueOf("1969-12-31 23:08:06.0"), 1),
-      Row(Timestamp.valueOf("1970-01-01 09:04:44.0"), 1),
-      Row(Timestamp.valueOf("1970-01-02 15:12:59.0"), 1),
-      Row(Timestamp.valueOf("1970-01-06 20:12:15.0"), 1),
-      Row(Timestamp.valueOf("1970-01-14 21:54:50.0"), 1)), // expectedResult
+    Seq(Row(Timestamp.from(
+      ZonedDateTime.parse("1970-01-01 07:08:06 UTC", formatter).toInstant), 1),
+      Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-01 17:04:44 UTC", formatter).toInstant), 1),
+      Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-02 23:12:59 UTC", formatter).toInstant), 1),
+      Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-07 04:12:15 UTC", formatter).toInstant), 1),
+      Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-15 05:54:50 UTC", formatter).toInstant), 1)),
+    // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
        | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0",
        | ( COUNT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (

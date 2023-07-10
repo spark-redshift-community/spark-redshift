@@ -19,6 +19,8 @@ import io.github.spark_redshift_community.spark.redshift.{IntegrationSuiteBase, 
 import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_PUSHDOWN_UNLOAD_S3_FORMAT}
 import org.apache.spark.sql.{DataFrameReader, SQLContext}
 
+import java.time.format.DateTimeFormatter
+
 class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected var test_table: String = setTestTableName()
   protected val test_table_safe_null = s""""PUBLIC"."pushdown_suite_test_safe_null_$randomSuffix""""
@@ -29,6 +31,8 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected val s3format: String = "DEFAULT"
   // This flag controls whether to use preloaded Redshift correctness test dataset on cluster.
   protected val preloaded_data: String = "false"
+  // This is used for timestamptz related tests
+  val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
 
   def setTestTableName(): String = s""""PUBLIC"."pushdown_suite_test_table_$randomSuffix""""
 

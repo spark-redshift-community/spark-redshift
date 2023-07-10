@@ -48,14 +48,7 @@ private[querygeneration] object DateStatement {
               convertStatement(startDate, fields)
           )
 
-      // AddMonths can't be pushdown to redshift because their functionality is different.
-      // For example,
-      //     SELECT ADD_MONTHS (CAST ( '2015-02-28' AS DATE ) , 1 )
-      // On Redshift, the result is "2015-03-31"
-      // On spark 3, the result is "2015-03-28"
-      case AddMonths(_, _) => null
-
-      case _: TruncTimestamp =>
+      case _: TruncTimestamp | _: AddMonths =>
         ConstantString(expr.prettyName.toUpperCase) +
           blockStatement(convertStatements(fields, expr.children: _*))
 
