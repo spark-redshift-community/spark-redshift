@@ -17,7 +17,6 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import java.net.URI
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
 import org.apache.hadoop.mapreduce._
@@ -28,7 +27,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources.Filter
-import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.sql.types._
 
 /**
  * Internal data source used for reading Redshift UNLOAD files.
@@ -98,6 +97,15 @@ private[redshift] class RedshiftFileFormat extends FileFormat {
       val converter = Conversions.createRowConverter(requiredSchema,
         options.getOrElse("nullString", Parameters.DEFAULT_PARAMETERS("csvnullstring")))
       iter.map(converter)
+    }
+  }
+
+  override def supportDataType(dataType: DataType): Boolean = {
+    dataType match {
+      case ByteType | BooleanType | DateType | DoubleType | FloatType | IntegerType => true
+      case LongType | ShortType | StringType | TimestampType => true
+      case _ : DecimalType => true
+      case _ => false
     }
   }
 }
