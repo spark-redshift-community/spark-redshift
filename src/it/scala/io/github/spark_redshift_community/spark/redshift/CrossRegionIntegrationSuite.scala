@@ -16,7 +16,7 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.auth.BasicSessionCredentials
 import com.amazonaws.services.s3.AmazonS3Client
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
@@ -35,7 +35,8 @@ class CrossRegionIntegrationSuite extends IntegrationSuiteBase {
   test("write") {
     val bucketRegion = Utils.getRegionForS3Bucket(
       tempDir,
-      new AmazonS3Client(new BasicAWSCredentials(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY))).get
+      new AmazonS3Client(new BasicSessionCredentials(AWS_ACCESS_KEY_ID,
+        AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN))).get
     val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row(1)), 1),
       StructType(StructField("foo", IntegerType) :: Nil))
     val tableName = s"roundtrip_save_and_load_$randomSuffix"
