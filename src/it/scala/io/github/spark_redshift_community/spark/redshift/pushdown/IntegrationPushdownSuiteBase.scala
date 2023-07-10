@@ -16,7 +16,7 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import io.github.spark_redshift_community.spark.redshift.{IntegrationSuiteBase, Utils}
-import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_PUSHDOWN_S3_RESULT_CACHE, PARAM_UNLOAD_S3_FORMAT}
+import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_PUSHDOWN_S3_RESULT_CACHE, PARAM_TEMPDIR_REGION, PARAM_UNLOAD_S3_FORMAT}
 import org.apache.spark.sql.{DataFrameReader, SQLContext}
 
 import java.time.format.DateTimeFormatter
@@ -86,6 +86,7 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
       .option("forward_spark_s3_credentials", "true")
       .option(PARAM_AUTO_PUSHDOWN, auto_pushdown)
       .option(PARAM_UNLOAD_S3_FORMAT, s3format)
+      .option(PARAM_TEMPDIR_REGION, AWS_S3_SCRATCH_SPACE_REGION)
       .option(PARAM_PUSHDOWN_S3_RESULT_CACHE, s3_result_cache)
   }
 

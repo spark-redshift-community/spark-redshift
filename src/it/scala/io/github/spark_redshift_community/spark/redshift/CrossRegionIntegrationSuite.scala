@@ -16,8 +16,7 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import com.amazonaws.auth.BasicSessionCredentials
-import com.amazonaws.services.s3.AmazonS3Client
+import io.github.spark_redshift_community.spark.redshift.Parameters.PARAM_TEMPDIR_REGION
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 
@@ -28,22 +27,20 @@ class CrossRegionIntegrationSuite extends IntegrationSuiteBase {
 
   protected val AWS_S3_CROSS_REGION_SCRATCH_SPACE: String =
     loadConfigFromEnv("AWS_S3_CROSS_REGION_SCRATCH_SPACE")
+  protected val AWS_S3_CROSS_REGION_SCRATCH_SPACE_REGION: String =
+    loadConfigFromEnv("AWS_S3_CROSS_REGION_SCRATCH_SPACE_REGION")
   require(AWS_S3_CROSS_REGION_SCRATCH_SPACE.contains("s3a"), "must use s3a:// URL")
 
   override protected val tempDir: String = AWS_S3_CROSS_REGION_SCRATCH_SPACE + randomSuffix + "/"
 
   test("write") {
-    val bucketRegion = Utils.getRegionForS3Bucket(
-      tempDir,
-      new AmazonS3Client(new BasicSessionCredentials(AWS_ACCESS_KEY_ID,
-        AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN))).get
     val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row(1)), 1),
       StructType(StructField("foo", IntegerType) :: Nil))
     val tableName = s"roundtrip_save_and_load_$randomSuffix"
     try {
       write(df)
         .option("dbtable", tableName)
-        .option("extracopyoptions", s"region '$bucketRegion'")
+        .option(PARAM_TEMPDIR_REGION, AWS_S3_CROSS_REGION_SCRATCH_SPACE_REGION)
         .save()
       // Check that the table exists. It appears that creating a table in one connection then
       // immediately querying for existence from another connection may result in spurious "table

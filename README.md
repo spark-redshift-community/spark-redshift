@@ -34,8 +34,10 @@ Community's contributions are very welcome! Feel free to:
       export AWS_ACCESS_KEY_ID=<your AWS_ACCESS_KEY_ID>
       export AWS_SECRET_ACCESS_KEY=<your AWS_SECRET_ACCESS_KEY>
       export AWS_S3_CROSS_REGION_SCRATCH_SPACE=<your AWS_S3_CROSS_REGION_SCRATCH_SPACE>
+      export AWS_S3_CROSS_REGION_SCRATCH_SPACE_REGION=<AWS region of AWS_S3_CROSS_REGION_SCRATCH_SPACE>
       export STS_ROLE_ARN=<your STS_ROLE_ARN>
       export AWS_S3_SCRATCH_SPACE=<your AWS_S3_SCRATCH_SPACE>
+      export AWS_S3_SCRATCH_SPACE_REGION=<AWS region of AWS_S3_SCRATCH_SPACE>
       ```
      * run `./build/sbt it:test`
    * Get a team member to review your code on github (if possible). This speeds up the PR approval for the admins.
@@ -70,7 +72,8 @@ This library is more suited to ETL than interactive queries, since large amounts
 - [Auto Pushdown](#autopushdown)
 - [Transactional Guarantees](#transactional-guarantees)
 - [Common problems and solutions](#common-problems-and-solutions)
-- [S3 bucket and Redshift cluster are in different AWS regions](#s3-bucket-and-redshift-cluster-are-in-different-aws-regions)
+    - [S3 bucket and Redshift cluster are in different AWS regions](#s3-bucket-and-redshift-cluster-are-in-different-aws-regions)
+    - [Warnings Associated with EC2MetadataUtils](#warnings-associated-with-ec2metadatautils)
 - [Migration Guide](#migration-guide)
 
 ## Installation
@@ -566,6 +569,19 @@ and use that as a temp location for this data.
     </td>
  </tr>
  <tr>
+    <td><tt>tempdir_region</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+       <p>AWS region where 'tempdir' is located. Setting this option will improve connector performance for interactions with 'tempdir' as well as automatically supply this value as part of COPY and UNLOAD operations during connector writes and reads. If the region is not specified, the connector will attempt to use the default S3 provider chain for resolving where the 'tempdir' region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
+       <ol>
+          <li>When the connector is running outside of AWS as automatic region discovery will fail and negatively affect connector performance.</li>
+          <li>When 'tempdir' is in a different region than the Redshift cluster as using this setting alleviates the need to supply the region manually using the 'extracopyoptions' and 'extraunloadoptions' parameters.</li>
+          <li>When the connector is running in a different region than 'tempdir' as it improves the connector's access performance of 'tempdir'.</li>
+       </ol>
+    </td>
+ </tr>
+ <tr>
     <td><tt>jdbcdriver</tt></td>
     <td>No</td>
     <td>Determined by the JDBC URL's subprotocol</td>
@@ -903,25 +919,23 @@ Similarly, attempting to write to Redshift using a S3 bucket in a different regi
 error:  Problem reading manifest file - S3ServiceException:The bucket you are attempting to access must be addressed using the specified endpoint. Please send all future requests to this endpoint.,Status 301,Error PermanentRedirect
 ```
 
-**For writes:** Redshift's `COPY` command allows the S3 bucket's region to be explicitly specified, so you can make writes to Redshift work properly in these cases by adding
-
+To support an S3 bucket in a different region than the Redshift cluster for either **reads** or **writes**, set the `tempdir_region` parameter to the region of the S3 bucket. Doing so will automatically supply the region name to Redshift for UNLOAD and COPY commands. For example:
 ```
-region 'the-region-name'
-```
-
-to the `extracopyoptions` setting. For example, with a bucket in the US East (Virginia) region and the Scala API, use
-
-```
-.option("extracopyoptions", "region 'us-east-1'")
+.option("tempdir_region", "us-east-1")
 ```
 
-**For reads:** According to [its documentation](http://docs.aws.amazon.com/redshift/latest/dg/r_UNLOAD.html), the Redshift `UNLOAD` command does not support writing to a bucket in a different region:
+### Warnings Associated with EC2MetadataUtils 
+The connector will attempt to automatically determine the cluster's region when the 'tempdir_region' parameter is not set. This can cause performance problems and metedata exceptions to be thrown such as the following:
 
-> **Important**
->
-> The Amazon S3 bucket where Amazon Redshift will write the output files must reside in the same region as your cluster.
+```
+WARN EC2MetadataUtils: Unable to retrieve the requested metadata (/latest/dynamic/instance-identity/document). Failed to connect to service endpoint: 
+com.amazonaws.SdkClientException: Failed to connect to service endpoint:
+```
 
-As a result, this use-case is not supported by this library. The only workaround is to use a new bucket in the same region as your Redshift cluster.
+To resolve this, set the 'tempdir_region' parameter to the AWS region of the S3 bucket specified in 'tempdir' whenever the connector is being used outside an AWS environment (e.g., local Spark cluster) like so:
+```
+.option("tempdir_region", "us-east-1")
+```
 
 ## Migration Guide
 
