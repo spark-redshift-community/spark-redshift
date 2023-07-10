@@ -21,7 +21,7 @@ import java.net.URI
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import org.mockito.Matchers.anyString
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.scalatest.{FunSuite, Matchers}
 import org.mockito.Mockito._
