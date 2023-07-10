@@ -256,7 +256,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
       null, null, null, null)),
     s"""SELECT "testdate","testtimestamp" FROM $test_table
        | WHERE "testtimestamp" IS NOT NULL
-       | AND "testtimestamp" > \\'2015-07-0200:00:00.0\\'""".stripMargin
+       | AND "testtimestamp" > ''2015-07-0200:00:00.0''""".stripMargin
   )
 
   test("Test DATE_TRUNC datetime expressions") {
