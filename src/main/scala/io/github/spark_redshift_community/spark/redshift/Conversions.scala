@@ -170,9 +170,18 @@ private[redshift] object Conversions {
         } else {
           org.apache.spark.sql.types.Decimal(from.asInstanceOf[java.math.BigDecimal])
         }
-      case StringType if from!=null =>
-        org.apache.spark.unsafe.types.UTF8String.fromString(
-          from.asInstanceOf[String])
+
+      case StringType =>
+        // Redshift returns null values in Parquet format as null values. This is fine
+        // except for super data types which are supposed to be returned as valid JSON which
+        // is the null literal instead of the null value (i.e., "null" versus null).
+        // Therefore, we do the conversion here to workaround the Redshift limitation.
+        if (from == null && redshiftType == "super") {
+          org.apache.spark.unsafe.types.UTF8String.fromString("null")
+        } else {
+          org.apache.spark.unsafe.types.UTF8String.fromString(
+            from.asInstanceOf[String])
+        }
 
       // For date or timestamp without time zone, as it does not have time zone information,
       // when reading unloaded data from PARQUET format, it can always be treated as datetime in
