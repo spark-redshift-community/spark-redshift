@@ -127,8 +127,6 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
     doTest(sqlContext, testCount71)
     doTest(sqlContext, testCount72)
     doTest(sqlContext, testCount73)
-    // group by
-    doTest(sqlContext, testCount74)
   }
 
   // define a test for count(varchar)
@@ -257,16 +255,6 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
     doTest(sqlContext, testMax53)
   }
 
-  // define a test for max(char)
-  test("Test MAX(char) aggregation statements against correctness dataset") {
-    doTest(sqlContext, testMax60)
-    doTest(sqlContext, testMax61)
-    doTest(sqlContext, testMax62)
-    doTest(sqlContext, testMax63)
-    // group by
-    doTest(sqlContext, testMax64)
-  }
-
   // define a test for max(varchar)
   test("Test MAX(varchar) aggregation statements against correctness dataset") {
     doTest(sqlContext, testMax70)
@@ -380,16 +368,6 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
     doTest(sqlContext, testMin52_unsupported)
     // group by
     doTest(sqlContext, testMin53)
-  }
-
-  // define a test for min(char)
-  test("Test MIN(char) aggregation statements against correctness dataset") {
-    doTest(sqlContext, testMin60)
-    doTest(sqlContext, testMin61)
-    doTest(sqlContext, testMin62)
-    doTest(sqlContext, testMin63)
-    // group by
-    doTest(sqlContext, testMin64)
   }
 
   // define a test for min(varchar)
@@ -548,6 +526,7 @@ class DefaultPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectn
 
   // Timestamptz column is not handled correctly in parquet format as time zone information is not
   // unloaded.
+  // Issue is tracked in [Redshift-6844]
   test("Test COUNT(timestamptz) aggregation statements against correctness dataset" +
     " with group by") {
     // group by
@@ -578,6 +557,32 @@ class DefaultPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectn
     doTest(sqlContext, testMin106)
     // group by
     doTest(sqlContext, testMin107)
+  }
+
+  // Unloading fixed-length char column data in parquet format does not trim the trailing spaces.
+  // Issue is tracked in [Redshift-7057].
+  test("Test COUNT(char) aggregation statements against correctness dataset with group by") {
+    doTest(sqlContext, testCount74)
+  }
+
+  // define a test for max(char)
+  test("Test MAX(char) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax60)
+    doTest(sqlContext, testMax61)
+    doTest(sqlContext, testMax62)
+    doTest(sqlContext, testMax63)
+    // group by
+    doTest(sqlContext, testMax64)
+  }
+
+  // define a test for min(char)
+  test("Test MIN(char) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin60)
+    doTest(sqlContext, testMin61)
+    doTest(sqlContext, testMin62)
+    doTest(sqlContext, testMin63)
+    // group by
+    doTest(sqlContext, testMin64)
   }
 }
 
