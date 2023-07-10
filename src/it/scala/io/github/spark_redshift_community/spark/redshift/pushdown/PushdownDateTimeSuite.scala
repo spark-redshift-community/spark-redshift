@@ -101,7 +101,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
        | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
        | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ) ) )
+       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
        | AS "SUBQUERY_1"""".stripMargin
   )
 
@@ -113,7 +113,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
        | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
        | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ) ) )
+       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
        | AS "SUBQUERY_1"""".stripMargin
   )
 
@@ -172,8 +172,8 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
        | AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL ) AND
-       | ( "SUBQUERY_0"."TESTTIMESTAMP" < \\'2015-07-0200:00:00\\' ) ) ) AS "SUBQUERY_1"
-       | """.stripMargin
+       | ( "SUBQUERY_0"."TESTTIMESTAMP" < \\'2015-07-0200:00:00\\' ::TIMESTAMP) ) )
+       | AS "SUBQUERY_1"""".stripMargin
   )
 
   val testDateSub5: TestCase = TestCase(
@@ -184,7 +184,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
        | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
        | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ) ) )
+       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
        | AS "SUBQUERY_1"""".stripMargin
   )
 
@@ -205,7 +205,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
     s"""SELECT ( CAST ( "SUBQUERY_1"."TESTDATE" AS TIMESTAMP ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-01 00:00:00\\' ) ) )
+       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-01 00:00:00\\' ::TIMESTAMP ) ) )
        | AS "SUBQUERY_1"""".stripMargin
   )
 
@@ -273,8 +273,8 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
          |( DATE_TRUNC ( \\'SECOND\\' , "SUBQUERY_1"."TESTTIMESTAMP" ) ) AS "SUBQUERY_2_COL_12"
          | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-         | AND ( "SUBQUERY_0"."TESTTIMESTAMP" > \\'2015-07-02 00:00:00\\' ) ) ) AS "SUBQUERY_1"
-         |""".stripMargin
+         | AND ( "SUBQUERY_0"."TESTTIMESTAMP" > \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
+         | AS "SUBQUERY_1"""".stripMargin
   )
 
   // Function trunc cannot be pushed down.
@@ -334,7 +334,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
        | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL ) AND
-       | ( "SUBQUERY_0"."TESTTIMESTAMP" > \\'2015-07-0200:00:00\\' ) ) )
+       | ( "SUBQUERY_0"."TESTTIMESTAMP" > \\'2015-07-0200:00:00\\' ::TIMESTAMP ) ) )
        | AS "SUBQUERY_1"""".stripMargin
   )
 
