@@ -467,3 +467,13 @@ class ParquetNoPushdownDateTimeSuite extends PushdownDateTimeSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
+
+class TextPushdownNoCacheDateTimeSuite
+  extends TextDateTimePushdownSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheDateTimeSuite
+  extends ParquetDateTimePushdownSuite {
+  override protected val s3_result_cache = "false"
+}

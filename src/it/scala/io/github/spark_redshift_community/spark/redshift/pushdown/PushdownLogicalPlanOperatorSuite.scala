@@ -1430,3 +1430,13 @@ class ParquetNoPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOpera
   override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "PARQUET"
 }
+
+class TextPushdownNoCacheLogicalPlanOperatorSuite
+  extends TextLogicalPlanOperatorPushdownSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheLogicalPlanOperatorSuite
+  extends ParquetLogicalPlanOperatorPushdownSuite {
+  override protected val s3_result_cache = "false"
+}

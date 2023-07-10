@@ -197,3 +197,13 @@ class ParquetNoPushdownStringCorrectnessSuite extends PushdownStringCorrectnessS
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
+
+class TextPushdownNoCacheStringCorrectnessSuite
+  extends TextPushdownStringCorrectnessSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheStringCorrectnessSuite
+  extends ParquetPushdownStringCorrectnessSuite {
+  override protected val s3_result_cache = "false"
+}

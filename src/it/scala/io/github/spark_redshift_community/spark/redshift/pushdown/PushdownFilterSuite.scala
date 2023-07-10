@@ -2044,3 +2044,13 @@ class ParquetNoPushdownFilterSuite extends PushdownFilterSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
+
+class TextPushdownNoCacheFilterSuite
+  extends TextFilterPushdownSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheFilterSuite
+  extends ParquetFilterPushdownSuite {
+  override protected val s3_result_cache = "false"
+}

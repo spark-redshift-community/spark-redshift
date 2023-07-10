@@ -79,12 +79,12 @@ class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class TextMiscSuite extends PushdownMiscSuite {
+class TextPushdownMiscSuite extends PushdownMiscSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetMiscSuite extends PushdownMiscSuite {
+class ParquetPushdownMiscSuite extends PushdownMiscSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -97,4 +97,12 @@ class TextNoPushdownMiscSuite extends PushdownMiscSuite {
 class ParquetNoPushdownMiscSuite extends PushdownMiscSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
+}
+
+class TextPushdownNoCacheMiscSuite extends PushdownMiscSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheMiscSuite extends PushdownMiscSuite {
+  override protected val s3_result_cache = "false"
 }

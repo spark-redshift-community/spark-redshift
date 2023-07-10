@@ -163,3 +163,13 @@ class ParquetNoPushdownStringConcatSuite extends PushdownStringConcatSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
+
+class TextPushdownNoCacheStringConcatSuite
+  extends TextStringConcatPushdownSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheStringConcatSuite
+  extends ParquetStringConcatPushdownSuite {
+  override protected val s3_result_cache = "false"
+}

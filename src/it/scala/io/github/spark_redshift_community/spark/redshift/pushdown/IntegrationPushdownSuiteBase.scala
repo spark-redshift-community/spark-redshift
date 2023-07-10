@@ -16,8 +16,9 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import io.github.spark_redshift_community.spark.redshift.{IntegrationSuiteBase, Utils}
-import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_UNLOAD_S3_FORMAT}
+import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_PUSHDOWN_S3_RESULT_CACHE, PARAM_UNLOAD_S3_FORMAT}
 import org.apache.spark.sql.{DataFrameReader, SQLContext}
+
 import java.time.format.DateTimeFormatter
 import org.scalatest.Tag
 
@@ -38,6 +39,8 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected val auto_pushdown: String = "true"
   // This flag controls whether to unload data as parquet or pipe-delimited text.
   protected val s3format: String = "TEXT"
+  // This flag controls whether to cache previously unloaded data in S3 with auto_pushdown
+  protected val s3_result_cache = "true"
   // This flag controls whether to use preloaded Redshift correctness test dataset on cluster.
   protected val preloaded_data: String = "false"
   // This is used for timestamptz related tests
@@ -83,6 +86,7 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
       .option("forward_spark_s3_credentials", "true")
       .option(PARAM_AUTO_PUSHDOWN, auto_pushdown)
       .option(PARAM_UNLOAD_S3_FORMAT, s3format)
+      .option(PARAM_PUSHDOWN_S3_RESULT_CACHE, s3_result_cache)
   }
 
   def checkSqlStatement(expectedAnswerSpark3_2: String = "",
