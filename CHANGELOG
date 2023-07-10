@@ -1,8 +1,8 @@
 # spark-redshift Changelog
 
-## 5.10.0 (2022-06-06)
+## 5.1.0-amzn-0 (2022-10-18)
 
-- Support autopushdown as did in Spark Snowflake Connector
+- Support autopushdown
 
 ## 5.0.5 (2021-11-09)
 
