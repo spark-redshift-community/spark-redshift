@@ -2020,12 +2020,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class DefaultPushdownFilterSuite extends PushdownFilterSuite {
+class DefaultFilterPushdownSuite extends PushdownFilterSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetPushdownFilterSuite extends PushdownFilterSuite {
+class ParquetFilterPushdownSuite extends PushdownFilterSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }

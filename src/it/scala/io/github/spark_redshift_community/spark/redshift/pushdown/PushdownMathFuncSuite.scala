@@ -319,12 +319,12 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class DefaultPushdownMathFuncSuite extends PushdownMathFuncSuite {
+class DefaultMathFuncPushdownSuite extends PushdownMathFuncSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetPushdownMathFuncSuite extends PushdownMathFuncSuite {
+class ParquetMathFuncPushdownSuite extends PushdownMathFuncSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }

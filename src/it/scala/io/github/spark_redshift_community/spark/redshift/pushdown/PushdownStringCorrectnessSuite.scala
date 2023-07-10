@@ -179,12 +179,12 @@ abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectness
   }
 }
 
-class DefaultPushdownStringCorrectnessSuite extends PushdownStringCorrectnessSuite {
+class DefaultStringPushdownSuite extends PushdownStringCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetPushdownStringCorrectnessSuite extends PushdownStringCorrectnessSuite {
+class ParquetStringPushdownSuite extends PushdownStringCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
