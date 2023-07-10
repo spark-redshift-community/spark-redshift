@@ -173,8 +173,7 @@ private[redshift] object Conversions {
       }
       case StringType if from!=null =>
         org.apache.spark.unsafe.types.UTF8String.fromString(
-          from.asInstanceOf[String]
-        ).trim()
+          from.asInstanceOf[String])
 
       // For date or timestamp without time zone, Redshift unloads timestamps
       // to Parquet as if they were UTC even if they are intended to represent local times.
