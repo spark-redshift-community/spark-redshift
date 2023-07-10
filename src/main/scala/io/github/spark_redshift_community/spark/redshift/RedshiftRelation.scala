@@ -318,7 +318,10 @@ private[redshift] case class RedshiftRelation(
     .map{row =>
       val typeConvertedRow = row.toSeq.zipWithIndex.map {
         case (f, i) =>
-          parquetDataTypeConvert(f, resultSchema.fields(i).dataType)
+          parquetDataTypeConvert(f, resultSchema.fields(i).dataType,
+            if (resultSchema.fields(i).metadata.contains("redshift_type")) {
+              resultSchema.fields(i).metadata.getString("redshift_type")
+            } else null)
       }
       InternalRow(typeConvertedRow: _*)
     }

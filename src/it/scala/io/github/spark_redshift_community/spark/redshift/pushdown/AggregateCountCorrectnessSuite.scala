@@ -1014,31 +1014,4 @@ trait AggregateCountCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
        | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
-
-  // This test can only pass in default format, as timestamptz column cannot be handled correctly.
-  val testCount117: TestCase = TestCase(
-    """SELECT col_timestamptz_zstd, COUNT(col_timestamptz_zstd) FROM test_table
-      | group by col_timestamptz_zstd
-      | order by col_timestamptz_zstd limit 5""".stripMargin, // sparkStatement
-    Seq(Row(Timestamp.from(
-      ZonedDateTime.parse("1970-01-01 07:08:06 UTC", formatter).toInstant), 1),
-      Row(Timestamp.from(
-        ZonedDateTime.parse("1970-01-01 17:04:44 UTC", formatter).toInstant), 1),
-      Row(Timestamp.from(
-        ZonedDateTime.parse("1970-01-02 23:12:59 UTC", formatter).toInstant), 1),
-      Row(Timestamp.from(
-        ZonedDateTime.parse("1970-01-07 04:12:15 UTC", formatter).toInstant), 1),
-      Row(Timestamp.from(
-        ZonedDateTime.parse("1970-01-15 05:54:50 UTC", formatter).toInstant), 1)),
-    // expectedResult
-    s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0",
-       | ( COUNT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SUBQUERY_1_COL_0" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS"SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
-       | LIMIT 5""".stripMargin // expectedPushdownStatement
-  )
 }

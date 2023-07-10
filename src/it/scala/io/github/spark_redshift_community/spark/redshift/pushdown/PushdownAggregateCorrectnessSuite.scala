@@ -15,7 +15,11 @@
  */
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
+import org.apache.spark.sql.Row
 import org.scalatest.DoNotDiscover
+
+import java.sql.Timestamp
+import java.time.ZonedDateTime
 
 
 abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectnessSuite
@@ -515,6 +519,173 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
     doTest(sqlContext, testSum46)
     doTest(sqlContext, testSum47)
   }
+
+  // Timestamptz column is not handled correctly in parquet format as time zone information is not
+  // unloaded.
+  // Issue is tracked in [Redshift-6844]
+  test("Test COUNT(timestamptz) aggregation statements against correctness dataset with group by",
+    TimestamptzTest) {
+    checkAnswer(
+      sqlContext.sql(
+        """SELECT col_timestamptz_zstd, COUNT(col_timestamptz_zstd) FROM test_table
+          | group by col_timestamptz_zstd
+          | order by col_timestamptz_zstd limit 5""".stripMargin),
+      Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-01 07:08:06 UTC", formatter).toInstant), 1),
+        Row(Timestamp.from(
+          ZonedDateTime.parse("1970-01-01 17:04:44 UTC", formatter).toInstant), 1),
+        Row(Timestamp.from(
+          ZonedDateTime.parse("1970-01-02 23:12:59 UTC", formatter).toInstant), 1),
+        Row(Timestamp.from(
+          ZonedDateTime.parse("1970-01-07 04:12:15 UTC", formatter).toInstant), 1),
+        Row(Timestamp.from(
+          ZonedDateTime.parse("1970-01-15 05:54:50 UTC", formatter).toInstant), 1)))
+
+    checkSqlStatement(
+      s"""SELECT * FROM ( SELECT * FROM (
+         | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0",
+         | ( COUNT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
+         | SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SUBQUERY_1_COL_0" FROM (
+         | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+         | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2"
+         | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS"SUBQUERY_3"
+         | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+         | LIMIT 5""".stripMargin)
+  }
+
+  test("Test MAX(timestamptz) aggregation statements against correctness dataset",
+    TimestamptzTest) {
+    // "Column name" and result set
+    val input = List(
+      ("col_timestamptz_raw", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("2018-10-10 04:08:15 UTC", formatter).toInstant)))),
+      ("col_timestamptz_bytedict", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("2018-10-16 05:30:44 UTC", formatter).toInstant)))),
+      ("col_timestamptz_delta", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("2018-10-16 21:18:03 UTC", formatter).toInstant)))),
+      ("col_timestamptz_delta32k", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("2018-10-16 10:31:55 UTC", formatter).toInstant)))),
+      ("col_timestamptz_lzo", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("2018-10-15 03:45:35 UTC", formatter).toInstant)))),
+      ("col_timestamptz_runlength", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("2018-10-14 22:00:57 UTC", formatter).toInstant)))),
+      ("col_timestamptz_zstd", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("2018-10-15 19:50:18 UTC", formatter).toInstant))))
+    )
+    input.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT MAX($column_name) FROM test_table""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
+           | FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+    })
+  }
+
+  test("Test MAX(timestamptz) aggregation statements against correctness dataset with group by",
+    TimestamptzTest) {
+    checkAnswer(
+      sqlContext.sql(
+        """SELECT col_timestamptz_zstd, MAX(col_timestamptz_lzo) FROM test_table
+          | group by col_timestamptz_zstd
+          | order by col_timestamptz_zstd limit 5""".stripMargin),
+      Seq(Row(Timestamp.from(ZonedDateTime.parse("1970-01-01 07:08:06 UTC", formatter).toInstant),
+        Timestamp.from(ZonedDateTime.parse("2001-09-28 19:24:00 UTC", formatter).toInstant)),
+        Row(Timestamp.from(ZonedDateTime.parse("1970-01-01 17:04:44 UTC", formatter).toInstant),
+          Timestamp.from(ZonedDateTime.parse("1976-01-08 07:53:08 UTC", formatter).toInstant)),
+        Row(Timestamp.from(ZonedDateTime.parse("1970-01-02 23:12:59 UTC", formatter).toInstant),
+          Timestamp.from(ZonedDateTime.parse("1988-06-22 15:43:27 UTC", formatter).toInstant)),
+        Row(Timestamp.from(ZonedDateTime.parse("1970-01-07 04:12:15 UTC", formatter).toInstant),
+          Timestamp.from(ZonedDateTime.parse("2006-01-13 00:40:53 UTC", formatter).toInstant)),
+        Row(Timestamp.from(ZonedDateTime.parse("1970-01-15 05:54:50 UTC", formatter).toInstant),
+          Timestamp.from(ZonedDateTime.parse("2014-05-21 05:54:35 UTC", formatter).toInstant))))
+
+    checkSqlStatement(
+      s"""SELECT * FROM ( SELECT * FROM (
+         | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
+         | ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
+         | SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_LZO" ) AS "SUBQUERY_1_COL_0",
+         | ( "SUBQUERY_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
+         | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0")
+         | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
+         | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+         | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+         | LIMIT 5""".stripMargin)
+  }
+
+  test("Test MIN(timestamptz) aggregation statements against correctness dataset",
+    TimestamptzTest) {
+    // "Column name" and result set
+    val input = List(
+      ("col_timestamptz_raw", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-10 09:00:12 UTC", formatter).toInstant)))),
+      ("col_timestamptz_bytedict", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-08 23:00:15 UTC", formatter).toInstant)))),
+      ("col_timestamptz_delta", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-01 04:50:02 UTC", formatter).toInstant)))),
+      ("col_timestamptz_delta32k", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-01 01:40:18 UTC", formatter).toInstant)))),
+      ("col_timestamptz_lzo", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-03 15:24:06 UTC", formatter).toInstant)))),
+      ("col_timestamptz_runlength", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-06 11:54:44 UTC", formatter).toInstant)))),
+      ("col_timestamptz_zstd", Seq(Row(Timestamp.from(
+        ZonedDateTime.parse("1970-01-01 07:08:06 UTC", formatter).toInstant))))
+    )
+    input.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT MIN($column_name) FROM test_table""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
+           | FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+    })
+  }
+
+  test("Test MIN(timestamptz) aggregation statements against correctness dataset with group by",
+    TimestamptzTest) {
+    checkAnswer(
+      sqlContext.sql(
+        """SELECT col_timestamptz_zstd, MIN(col_timestamptz_lzo) FROM test_table
+          | group by col_timestamptz_zstd
+          | order by col_timestamptz_zstd limit 5""".stripMargin),
+      Seq(Row(Timestamp.from(ZonedDateTime.parse("1970-01-01 07:08:06 UTC", formatter).toInstant),
+        Timestamp.from(ZonedDateTime.parse("2001-09-28 19:24:00 UTC", formatter).toInstant)),
+        Row(Timestamp.from(ZonedDateTime.parse("1970-01-01 17:04:44 UTC", formatter).toInstant),
+          Timestamp.from(ZonedDateTime.parse("1976-01-08 07:53:08 UTC", formatter).toInstant)),
+        Row(Timestamp.from(ZonedDateTime.parse("1970-01-02 23:12:59 UTC", formatter).toInstant),
+          Timestamp.from(ZonedDateTime.parse("1988-06-22 15:43:27 UTC", formatter).toInstant)),
+        Row(Timestamp.from(ZonedDateTime.parse("1970-01-07 04:12:15 UTC", formatter).toInstant),
+          Timestamp.from(ZonedDateTime.parse("2006-01-13 00:40:53 UTC", formatter).toInstant)),
+        Row(Timestamp.from(ZonedDateTime.parse("1970-01-15 05:54:50 UTC", formatter).toInstant),
+          Timestamp.from(ZonedDateTime.parse("2014-05-21 05:54:35 UTC", formatter).toInstant))))
+
+    checkSqlStatement(
+      s"""SELECT * FROM ( SELECT * FROM (
+         | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
+         | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
+         | SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_LZO" ) AS "SUBQUERY_1_COL_0",
+         | ( "SUBQUERY_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
+         | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0")
+         | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
+         | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+         | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+         | LIMIT 5""".stripMargin)
+  }
 }
 
 // Please comment out this tag when you have set up test framework, preloaded dataset,
@@ -523,41 +694,6 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
 class DefaultPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "true"
-
-  // Timestamptz column is not handled correctly in parquet format as time zone information is not
-  // unloaded.
-  // Issue is tracked in [Redshift-6844]
-  test("Test COUNT(timestamptz) aggregation statements against correctness dataset" +
-    " with group by") {
-    // group by
-    doTest(sqlContext, testCount117)
-  }
-
-  // define a test for max(timestamptz)
-  test("Test MAX(timestamptz) aggregation statements against correctness dataset") {
-    doTest(sqlContext, testMax100)
-    doTest(sqlContext, testMax101)
-    doTest(sqlContext, testMax102)
-    doTest(sqlContext, testMax103)
-    doTest(sqlContext, testMax104)
-    doTest(sqlContext, testMax105)
-    doTest(sqlContext, testMax106)
-    // group by
-    doTest(sqlContext, testMax107)
-  }
-
-  // define a test for min(timestamptz)
-  test("Test MIN(timestamptz) aggregation statements against correctness dataset") {
-    doTest(sqlContext, testMin100)
-    doTest(sqlContext, testMin101)
-    doTest(sqlContext, testMin102)
-    doTest(sqlContext, testMin103)
-    doTest(sqlContext, testMin104)
-    doTest(sqlContext, testMin105)
-    doTest(sqlContext, testMin106)
-    // group by
-    doTest(sqlContext, testMin107)
-  }
 
   // Unloading fixed-length char column data in parquet format does not trim the trailing spaces.
   // Issue is tracked in [Redshift-7057].

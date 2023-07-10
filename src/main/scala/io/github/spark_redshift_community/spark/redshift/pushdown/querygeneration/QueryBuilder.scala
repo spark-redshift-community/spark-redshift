@@ -115,7 +115,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
 
     val schema = StructType(
       getOutput
-        .map(attr => StructField(attr.name, attr.dataType, attr.nullable))
+        .map(attr => StructField(attr.name, attr.dataType, attr.nullable, attr.metadata))
     )
 
     source.relation.buildScanFromSQL[T](statement, Some(schema))

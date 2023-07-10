@@ -21,7 +21,7 @@ import java.sql.{Date, Timestamp}
 import java.text.{DecimalFormat, DecimalFormatSymbols, SimpleDateFormat}
 import java.time.{DateTimeException, LocalDateTime, ZoneId, ZonedDateTime}
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.util.{Locale, TimeZone}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.GenericRow
@@ -157,28 +157,29 @@ private[redshift] object Conversions {
     }
   }
 
-  def parquetDataTypeConvert(from: Any, dataType: DataType): Any = {
+  def parquetDataTypeConvert(from: Any, dataType: DataType, redshiftType: String): Any = {
     dataType match {
       case DoubleType if from!= null => from.asInstanceOf[Number].doubleValue
       case FloatType if from!= null => from.asInstanceOf[Number].floatValue
       case IntegerType if from!=null => from.asInstanceOf[Number].intValue
       case LongType if from!=null => from.asInstanceOf[Number].longValue
       case ShortType if from!=null => from.asInstanceOf[Number].shortValue
-      case DecimalType() if from!=null => {
+      case DecimalType() if from!=null =>
         if (from.isInstanceOf[Double]) {
           org.apache.spark.sql.types.Decimal(from.asInstanceOf[Double].doubleValue)
         } else {
           org.apache.spark.sql.types.Decimal(from.asInstanceOf[java.math.BigDecimal])
         }
-      }
       case StringType if from!=null =>
         org.apache.spark.unsafe.types.UTF8String.fromString(
           from.asInstanceOf[String])
 
-      // For date or timestamp without time zone, Redshift unloads timestamps
-      // to Parquet as if they were UTC even if they are intended to represent local times.
-      // We need to convert 17:00 UTC to 17:00 Spark time zone.
-      // NOTE: timestamp with time zone is not supported in parquet format.
+      // For date or timestamp without time zone, as it does not have time zone information,
+      // when reading unloaded data from PARQUET format, it can always be treated as datetime in
+      // local time zone.
+      // For timestamp with time zone, when Redshift unloading timestamptz to PARQUET, it will be
+      // converted into timestamp in UTC, so when reading unloaded data back, it should be
+      // converted back to Spark local time zone.
       case DateType if from!=null && from.isInstanceOf[Timestamp] =>
         DateTimeUtils.microsToDays(
           from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS,
@@ -188,7 +189,13 @@ private[redshift] object Conversions {
           from.asInstanceOf[Date].getTime * DateTimeConstants.MICROS_PER_MILLIS,
           ZoneId.of("UTC"))
       case TimestampType if from!=null && from.isInstanceOf[Timestamp] =>
-        Timestamp
+        if (redshiftType == "timestamptz") {
+          val tz: ZoneId = ZoneId.systemDefault()
+          Timestamp.from(
+            DateTimeUtils.microsToInstant(
+            from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS)
+            .atZone(tz).toInstant).getTime * DateTimeConstants.MICROS_PER_MILLIS
+        } else Timestamp
           .valueOf(
             DateTimeUtils.microsToLocalDateTime(
               from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS)
