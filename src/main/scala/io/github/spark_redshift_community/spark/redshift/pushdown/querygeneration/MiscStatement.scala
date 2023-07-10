@@ -61,8 +61,16 @@ private[querygeneration] object MiscStatement {
               case _ =>
             }
 
-            ConstantString("CAST") +
-              blockStatement(convertStatement(child, fields) + "AS" + cast)
+            (child.dataType, t) match {
+              // Manually cast booleans to strings as Redshift does not support it [Redshift-7625]
+              case (_: BooleanType, _: StringType) =>
+                ConstantString("CASE") +
+                  convertStatement(child, fields) +
+                  ConstantString("WHEN TRUE THEN 'true' WHEN FALSE THEN 'false' ELSE 'null' END")
+              case _ =>
+                ConstantString("CAST") +
+                  blockStatement(convertStatement(child, fields) + "AS" + cast)
+            }
           case _ => convertStatement(child, fields)
         }
 
