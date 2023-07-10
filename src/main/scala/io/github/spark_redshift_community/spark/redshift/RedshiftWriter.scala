@@ -18,7 +18,7 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.AmazonS3
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.TaskContext
@@ -56,7 +56,7 @@ import scala.util.control.NonFatal
  */
 private[redshift] class RedshiftWriter(
     jdbcWrapper: JDBCWrapper,
-    s3ClientFactory: AWSCredentialsProvider => AmazonS3Client) {
+    s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3) {
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -102,8 +102,11 @@ private[redshift] class RedshiftWriter(
       ""
     }
 
-    val copySqlStatement = s"COPY ${params.table.get} ${columns}FROM '$fixedUrl' FORMAT AS " +
-      s"${format} manifest ${params.extraCopyOptions}"
+    val regionClause = params.tempDirRegion.map(region => s"REGION '$region'").getOrElse("")
+    val copySqlStatement = s"COPY ${params.table.get} ${columns}FROM '$fixedUrl'" +
+      s" FORMAT AS ${format} manifest" +
+      s" $regionClause" +
+      s" ${params.extraCopyOptions}"
 
     s"$copySqlStatement CREDENTIALS '$credsString'"
   }
@@ -358,19 +361,8 @@ private[redshift] class RedshiftWriter(
     val creds: AWSCredentialsProvider =
       AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
 
-    for (
-      redshiftRegion <- Utils.getRegionForRedshiftCluster(params.jdbcUrl);
-      s3Region <- Utils.getRegionForS3Bucket(params.rootTempDir, s3ClientFactory(creds))
-    ) {
-     val regionIsSetInExtraCopyOptions =
-       params.extraCopyOptions.contains(s3Region) && params.extraCopyOptions.contains("region")
-     if (redshiftRegion != s3Region && !regionIsSetInExtraCopyOptions) {
-       log.error("The Redshift cluster and S3 bucket are in different regions " +
-         s"($redshiftRegion and $s3Region, respectively). In order to perform this cross-region " +
-         s"""write, you must add "region '$s3Region'" to the extracopyoptions parameter. """ +
-         "For more details on cross-region usage, see the README.")
-     }
-    }
+    // Make sure a cross-region write has the necessary connector parameters set.
+    Utils.checkRedshiftAndS3OnSameRegion(params, s3ClientFactory(creds, params))
 
     // When using the Avro tempformat, log an informative error message in case any column names
     // are unsupported by Avro's schema validation:
@@ -393,7 +385,8 @@ private[redshift] class RedshiftWriter(
     Utils.assertThatFileSystemIsNotS3BlockFileSystem(
       new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
 
-    Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
+    Utils.checkThatBucketHasObjectLifecycleConfiguration(
+      params.rootTempDir, s3ClientFactory(creds, params))
     Utils.collectMetrics(params)
 
     // Save the table's rows to S3:
@@ -436,6 +429,4 @@ private[redshift] class RedshiftWriter(
   }
 }
 
-object DefaultRedshiftWriter extends RedshiftWriter(
-  DefaultJDBCWrapper,
-  awsCredentials => new AmazonS3Client(awsCredentials))
+object DefaultRedshiftWriter extends RedshiftWriter(DefaultJDBCWrapper, Utils.s3ClientBuilder)

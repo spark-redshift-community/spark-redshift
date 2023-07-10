@@ -18,9 +18,12 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
+import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.regions.Regions
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
-import com.amazonaws.services.s3.{AmazonS3Client, AmazonS3URI}
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3URI}
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.slf4j.{Logger, LoggerFactory}
@@ -151,7 +154,7 @@ private[redshift] object Utils {
    */
   def checkThatBucketHasObjectLifecycleConfiguration(
       tempDir: String,
-      s3Client: AmazonS3Client): Boolean = {
+      s3Client: AmazonS3): Boolean = {
     try {
       val s3URI = createS3URI(Utils.fixS3Url(tempDir))
       val bucket = s3URI.getBucket
@@ -205,7 +208,7 @@ private[redshift] object Utils {
   /**
    * Attempts to retrieve the region of the S3 bucket.
    */
-  def getRegionForS3Bucket(tempDir: String, s3Client: AmazonS3Client): Option[String] = {
+  def getRegionForS3Bucket(tempDir: String, s3Client: AmazonS3): Option[String] = {
     try {
       val s3URI = createS3URI(Utils.fixS3Url(tempDir))
       val bucket = s3URI.getBucket
@@ -236,27 +239,52 @@ private[redshift] object Utils {
     }
   }
 
-  def checkRedshiftAndS3OnSameRegion(jdbcUrl: String,
-                                     tempDir: String,
-                                     s3Client: AmazonS3Client): Unit = {
+  def checkRedshiftAndS3OnSameRegion(params: MergedParameters, s3Client: AmazonS3): Unit = {
     for (
-      redshiftRegion <- Utils.getRegionForRedshiftCluster(jdbcUrl);
-      s3Region <- Utils.getRegionForS3Bucket(tempDir, s3Client)
+      redshiftRegion <- Utils.getRegionForRedshiftCluster(params.jdbcUrl);
+      s3Region <- Utils.getRegionForS3Bucket(params.rootTempDir, s3Client)
     ) {
-      if (redshiftRegion != s3Region) {
-        // We don't currently support `extraunloadoptions`, so even if Amazon _did_ add a `region`
-        // option for this we wouldn't be able to pass in the new option. However, we choose to
-        // err on the side of caution and don't throw an exception because we don't want to break
-        // existing workloads in case the region detection logic is wrong.
+      if ((redshiftRegion != s3Region) && params.tempDirRegion.isEmpty) {
         log.error("The Redshift cluster and S3 bucket are in different regions " +
-          s"($redshiftRegion and $s3Region, respectively). Redshift's UNLOAD command requires " +
-          s"that the Redshift cluster and Amazon S3 bucket be located in the same region, so " +
-          s"this read will fail.")
-
-      } else {
-
+          s"($redshiftRegion and $s3Region, respectively). In order to perform this cross-region " +
+          s"""operation, you should set the tempdir_region parameter to '$s3Region'. """ +
+          "For more details on cross-region usage, see the README.")
       }
     }
+  }
+
+  def getDefaultTempDirRegion(tempDirRegion: Option[String]): Regions = {
+    // If the user provided a region, use it above everything else.
+    if (tempDirRegion.isDefined) return Regions.fromName(tempDirRegion.get)
+
+    // Either the user didn't provide a region or its malformed. Try to use the
+    // connector's region as the tempdir region since they are usually collocated.
+    // If they aren't, S3's default provider chain will help resolve the difference.
+    val currRegion = Regions.getCurrentRegion()
+
+    // If the user didn't provide a valid tempdir region and we cannot determine
+    // the connector's region, the connector is likely running outside of AWS.
+    // In this case, warn the user about the performance penalty of not specifying
+    // the tempdir region.
+    if (currRegion == null) {
+      log.warn(
+        s"The connector cannot automatically determine a region for 'tempdir'. It " +
+          "is highly recommended that the 'tempdir_region' parameter is set to " +
+          "avoid a performance penalty while trying to automatically determine " +
+          "a region, especially when operating outside of AWS.")
+    }
+
+    // If all else fails, pick a default region.
+    if (currRegion != null) Regions.fromName(currRegion.getName()) else Regions.US_EAST_1
+  }
+
+  def s3ClientBuilder: (AWSCredentialsProvider, MergedParameters) => AmazonS3 =
+    (awsCredentials, mergedParameters) => {
+      AmazonS3Client.builder()
+        .withRegion(Utils.getDefaultTempDirRegion(mergedParameters.tempDirRegion))
+        .withForceGlobalBucketAccessEnabled(true)
+        .withCredentials(awsCredentials)
+        .build()
   }
 
   def collectMetrics(params: MergedParameters, logger: Option[Logger] = None): Unit = {

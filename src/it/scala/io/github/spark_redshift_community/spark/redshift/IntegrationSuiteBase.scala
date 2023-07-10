@@ -17,9 +17,10 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
+import io.github.spark_redshift_community.spark.redshift.Parameters.PARAM_TEMPDIR_REGION
+
 import java.net.URI
 import java.sql.Connection
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.SparkContext
@@ -56,8 +57,9 @@ trait IntegrationSuiteBase
   protected val AWS_ACCESS_KEY_ID: String = loadConfigFromEnv("AWS_ACCESS_KEY_ID")
   protected val AWS_SECRET_ACCESS_KEY: String = loadConfigFromEnv("AWS_SECRET_ACCESS_KEY")
   protected val AWS_SESSION_TOKEN: String = loadConfigFromEnv("AWS_SESSION_TOKEN")
-  // Path to a directory in S3 (e.g. 's3n://bucket-name/path/to/scratch/space').
+  // Path to a directory in S3 (e.g. 's3a://bucket-name/path/to/scratch/space').
   protected val AWS_S3_SCRATCH_SPACE: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE")
+  protected val AWS_S3_SCRATCH_SPACE_REGION: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE_REGION")
   require(AWS_S3_SCRATCH_SPACE.contains("s3a"), "must use s3a:// URL")
 
   protected def jdbcUrl: String = {
@@ -140,6 +142,7 @@ trait IntegrationSuiteBase
       .option("url", jdbcUrl)
       .option("tempdir", tempDir)
       .option("forward_spark_s3_credentials", "true")
+      .option(PARAM_TEMPDIR_REGION, AWS_S3_SCRATCH_SPACE_REGION)
   }
   /**
    * Create a new DataFrameWriter using common options for writing to Redshift.
@@ -150,6 +153,7 @@ trait IntegrationSuiteBase
       .option("url", jdbcUrl)
       .option("tempdir", tempDir)
       .option("forward_spark_s3_credentials", "true")
+      .option(PARAM_TEMPDIR_REGION, AWS_S3_SCRATCH_SPACE_REGION)
   }
 
   protected def createTestDataInRedshift(tableName: String): Unit = {

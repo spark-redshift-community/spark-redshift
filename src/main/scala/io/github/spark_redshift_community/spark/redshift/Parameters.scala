@@ -20,6 +20,7 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.{AWSCredentialsProvider, BasicSessionCredentials}
+import com.amazonaws.regions.Regions
 
 /**
  * All user-specifiable parameters for spark-redshift, along with their validation rules and
@@ -31,6 +32,7 @@ private[redshift] object Parameters {
   val PARAM_PUSHDOWN_S3_RESULT_CACHE: String = "autopushdown.s3_result_cache"
   val PARAM_UNLOAD_S3_FORMAT: String = "unload_s3_format"
   val PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING: String = "legacy_jdbc_real_type_mapping"
+  val PARAM_TEMPDIR_REGION: String = "tempdir_region"
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
@@ -52,7 +54,8 @@ private[redshift] object Parameters {
     PARAM_AUTO_PUSHDOWN -> "true",
     PARAM_PUSHDOWN_S3_RESULT_CACHE -> "false",
     PARAM_UNLOAD_S3_FORMAT -> "PARQUET", // values: PARQUET, TEXT
-    PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false"
+    PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
+    PARAM_TEMPDIR_REGION -> ""
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
@@ -117,6 +120,28 @@ private[redshift] object Parameters {
      * are available for S3.
      */
     def rootTempDir: String = parameters("tempdir")
+
+    /**
+     * AWS region where the 'tempdir' is located. Setting this option will improve connector
+     * performance for interactions with 'tempdir' as well as automatically supply this region
+     * as part of COPY and UNLOAD operations during connector writes and reads to Redshift.
+     *
+     * If the region is not specified, the connector will attempt to use the default S3 provider
+     * chain for resolving where the 'tempdir' region is located. In some cases, such as when the
+     * connector is being used outside of an AWS environment, this resolution will fail. Therefore,
+     * this setting is highly recommended in the following situations:
+     *  1) When the connector is running outside of AWS as automatic region discovery using the
+     *     aws java sdk will fail and negatively affect connector performance.
+     *  2) When 'tempdir' is in a different region than the Redshift cluster as using this
+     *     setting alleviates the need to supply the region manually using the 'extracopyoptions'
+     *     and 'extraunloadoptions' parameters.
+     *  3) When the connector is running in a different region than 'tempdir' as it improves
+     *     the connector's access performance of 'tempdir'.
+     */
+    def tempDirRegion: Option[String] = {
+      val regionName = parameters.getOrElse(PARAM_TEMPDIR_REGION, "")
+      if (regionName.isEmpty) None else Some(Regions.fromName(regionName).getName)
+    }
 
     /**
      * The format in which to save temporary files in S3. Defaults to "AVRO"; the other allowed

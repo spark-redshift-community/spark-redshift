@@ -19,13 +19,12 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.AmazonS3
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import io.github.spark_redshift_community.spark.redshift.Conversions.parquetDataTypeConvert
 import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper.DataBaseOperations
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
-import io.github.spark_redshift_community.spark.redshift.Utils.checkRedshiftAndS3OnSameRegion
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftSQLStatement, SqlToS3TempCache}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -45,7 +44,7 @@ import scala.collection.JavaConverters._
  */
 private[redshift] case class RedshiftRelation(
     jdbcWrapper: JDBCWrapper,
-    s3ClientFactory: AWSCredentialsProvider => AmazonS3Client,
+    s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3,
     params: MergedParameters,
     userSchema: Option[StructType])
     (@transient val sqlContext: SQLContext)
@@ -92,10 +91,17 @@ private[redshift] case class RedshiftRelation(
     filters.filterNot(filter => FilterPushdown.buildFilterExpression(schema, filter).isDefined)
   }
 
+  private def checkS3BucketUsage(params: MergedParameters, s3Client: AmazonS3): Unit = {
+    // Make sure a cross-region read has the necessary connector parameters set.
+    Utils.checkRedshiftAndS3OnSameRegion(params, s3Client)
+
+    // Make sure that the bucket has a lifecycle configuration set to automatically clean-up.
+    Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3Client)
+  }
+
   override def buildScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[Row] = {
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
-    checkRedshiftAndS3OnSameRegion(params.jdbcUrl, params.rootTempDir, s3ClientFactory(creds))
-    Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
+    checkS3BucketUsage(params, s3ClientFactory(creds, params))
     Utils.collectMetrics(params)
 
     if (requiredColumns.isEmpty) {
@@ -171,22 +177,21 @@ private[redshift] case class RedshiftRelation(
     // the credentials passed via `credsString`.
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
 
-    val sseKmsClause = sseKmsKey.map(key => s"KMS_KEY_ID '$key' ENCRYPTED").getOrElse("")
-    val unloadStmt = if (params.unloadS3Format == "PARQUET") {
-      s"UNLOAD ('$query') TO '$fixedUrl'" +
-      s" WITH CREDENTIALS '$credsString'" +
-      s" FORMAT AS PARQUET  MANIFEST" + // temp
-      s" $sseKmsClause" +
-      s" ${params.extraUnloadOptions}"
+    // Build up the unload statement
+    val unloadClause = s"UNLOAD ('$query') TO '$fixedUrl'"
+    val credClause = s"WITH CREDENTIALS '$credsString'"
+    val manifestClause = if (params.unloadS3Format == "PARQUET") {
+      s"FORMAT AS PARQUET  MANIFEST"
     } else {
-      s"UNLOAD ('$query') TO '$fixedUrl'" +
-      s" WITH CREDENTIALS '$credsString'" +
-      s" ESCAPE MANIFEST NULL AS '${params.nullString}'" +
-      s" $sseKmsClause" +
-      s" ${params.extraUnloadOptions}"
+      s"ESCAPE MANIFEST NULL AS '${params.nullString}'"
     }
+    val sseKmsClause = sseKmsKey.map(key => s"KMS_KEY_ID '$key' ENCRYPTED").getOrElse("")
+    val regionClause = params.tempDirRegion.map(region => s"REGION AS '$region'").getOrElse("")
+    val extraClause = s"${params.extraUnloadOptions}"
 
-    unloadStmt
+    val unloadStmtList = unloadClause :: credClause :: manifestClause :: sseKmsClause ::
+      regionClause :: extraClause :: Nil
+    unloadStmtList.mkString(" ")
   }
 
   private def buildUnloadStmt(
@@ -211,22 +216,21 @@ private[redshift] case class RedshiftRelation(
     // the credentials passed via `credsString`.
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
 
-    val sseKmsClause = sseKmsKey.map(key => s"KMS_KEY_ID '$key' ENCRYPTED").getOrElse("")
-    val unloadStmt = if (params.unloadS3Format == "PARQUET") {
-      s"UNLOAD ('SELECT * FROM ($query)') TO '$fixedUrl'" +
-      s" WITH CREDENTIALS '$credsString'" +
-      s" FORMAT AS PARQUET  MANIFEST" +
-      s" $sseKmsClause" +
-      s" ${params.extraUnloadOptions}"
+    // Build up the unload statement
+    val unloadClause = s"UNLOAD ('SELECT * FROM ($query)') TO '$fixedUrl'"
+    val credClause = s"WITH CREDENTIALS '$credsString'"
+    val manifestClause = if (params.unloadS3Format == "PARQUET") {
+      s"FORMAT AS PARQUET  MANIFEST"
     } else {
-      s"UNLOAD ('SELECT * FROM ($query)') TO '$fixedUrl'" +
-      s" WITH CREDENTIALS '$credsString'" +
-      s" ESCAPE MANIFEST NULL AS '${params.nullString}'" +
-      s" $sseKmsClause" +
-      s" ${params.extraUnloadOptions}"
+      s"ESCAPE MANIFEST NULL AS '${params.nullString}'"
     }
+    val sseKmsClause = sseKmsKey.map(key => s"KMS_KEY_ID '$key' ENCRYPTED").getOrElse("")
+    val regionClause = params.tempDirRegion.map(region => s"REGION AS '$region'").getOrElse("")
+    val extraClause = s"${params.extraUnloadOptions}"
 
-    unloadStmt
+    val unloadStmtList = unloadClause :: credClause :: manifestClause :: sseKmsClause ::
+      regionClause :: extraClause :: Nil
+    unloadStmtList.mkString(" ")
   }
 
   private def pruneSchema(schema: StructType, columns: Array[String]): StructType = {
@@ -242,8 +246,7 @@ private[redshift] case class RedshiftRelation(
     val resultSchema: StructType = getResultSchema(statement, schema, conn)
 
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
-    checkRedshiftAndS3OnSameRegion(params.jdbcUrl, params.rootTempDir, s3ClientFactory(creds))
-    Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
+    checkS3BucketUsage(params, s3ClientFactory(creds, params))
     Utils.collectMetrics(params)
 
     // If the same query was run before, get the result s3 path from the cache.
@@ -342,7 +345,7 @@ private[redshift] case class RedshiftRelation(
     val cleanedTempDirUri =
       Utils.fixS3Url(Utils.removeCredentialsFromURI(URI.create(tempDir)).toString)
     val s3URI = Utils.createS3URI(cleanedTempDirUri)
-    val s3Client = s3ClientFactory(creds)
+    val s3Client = s3ClientFactory(creds, params)
 
     if(s3Client.doesObjectExist(s3URI.getBucket, s3URI.getKey + "manifest")) {
       val is = s3Client.getObject(s3URI.getBucket, s3URI.getKey + "manifest").getObjectContent
