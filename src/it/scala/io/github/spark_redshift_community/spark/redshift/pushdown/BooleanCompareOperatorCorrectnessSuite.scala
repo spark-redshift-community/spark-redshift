@@ -23,7 +23,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
   override protected val preloaded_data: String = "true"
   override def setTestTableName(): String = """"PUBLIC"."all_shapes_dist_all_sort_compound_12col""""
 
-  var string2000Char =
+  val string2000Char =
     """NpJWbA9QcfnY5VAOz55PWP4KjONffOlJjzFfrOIrZ1XkqoG46XiCEzJOhSTB1HS5aX5i1gv
       |N1o4O6fJg7tlxh86GlL3ZOUFI8WsYvKH7uMV3l7xpZYvKMBam8mF8q34Uvj5imtJGSygsOJ
       |NMqjdk2D0mPkNan2Kui3yOc7WKdlCMee7gwrqp9ji4eZfk9UAR4j3T13GWjYoI6S4Hq1FVs
@@ -54,7 +54,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       |ffx4EQ74JpRKlQEWI1Y8YzDXTDlyYG2GMwqdTIQvb5nLiQ
       |""".stripMargin
 
-  var string255Char =
+  val string255Char =
     """rl5hpi6nKVTUWAaIbt8xI7G2jsoagoEk23E8aUqsPMpgPMPs2zhPgdnJLpz
       |ANvcLYOafVzwtqchGOV5jsxBJNbpUjAOa0SoUneoYX9vdrfzSTwVuwUzWpSKIzw
       |QzRhyxsYRyaNpiMmyKcSOrgt4Uv6NmOL6yfeq0CtOMFq910WIGbQXOYsX2kvHtuSqb0MA
@@ -91,9 +91,9 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_bigint_zstd", 100, 2488),
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $expected_res"""),
         Seq(Row(result_size)))
@@ -151,9 +151,9 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_bigint_zstd", 100.0001, 2488),
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $expected_res"""),
         Seq(Row(result_size)))
@@ -211,9 +211,9 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_bigint_zstd", 100, 2512),
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $expected_res"""),
         Seq(Row(result_size)))
@@ -271,9 +271,9 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_bigint_zstd", 100.0001, 2512),
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $expected_res"""),
         Seq(Row(result_size)))
@@ -315,9 +315,9 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_decimal_18_18_zstd", "-1.230000000000000000", 5000)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $expected_res"""),
         Seq(Row(result_size)))
@@ -359,9 +359,9 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_decimal_18_18_zstd", "-1.230000000000000000", 0)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $expected_res"""),
         Seq(Row(result_size)))
@@ -403,9 +403,9 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_decimal_18_18_zstd", "-1", 0)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $expected_res"""),
         Seq(Row(result_size)))
@@ -414,9 +414,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
            |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) ) <= -1.000000000000000000 ) ) )
-           |AS "SUBQUERY_1" LIMIT 1
-           |""".stripMargin)
+           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) )
+           |<= -1.000000000000000000 ) ) ) AS "SUBQUERY_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $expected_res"""),
@@ -426,9 +425,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
            |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) ) > -1.000000000000000000 ) ) )
-           |AS "SUBQUERY_1" LIMIT 1
-           |""".stripMargin)
+           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) )
+           |> -1.000000000000000000 ) ) ) AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -447,16 +445,17 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_decimal_38_37_zstd", "0.7664120400000000000000000000000000001", 1347)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $expected_res"""),
         Seq(Row(result_size)))
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" >= $expected_res ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -467,7 +466,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" < $expected_res ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -489,16 +489,17 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_decimal_38_37_zstd", "0.7664120400000000000000000000000000001", 3653),
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $expected_res"""),
         Seq(Row(result_size)))
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" <= $expected_res ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -509,7 +510,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" > $expected_res ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -567,10 +569,10 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_varchar_max_zstd", s"'$string255Char'", s"\\'$string255Char\\'", 0)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var query_in = test_case._2
-      var expected_res = test_case._3
-      var result_size = test_case._4
+      val column_name = test_case._1.toUpperCase
+      val query_in = test_case._2
+      val expected_res = test_case._3
+      val result_size = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $query_in"""),
         Seq(Row(result_size)))
@@ -646,10 +648,10 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_varchar_max_zstd", s"'$string255Char'", s"\\'$string255Char\\'", 5000)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var query_in = test_case._2
-      var expected_res = test_case._3
-      var result_size = test_case._4
+      val column_name = test_case._1.toUpperCase
+      val query_in = test_case._2
+      val expected_res = test_case._3
+      val result_size = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $query_in"""),
         Seq(Row(result_size)))
@@ -686,9 +688,9 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_date_zstd", "'2010-05-11'", 871)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var query_in = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val query_in = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $query_in"""),
         Seq(Row(result_size)))
@@ -697,7 +699,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
            |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >= DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" >=
+           |DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
@@ -708,7 +711,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
            |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" < DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" <
+           |DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
@@ -725,9 +729,9 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_date_zstd", "'2010-05-11'", 4129)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var query_in = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val query_in = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $query_in"""),
         Seq(Row(result_size)))
@@ -736,7 +740,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
            |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <= DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" <=
+           |DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
@@ -747,7 +752,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
            |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" > DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" >
+           |DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
@@ -771,18 +777,19 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_timestamptz_zstd", "'1994-05-19 01:03:02'", 2514),
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var query_in = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val query_in = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $query_in"""),
         Seq(Row(result_size)))
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >= \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" >=\\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
@@ -791,7 +798,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" < \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -817,16 +825,17 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_timestamptz_zstd", "'1994-05-19 01:03:02'", 2486),
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var query_in = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val query_in = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $query_in"""),
         Seq(Row(result_size)))
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" <= \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -837,7 +846,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" > \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -857,16 +867,17 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_float8_zstd", -6.5868966897085, 2792)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $expected_res"""),
         Seq(Row(result_size)))
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" >= $expected_res ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -877,7 +888,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" < $expected_res ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -893,16 +905,17 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_float4_zstd", 6.57506, 2921)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $expected_res"""),
         Seq(Row(result_size)))
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" <= $expected_res ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -913,7 +926,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" > $expected_res ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -929,16 +943,17 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_float8_zstd", -6.5868966897085, 2208)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $expected_res"""),
         Seq(Row(result_size)))
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" <= $expected_res ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
@@ -949,7 +964,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
 
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
            |AND ( "SUBQUERY_0"."$column_name" > $expected_res ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)

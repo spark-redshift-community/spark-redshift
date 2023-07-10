@@ -27,7 +27,8 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
+		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" )
+         | AS "SUBQUERY_1_COL_0"
          | FROM ( SELECT * FROM $test_table
          | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
          | AS "SUBQUERY_1" LIMIT 1""".stripMargin
@@ -53,13 +54,12 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
          |( "SUBQUERY_0"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_1_COL_1"
          |FROM ( ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
          |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
-         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" )
-         |UNION ALL
-         |( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
+         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" )
+         |UNION ALL ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
          |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
-         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SUBQUERY_1" ) ) AS "SUBQUERY_0"
          |GROUP BY "SUBQUERY_0"."SUBQUERY_2_COL_0" , "SUBQUERY_0"."SUBQUERY_2_COL_1"
          |""".stripMargin
@@ -84,13 +84,12 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     checkSqlStatement(
 		expectedAnswerSpark3_2 = s"""( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
          |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
-         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" )
-         |UNION ALL
-         |( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
+         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" )
+         |UNION ALL ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
          |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
-         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SUBQUERY_1" )
          |""".stripMargin
     )
@@ -103,7 +102,8 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0"
+		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" )
+         |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTSHORT" > 0 ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
@@ -121,7 +121,8 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0"
+		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" )
+         |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTSHORT" > 0 ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
@@ -231,12 +232,11 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
          |AS "SUBQUERY_1" ) AS "SUBQUERY_2"
          |RIGHT OUTER JOIN
          |( SELECT ( "SUBQUERY_4"."TESTINT" ) AS "SUBQUERY_5_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_3"
-         |WHERE ( ( "SUBQUERY_3"."TESTSTRING" IS NOT NULL )
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_3" WHERE ( ( "SUBQUERY_3"."TESTSTRING" IS NOT NULL )
          |AND ( "SUBQUERY_3"."TESTSTRING" = \\'asdf\\' ) ) ) AS "SUBQUERY_4" )
-         |AS "SUBQUERY_5" ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_5"."SUBQUERY_5_COL_0" ) )
-         |AS "SUBQUERY_6"
-         |""".stripMargin
+         |AS "SUBQUERY_5" ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" =
+         |"SUBQUERY_5"."SUBQUERY_5_COL_0" ) ) AS "SUBQUERY_6"""".stripMargin
     )
   }
 
@@ -244,11 +244,10 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     checkAnswer(
       sqlContext.sql(
         """SELECT new_table1.teststring as S1, new_table2.teststring as S2
-          |FROM (SELECT table1.teststring FROM test_table table1 WHERE table1.teststring = 'f') AS new_table1
-          |FULL JOIN
-          |(SELECT table2.teststring FROM test_table table2 WHERE table2.teststring = 'asdf') AS new_table2
-          |ON new_table1.teststring = new_table2.teststring
-          |""".stripMargin),
+          |FROM (SELECT table1.teststring FROM test_table table1 WHERE table1.teststring = 'f')
+          |AS new_table1 FULL JOIN
+          |(SELECT table2.teststring FROM test_table table2 WHERE table2.teststring = 'asdf')
+          |AS new_table2 ON new_table1.teststring = new_table2.teststring""".stripMargin),
       Seq(Row("f", null), Row(null, "asdf"))
     )
 
@@ -260,8 +259,8 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
          |( "SUBQUERY_5"."SUBQUERY_5_COL_0" ) AS "SUBQUERY_6_COL_1"
          |FROM (
          |SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
          |FULL OUTER JOIN
          |( SELECT ( "SUBQUERY_4"."TESTSTRING" ) AS "SUBQUERY_5_COL_0"
@@ -320,7 +319,8 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT ( CAST ( "SUBQUERY_1"."TESTLONG" AS DECIMAL(20, 2) ) )
+		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT (
+         |CAST ( "SUBQUERY_1"."TESTLONG" AS DECIMAL(20, 2) ) )
          |AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
          |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
          |WHERE ( ( "SUBQUERY_0"."TESTLONG" IS NOT NULL )
@@ -341,8 +341,8 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     checkSqlStatement(
 		expectedAnswerSpark3_2 = s"""SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_0"
          |FROM ( SELECT ( "SUBQUERY_1"."TESTLONG" ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTLONG" IS NOT NULL )
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTLONG" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTLONG" > 0 ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
          |GROUP BY "SUBQUERY_2"."SUBQUERY_2_COL_0"
          |""".stripMargin

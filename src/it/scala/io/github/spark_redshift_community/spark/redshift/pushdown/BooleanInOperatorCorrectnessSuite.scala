@@ -23,7 +23,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
   override protected val preloaded_data: String = "true"
   override def setTestTableName(): String = """"PUBLIC"."all_shapes_dist_all_sort_compound_12col""""
 
-  var string2000Char =
+  val string2000Char =
     """NpJWbA9QcfnY5VAOz55PWP4KjONffOlJjzFfrOIrZ1XkqoG46XiCEzJOhSTB1HS5aX5i1gv
       |N1o4O6fJg7tlxh86GlL3ZOUFI8WsYvKH7uMV3l7xpZYvKMBam8mF8q34Uvj5imtJGSygsOJ
       |NMqjdk2D0mPkNan2Kui3yOc7WKdlCMee7gwrqp9ji4eZfk9UAR4j3T13GWjYoI6S4Hq1FVs
@@ -54,7 +54,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       |ffx4EQ74JpRKlQEWI1Y8YzDXTDlyYG2GMwqdTIQvb5nLiQ
       |""".stripMargin
 
-  var string255Char =
+  val string255Char =
     """rl5hpi6nKVTUWAaIbt8xI7G2jsoagoEk23E8aUqsPMpgPMPs2zhPgdnJLpz
       |ANvcLYOafVzwtqchGOV5jsxBJNbpUjAOa0SoUneoYX9vdrfzSTwVuwUzWpSKIzw
       |QzRhyxsYRyaNpiMmyKcSOrgt4Uv6NmOL6yfeq0CtOMFq910WIGbQXOYsX2kvHtuSqb0MA
@@ -124,9 +124,9 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       ("col_boolean_zstd", (true, false), 5000)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name in $expected_res"""),
         Seq(Row(result_size)))
@@ -154,9 +154,9 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       ("col_decimal_18_18_zstd", "(-1,0,1)", 0),
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name in $expected_res"""),
         Seq(Row(result_size)))
@@ -164,7 +164,8 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       checkSqlStatement(
         s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
            |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-           |WHERE "SUBQUERY_0"."$column_name" IN ( -1.000000000000000000 , 0E-18 , 1.000000000000000000 ) )
+           |WHERE "SUBQUERY_0"."$column_name" IN
+           |( -1.000000000000000000 , 0E-18 , 1.000000000000000000 ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
@@ -172,21 +173,31 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
   test("child in pushdown - decimal 37 scale") {
     // "Column name" and result size
     val input = List(
-      ("col_decimal_38_37_raw", "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 2),
-      ("col_decimal_38_37_bytedict", "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
-      ("col_decimal_38_37_delta", "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
-      ("col_decimal_38_37_delta32k", "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
-      ("col_decimal_38_37_lzo", "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
-      ("col_decimal_38_37_mostly8", "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
-      ("col_decimal_38_37_mostly16", "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
-      ("col_decimal_38_37_mostly32", "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
-      ("col_decimal_38_37_runlength", "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
-      ("col_decimal_38_37_zstd", "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0)
+      ("col_decimal_38_37_raw",
+        "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 2),
+      ("col_decimal_38_37_bytedict",
+        "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
+      ("col_decimal_38_37_delta",
+        "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
+      ("col_decimal_38_37_delta32k",
+        "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
+      ("col_decimal_38_37_lzo",
+        "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
+      ("col_decimal_38_37_mostly8",
+        "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
+      ("col_decimal_38_37_mostly16",
+        "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
+      ("col_decimal_38_37_mostly32",
+        "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
+      ("col_decimal_38_37_runlength",
+        "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0),
+      ("col_decimal_38_37_zstd",
+        "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name in $expected_res"""),
         Seq(Row(result_size)))
@@ -202,58 +213,104 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
   test("child in pushdown - string + varchar types") {
     // "Column name" and result size
     val input = List(
-      ("col_char_1_raw", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_255_raw", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_2000_raw", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_max_raw", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_1_bytedict", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_255_bytedict", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_2000_bytedict", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_max_bytedict", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_1_lzo", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_255_lzo", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_2000_lzo", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_max_lzo", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_1_runlength", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_255_runlength", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_2000_runlength", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_max_runlength", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_1_zstd", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_255_zstd", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_2000_zstd", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_char_max_zstd", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_1_raw", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_255_raw", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_2000_raw", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_max_raw", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_1_bytedict", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_255_bytedict", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_2000_bytedict", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_max_bytedict", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_1_lzo", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_255_lzo", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_2000_lzo", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_max_lzo", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_1_runlength", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_255_runlength", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_2000_runlength", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_max_runlength", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_1_text255", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_255_text255", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_1_text32k", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_255_text32k", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_2000_text32k", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_max_text32k", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_1_zstd", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_255_zstd", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_2000_zstd", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
-      ("col_varchar_max_zstd", s"('$string255Char', '$string2000Char')", s"(\\'$string255Char\\', \\'$string2000Char\\')", 0)
+      ("col_char_1_raw", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_255_raw", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_2000_raw", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_max_raw", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_1_bytedict", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_255_bytedict", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_2000_bytedict", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_max_bytedict", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_1_lzo", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_255_lzo", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_2000_lzo", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_max_lzo", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_1_runlength", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_255_runlength", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_2000_runlength", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_max_runlength", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_1_zstd", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_255_zstd", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_2000_zstd", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_char_max_zstd", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_1_raw", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_255_raw", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_2000_raw", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_max_raw", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_1_bytedict", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_255_bytedict", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_2000_bytedict", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_max_bytedict", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_1_lzo", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_255_lzo", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_2000_lzo", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_max_lzo", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_1_runlength", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_255_runlength", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_2000_runlength", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_max_runlength", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_1_text255", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_255_text255", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_1_text32k", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_255_text32k", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_2000_text32k", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_max_text32k", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_1_zstd", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_255_zstd", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_2000_zstd", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0),
+      ("col_varchar_max_zstd", s"('$string255Char', '$string2000Char')",
+        s"(\\'$string255Char\\', \\'$string2000Char\\')", 0)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var query_in = test_case._2
-      var expected_res = test_case._3
-      var result_size = test_case._4
+      val column_name = test_case._1.toUpperCase
+      val query_in = test_case._2
+      val expected_res = test_case._3
+      val result_size = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name in $query_in"""),
         Seq(Row(result_size)))
@@ -270,32 +327,50 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
     // "Column name" and result size
     val input = List(
       ("col_date_raw", "('2010-05-11', '2010-05-12')", "(\\'2010-05-11\\', \\'2010-05-12\\')", 2),
-      ("col_date_bytedict", "('2010-05-11', '2010-05-12')", "(\\'2010-05-11\\', \\'2010-05-12\\')", 0),
-      ("col_date_delta", "('2010-05-11', '2010-05-12')", "(\\'2010-05-11\\', \\'2010-05-12\\')", 0),
-      ("col_date_delta32k", "('2010-05-11', '2010-05-12')", "(\\'2010-05-11\\', \\'2010-05-12\\')", 0),
+      ("col_date_bytedict", "('2010-05-11', '2010-05-12')",
+        "(\\'2010-05-11\\', \\'2010-05-12\\')", 0),
+      ("col_date_delta", "('2010-05-11', '2010-05-12')",
+        "(\\'2010-05-11\\', \\'2010-05-12\\')", 0),
+      ("col_date_delta32k", "('2010-05-11', '2010-05-12')",
+        "(\\'2010-05-11\\', \\'2010-05-12\\')", 0),
       ("col_date_lzo", "('2010-05-11', '2010-05-12')", "(\\'2010-05-11\\', \\'2010-05-12\\')", 0),
-      ("col_date_runlength", "('2010-05-11', '2010-05-12')", "(\\'2010-05-11\\', \\'2010-05-12\\')", 3),
+      ("col_date_runlength", "('2010-05-11', '2010-05-12')",
+        "(\\'2010-05-11\\', \\'2010-05-12\\')", 3),
       ("col_date_zstd", "('2010-05-11', '2010-05-12')", "(\\'2010-05-11\\', \\'2010-05-12\\')", 0),
-      ("col_timestamp_raw", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 1),
-      ("col_timestamp_bytedict", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamp_delta", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamp_delta32k", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamp_lzo", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamp_runlength", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamp_zstd", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamptz_raw", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamptz_bytedict", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamptz_delta", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamptz_delta32k", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamptz_lzo", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamptz_runlength", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
-      ("col_timestamptz_zstd", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')", "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0)
+      ("col_timestamp_raw", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 1),
+      ("col_timestamp_bytedict", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamp_delta", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamp_delta32k", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamp_lzo", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamp_runlength", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamp_zstd", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamptz_raw", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamptz_bytedict", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamptz_delta", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamptz_delta32k", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamptz_lzo", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamptz_runlength", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0),
+      ("col_timestamptz_zstd", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
+        "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var query_in = test_case._2
-      var expected_res = test_case._3
-      var result_size = test_case._4
+      val column_name = test_case._1.toUpperCase
+      val query_in = test_case._2
+      val expected_res = test_case._3
+      val result_size = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name in $query_in"""),
         Seq(Row(result_size)))
@@ -323,9 +398,9 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       ("col_float8_zstd", "(-6.5868966897085, -1.3480701575018)", 0)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name in $expected_res"""),
         Seq(Row(result_size)))
