@@ -317,14 +317,16 @@ private[redshift] class RedshiftWriter(
         }
       }
       // It's possible that tempDir contains AWS access keys. We shouldn't save those credentials to
-      // S3, so let's first sanitize `tempdir` and make sure that it uses the s3:// scheme:
-      val sanitizedTempDir = Utils.fixS3Url(
-        Utils.removeCredentialsFromURI(URI.create(tempDir)).toString).stripSuffix("/")
+      // S3, so let's first sanitize `tempdir`
+      val sameFileSystemDir = Utils.removeCredentialsFromURI(URI.create(tempDir)).toString.stripSuffix("/")
+      // and make sure that it uses the s3:// scheme:
+      val sanitizedTempDir = Utils.fixS3Url(sameFileSystemDir)
+
       val manifestEntries = filesToLoad.map { file =>
         s"""{"url":"$sanitizedTempDir/$file", "mandatory":true}"""
       }
       val manifest = s"""{"entries": [${manifestEntries.mkString(",\n")}]}"""
-      val manifestPath = sanitizedTempDir + "/manifest.json"
+      val manifestPath = sameFileSystemDir + "/manifest.json"
       val fsDataOut = fs.create(new Path(manifestPath))
       try {
         fsDataOut.write(manifest.getBytes("utf-8"))
