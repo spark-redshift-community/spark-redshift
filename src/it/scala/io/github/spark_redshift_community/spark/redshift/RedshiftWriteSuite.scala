@@ -113,7 +113,10 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
       TestUtils.toTimestamp(1970, 0, 1, 0, 0, 0, millis = 1),
       TestUtils.toTimestamp(1970, 0, 1, 0, 0, 0, millis = 10),
       TestUtils.toTimestamp(1970, 0, 1, 0, 0, 0, millis = 100),
-      TestUtils.toTimestamp(1970, 0, 1, 0, 0, 0, millis = 1000))
+      TestUtils.toTimestamp(1970, 0, 1, 0, 0, 0, millis = 1000),
+      TestUtils.toNanosTimestamp(1970, 0, 1, 0, 0, 0, 100000),
+      TestUtils.toNanosTimestamp(1970, 0, 1, 0, 0, 0, 10000),
+      TestUtils.toNanosTimestamp(1970, 0, 1, 0, 0, 0, 1000))
     testRoundtripSaveAndLoad(
       s"full_timestamp_precision_is_preserved$randomSuffix",
       sqlContext.createDataFrame(sc.parallelize(timestamps.map(Row(_))),

@@ -17,7 +17,6 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import java.net.URI
-
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
@@ -25,6 +24,8 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.scalatest.{FunSuite, Matchers}
 import org.mockito.Mockito._
+
+import java.sql.Timestamp
 
 /**
  * Unit tests for helper functions
@@ -124,5 +125,12 @@ class UtilsSuite extends FunSuite with Matchers {
       .thenThrow(new NullPointerException())
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
       "s3a://bucket/path/to/temp/dir", mockS3Client) === false)
+  }
+
+  test("getMicrosFromTimestamp retrieves microseconds from timestamp") {
+    Utils.getMicrosFromTimestamp(Timestamp.valueOf("2020-01-22 12:57:39.50324")) shouldBe 240L
+    Utils.getMicrosFromTimestamp(Timestamp.valueOf("1970-01-01 00:00:00.0001")) shouldBe 100L
+    Utils.getMicrosFromTimestamp(Timestamp.valueOf("1970-01-01 00:00:00.00001")) shouldBe 10L
+    Utils.getMicrosFromTimestamp(Timestamp.valueOf("1970-01-01 00:00:00.000001")) shouldBe 1L
   }
 }
