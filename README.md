@@ -741,7 +741,7 @@ for more information.</p>
  <tr>
     <td><tt>autopushdown.s3_result_cache</tt></td>
     <td>No</td>
-    <td>True</td>
+    <td>False</td>
     <td>Cache the query SQL to unload data S3 path mapping in memory so that the same query don't need to execute again in the same Spark session.</td>
  </tr>
 </table>
