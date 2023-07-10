@@ -165,7 +165,12 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
            |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
            |WHERE "SUBQUERY_0"."$column_name" IN
            |( -1.000000000000000000 , 0E-18 , 1.000000000000000000 ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+           |AS "SUBQUERY_1" LIMIT 1""".stripMargin,
+        "", // No change for Spark 3.3.0
+        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL ) AND
+           |( "SUBQUERY_0"."$column_name" = 0E-18 ) ) ) AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -411,9 +416,6 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
-
-
-
 }
 
 class TextInOperatorBooleanCorrectnessSuite extends BooleanInOperatorCorrectnessSuite {

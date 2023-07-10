@@ -848,10 +848,10 @@ eventsDF.show()
 
 ## Unload Format
 
-By default, the query result is unload to S3 as a text file.  There is an option as shown below to unload the result as parquet format. According to Redshift database developer guide, Parquet format is up to 2x faster to unload and consumes up to 6x less storage in Amazon S3, compared with text formats.
+By default, query results are unloaded to S3 as Parquet files. There is an option as shown below to unload the result in pipe-delimited text format instead. However, according to Redshift database developer guide, Parquet format is up to 2x faster to unload and consumes up to 6x less storage in Amazon S3, compared with text formats.
 
 ```scala
-    .option("unload_s3_format", "PARQUET")
+    .option("unload_s3_format", "TEXT")
 ```
 
 Refer to integration test cases for supported operations for pushdown.
