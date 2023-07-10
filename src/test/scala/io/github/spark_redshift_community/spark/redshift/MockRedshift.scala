@@ -16,8 +16,9 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 
+import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import org.apache.spark.sql.types.StructType
 import org.mockito.ArgumentMatchers.{any, anyString, same}
 import org.mockito.Mockito._
@@ -81,7 +82,7 @@ class MockRedshift(
     override def answer(invocation: InvocationOnMock): StructType = {
       existingTablesAndSchemas(invocation.getArguments()(1).asInstanceOf[String])
     }
-  }).when(jdbcWrapper).resolveTable(any[Connection], anyString())
+  }).when(jdbcWrapper).resolveTable(any[Connection], anyString(), any[Option[MergedParameters]])
 
   def verifyThatConnectionsWereClosed(): Unit = {
     jdbcConnections.foreach { conn =>

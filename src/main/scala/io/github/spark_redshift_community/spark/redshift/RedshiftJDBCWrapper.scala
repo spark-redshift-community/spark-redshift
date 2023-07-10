@@ -165,7 +165,10 @@ private[redshift] class JDBCWrapper {
    * @throws SQLException if the table specification is garbage.
    * @throws SQLException if the table contains an unsupported type.
    */
-  def resolveTable(conn: Connection, table: String): StructType = {
+  def resolveTable(
+                    conn: Connection,
+                    table: String,
+                    params: Option[MergedParameters] = None): StructType = {
     // It's important to leave the `LIMIT 1` clause in order to limit the work of the query in case
     // the underlying JDBC driver implementation implements PreparedStatement.getMetaData() by
     // executing the query. It looks like the standard Redshift and Postgres JDBC drivers don't do
@@ -186,7 +189,7 @@ private[redshift] class JDBCWrapper {
         val fieldScale = rsmd.getScale(i + 1)
         val isSigned = rsmd.isSigned(i + 1)
         val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
-        val columnType = getCatalystType(dataType, fieldSize, fieldScale, isSigned)
+        val columnType = getCatalystType(dataType, fieldSize, fieldScale, isSigned, params)
         val meta = new MetadataBuilder().putString("redshift_type", rsType).build()
 
         fields(i) = StructField(columnName, columnType, nullable, meta)
@@ -213,7 +216,7 @@ private[redshift] class JDBCWrapper {
       val isSigned = rsmd.isSigned(i + 1)
       val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
       val columnType =
-        getCatalystType(dataType, fieldSize, fieldScale, isSigned)
+        getCatalystType(dataType, fieldSize, fieldScale, isSigned, Some(params))
       val meta = new MetadataBuilder().putString("redshift_type", rsType).build()
       fields(i) = StructField(
         // Add quotes around column names if Redshift would usually require them.
@@ -334,7 +337,8 @@ private[redshift] class JDBCWrapper {
       sqlType: Int,
       precision: Int,
       scale: Int,
-      signed: Boolean): DataType = {
+      signed: Boolean,
+      params: Option[MergedParameters] = None): DataType = {
 
     val answer = sqlType match {
       // scalastyle:off
@@ -369,7 +373,7 @@ private[redshift] class JDBCWrapper {
         if precision != 0 || scale != 0 => DecimalType(precision, scale)
       case java.sql.Types.NUMERIC       => DecimalType(38, 18) // Spark 1.5.0 default
       // Redshift Real is represented in 4 bytes IEEE Float. https://docs.aws.amazon.com/redshift/latest/dg/r_Numeric_types201.html
-      case java.sql.Types.REAL          => FloatType
+      case java.sql.Types.REAL          => if (params.exists(_.glueLegacyJdbcRealTypeMapping)) { DoubleType } else { FloatType }
       case java.sql.Types.SMALLINT      => IntegerType
       case java.sql.Types.TINYINT       => IntegerType
       case _                            => null
@@ -472,8 +476,8 @@ private[redshift] object DefaultJDBCWrapper extends JDBCWrapper {
         .prepareStatement(bindVariableEnabled)(connection)
         .getMetaData
 
-    def tableSchema(name: String, params: MergedParameters): StructType =
-      resolveTable(connection, name)
+    def tableSchema(name: String, params: Option[MergedParameters]): StructType =
+      resolveTable(connection, name, params)
 
     def tableSchema(statement: RedshiftSQLStatement,
                     params: MergedParameters): StructType =
