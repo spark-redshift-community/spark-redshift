@@ -18,6 +18,8 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
 import com.amazonaws.services.s3.{AmazonS3Client, AmazonS3URI}
 import org.apache.hadoop.conf.Configuration
@@ -255,6 +257,13 @@ private[redshift] object Utils {
       } else {
 
       }
+    }
+  }
+
+  def collectMetrics(params: MergedParameters): Unit = {
+    // Track legacy parameters for deprecation
+    if (params.legacyJdbcRealTypeMapping) {
+      log.info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
     }
   }
 

@@ -41,6 +41,7 @@ class DefaultSource(
   if (BuildInfo.version.contains("-amzn-")) {
     log.info("amazon-spark-redshift-connector")
   }
+
   /**
    * Default constructor required by Data Source API
    */

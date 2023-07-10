@@ -380,7 +380,7 @@ private[redshift] class JDBCWrapper {
         if precision != 0 || scale != 0 => DecimalType(precision, scale)
       case java.sql.Types.NUMERIC       => DecimalType(38, 18) // Spark 1.5.0 default
       // Redshift Real is represented in 4 bytes IEEE Float. https://docs.aws.amazon.com/redshift/latest/dg/r_Numeric_types201.html
-      case java.sql.Types.REAL          => if (params.exists(_.glueLegacyJdbcRealTypeMapping)) { DoubleType } else { FloatType }
+      case java.sql.Types.REAL          => if (params.exists(_.legacyJdbcRealTypeMapping)) { DoubleType } else { FloatType }
       case java.sql.Types.SMALLINT      => IntegerType
       case java.sql.Types.TINYINT       => IntegerType
       case _                            => null

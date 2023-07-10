@@ -96,6 +96,7 @@ private[redshift] case class RedshiftRelation(
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
     checkRedshiftAndS3OnSameRegion(params.jdbcUrl, params.rootTempDir, s3ClientFactory(creds))
     Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
+    Utils.collectMetrics(params)
 
     if (requiredColumns.isEmpty) {
       // In the special case where no columns were requested, issue a `count(*)` against Redshift
@@ -243,6 +244,7 @@ private[redshift] case class RedshiftRelation(
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
     checkRedshiftAndS3OnSameRegion(params.jdbcUrl, params.rootTempDir, s3ClientFactory(creds))
     Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
+    Utils.collectMetrics(params)
 
     // If the same query was run before, get the result s3 path from the cache.
     // Otherwise, unload the data.

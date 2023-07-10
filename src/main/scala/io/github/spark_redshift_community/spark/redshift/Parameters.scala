@@ -30,7 +30,7 @@ private[redshift] object Parameters {
   val PARAM_AUTO_PUSHDOWN: String = "autopushdown"
   val PARAM_PUSHDOWN_S3_RESULT_CACHE: String = "autopushdown.s3_result_cache"
   val PARAM_UNLOAD_S3_FORMAT: String = "unload_s3_format"
-  val PARAM_GLUE_LEGACY_JDBC_REAL_TYPE_MAPPING: String = "glue_legacy_jdbc_real_type_mapping"
+  val PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING: String = "legacy_jdbc_real_type_mapping"
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
@@ -52,7 +52,7 @@ private[redshift] object Parameters {
     PARAM_AUTO_PUSHDOWN -> "true",
     PARAM_PUSHDOWN_S3_RESULT_CACHE -> "false",
     PARAM_UNLOAD_S3_FORMAT -> "PARQUET", // values: PARQUET, TEXT
-    PARAM_GLUE_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false"
+    PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false"
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
@@ -321,7 +321,7 @@ private[redshift] object Parameters {
     /**
      * Enables the use of doubles for real to support legacy applications
      */
-    def glueLegacyJdbcRealTypeMapping: Boolean =
-      parameters(PARAM_GLUE_LEGACY_JDBC_REAL_TYPE_MAPPING).toBoolean
+    def legacyJdbcRealTypeMapping: Boolean =
+      parameters(PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING).toBoolean
   }
 }

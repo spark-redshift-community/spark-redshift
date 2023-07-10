@@ -394,6 +394,7 @@ private[redshift] class RedshiftWriter(
       new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
 
     Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
+    Utils.collectMetrics(params)
 
     // Save the table's rows to S3:
     val manifestUrl = unloadData(

@@ -298,12 +298,12 @@ class RedshiftReadSuite extends IntegrationSuiteBase {
     }
   }
 
-  test("read reals as floats when glue_legacy_jdbc_real_type_mapping option is false") {
-    withTempRedshiftTable("readRealsGlueLegacyFalse") { tableName =>
+  test("read reals as floats when legacy_jdbc_real_type_mapping option is false") {
+    withTempRedshiftTable("readRealsLegacyFalse") { tableName =>
       createTestRealDataInRedshift(tableName)
       val df = read
         .option("dbtable", tableName)
-        .option(Parameters.PARAM_GLUE_LEGACY_JDBC_REAL_TYPE_MAPPING, value = false)
+        .option(Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, value = false)
         .load()
       assert(df.schema match {
         case StructType(Array(StructField(_, FloatType, _, _))) => true
@@ -312,12 +312,12 @@ class RedshiftReadSuite extends IntegrationSuiteBase {
     }
   }
 
-  test("read reals as doubles when glue_legacy_jdbc_real_type_mapping option is true") {
-    withTempRedshiftTable("readRealsGlueLegacyTrue") { tableName =>
+  test("read reals as doubles when legacy_jdbc_real_type_mapping option is true") {
+    withTempRedshiftTable("readRealsLegacyTrue") { tableName =>
       createTestRealDataInRedshift(tableName)
       val df = read
         .option("dbtable", tableName)
-        .option(Parameters.PARAM_GLUE_LEGACY_JDBC_REAL_TYPE_MAPPING, value = true)
+        .option(Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, value = true)
         .load()
       assert(df.schema match {
         case StructType(Array(StructField(_, DoubleType, _, _))) => true
