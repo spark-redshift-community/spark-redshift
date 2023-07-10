@@ -67,9 +67,10 @@ This library is more suited to ETL than interactive queries, since large amounts
     - [Setting a custom column type](#setting-a-custom-column-type)
     - [Configuring column encoding](#configuring-column-encoding)
     - [Setting descriptions on columns](#setting-descriptions-on-columns)
+- [Auto Pushdown](#autopushdown)
 - [Transactional Guarantees](#transactional-guarantees)
 - [Common problems and solutions](#common-problems-and-solutions)
- - [S3 bucket and Redshift cluster are in different AWS regions](#s3-bucket-and-redshift-cluster-are-in-different-aws-regions)
+- [S3 bucket and Redshift cluster are in different AWS regions](#s3-bucket-and-redshift-cluster-are-in-different-aws-regions)
 - [Migration Guide](#migration-guide)
 
 ## Installation
@@ -710,6 +711,39 @@ for more information.</p>
     </p>
     </td>
  </tr>
+ <tr>
+    <td><tt>autopushdown</tt></td>
+    <td>No</td>
+    <td>False</td>
+    <td>
+        <p>
+                Apply predicate and query pushdown by capturing and analyzing the Spark logical plans for SQL operations. 
+                The operations are translated into a SQL query and then executed in Redshift to improve performance.
+        </p>
+        <p>
+                Once autopushdown is enabled, it is enabled for all the Redshift tables in the same Spark session.
+        </p>
+    </td>
+ </tr>
+ <tr>
+    <td><tt>autopushdown.s3_result_cache</tt></td>
+    <td>No</td>
+    <td>True</td>
+    <td>Cache the query SQL to unload data S3 path mapping in memory so that the same query don't need to execute again in the same Spark session.</td>
+ </tr>
+ <tr>
+    <td><tt>autopushdown.unload_s3_format</tt>  (Experimental)</td>
+    <td>No</td>
+    <td>DEFAULT</td>
+    <td>
+        <p>
+        DEFAULT - unload the query result to text file format.
+        </p>
+        <p>
+        PARQUET - unload the query result to parquet file format.
+        </p>
+    </td>
+ </tr>
 </table>
 
 ## Additional configuration options
@@ -781,6 +815,38 @@ When creating a table, this library can be configured to use a specific compress
 ### Setting descriptions on columns
 
 Redshift allows columns to have descriptions attached that should show up in most query tools (using the `COMMENT` command). You can set the `description` column metadata field to specify a description for individual columns.
+
+## Auto Pushdown
+
+The Spark Connector applies predicate and query pushdown by capturing and analyzing the Spark logical plans for SQL operations. When the data source is Redshift, the operations are translated into a SQL query and then executed in Redshift to improve performance.
+
+Not all of Spark SQL operators can be pushed down. When pushdown fails, the connector falls back to a less-optimized execution plan. The unsupported operations are instead performed in Spark.
+
+To enable auto pushdown, set the "autopushdown" to true as below:
+
+```scala
+import sqlContext.implicits._
+val eventsDF = sqlContext.read
+	.format("io.github.spark_redshift_community.spark.redshift")
+	.option("url",jdbcURL )
+	.option("tempdir", tempS3Dir)
+	.option("dbtable", "event")
+    .option("autopushdown", "true")
+	.load()
+eventsDF.show()
+```
+
+By default, the query result is unload to S3 as text file.  There is an experimental option as below to unload the result as parquet format. According to Redshift database developer guide, Parquet format is up to 2x faster to unload and consumes up to 6x less storage in Amazon S3, compared with text formats.
+
+```scala
+    .option("autopushdown", "true")
+    .option("autopushdown.unload_s3_format", "PARQUET")
+```
+
+Refer to integration test cases for supported operations for pushdown.
+
+#### Acknowledgments
+Auto Pushdown is adapted from **[spark-snowflake connector](https://github.com/snowflakedb/spark-snowflake)** project.
 
 ## Transactional Guarantees
 

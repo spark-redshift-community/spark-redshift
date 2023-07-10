@@ -1,11 +1,8 @@
 # spark-redshift Changelog
 
-## 5.1.0 (2022-09-22)
+## 5.10.0 (2022-06-06)
 
-- Make manifest file path use s3a/n scheme
-- Add catalyst type mapping for LONGVARCHAR
-- Upgrade to Spark 3.2
-- Fix log4j-apt compatability with Spark 3.2
+- Support autopushdown as did in Spark Snowflake Connector
 
 ## 5.0.5 (2021-11-09)
 
