@@ -153,7 +153,6 @@ class DefaultNoPushdownStringLikeSuite extends PushdownStringLikeSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-@DoNotDiscover // Disable until [Redshift-7057] is fixed.
 class ParquetNoPushdownStringLikeSuite extends PushdownStringLikeSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"

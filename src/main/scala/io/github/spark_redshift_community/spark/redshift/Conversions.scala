@@ -178,6 +178,9 @@ private[redshift] object Conversions {
         // Therefore, we do the conversion here to workaround the Redshift limitation.
         if (from == null && redshiftType == "super") {
           org.apache.spark.unsafe.types.UTF8String.fromString("null")
+        } else if (from != null && redshiftType == "bpchar") {
+          org.apache.spark.unsafe.types.UTF8String.fromString(
+            from.asInstanceOf[String]).trimRight()
         } else {
           org.apache.spark.unsafe.types.UTF8String.fromString(
             from.asInstanceOf[String])

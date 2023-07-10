@@ -178,7 +178,6 @@ class DefaultNoPushdownStringPadSuite extends PushdownStringPadSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-@DoNotDiscover // Disable until the following SIM is fixed: [Redshift-7057]
 class ParquetNoPushdownStringPadSuite extends PushdownStringPadSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
