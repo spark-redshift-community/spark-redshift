@@ -686,7 +686,7 @@ for more information.</p>
  <tr>
     <td><tt>unload_s3_format</tt></td>
     <td>No</td>
-    <td>TEXT</td>
+    <td>PARQUET</td>
     <td>
         <p>
         PARQUET - unload the query result to parquet file format.
