@@ -164,8 +164,13 @@ private[redshift] object Conversions {
       case IntegerType if from!=null => from.asInstanceOf[Number].intValue
       case LongType if from!=null => from.asInstanceOf[Number].longValue
       case ShortType if from!=null => from.asInstanceOf[Number].shortValue
-      case DecimalType() if from!=null =>
-        org.apache.spark.sql.types.Decimal(from.asInstanceOf[java.math.BigDecimal])
+      case DecimalType() if from!=null => {
+        if (from.isInstanceOf[Double]) {
+          org.apache.spark.sql.types.Decimal(from.asInstanceOf[Double].doubleValue)
+        } else {
+          org.apache.spark.sql.types.Decimal(from.asInstanceOf[java.math.BigDecimal])
+        }
+      }
       case StringType if from!=null =>
         org.apache.spark.unsafe.types.UTF8String.fromString(
           from.asInstanceOf[String]

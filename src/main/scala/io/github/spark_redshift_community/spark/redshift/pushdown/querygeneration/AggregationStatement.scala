@@ -17,10 +17,11 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
-import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
+import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException, Utils}
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, RedshiftSQLStatement}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
+import org.apache.spark.sql.types.{DecimalType, DoubleType, FloatType}
 
 import scala.language.postfixOps
 
@@ -38,15 +39,28 @@ private[querygeneration] object AggregationStatement {
       case _: AggregateExpression =>
         // Take only the first child, as all of the functions below have only one.
         expr.children.headOption.flatMap(agg_fun => {
+          val distinct: RedshiftSQLStatement =
+            if (expr.sql contains "(DISTINCT ") ConstantString("DISTINCT") !
+            else EmptyRedshiftSQLStatement()
           Option(agg_fun match {
-            case _: Average | _: Count | _: Max | _: Min | _: Sum =>
-              val distinct: RedshiftSQLStatement =
-                if (expr.sql contains "(DISTINCT ") ConstantString("DISTINCT") !
-                else EmptyRedshiftSQLStatement()
-
+            case _: Count | _: Max | _: Min | _: Sum =>
               ConstantString(agg_fun.prettyName.toUpperCase) +
                 blockStatement(
                   distinct + convertStatements(fields, agg_fun.children: _*)
+                )
+            case avg: Average =>
+              // Type casting is needed if column type is short, int, long or decimal with scale 0.
+              // Because Redshift and Spark have different behavior on AVG on these types, type
+              // should be casted to float to keep result numbers after decimal point.
+              val doCast: Boolean = avg.child.dataType match {
+                case _: FloatType | DoubleType => false
+                case d: DecimalType if d.scale != 0 => false
+                case _ => true
+              }
+              ConstantString(agg_fun.prettyName.toUpperCase) +
+                blockStatement(
+                  distinct + convertStatements(fields, agg_fun.children: _*) +
+                    (if (doCast) ConstantString("::FLOAT") ! else EmptyRedshiftSQLStatement())
                 )
             case _ =>
               // This exception is not a real issue. It will be caught in
