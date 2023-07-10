@@ -1,0 +1,14 @@
+- repo: local
+  hooks:
+    - id: sbt-compile-package
+      name: sbt-compile-package
+      entry: bash -c 'sbt compile package'
+      language: system
+      types: [file]
+      pass_filenames: false
+    - id: unit-tests
+      name: unit-tests
+      entry: bash -c 'sbt test'
+      language: system
+      types: [file]
+      pass_filenames: false
