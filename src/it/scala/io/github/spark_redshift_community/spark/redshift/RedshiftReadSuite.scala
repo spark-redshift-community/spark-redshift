@@ -17,8 +17,8 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import java.sql.Timestamp
-import org.apache.spark.sql.types.{DoubleType, FloatType, LongType, StructField, StructType}
-import org.apache.spark.sql.{Row, execution}
+import org.apache.spark.sql.types.{CalendarIntervalType, DoubleType, FloatType, LongType, StructField, StructType}
+import org.apache.spark.sql.{AnalysisException, Row, execution}
 
 /**
  * End-to-end tests of functionality which only impacts the read path (e.g. filter pushdown).
@@ -323,6 +323,22 @@ class RedshiftReadSuite extends IntegrationSuiteBase {
         case StructType(Array(StructField(_, DoubleType, _, _))) => true
         case _ => false
       })
+    }
+  }
+
+  test("reads with unsupported type in schema throws") {
+    // Tests with text unload format as parquet implements its own check for supported data types
+    assertThrows[AnalysisException] {
+      withTempRedshiftTable("testTable") { name =>
+        conn.createStatement().executeUpdate(s"create table $name (id integer)")
+        val invalidSchema = StructType(StructField("id", CalendarIntervalType) :: Nil)
+        read
+          .schema(invalidSchema)
+          .option("unload_s3_format", "TEXT")
+          .option("dbtable", name)
+          .load
+          .collect
+      }
     }
   }
 }
