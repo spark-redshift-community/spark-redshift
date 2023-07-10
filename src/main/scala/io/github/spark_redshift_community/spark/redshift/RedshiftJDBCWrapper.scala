@@ -45,6 +45,7 @@ import scala.util.control.NonFatal
 private[redshift] class JDBCWrapper {
 
   private val log = LoggerFactory.getLogger(getClass)
+  private val DEFAULT_APP_NAME = "spark-redshift-connector"
 
   private val ec: ExecutionContext = {
     val threadFactory = new ThreadFactory {
@@ -270,6 +271,12 @@ private[redshift] class JDBCWrapper {
       properties.setProperty("user", user)
       properties.setProperty("password", password)
     }
+
+    // Set the application name property if not already specified by the client.
+    if (!url.toLowerCase().contains("applicationname=")) {
+      properties.setProperty("ApplicationName", DEFAULT_APP_NAME)
+    }
+
     driver.connect(url, properties)
   }
 
