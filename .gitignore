@@ -6,3 +6,5 @@ project/target
 build/*.jar
 aws_variables.env
 derby.log
+metastore_db/
+lib_managed/
