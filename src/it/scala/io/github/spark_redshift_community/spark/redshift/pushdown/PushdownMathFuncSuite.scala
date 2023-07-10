@@ -406,3 +406,13 @@ class ParquetNoPushdownMathFuncSuite extends TextNoPushdownMathFuncSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
+
+class TextPushdownNoCacheMathFuncSuite
+  extends TextMathFuncPushdownSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheMathFuncSuite
+  extends ParquetMathFuncPushdownSuite {
+  override protected val s3_result_cache = "false"
+}

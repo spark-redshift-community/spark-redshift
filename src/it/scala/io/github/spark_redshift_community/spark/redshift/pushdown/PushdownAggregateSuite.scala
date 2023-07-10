@@ -207,3 +207,13 @@ class ParquetNoPushdownAggregateSuite extends PushdownAggregateSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
+
+class TextPushdownNoCacheAggregateSuite
+  extends TextAggregatePushdownSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheAggregateSuite
+  extends ParquetAggregatePushdownSuite {
+  override protected val s3_result_cache = "false"
+}

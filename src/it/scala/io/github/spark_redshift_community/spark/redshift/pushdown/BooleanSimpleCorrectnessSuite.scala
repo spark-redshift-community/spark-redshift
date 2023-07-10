@@ -768,3 +768,13 @@ class ParquetNoPushdownSimpleBooleanSuite extends BooleanSimpleCorrectnessSuite 
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
+
+class TextPushdownNoCacheBooleanSimpleCorrectnessSuite
+  extends TextSimpleBooleanPushdownSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheBooleanSimpleCorrectnessSuite
+extends ParquetSimpleBooleanPushdownSuite {
+  override protected val s3_result_cache = "false"
+}

@@ -982,7 +982,7 @@ class ParquetCompareOperatorBooleanCorrectnessSuite extends BooleanCompareOperat
 }
 
 class TextNoPushdownBooleanCompareOperatorCorrectnessSuite
-  extends BooleanEqualOperatorCorrectnessSuite {
+  extends BooleanCompareOperatorCorrectnessSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "false"
 }
@@ -991,4 +991,14 @@ class ParquetNoPushdownBooleanCompareOperatorCorrectnessSuite
   extends BooleanCompareOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
+}
+
+class TextPushdownNoCacheBooleanCompareOperatorCorrectnessSuite
+  extends TextCompareOperatorBooleanCorrectnessSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheBooleanCompareOperatorCorrectnessSuite
+  extends ParquetCompareOperatorBooleanCorrectnessSuite {
+  override protected val s3_result_cache = "false"
 }

@@ -229,3 +229,13 @@ class ParquetNoPushdownBooleanNullOperatorCorrectnessSuite
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
+
+class TextPushdownNoCacheBooleanNullOperatorCorrectnessSuite
+  extends TextNullOperatorBooleanCorrectnessSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheBooleanNullOperatorCorrectnessSuite
+  extends ParquetNullOperatorBooleanCorrectnessSuite {
+  override protected val s3_result_cache = "false"
+}

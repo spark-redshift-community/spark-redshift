@@ -128,3 +128,13 @@ class ParquetNoPushdownNonNativeDataTypeCorrectnessSuite extends NonNativeDataTy
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
+
+class TextPushdownNoCacheNonNativeDataTypeCorrectnessSuite
+  extends TextPushdownNonNativeDataTypeCorrectnessSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheNonNativeDataTypeCorrectnessSuite
+  extends ParquetPushdownNonNativeDataTypeCorrectnessSuite {
+  override protected val s3_result_cache = "false"
+}

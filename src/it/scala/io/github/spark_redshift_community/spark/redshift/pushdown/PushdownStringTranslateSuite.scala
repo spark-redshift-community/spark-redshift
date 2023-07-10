@@ -117,3 +117,13 @@ class ParquetNoPushdownStringTranslateSuite extends PushdownStringTranslateSuite
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
+
+class TextPushdownNoCacheStringTranslateSuite
+  extends TextStringTranslatePushdownSuite {
+  override protected val s3_result_cache = "false"
+}
+
+class ParquetPushdownNoCacheStringTranslateSuite
+  extends ParquetStringTranslatePushdownSuite {
+  override protected val s3_result_cache = "false"
+}
