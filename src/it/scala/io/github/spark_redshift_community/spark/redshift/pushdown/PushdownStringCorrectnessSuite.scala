@@ -15,8 +15,6 @@
  */
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
-import org.scalatest.DoNotDiscover
-
 abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectnessSuite
                                               with StringAsciiCorrectnessSuite
                                               with StringLengthCorrectnessSuite

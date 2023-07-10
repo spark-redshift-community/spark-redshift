@@ -16,7 +16,6 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.Row
-import org.scalatest.DoNotDiscover
 
 abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
@@ -60,7 +59,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       |QzRhyxsYRyaNpiMmyKcSOrgt4Uv6NmOL6yfeq0CtOMFq910WIGbQXOYsX2kvHtuSqb0MA
       |Nf70dqRVopWxDuaXb7Ghpm8xt4CWKq9NCzXB7DDzpYSpqNlryoJjN4sPLKnfb5zF""".stripMargin
       
-  test("child in pushdown") {
+  test("child in pushdown", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_smallint_raw", "(0,1)", 21),
@@ -139,7 +138,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
     })
   }
 
-  test("child in pushdown - decimal 18 scale") {
+  test("child in pushdown - decimal 18 scale", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_decimal_18_18_raw", "(-1,0,1)", 0),
@@ -170,7 +169,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
     })
   }
 
-  test("child in pushdown - decimal 37 scale") {
+  test("child in pushdown - decimal 37 scale", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_decimal_38_37_raw",
@@ -210,7 +209,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
     })
   }
 
-  test("child in pushdown - string + varchar types") {
+  test("child in pushdown - string + varchar types", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_char_1_raw", s"('$string255Char', '$string2000Char')",
@@ -323,7 +322,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
     })
   }
 
-  test("child in pushdown - date and timestamp type") {
+  test("child in pushdown - date and timestamp type", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_date_raw", "('2010-05-11', '2010-05-12')", "(\\'2010-05-11\\', \\'2010-05-12\\')", 2),
@@ -416,24 +415,21 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
 
 
 }
-@DoNotDiscover
+
 class DefaultInOperatorBooleanCorrectnessSuite extends BooleanInOperatorCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
 }
 
-@DoNotDiscover
 class ParquetInOperatorBooleanCorrectnessSuite extends BooleanInOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
-@DoNotDiscover
 class DefaultNoPushdownBooleanInOperatorCorrectnessSuite
   extends BooleanInOperatorCorrectnessSuite {
   override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
 }
 
-@DoNotDiscover
 class ParquetNoPushdownBooleanInOperatorCorrectnessSuite
   extends BooleanInOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"

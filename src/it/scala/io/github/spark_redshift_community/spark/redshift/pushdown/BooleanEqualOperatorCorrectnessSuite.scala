@@ -16,7 +16,6 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.Row
-import org.scalatest.DoNotDiscover
 
 abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
@@ -60,7 +59,7 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
       |QzRhyxsYRyaNpiMmyKcSOrgt4Uv6NmOL6yfeq0CtOMFq910WIGbQXOYsX2kvHtuSqb0MA
       |Nf70dqRVopWxDuaXb7Ghpm8xt4CWKq9NCzXB7DDzpYSpqNlryoJjN4sPLKnfb5zF""".stripMargin
       
-  test("child equal pushdown") {
+  test("child equal pushdown", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_smallint_raw", 100, 10),
@@ -108,7 +107,7 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
     })
   }
 
-  test("child Equal pushdown - decimal 18 scale") {
+  test("child Equal pushdown - decimal 18 scale", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_decimal_18_18_raw", "-1.230000000000000000", 0),
@@ -140,7 +139,7 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
     })
   }
 
-  test("child Equal pushdown - decimal 37 scale") {
+  test("child Equal pushdown - decimal 37 scale", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_decimal_38_37_raw", "0.7664120400000000000000000000000000001", 0),
@@ -172,7 +171,7 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
     })
   }
 
-  test("child Equal pushdown - string + varchar types") {
+  test("child Equal pushdown - string + varchar types", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_char_1_raw", s"'$string255Char'", s"\\'$string255Char\\'", 0),
@@ -240,7 +239,7 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
     })
   }
 
-  test("child Equal pushdown - date type") {
+  test("child Equal pushdown - date type", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_date_raw", "'2010-05-11'", 2),
@@ -269,7 +268,7 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
     })
   }
 
-  test("child Equal pushdown - timestamp type") {
+  test("child Equal pushdown - timestamp type", PreloadTest) {
     // "Column name" and result size
     val input = List(
       ("col_timestamp_raw", "'1994-05-19 01:03:02'", 0),
@@ -338,24 +337,21 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
 
 
 }
-@DoNotDiscover
+
 class DefaultEqualOperatorBooleanCorrectnessSuite extends BooleanEqualOperatorCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
 }
 
-@DoNotDiscover
 class ParquetEqualOperatorBooleanCorrectnessSuite extends BooleanEqualOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
-@DoNotDiscover
 class DefaultNoPushdownBooleanEqualOperatorCorrectnessSuite
   extends BooleanEqualOperatorCorrectnessSuite {
   override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
 }
 
-@DoNotDiscover
 class ParquetNoPushdownBooleanEqualOperatorCorrectnessSuite
   extends BooleanEqualOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"

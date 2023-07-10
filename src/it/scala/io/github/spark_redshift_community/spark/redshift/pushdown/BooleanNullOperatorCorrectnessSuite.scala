@@ -16,7 +16,6 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.Row
-import org.scalatest.DoNotDiscover
 
 abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
@@ -179,7 +178,7 @@ abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSu
     "col_timestamptz_runlength",
     "col_timestamptz_zstd"
   )
-  test("child IS NULL pushdown") {
+  test("child IS NULL pushdown", PreloadTest) {
     // "Column name" and result size
     allColumnNames.foreach( c_name => {
       val column_name = c_name.toUpperCase()
@@ -195,7 +194,7 @@ abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSu
     })
   }
 
-  test("child IS NOT NULL pushdown") {
+  test("child IS NOT NULL pushdown", PreloadTest) {
     allColumnNames.foreach( c_name => {
       val column_name = c_name.toUpperCase()
       checkAnswer(
@@ -211,24 +210,20 @@ abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSu
   }
 }
 
-@DoNotDiscover
 class DefaultNullOperatorBooleanCorrectnessSuite extends BooleanNullOperatorCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
 }
 
-@DoNotDiscover
 class ParquetNullOperatorBooleanCorrectnessSuite extends BooleanNullOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
-@DoNotDiscover
 class DefaultNoPushdownBooleanNullOperatorCorrectnessSuite
   extends BooleanNullOperatorCorrectnessSuite {
   override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
 }
 
-@DoNotDiscover
 class ParquetNoPushdownBooleanNullOperatorCorrectnessSuite
   extends BooleanNullOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"

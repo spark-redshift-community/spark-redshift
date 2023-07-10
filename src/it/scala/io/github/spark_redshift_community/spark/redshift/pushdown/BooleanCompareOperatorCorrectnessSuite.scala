@@ -16,7 +16,6 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.Row
-import org.scalatest.DoNotDiscover
 
 abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
@@ -60,7 +59,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       |QzRhyxsYRyaNpiMmyKcSOrgt4Uv6NmOL6yfeq0CtOMFq910WIGbQXOYsX2kvHtuSqb0MA
       |Nf70dqRVopWxDuaXb7Ghpm8xt4CWKq9NCzXB7DDzpYSpqNlryoJjN4sPLKnfb5zF""".stripMargin
       
-  test("child GreaterThanOrEqual and LessThan pushdown") {
+  test("child GreaterThanOrEqual and LessThan pushdown", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_smallint_raw", 100, 1309),
@@ -120,7 +119,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child GreaterThanOrEqual and LessThan pushdown (int v.s. float type)") {
+  test("child GreaterThanOrEqual and LessThan pushdown (int v.s. float type)", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_smallint_raw", 100.0001, 1299),
@@ -180,7 +179,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child LessThanOrEqual and GreaterThan pushdown") {
+  test("child LessThanOrEqual and GreaterThan pushdown", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_smallint_raw", 100, 3701),
@@ -240,7 +239,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child LessThanOrEqual and GreaterThan pushdown (int v.s. float)") {
+  test("child LessThanOrEqual and GreaterThan pushdown (int v.s. float)", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_smallint_raw", 100.0001, 3701),
@@ -300,7 +299,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child GreaterThanOrEqual and LessThan pushdown - decimal 18 scale") {
+  test("child GreaterThanOrEqual and LessThan pushdown - decimal 18 scale", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_decimal_18_18_raw", "-1.230000000000000000", 5000),
@@ -344,7 +343,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child LessThanOrEqual and GreaterThan pushdown - decimal 18 scale") {
+  test("child LessThanOrEqual and GreaterThan pushdown - decimal 18 scale", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_decimal_18_18_raw", "-1.230000000000000000", 0),
@@ -388,7 +387,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child LessThanOrEqual and GreaterThan pushdown - decimal 18 scale v.s int") {
+  test("child LessThanOrEqual and GreaterThan pushdown - decimal 18 scale v.s int", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_decimal_18_18_raw", "-1", 0),
@@ -430,7 +429,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child GreaterThanOrEqual and LessThan pushdown - decimal 37 scale") {
+  test("child GreaterThanOrEqual and LessThan pushdown - decimal 37 scale", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_decimal_38_37_raw", "0.7664120400000000000000000000000000001", 1311),
@@ -474,7 +473,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child LessThanOrEqual and GreaterThan pushdown - decimal 37 scale") {
+  test("child LessThanOrEqual and GreaterThan pushdown - decimal 37 scale", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_decimal_38_37_raw", "0.7664120400000000000000000000000000001", 3689),
@@ -518,7 +517,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child GreaterThanOrEqual and LessThan pushdown - string + varchar types") {
+  test("child GreaterThanOrEqual and LessThan pushdown - string + varchar types", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_char_1_raw", s"'$string255Char'", s"\\'$string255Char\\'", 0),
@@ -597,7 +596,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child LessThanOrEqual and GreaterThan pushdown - string + varchar types") {
+  test("child LessThanOrEqual and GreaterThan pushdown - string + varchar types", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_char_1_raw", s"'$string255Char'", s"\\'$string255Char\\'", 5000),
@@ -676,7 +675,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child GreaterThanOrEqual and LessThan pushdown - date type") {
+  test("child GreaterThanOrEqual and LessThan pushdown - date type", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_date_raw", "'2010-05-11'", 824),
@@ -717,7 +716,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child LessThanOrEqual and GreaterThan pushdown - date type") {
+  test("child LessThanOrEqual and GreaterThan pushdown - date type", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_date_raw", "'2010-05-11'", 4178),
@@ -758,7 +757,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child GreaterThanOrEqual and LessThan pushdown - timestamp type") {
+  test("child GreaterThanOrEqual and LessThan pushdown - timestamp type", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_timestamp_raw", "'1994-05-19 01:03:02'", 2519),
@@ -806,7 +805,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child LessThanOrEqual and GreaterThan pushdown - timestamp type") {
+  test("child LessThanOrEqual and GreaterThan pushdown - timestamp type", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_timestamp_raw", "'1994-05-19 01:03:02'", 2481),
@@ -854,7 +853,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child GreaterThanOrEqual and LessThan pushdown - float type") {
+  test("child GreaterThanOrEqual and LessThan pushdown - float type", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_float4_raw", -26.2983, 4144),
@@ -896,7 +895,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child LessThanOrEqual and GreaterThan pushdown - float4 type") {
+  test("child LessThanOrEqual and GreaterThan pushdown - float4 type", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_float4_raw", 10.8749, 3204),
@@ -934,7 +933,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
     })
   }
 
-  test("child LessThanOrEqual and GreaterThan pushdown - float8 type") {
+  test("child LessThanOrEqual and GreaterThan pushdown - float8 type", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
       ("col_float8_raw", -6.5868966897085, 2195),
@@ -973,24 +972,21 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
   }
 
 }
-@DoNotDiscover
+
 class DefaultCompareOperatorBooleanCorrectnessSuite extends BooleanCompareOperatorCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
 }
 
-@DoNotDiscover
 class ParquetCompareOperatorBooleanCorrectnessSuite extends BooleanCompareOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
-@DoNotDiscover
 class BooleanCompareBooleanCompareOperatorCorrectnessSuite
   extends BooleanEqualOperatorCorrectnessSuite {
   override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
 }
 
-@DoNotDiscover
 class ParquetNoPushdownBooleanCompareOperatorCorrectnessSuite
   extends BooleanCompareOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
