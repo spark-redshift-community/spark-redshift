@@ -48,7 +48,7 @@ private[querygeneration] object DateStatement {
               convertStatement(startDate, fields)
           )
 
-      case _: TruncTimestamp | _: AddMonths =>
+      case _: AddMonths | _: TruncTimestamp =>
         ConstantString(expr.prettyName.toUpperCase) +
           blockStatement(convertStatements(fields, expr.children: _*))
 

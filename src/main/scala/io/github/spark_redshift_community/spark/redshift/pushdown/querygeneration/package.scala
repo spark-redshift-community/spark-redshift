@@ -18,7 +18,7 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, NamedExpression}
-import org.apache.spark.sql.types.MetadataBuilder
+import org.apache.spark.sql.types.{MetadataBuilder, TimestampType}
 import org.slf4j.LoggerFactory
 
 import scala.language.postfixOps
@@ -151,7 +151,20 @@ package object querygeneration {
 
       expr match {
         case a @ Alias(child: Expression, name: String) =>
-          Alias(child, altName)(a.exprId, Seq.empty[String], Some(metadata))
+          val meta = {
+            if (child.references.isEmpty) {
+              metadata
+            } else {
+              val r = child.references.head
+              if (child.dataType == r.dataType && r.metadata.contains("redshift_type")) {
+                new MetadataBuilder()
+                  .withMetadata(metadata)
+                  .putString("redshift_type", r.metadata.getString("redshift_type"))
+                  .build
+              } else metadata
+            }
+          }
+          Alias(child, altName)(a.exprId, Seq.empty[String], Some(meta))
         case _ =>
           Alias(expr, altName)(expr.exprId, Seq.empty[String], Some(metadata))
       }

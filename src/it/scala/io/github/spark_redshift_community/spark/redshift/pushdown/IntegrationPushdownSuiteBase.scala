@@ -19,8 +19,9 @@ import io.github.spark_redshift_community.spark.redshift.{IntegrationSuiteBase, 
 import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_UNLOAD_S3_FORMAT}
 import org.apache.spark.sql.{DataFrameReader, SQLContext}
 import java.time.format.DateTimeFormatter
+import org.scalatest.Tag
 
-import org.apache.spark.SparkContext
+object TimestamptzTest extends Tag("TimestamptzTest")
 
 class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected var test_table: String = setTestTableName()

@@ -180,13 +180,16 @@ private[redshift] class JDBCWrapper {
       var i = 0
       while (i < ncols) {
         val columnName = rsmd.getColumnLabel(i + 1)
+        val rsType = rsmd.getColumnTypeName(i + 1)
         val dataType = rsmd.getColumnType(i + 1)
         val fieldSize = rsmd.getPrecision(i + 1)
         val fieldScale = rsmd.getScale(i + 1)
         val isSigned = rsmd.isSigned(i + 1)
         val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
         val columnType = getCatalystType(dataType, fieldSize, fieldScale, isSigned)
-        fields(i) = StructField(columnName, columnType, nullable)
+        val meta = new MetadataBuilder().putString("redshift_type", rsType).build()
+
+        fields(i) = StructField(columnName, columnType, nullable, meta)
         i = i + 1
       }
       new StructType(fields)
@@ -203,6 +206,7 @@ private[redshift] class JDBCWrapper {
     var i = 0
     while (i < ncols) {
       val columnName = rsmd.getColumnLabel(i + 1)
+      val rsType = rsmd.getColumnTypeName(i + 1)
       val dataType = rsmd.getColumnType(i + 1)
       val fieldSize = rsmd.getPrecision(i + 1)
       val fieldScale = rsmd.getScale(i + 1)
@@ -210,13 +214,13 @@ private[redshift] class JDBCWrapper {
       val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
       val columnType =
         getCatalystType(dataType, fieldSize, fieldScale, isSigned)
+      val meta = new MetadataBuilder().putString("redshift_type", rsType).build()
       fields(i) = StructField(
         // Add quotes around column names if Redshift would usually require them.
         if (columnName.matches("[_A-Z]([_0-9A-Z])*")) columnName
         else s""""$columnName"""",
         columnType,
-        nullable
-      )
+        nullable, meta)
       i = i + 1
     }
     new StructType(fields)
