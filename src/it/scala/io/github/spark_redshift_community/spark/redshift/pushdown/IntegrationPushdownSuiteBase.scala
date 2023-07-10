@@ -85,18 +85,22 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
       .option(PARAM_UNLOAD_S3_FORMAT, s3format)
   }
 
-  def checkSqlStatement(
-		  expectedAnswerSpark3_2: String = "",
-      expectedAnswerSpark3_3: String = ""
+  def checkSqlStatement(expectedAnswerSpark3_2: String = "",
+                        expectedAnswerSpark3_3: String = "",
+                        expectedAnswerSpark3_3_1: String = ""
   ): Unit = {
     // If there is no operation pushed down into Redshift, there is no need to
     // validate executed statement in Redshift as it will be a simple select * statement.
     if (auto_pushdown.toBoolean) {
       val sparkVersion = sc.version
-      var expectedAnswer = expectedAnswerSpark3_2 // default
+      var expectedAnswer = expectedAnswerSpark3_2 // Spark default
 
-      if (sparkVersion == "3.3.0" && expectedAnswerSpark3_3 != "") {
-        expectedAnswer = expectedAnswerSpark3_3
+      if (sparkVersion.startsWith("3.3") && expectedAnswerSpark3_3 != "") {
+        expectedAnswer = expectedAnswerSpark3_3 // Spark 3.3.x default
+      }
+
+      if (sparkVersion == "3.3.1" && expectedAnswerSpark3_3_1 != "") {
+        expectedAnswer = expectedAnswerSpark3_3_1
       }
 
       assert(
