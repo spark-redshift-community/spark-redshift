@@ -33,11 +33,8 @@ abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectness
     doTest(sqlContext, testTrim05)
     doTest(sqlContext, testTrim06)
     doTest(sqlContext, testTrim07)
-    /* These cause errors as Redshift trims spaces and tabs whereas Spark only trims spaces
-       SIM [Redshift-7056] has been opened to address this issue
-    doTest(sqlContext, testTrim08, "testTrim08")
-    doTest(sqlContext, testTrim09, "testTrim09")
-     */
+    doTest(sqlContext, testTrim08)
+    doTest(sqlContext, testTrim09)
     doTest(sqlContext, testTrim10)
     doTest(sqlContext, testTrim11)
     doTest(sqlContext, testTrim12)
@@ -62,6 +59,9 @@ abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectness
     doTest(sqlContext, testTrim31)
     doTest(sqlContext, testTrim32)
     doTest(sqlContext, testTrim33)
+    doTest(sqlContext, testTrim34)
+    doTest(sqlContext, testTrim35)
+    doTest(sqlContext, testTrim36)
   }
 
   // Define length tests
