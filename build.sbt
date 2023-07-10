@@ -49,7 +49,7 @@ lazy val root = Project("spark-redshift", file("."))
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api" % "1.7.32",
-      "com.eclipsesource.minimal-json" % "minimal-json" % "0.9.4",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.1",
 
       "com.google.guava" % "guava" % "27.0.1-jre" % "test",
       "org.scalatest" %% "scalatest" % "3.0.5" % "test",

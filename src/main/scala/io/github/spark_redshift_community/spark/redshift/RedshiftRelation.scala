@@ -20,7 +20,8 @@ package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3Client
-import com.eclipsesource.json.Json
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import io.github.spark_redshift_community.spark.redshift.Conversions.parquetDataTypeConvert
 import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper.DataBaseOperations
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
@@ -340,8 +341,10 @@ private[redshift] case class RedshiftRelation(
     if(s3Client.doesObjectExist(s3URI.getBucket, s3URI.getKey + "manifest")) {
       val is = s3Client.getObject(s3URI.getBucket, s3URI.getKey + "manifest").getObjectContent
       val s3Files = try {
-        val entries = Json.parse(new InputStreamReader(is)).asObject().get("entries").asArray()
-        entries.iterator().asScala.map(_.asObject().get("url").asString()).toSeq
+        val mapper = new ObjectMapper
+        mapper.registerModule(DefaultScalaModule)
+        val entries = mapper.readTree(new InputStreamReader(is)).get("entries")
+        entries.iterator().asScala.map(_.get("url").asText()).toSeq
       } finally {
         is.close()
       }
