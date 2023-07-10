@@ -54,7 +54,8 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
       sqlContext.createDataFrame(
         sc.parallelize(Seq(Row(1))), StructType(StructField("SomeColumn", IntegerType) :: Nil)
       ),
-      expectedSchemaAfterLoad = Some(StructType(StructField("somecolumn", IntegerType) :: Nil))
+      expectedSchemaAfterLoad = Some(StructType(StructField("somecolumn", IntegerType, true,
+        new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
     )
   }
 
@@ -63,21 +64,24 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
       s"save_with_column_names_that_are_reserved_words_$randomSuffix",
       sqlContext.createDataFrame(
         sc.parallelize(Seq(Row(1))),
-        StructType(StructField("table", IntegerType) :: Nil)
+        StructType(StructField("table", IntegerType, true,
+          new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)
       )
     )
   }
 
   test("save with one empty partition (regression test for #96)") {
     val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row(1)), 2),
-      StructType(StructField("foo", IntegerType) :: Nil))
+      StructType(StructField("foo", IntegerType, true,
+        new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
     assert(df.rdd.glom.collect() === Array(Array.empty[Row], Array(Row(1))))
     testRoundtripSaveAndLoad(s"save_with_one_empty_partition_$randomSuffix", df)
   }
 
   test("save with all empty partitions (regression test for #96)") {
     val df = sqlContext.createDataFrame(sc.parallelize(Seq.empty[Row], 2),
-      StructType(StructField("foo", IntegerType) :: Nil))
+      StructType(StructField("foo", IntegerType, true,
+        new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
     assert(df.rdd.glom.collect() === Array(Array.empty[Row], Array.empty[Row]))
     testRoundtripSaveAndLoad(s"save_with_all_empty_partitions_$randomSuffix", df)
     // Now try overwriting that table. Although the new table is empty, it should still overwrite
@@ -113,7 +117,8 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
     testRoundtripSaveAndLoad(
       s"full_timestamp_precision_is_preserved$randomSuffix",
       sqlContext.createDataFrame(sc.parallelize(timestamps.map(Row(_))),
-        StructType(StructField("ts", TimestampType) :: Nil))
+        StructType(StructField("ts", TimestampType, true,
+          new MetadataBuilder().putString("redshift_type", "timestamp").build()) :: Nil))
     )
   }
 }
@@ -126,7 +131,8 @@ class AvroRedshiftWriteSuite extends BaseRedshiftWriteSuite {
       testRoundtripSaveAndLoad(
         s"error_when_saving_column_name_with_spaces_$randomSuffix",
         sqlContext.createDataFrame(sc.parallelize(Seq(Row(1))),
-          StructType(StructField("column name with spaces", IntegerType) :: Nil)))
+          StructType(StructField("column name with spaces", IntegerType, true,
+            new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)))
     }
   }
 }
@@ -138,7 +144,8 @@ class CSVRedshiftWriteSuite extends BaseRedshiftWriteSuite {
     testRoundtripSaveAndLoad(
       s"save_with_column_names_that_contain_spaces_$randomSuffix",
       sqlContext.createDataFrame(sc.parallelize(Seq(Row(1))),
-        StructType(StructField("column name with spaces", IntegerType) :: Nil)))
+        StructType(StructField("column name with spaces", IntegerType, true,
+          new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)))
   }
 }
 
