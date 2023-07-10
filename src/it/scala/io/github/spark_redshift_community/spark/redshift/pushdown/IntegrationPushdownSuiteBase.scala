@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter
 import org.scalatest.Tag
 
 object TimestamptzTest extends Tag("TimestamptzTest")
+object P0Test extends Tag("P0Test")
 
 class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected var test_table: String = setTestTableName()
