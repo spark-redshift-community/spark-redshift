@@ -61,12 +61,21 @@ private[querygeneration] object BooleanStatement {
               blockStatement(convertStatement(child, fields))
         }
       }
+      // Cast the left string into a varchar to ensure fixed-length strings are right-trimmed
+      // since Redshift doesn't do this automatically for LIKE expressions. We want the push-down
+      // behavior to always match the non-push-down behavior which trims fixed-length strings.
       case Contains(child, Literal(pattern: UTF8String, StringType)) =>
-        blockStatement(convertStatement(child, fields) + "LIKE" + s"'%${pattern.toString}%'")
+        blockStatement(ConstantString("CAST") +
+          blockStatement(convertStatement(child, fields) + "AS VARCHAR") +
+          "LIKE" + s"'%${pattern.toString}%'")
       case EndsWith(child, Literal(pattern: UTF8String, StringType)) =>
-        blockStatement(convertStatement(child, fields) + "LIKE" + s"'%${pattern.toString}'")
+        blockStatement(ConstantString("CAST") +
+          blockStatement(convertStatement(child, fields) + "AS VARCHAR") +
+          "LIKE" + s"'%${pattern.toString}'")
       case StartsWith(child, Literal(pattern: UTF8String, StringType)) =>
-        blockStatement(convertStatement(child, fields) + "LIKE" + s"'${pattern.toString}%'")
+        blockStatement(ConstantString("CAST") +
+          blockStatement(convertStatement(child, fields) + "AS VARCHAR") +
+          "LIKE" + s"'${pattern.toString}%'")
 
       case _ => null
     })
