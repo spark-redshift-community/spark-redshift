@@ -16,7 +16,7 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, MetadataBuilder, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 
 /**
@@ -26,7 +26,8 @@ class SaveModeIntegrationSuite extends IntegrationSuiteBase {
   test("SaveMode.Overwrite with schema-qualified table name (#97)") {
     withTempRedshiftTable("overwrite_schema_qualified_table_name") { tableName =>
       val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row(1))),
-        StructType(StructField("a", IntegerType) :: Nil))
+        StructType(StructField("a", IntegerType, true,
+          new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
       // Ensure that the table exists:
       write(df)
         .option("dbtable", tableName)
@@ -45,7 +46,8 @@ class SaveModeIntegrationSuite extends IntegrationSuiteBase {
     testRoundtripSaveAndLoad(
       s"overwrite_non_existent_table$randomSuffix",
       sqlContext.createDataFrame(sc.parallelize(Seq(Row(1))),
-        StructType(StructField("a", IntegerType) :: Nil)),
+        StructType(StructField("a", IntegerType, true,
+          new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)),
       saveMode = SaveMode.Overwrite)
   }
 
@@ -53,7 +55,8 @@ class SaveModeIntegrationSuite extends IntegrationSuiteBase {
     withTempRedshiftTable("overwrite_existing_table") { tableName =>
       // Create a table to overwrite
       write(sqlContext.createDataFrame(sc.parallelize(Seq(Row(1))),
-        StructType(StructField("a", IntegerType) :: Nil)))
+        StructType(StructField("a", IntegerType, true,
+          new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)))
         .option("dbtable", tableName)
         .mode(SaveMode.ErrorIfExists)
         .save()
