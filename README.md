@@ -727,7 +727,7 @@ for more information.</p>
  <tr>
     <td><tt>autopushdown</tt></td>
     <td>No</td>
-    <td>False</td>
+    <td>True</td>
     <td>
         <p>
                 Apply predicate and query pushdown by capturing and analyzing the Spark logical plans for SQL operations. 
@@ -822,7 +822,7 @@ The Spark Connector applies predicate and query pushdown by capturing and analyz
 
 Not all of Spark SQL operators can be pushed down. When pushdown fails, the connector falls back to a less-optimized execution plan. The unsupported operations are instead performed in Spark.
 
-To enable auto pushdown, set the "autopushdown" to true as below:
+Auto pushdown is enabled by default. To disable it, set the "autopushdown" to false as below:
 
 ```scala
 import sqlContext.implicits._
@@ -831,15 +831,17 @@ val eventsDF = sqlContext.read
 	.option("url",jdbcURL )
 	.option("tempdir", tempS3Dir)
 	.option("dbtable", "event")
-    .option("autopushdown", "true")
+    .option("autopushdown", "false")
 	.load()
 eventsDF.show()
 ```
 
-By default, the query result is unload to S3 as text file.  There is an option as below to unload the result as parquet format. According to Redshift database developer guide, Parquet format is up to 2x faster to unload and consumes up to 6x less storage in Amazon S3, compared with text formats.
+
+## Unload Format
+
+By default, the query result is unload to S3 as a text file.  There is an option as shown below to unload the result as parquet format. According to Redshift database developer guide, Parquet format is up to 2x faster to unload and consumes up to 6x less storage in Amazon S3, compared with text formats.
 
 ```scala
-    .option("autopushdown", "true")
     .option("unload_s3_format", "PARQUET")
 ```
 
