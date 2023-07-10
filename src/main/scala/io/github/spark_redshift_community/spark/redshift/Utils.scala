@@ -18,7 +18,7 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
+import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
 import com.amazonaws.services.s3.{AmazonS3Client, AmazonS3URI}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
@@ -208,7 +208,7 @@ private[redshift] object Utils {
       val s3URI = createS3URI(Utils.fixS3Url(tempDir))
       val bucket = s3URI.getBucket
       assert(bucket != null, "Could not get bucket from S3 URI")
-      val region = s3Client.getBucketLocation(bucket) match {
+      val region = s3Client.headBucket(new HeadBucketRequest(bucket)).getBucketRegion match {
         // Map "US Standard" to us-east-1
         case null | "US" => "us-east-1"
         case other => other
