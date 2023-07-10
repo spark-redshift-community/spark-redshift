@@ -84,7 +84,8 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       ))
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT * FROM $test_table
+		     |AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( ( LENGTH ( "SUBQUERY_0"."TESTSTRING" ) >= 3 )
          |AND ( ( "SUBQUERY_0"."TESTSTRING" LIKE \\'as%\\' )
@@ -369,7 +370,8 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
        )
 
   val testAnd1: TestCase = TestCase(
-  """SELECT testdate, testfloat FROM test_table WHERE testdate = DATE '2015-07-03' and testfloat = -1.0""",
+  """SELECT testdate, testfloat FROM test_table WHERE testdate = DATE '2015-07-03'
+      |and testfloat = -1.0""".stripMargin,
     Seq(Row(TestUtils.toDate(2015, 6, 3), -1.0)),
     s"""SELECT("SUBQUERY_1"."TESTDATE")AS"SUBQUERY_2_COL_0",
        |("SUBQUERY_1"."TESTFLOAT")AS"SUBQUERY_2_COL_1"
@@ -382,7 +384,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   )
 
   val testAnd2: TestCase = TestCase(
-    sparkStatement = """SELECT testbool, testdouble FROM test_table WHERE testbool = true AND testdouble = 1234152.12312498""",
+    sparkStatement =
+      """SELECT testbool, testdouble FROM test_table WHERE testbool = true
+        |AND testdouble = 1234152.12312498""".stripMargin,
     expectedResult = Seq(Row(true, 1234152.12312498)),
     expectedAnswerSpark3_2 = s"""SELECT("SUBQUERY_1"."TESTBOOL")AS"SUBQUERY_2_COL_0",
        |("SUBQUERY_1"."TESTDOUBLE")AS"SUBQUERY_2_COL_1"FROM
@@ -403,7 +407,8 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   )
 
   val testAnd3: TestCase = TestCase(
-    """SELECT testshort, teststring FROM test_table WHERE testshort = 24 AND teststring = '___|_123'""",
+    """SELECT testshort, teststring FROM test_table WHERE testshort = 24 AND
+      |teststring = '___|_123'""".stripMargin,
     Seq(Row(24, "___|_123")),
     s"""SELECT("SUBQUERY_1"."TESTSHORT")AS"SUBQUERY_2_COL_0",
        |("SUBQUERY_1"."TESTSTRING")AS"SUBQUERY_2_COL_1"FROM
@@ -474,10 +479,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       |testtimestamp = '2015-07-01 00:00:00.001' OR
       |testbyte IS NOT NULL ORDER BY testbyte""".stripMargin,
     Seq(
-      Row(0, TestUtils.toTimestamp(year = 2015, zeroBasedMonth = 6,date = 3, hour=12, minutes = 34, seconds = 56, millis = 0)),
+      Row(0, TestUtils.toTimestamp(year = 2015, zeroBasedMonth = 6, date = 3, hour = 12,
+        minutes = 34, seconds = 56, millis = 0)),
       Row(0, null),
-      Row(1, TestUtils.toTimestamp(year = 2015, zeroBasedMonth = 6,date = 2, hour=0, minutes = 0, seconds = 0, millis = 0)),
-      Row(1, TestUtils.toTimestamp(year = 2015, zeroBasedMonth = 6,date = 1, hour=0, minutes = 0, seconds = 0, millis = 1)),
+      Row(1, TestUtils.toTimestamp(year = 2015, zeroBasedMonth = 6, date = 2, hour = 0,
+        minutes = 0, seconds = 0, millis = 0)),
+      Row(1, TestUtils.toTimestamp(year = 2015, zeroBasedMonth = 6, date = 1, hour = 0,
+        minutes = 0, seconds = 0, millis = 1)),
     ),
     s"""SELECT*FROM
        |(SELECT("SUBQUERY_1"."TESTBYTE")AS"SUBQUERY_2_COL_0",
@@ -595,9 +603,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   val testBinaryPlus5: TestCase = TestCase(
     s"""SELECT 1 + testdate FROM test_table ORDER BY testdate ASC NULLS LAST""",
     Seq(
-      Row(TestUtils.toDate(2015,6,2)),
-      Row(TestUtils.toDate(2015,6,3)),
-      Row(TestUtils.toDate(2015,6,4)),
+      Row(TestUtils.toDate(2015, 6, 2)),
+      Row(TestUtils.toDate(2015, 6, 3)),
+      Row(TestUtils.toDate(2015, 6, 4)),
       Row(null),
       Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
@@ -710,9 +718,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   val testBinaryPlus16: TestCase = TestCase(
     s"""SELECT -1 + testdate FROM test_table ORDER BY testdate ASC NULLS LAST""",
     Seq(
-      Row(TestUtils.toDate(2015,5,30)),
-      Row(TestUtils.toDate(2015,6,1)),
-      Row(TestUtils.toDate(2015,6,2)),
+      Row(TestUtils.toDate(2015, 5, 30)),
+      Row(TestUtils.toDate(2015, 6, 1)),
+      Row(TestUtils.toDate(2015, 6, 2)),
       Row(null),
       Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
@@ -801,9 +809,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   val testBinarySubtract1: TestCase = TestCase(
     s"""SELECT testdate - 1 FROM test_table ORDER BY testdate ASC NULLS LAST""",
     Seq(
-      Row(TestUtils.toDate(2015,5,30)),
-      Row(TestUtils.toDate(2015,6,1)),
-      Row(TestUtils.toDate(2015,6,2)),
+      Row(TestUtils.toDate(2015, 5, 30)),
+      Row(TestUtils.toDate(2015, 6, 1)),
+      Row(TestUtils.toDate(2015, 6, 2)),
       Row(null),
       Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
@@ -911,7 +919,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   )
 
   val testBinarySubtract11: TestCase = TestCase(
-    sparkStatement = s"""SELECT testlong - 9223372036854775808 from test_table ORDER BY testlong ASC NULLS LAST""",
+    sparkStatement =
+      s"""SELECT testlong - 9223372036854775808 from test_table ORDER BY testlong
+         |ASC NULLS LAST""".stripMargin,
     expectedResult = Seq(
       Row(-9222133024512952089L),
       Row(-9222133024512952089L),
@@ -954,9 +964,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   val testBinarySubtract13: TestCase = TestCase(
     s"""SELECT testdate - -1 FROM test_table ORDER BY testdate ASC NULLS LAST""",
     Seq(
-      Row(TestUtils.toDate(2015,6,2)),
-      Row(TestUtils.toDate(2015,6,3)),
-      Row(TestUtils.toDate(2015,6,4)),
+      Row(TestUtils.toDate(2015, 6, 2)),
+      Row(TestUtils.toDate(2015, 6, 3)),
+      Row(TestUtils.toDate(2015, 6, 4)),
       Row(null),
       Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
@@ -971,9 +981,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   val testBinarySubtract14: TestCase = TestCase(
     s"""SELECT testdate - -90 FROM test_table ORDER BY testdate ASC NULLS LAST""",
     Seq(
-      Row(TestUtils.toDate(2015,8,29)),
-      Row(TestUtils.toDate(2015,8,30)),
-      Row(TestUtils.toDate(2015,9,1)),
+      Row(TestUtils.toDate(2015, 8, 29)),
+      Row(TestUtils.toDate(2015, 8, 30)),
+      Row(TestUtils.toDate(2015, 9, 1)),
       Row(null),
       Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
@@ -1396,7 +1406,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
 
   val testBinaryMultiply23: TestCase = TestCase(
     s"""SELECT testint * -214 from test_table ORDER BY testint ASC NULLS LAST""",
-    Seq(Row(-8988), Row(-8988), Row(-886219796),Row(null), Row(null)),
+    Seq(Row(-8988), Row(-8988), Row(-886219796), Row(null), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
        |"SUBQUERY_3_COL_0"FROM
        |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTINT"*-214))AS
@@ -1535,7 +1545,8 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
 
   val testBinaryDivide9: TestCase = TestCase(
     s"""SELECT testfloat / 123.45678 FROM test_table""",
-    Seq(Row(-0.008100000664200056), Row(0.008100000664200056), Row(0.0), Row(810.0000664200055), Row(null)),
+    Seq(Row(-0.008100000664200056), Row(0.008100000664200056), Row(0.0), Row(810.0000664200055),
+      Row(null)),
     s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)/123.45678))AS
        |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
@@ -1543,7 +1554,8 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
 
   val testBinaryDivide10: TestCase = TestCase(
     s"""SELECT testint / 2147483648 from test_table ORDER BY testint ASC NULLS LAST""",
-    Seq(Row(1.955777406692505E-8), Row(1.955777406692505E-8), Row(0.0019284030422568321), Row(null), Row(null)),
+    Seq(Row(1.955777406692505E-8), Row(1.955777406692505E-8), Row(0.0019284030422568321),
+      Row(null), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
        |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASFLOAT8)/2.147483648E9))
        |AS"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
@@ -1696,7 +1708,8 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
 
   val testBinaryDivide22: TestCase = TestCase(
     s"""SELECT testfloat / -123.45678 FROM test_table""",
-    Seq(Row(0.008100000664200056), Row(-0.008100000664200056), Row(-0.0), Row(-810.0000664200055), Row(null)),
+    Seq(Row(0.008100000664200056), Row(-0.008100000664200056), Row(-0.0), Row(-810.0000664200055),
+      Row(null)),
     s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)/-123.45678))AS
        |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
@@ -1704,7 +1717,8 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
 
   val testBinaryDivide23: TestCase = TestCase(
     s"""SELECT testint / -2147483648 from test_table ORDER BY testint ASC NULLS LAST""",
-    Seq(Row(-1.955777406692505E-8), Row(-1.955777406692505E-8), Row(-0.0019284030422568321), Row(null), Row(null)),
+    Seq(Row(-1.955777406692505E-8), Row(-1.955777406692505E-8), Row(-0.0019284030422568321),
+      Row(null), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
        |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASFLOAT8)/-2.147483648E9))
        |AS"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
@@ -1750,7 +1764,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
 
   val testLiteral0: TestCase = TestCase( // byte
     s"""SELECT -128, -127, -1, 0, 1, 126, 127 from test_table LIMIT 1""".stripMargin,
-    Seq(Row(-128, -127,  -1, 0, 1,126, 127)),
+    Seq(Row(-128, -127, -1, 0, 1, 126, 127)),
     s"""SELECT*FROM(SELECT(-128)AS"SUBQUERY_1_COL_0",(-127)AS
        |"SUBQUERY_1_COL_1",(-1)AS"SUBQUERY_1_COL_2",(0)AS
        |"SUBQUERY_1_COL_3",(1)AS"SUBQUERY_1_COL_4",(126)AS
@@ -1773,7 +1787,8 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   )
 
   val testLiteral2: TestCase = TestCase( // int
-    s"""SELECT -2147483647, -2147483646, -1, 0, 1, 2147483646, 2147483647 from test_table LIMIT 1""".stripMargin,
+    s"""SELECT -2147483647, -2147483646, -1, 0, 1, 2147483646, 2147483647 from test_table
+       |LIMIT 1""".stripMargin,
     Seq(Row(-2147483647, -2147483646, -1, 0, 1, 2147483646, 2147483647)),
     s"""SELECT*FROM(SELECT(-2147483647)AS"SUBQUERY_1_COL_0",(-2147483646)AS
        |"SUBQUERY_1_COL_1",(-1)AS"SUBQUERY_1_COL_2",(0)AS"SUBQUERY_1_COL_3",
@@ -1785,8 +1800,10 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   )
 
   val testLiteral3: TestCase = TestCase( // long
-    s"""SELECT -9223372036854775807l, -9223372036854775806l, -1l, 0l, 9223372036854775806l, 9223372036854775807l from test_table LIMIT 1""".stripMargin,
-    Seq(Row(-9223372036854775807l, -9223372036854775806l, -1l, 0l, 9223372036854775806l, 9223372036854775807l)),
+    s"""SELECT -9223372036854775807l, -9223372036854775806l, -1l, 0l, 9223372036854775806l,
+       |9223372036854775807l from test_table LIMIT 1""".stripMargin,
+    Seq(Row(-9223372036854775807L, -9223372036854775806L, -1L, 0L, 9223372036854775806L,
+      9223372036854775807L)),
     s"""SELECT*FROM(SELECT(-9223372036854775807)AS"SUBQUERY_1_COL_0",
        |(-9223372036854775806)AS"SUBQUERY_1_COL_1",
        |(-1)AS"SUBQUERY_1_COL_2",
@@ -1808,7 +1825,8 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   )
 
   val testLiteral5: TestCase = TestCase( // string
-    s"""SELECT 'hello world', '', 'redshift', 'spark', 'scala', '�', 'Ј', 'Ͱ' from test_table LIMIT 1""".stripMargin,
+    s"""SELECT 'hello world', '', 'redshift', 'spark', 'scala', '�', 'Ј', 'Ͱ' from test_table
+       |LIMIT 1""".stripMargin,
     Seq(Row("hello world", "", "redshift", "spark", "scala", "�", "Ј", "Ͱ")),
     s"""SELECT*FROM(SELECT(\\'helloworld\\')AS"SUBQUERY_1_COL_0",(\\'\\')AS
        |"SUBQUERY_1_COL_1",(\\'redshift\\')AS"SUBQUERY_1_COL_2",(\\'spark\\')AS
@@ -1829,7 +1847,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
 
   val testLiteral7: TestCase = TestCase( // date
     s"""SELECT DATE '1997' from test_table LIMIT 1""".stripMargin,
-    Seq(Row(TestUtils.toDate(year=1997,zeroBasedMonth = 0,date = 1))),
+    Seq(Row(TestUtils.toDate(year = 1997, zeroBasedMonth = 0, date = 1))),
     s"""SELECT*FROM(SELECT(DATEADD(day,9862,TO_DATE
        |(\\'1970-01-01\\',\\'YYYY-MM-DD\\')))AS"SUBQUERY_1_COL_0"FROM
        |(SELECT*FROM$test_table
@@ -1838,11 +1856,15 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   )
 
     val testLiteral8: TestCase = TestCase( // timestamp
-      s"""SELECT TIMESTAMP '1997-01-31 09:26:56.123', TIMESTAMP '2000-02-01 10:11:56.666', TIMESTAMP '1997-01' from test_table LIMIT 1""",
+      s"""SELECT TIMESTAMP '1997-01-31 09:26:56.123', TIMESTAMP '2000-02-01 10:11:56.666',
+         |TIMESTAMP '1997-01' from test_table LIMIT 1""".stripMargin,
       Seq(Row(
-        TestUtils.toTimestamp(year=1997,zeroBasedMonth=0,date=31,hour=9, minutes=26,seconds=56,millis=123),
-        TestUtils.toTimestamp(year=2000,zeroBasedMonth=1,date=1,hour=10, minutes=11,seconds=56,millis=666),
-        TestUtils.toTimestamp(year=1997,zeroBasedMonth=0,date=1,hour=0, minutes=0,seconds=0,millis=0),
+        TestUtils.toTimestamp(year = 1997, zeroBasedMonth = 0, date = 31, hour = 9, minutes = 26,
+          seconds = 56, millis = 123),
+        TestUtils.toTimestamp(year = 2000, zeroBasedMonth = 1, date = 1, hour = 10, minutes = 11,
+          seconds = 56, millis = 666),
+        TestUtils.toTimestamp(year = 1997, zeroBasedMonth = 0, date = 1, hour = 0, minutes = 0,
+          seconds = 0, millis = 0),
       )),
       s"""SELECT*FROM(SELECT(\\'1997-01-3109:26:56.123\\'::TIMESTAMP)AS
          |"SUBQUERY_1_COL_0",(\\'2000-02-0110:11:56.666\\'::TIMESTAMP)AS

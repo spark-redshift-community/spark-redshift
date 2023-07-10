@@ -22,7 +22,7 @@ import org.apache.spark.sql.Row
  */
 abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
-  var string2000Char =
+  val string2000Char =
     """NpJWbA9QcfnY5VAOz55PWP4KjONffOlJjzFfrOIrZ1XkqoG46XiCEzJOhSTB1HS5aX5i1gv
       |N1o4O6fJg7tlxh86GlL3ZOUFI8WsYvKH7uMV3l7xpZYvKMBam8mF8q34Uvj5imtJGSygsOJ
       |NMqjdk2D0mPkNan2Kui3yOc7WKdlCMee7gwrqp9ji4eZfk9UAR4j3T13GWjYoI6S4Hq1FVs
@@ -65,9 +65,9 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testshort", "(23, 24)", 2)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var expected_res = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name in $expected_res"""),
         Seq(Row(result_size)))
@@ -149,8 +149,8 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testtimestamp", 2)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var result_size = test_case._2
+      val column_name = test_case._1.toUpperCase
+      val result_size = test_case._2
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name is NULL"""),
         Seq(Row(result_size)))
@@ -178,8 +178,8 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testtimestamp", 3)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var result_size = test_case._2
+      val column_name = test_case._1.toUpperCase
+      val result_size = test_case._2
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name is NOT NULL"""),
         Seq(Row(result_size)))
@@ -204,9 +204,9 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testshort", 23, 1)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var match_value = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val match_value = test_case._2
+      val result_size = test_case._3
         checkAnswer(
           sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name = $match_value """),
           Seq(Row(result_size)))
@@ -226,9 +226,9 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testbool", true, 1),
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var match_value = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val match_value = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name = $match_value """),
         Seq(Row(result_size)))
@@ -352,9 +352,9 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testshort", 23, 2)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var match_value = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val match_value = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name != $match_value """),
         Seq(Row(result_size)))
@@ -374,19 +374,27 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testbool", true, 2),
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var match_value = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val match_value = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name != $match_value """),
         Seq(Row(result_size)))
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >= $match_value ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        expectedAnswerSpark3_2 =
+          s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
+             |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+             |AS "SUBQUERY_0"
+             |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
+             |AND ( "SUBQUERY_0"."$column_name" >= $match_value ) ) )
+             |AS "SUBQUERY_1" LIMIT 1""".stripMargin,
+        expectedAnswerSpark3_3 =
+          s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
+             |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+             |AS "SUBQUERY_0"
+             |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
+             |AND NOT ( "SUBQUERY_0"."$column_name" ) ) )
+             |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -442,9 +450,9 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testshort", 23, 2)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var match_value = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val match_value = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $match_value """),
         Seq(Row(result_size)))
@@ -496,9 +504,9 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testshort", 23, 2)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var match_value = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val match_value = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $match_value """),
         Seq(Row(result_size)))
@@ -551,9 +559,9 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testshort", 23, 1)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var match_value = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val match_value = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $match_value """),
         Seq(Row(result_size)))
@@ -605,9 +613,9 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testshort", 23, 1)
     )
     input.foreach( test_case => {
-      var column_name = test_case._1.toUpperCase
-      var match_value = test_case._2
-      var result_size = test_case._3
+      val column_name = test_case._1.toUpperCase
+      val match_value = test_case._2
+      val result_size = test_case._3
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name < $match_value """),
         Seq(Row(result_size)))
@@ -736,11 +744,11 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
   }
 }
 
-class DefaultSimpleBooleanCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
+class DefaultPushdownSimpleBooleanCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
 }
 
-class ParquetSimpleBooleanCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
+class ParquetPushdownSimpleBooleanCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 

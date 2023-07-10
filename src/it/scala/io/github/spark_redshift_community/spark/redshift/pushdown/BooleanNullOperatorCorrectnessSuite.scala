@@ -182,7 +182,7 @@ abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSu
   test("child IS NULL pushdown") {
     // "Column name" and result size
     allColumnNames.foreach( c_name => {
-      var column_name = c_name.toUpperCase()
+      val column_name = c_name.toUpperCase()
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name is NULL"""),
         Seq(Row(0)))
@@ -197,7 +197,7 @@ abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSu
 
   test("child IS NOT NULL pushdown") {
     allColumnNames.foreach( c_name => {
-      var column_name = c_name.toUpperCase()
+      val column_name = c_name.toUpperCase()
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name is NOT NULL"""),
         Seq(Row(5000)))
