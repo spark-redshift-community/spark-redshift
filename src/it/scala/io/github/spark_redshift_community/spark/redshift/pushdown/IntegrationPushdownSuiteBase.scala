@@ -23,6 +23,7 @@ import org.scalatest.Tag
 
 object TimestamptzTest extends Tag("TimestamptzTest")
 object P0Test extends Tag("P0Test")
+object PreloadTest extends Tag("PreloadTest")
 
 class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected var test_table: String = setTestTableName()

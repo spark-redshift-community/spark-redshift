@@ -16,7 +16,6 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.Row
-import org.scalatest.DoNotDiscover
 
 abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase {
 

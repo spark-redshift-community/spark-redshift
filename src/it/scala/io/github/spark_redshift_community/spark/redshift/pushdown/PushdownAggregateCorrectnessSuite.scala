@@ -16,11 +16,9 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.Row
-import org.scalatest.DoNotDiscover
 
 import java.sql.Timestamp
 import java.time.ZonedDateTime
-
 
 abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectnessSuite
                                                  with AggregateMaxCorrectnessSuite
@@ -31,13 +29,13 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   override def setTestTableName(): String = """"PUBLIC"."all_shapes_dist_all_sort_compound_12col""""
 
   // define a test for count(*)
-  test("Test COUNT(*) aggregation statements against correctness dataset") {
+  test("Test COUNT(*) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount00)
     doTest(sqlContext, testCount01)
   }
 
   // define a test for count(short)
-  test("Test COUNT(short) aggregation statements against correctness dataset") {
+  test("Test COUNT(short) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount10)
     doTest(sqlContext, testCount10_2)
     doTest(sqlContext, testCount11)
@@ -52,7 +50,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for count(int)
-  test("Test COUNT(int) aggregation statements against correctness dataset") {
+  test("Test COUNT(int) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount20)
     doTest(sqlContext, testCount20_2)
     doTest(sqlContext, testCount21)
@@ -70,7 +68,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for count(long)
-  test("Test COUNT(long) aggregation statements against correctness dataset") {
+  test("Test COUNT(long) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount30)
     doTest(sqlContext, testCount31)
     doTest(sqlContext, testCount32)
@@ -84,7 +82,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for count(decimal)
-  test("Test COUNT(decimal) aggregation statements against correctness dataset") {
+  test("Test COUNT(decimal) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount40)
     doTest(sqlContext, testCount41)
     doTest(sqlContext, testCount42)
@@ -99,7 +97,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for count(float)
-  test("Test COUNT(float) aggregation statements against correctness dataset") {
+  test("Test COUNT(float) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount50)
     doTest(sqlContext, testCount51)
     doTest(sqlContext, testCount52)
@@ -114,7 +112,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for count(boolean)
-  test("Test COUNT(boolean) aggregation statements against correctness dataset") {
+  test("Test COUNT(boolean) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount60)
     doTest(sqlContext, testCount61)
     doTest(sqlContext, testCount62)
@@ -126,7 +124,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for count(char)
-  test("Test COUNT(char) aggregation statements against correctness dataset") {
+  test("Test COUNT(char) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount70)
     doTest(sqlContext, testCount71)
     doTest(sqlContext, testCount72)
@@ -134,7 +132,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for count(varchar)
-  test("Test COUNT(varchar) aggregation statements against correctness dataset") {
+  test("Test COUNT(varchar) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount80)
     doTest(sqlContext, testCount81)
     doTest(sqlContext, testCount82)
@@ -144,7 +142,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for count(date)
-  test("Test COUNT(date) aggregation statements against correctness dataset") {
+  test("Test COUNT(date) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount90)
     doTest(sqlContext, testCount91)
     doTest(sqlContext, testCount92)
@@ -157,7 +155,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for count(timestamp)
-  test("Test COUNT(timestamp) aggregation statements against correctness dataset") {
+  test("Test COUNT(timestamp) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount100)
     doTest(sqlContext, testCount101)
     doTest(sqlContext, testCount102)
@@ -170,7 +168,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for count(timestamptz)
-  test("Test COUNT(timestamptz) aggregation statements against correctness dataset") {
+  test("Test COUNT(timestamptz) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testCount110)
     doTest(sqlContext, testCount111)
     doTest(sqlContext, testCount112)
@@ -181,7 +179,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for max(short)
-  test("Test MAX(short) aggregation statements against correctness dataset") {
+  test("Test MAX(short) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMax00)
     doTest(sqlContext, testMax01)
     doTest(sqlContext, testMax02)
@@ -194,7 +192,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for max(int)
-  test("Test MAX(int) aggregation statements against correctness dataset") {
+  test("Test MAX(int) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMax10)
     doTest(sqlContext, testMax11)
     doTest(sqlContext, testMax12)
@@ -207,7 +205,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for max(long)
-  test("Test MAX(long) aggregation statements against correctness dataset") {
+  test("Test MAX(long) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMax20)
     doTest(sqlContext, testMax21)
     doTest(sqlContext, testMax22)
@@ -220,7 +218,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for max(decimal)
-  test("Test MAX(decimal) aggregation statements against correctness dataset") {
+  test("Test MAX(decimal) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMax30)
     doTest(sqlContext, testMax31)
     doTest(sqlContext, testMax32)
@@ -235,7 +233,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for max(float)
-  test("Test MAX(float) aggregation statements against correctness dataset") {
+  test("Test MAX(float) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMax40)
     doTest(sqlContext, testMax41)
     doTest(sqlContext, testMax42)
@@ -251,7 +249,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
 
   // define a test for max(boolean)
   // function max(boolean) does not exist in redshift
-  test("Test MAX(boolean) aggregation statements against correctness dataset") {
+  test("Test MAX(boolean) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMax50_unsupported)
     doTest(sqlContext, testMax51_unsupported)
     doTest(sqlContext, testMax52_unsupported)
@@ -260,7 +258,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for max(varchar)
-  test("Test MAX(varchar) aggregation statements against correctness dataset") {
+  test("Test MAX(varchar) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMax70)
     doTest(sqlContext, testMax71)
     doTest(sqlContext, testMax72)
@@ -270,7 +268,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for max(date)
-  test("Test MAX(date) aggregation statements against correctness dataset") {
+  test("Test MAX(date) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMax80)
     doTest(sqlContext, testMax81)
     doTest(sqlContext, testMax82)
@@ -283,7 +281,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for max(timestamp)
-  test("Test MAX(timestamp) aggregation statements against correctness dataset") {
+  test("Test MAX(timestamp) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMax90)
     doTest(sqlContext, testMax91)
     doTest(sqlContext, testMax92)
@@ -296,7 +294,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for min(short)
-  test("Test MIN(short) aggregation statements against correctness dataset") {
+  test("Test MIN(short) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMin00)
     doTest(sqlContext, testMin01)
     doTest(sqlContext, testMin02)
@@ -309,7 +307,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for min(int)
-  test("Test MIN(int) aggregation statements against correctness dataset") {
+  test("Test MIN(int) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMin10)
     doTest(sqlContext, testMin11)
     doTest(sqlContext, testMin12)
@@ -322,7 +320,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for min(long)
-  test("Test MIN(long) aggregation statements against correctness dataset") {
+  test("Test MIN(long) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMin20)
     doTest(sqlContext, testMin21)
     doTest(sqlContext, testMin22)
@@ -335,7 +333,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for min(decimal)
-  test("Test MIN(decimal) aggregation statements against correctness dataset") {
+  test("Test MIN(decimal) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMin30)
     doTest(sqlContext, testMin31)
     doTest(sqlContext, testMin32)
@@ -350,7 +348,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for min(float)
-  test("Test MIN(float) aggregation statements against correctness dataset") {
+  test("Test MIN(float) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMin40)
     doTest(sqlContext, testMin41)
     doTest(sqlContext, testMin42)
@@ -366,7 +364,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
 
   // define a test for min(boolean)
   // function min(boolean) does not exist in redshift
-  test("Test MIN(boolean) aggregation statements against correctness dataset") {
+  test("Test MIN(boolean) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMin50_unsupported)
     doTest(sqlContext, testMin51_unsupported)
     doTest(sqlContext, testMin52_unsupported)
@@ -375,7 +373,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for min(varchar)
-  test("Test MIN(varchar) aggregation statements against correctness dataset") {
+  test("Test MIN(varchar) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMin70)
     doTest(sqlContext, testMin71)
     doTest(sqlContext, testMin72)
@@ -385,7 +383,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for min(date)
-  test("Test MIN(date) aggregation statements against correctness dataset") {
+  test("Test MIN(date) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMin80)
     doTest(sqlContext, testMin81)
     doTest(sqlContext, testMin82)
@@ -398,7 +396,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for min(timestamp)
-  test("Test MIN(timestamp) aggregation statements against correctness dataset") {
+  test("Test MIN(timestamp) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMin90)
     doTest(sqlContext, testMin91)
     doTest(sqlContext, testMin92)
@@ -411,7 +409,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for avg(short)
-  test("Test AVG(short) aggregation statements against correctness dataset") {
+  test("Test AVG(short) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testAvg00)
     doTest(sqlContext, testAvg01)
     doTest(sqlContext, testAvg02)
@@ -424,7 +422,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for avg(int)
-  test("Test AVG(int) aggregation statements against correctness dataset") {
+  test("Test AVG(int) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testAvg10)
     doTest(sqlContext, testAvg11)
     doTest(sqlContext, testAvg12)
@@ -438,7 +436,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for avg(long)
-  test("Test AVG(long) aggregation statements against correctness dataset") {
+  test("Test AVG(long) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testAvg20)
     doTest(sqlContext, testAvg21)
     doTest(sqlContext, testAvg22)
@@ -451,7 +449,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for avg(decimal)
-  test("Test AVG(decimal) aggregation statements against correctness dataset") {
+  test("Test AVG(decimal) aggregation statements against correctness dataset", PreloadTest) {
     // doTest(sqlContext, testAvg30)
     doTest(sqlContext, testAvg31)
     doTest(sqlContext, testAvg32)
@@ -462,7 +460,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for avg(float)
-  test("Test AVG(float) aggregation statements against correctness dataset") {
+  test("Test AVG(float) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testAvg40)
     doTest(sqlContext, testAvg41)
     doTest(sqlContext, testAvg42)
@@ -477,7 +475,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for sum(short)
-  test("Test SUM(short) aggregation statements against correctness dataset") {
+  test("Test SUM(short) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testSum00)
     doTest(sqlContext, testSum01)
     doTest(sqlContext, testSum02)
@@ -485,7 +483,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for sum(int)
-  test("Test SUM(int) aggregation statements against correctness dataset") {
+  test("Test SUM(int) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testSum10)
     doTest(sqlContext, testSum11)
     doTest(sqlContext, testSum12)
@@ -493,7 +491,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for sum(long)
-  test("Test SUM(long) aggregation statements against correctness dataset") {
+  test("Test SUM(long) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testSum20)
     doTest(sqlContext, testSum21)
     doTest(sqlContext, testSum22)
@@ -501,7 +499,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for sum(decimal)
-  test("Test SUM(decimal) aggregation statements against correctness dataset") {
+  test("Test SUM(decimal) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testSum30)
     doTest(sqlContext, testSum31)
     doTest(sqlContext, testSum32)
@@ -509,7 +507,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   // define a test for sum(float)
-  test("Test SUM(float) aggregation statements against correctness dataset") {
+  test("Test SUM(float) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testSum40)
     doTest(sqlContext, testSum41)
     doTest(sqlContext, testSum42)
@@ -524,7 +522,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   // unloaded.
   // Issue is tracked in [Redshift-6844]
   test("Test COUNT(timestamptz) aggregation statements against correctness dataset with group by",
-    TimestamptzTest) {
+    TimestamptzTest, PreloadTest) {
     checkAnswer(
       sqlContext.sql(
         """SELECT col_timestamptz_zstd, COUNT(col_timestamptz_zstd) FROM test_table
@@ -554,7 +552,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   test("Test MAX(timestamptz) aggregation statements against correctness dataset",
-    TimestamptzTest) {
+    TimestamptzTest, PreloadTest) {
     // "Column name" and result set
     val input = List(
       ("col_timestamptz_raw", Seq(Row(Timestamp.from(
@@ -590,7 +588,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   test("Test MAX(timestamptz) aggregation statements against correctness dataset with group by",
-    TimestamptzTest) {
+    TimestamptzTest, PreloadTest) {
     checkAnswer(
       sqlContext.sql(
         """SELECT col_timestamptz_zstd, MAX(col_timestamptz_lzo) FROM test_table
@@ -621,7 +619,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   test("Test MIN(timestamptz) aggregation statements against correctness dataset",
-    TimestamptzTest) {
+    TimestamptzTest, PreloadTest) {
     // "Column name" and result set
     val input = List(
       ("col_timestamptz_raw", Seq(Row(Timestamp.from(
@@ -657,7 +655,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 
   test("Test MIN(timestamptz) aggregation statements against correctness dataset with group by",
-    TimestamptzTest) {
+    TimestamptzTest, PreloadTest) {
     checkAnswer(
       sqlContext.sql(
         """SELECT col_timestamptz_zstd, MIN(col_timestamptz_lzo) FROM test_table
@@ -688,21 +686,19 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 }
 
-// Please comment out this tag when you have set up test framework, preloaded dataset,
-// and want to run this against it.
-@DoNotDiscover
 class DefaultPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "true"
 
   // Unloading fixed-length char column data in parquet format does not trim the trailing spaces.
   // Issue is tracked in [Redshift-7057].
-  test("Test COUNT(char) aggregation statements against correctness dataset with group by") {
+  test("Test COUNT(char) aggregation statements against correctness dataset with group by",
+    PreloadTest) {
     doTest(sqlContext, testCount74)
   }
 
   // define a test for max(char)
-  test("Test MAX(char) aggregation statements against correctness dataset") {
+  test("Test MAX(char) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMax60)
     doTest(sqlContext, testMax61)
     doTest(sqlContext, testMax62)
@@ -712,7 +708,7 @@ class DefaultPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectn
   }
 
   // define a test for min(char)
-  test("Test MIN(char) aggregation statements against correctness dataset") {
+  test("Test MIN(char) aggregation statements against correctness dataset", PreloadTest) {
     doTest(sqlContext, testMin60)
     doTest(sqlContext, testMin61)
     doTest(sqlContext, testMin62)
@@ -722,19 +718,16 @@ class DefaultPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectn
   }
 }
 
-@DoNotDiscover
 class ParquetPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
 
-@DoNotDiscover
 class DefaultNoPushdownAggregateCorrectnessSuite extends DefaultPushdownAggregateCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "false"
 }
 
-@DoNotDiscover
 class ParquetNoPushdownDAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
