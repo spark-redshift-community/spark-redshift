@@ -69,12 +69,18 @@ class RedshiftSourceSuite
   private var unloadedData: String = ""
 
   // Parameters common to most tests. Some parameters are overridden in specific tests.
+  // New parameters added during autopushdown enhancements are turned off to restore
+  // original behavior when unit tests were written.
   private def defaultParams: Map[String, String] = Map(
     "url" -> "jdbc:redshift://foo/bar?user=user&password=password",
     "tempdir" -> s3TempDir,
     "dbtable" -> "test_table",
     "forward_spark_s3_credentials" -> "false",
-    "aws_iam_role" -> "fake_role_arn")
+    "aws_iam_role" -> "fake_role_arn",
+    Parameters.PARAM_AUTO_PUSHDOWN -> "false",
+    Parameters.PARAM_PUSHDOWN_S3_RESULT_CACHE -> "false",
+    Parameters.PARAM_UNLOAD_S3_FORMAT -> "TEXT"
+  )
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -153,7 +159,7 @@ class RedshiftSourceSuite
       """
         |1|t|2015-07-01|1234152.12312498|1.0|42|1239012341823719|23|Unicode's樂趣|2015-07-01 00:00:00.001
         |1|f|2015-07-02|0|0.0|42|1239012341823719|-13|asdf|2015-07-02 00:00:00.0
-        |0||2015-07-03|0.0|-1.0|4141214|1239012341823719||f|2015-07-03 00:00:00
+        |0||2015-07-03|0.0|-1.0|4141214|1239012341823719||f|2015-07-03 12:34:56
         |0|f||-1234152.12312498|100000.0||1239012341823719|24|___\|_123|
         |||||||||@NULL@|
       """.stripMargin.trim
@@ -270,7 +276,7 @@ class RedshiftSourceSuite
       "UNLOAD \\('SELECT \"testbyte\", \"testbool\" " +
         "FROM \"PUBLIC\".\"test_table\" " +
         "WHERE \"testbool\" = true " +
-        "AND \"teststring\" = \\\\'Unicode\\\\'\\\\'s樂趣\\\\' " +
+        "AND \"teststring\" = ''Unicode\\\\'\\\\'s樂趣'' " +
         "AND \"testdouble\" > 1000.0 " +
         "AND \"testdouble\" < 1.7976931348623157E308 " +
         "AND \"testfloat\" >= 1.0 " +
