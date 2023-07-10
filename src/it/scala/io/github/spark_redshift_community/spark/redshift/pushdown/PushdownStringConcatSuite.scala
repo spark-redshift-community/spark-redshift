@@ -19,7 +19,7 @@ import org.apache.spark.sql.Row
 
 abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteBase {
 
-  test("Concat same column") {
+  test("Concat same column", P1Test) {
     // (id, column, result)
     val paramTuples = List(
       (0, "testfixedstring", null),
@@ -64,7 +64,7 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
     })
   }
 
-  test("Concat different columns") {
+  test("Concat different columns", P1Test) {
     // (column1, column2)
     var columnTuples = List(("testfixedstring", "testvarstring"))
     // (id, result)
@@ -105,7 +105,7 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
     })
   }
 
-  test("Concat different columns and literal") {
+  test("Concat different columns and literal", P1Test) {
     // (column1, column2)
     var columnTuples = List(("testfixedstring", "testvarstring"))
     // (id, literal, result)

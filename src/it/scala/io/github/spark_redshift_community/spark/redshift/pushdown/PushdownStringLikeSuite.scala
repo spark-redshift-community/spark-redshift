@@ -19,7 +19,7 @@ import org.apache.spark.sql.Row
 
 abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBase {
 
-  test("Like tests") {
+  test("Like tests", P1Test) {
     // Column names
     val columns = List("testfixedstring", "testvarstring")
     // (id, pattern, result)
@@ -71,7 +71,7 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
     })
   }
 
-  test("Boolean Like Tests") {
+  test("Boolean Like Tests", P1Test) {
     // Column names
     val columns = List("testfixedstring", "testvarstring")
     // (id, pattern, result)
@@ -99,7 +99,7 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
     })
   }
 
-  test("Boolean Split Tests") {
+  test("Boolean Split Tests", P1Test) {
     val columns = List("testfixedstring", "testvarstring")
     columns.foreach(column => {
       checkAnswer(
@@ -118,7 +118,7 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
     })
   }
 
-  test("String Like tests") {
+  test("String Like tests", P1Test) {
     val columns = List("testfixedstring", "testvarstring")
     columns.foreach(column => {
       checkAnswer(

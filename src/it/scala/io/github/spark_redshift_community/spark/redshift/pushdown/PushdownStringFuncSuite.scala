@@ -18,7 +18,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown
 import org.apache.spark.sql.Row
 
 abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
-  test("Upper pushdown", P0Test) {
+  test("Upper pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT UPPER(testString) FROM test_table WHERE testString='asdf'"""),
       Seq(Row("ASDF"))
@@ -34,7 +34,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Lower pushdown", P0Test) {
+  test("Lower pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT LOWER(testString) FROM test_table WHERE testbool=true"""),
       Seq(Row("unicode's樂趣"))
@@ -56,7 +56,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Substring pushdown", P0Test) {
+  test("Substring pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT SUBSTRING(testString, 1, 2)
@@ -74,7 +74,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Substr pushdown", P0Test) {
+  test("Substr pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT SUBSTR(testString, 1, 2)
@@ -92,7 +92,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Length pushdown", P0Test) {
+  test("Length pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT LENGTH(testString)
@@ -110,7 +110,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Concat pushdown", P0Test) {
+  test("Concat pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT Concat(testString, 'Test')
@@ -128,7 +128,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Ascii pushdown", P0Test) {
+  test("Ascii pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT ASCII(testString)
@@ -146,7 +146,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Translate pushdown", P0Test) {
+  test("Translate pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT TRANSLATE(testString,'ad','ce')
@@ -164,7 +164,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Lpad pushdown", P0Test) {
+  test("Lpad pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT LPAD(testString,6,'_')
@@ -182,7 +182,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Rpad pushdown", P0Test) {
+  test("Rpad pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT RPAD(testString,6,'_')
@@ -200,7 +200,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Trim pushdown", P0Test) {
+  test("Trim pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT TRIM('_', RPAD(testString,6,'_'))
@@ -218,7 +218,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Trim From pushdown", P0Test) {
+  test("Trim From pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT TRIM('_' FROM RPAD(testString,6,'_'))
@@ -236,7 +236,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Trim Both From pushdown", P0Test) {
+  test("Trim Both From pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT TRIM(BOTH FROM LPAD(RPAD(testString,6,' '),8,' '))
@@ -255,7 +255,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Trim Leading From pushdown", P0Test) {
+  test("Trim Leading From pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT TRIM(LEADING '_' FROM LPAD(TESTSTRING,6,'_'))
@@ -273,7 +273,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Trim Trailing From pushdown", P0Test) {
+  test("Trim Trailing From pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT TRIM(TRAILING '_' FROM RPAD(testString,6,'_'))
@@ -291,7 +291,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("LTrim pushdown", P0Test) {
+  test("LTrim pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT LTRIM('_', LPAD(testString,6,'_'))
@@ -309,7 +309,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("RTrim pushdown", P0Test) {
+  test("RTrim pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT RTRIM('_', RPAD(testString,6,'_'))

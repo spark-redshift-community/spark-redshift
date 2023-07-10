@@ -20,7 +20,7 @@ import org.apache.spark.sql.Row
 
 abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
 
-  test("String equal filter pushdown", P0Test) {
+  test("String equal filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT * FROM test_table WHERE teststring='asdf'"""),
       Seq(Row(1.toByte, false, TestUtils.toDate(2015, 6, 2), 0.0, 0.0f, 42,
@@ -34,7 +34,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("String LIKE start with filter pushdown", P0Test) {
+  test("String LIKE start with filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT * FROM test_table WHERE teststring LIKE 'asd%'"""),
       Seq(Row(1.toByte, false, TestUtils.toDate(2015, 6, 2), 0.0, 0.0f, 42,
@@ -49,7 +49,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("String LIKE contain filter pushdown", P0Test) {
+  test("String LIKE contain filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT * FROM test_table WHERE teststring LIKE '%sd%'"""),
       Seq(Row(1.toByte, false, TestUtils.toDate(2015, 6, 2), 0.0, 0.0f, 42,
@@ -64,7 +64,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("String LIKE end with filter pushdown", P0Test) {
+  test("String LIKE end with filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT * FROM test_table WHERE teststring LIKE '%sdf'"""),
       Seq(Row(1.toByte, false, TestUtils.toDate(2015, 6, 2), 0.0, 0.0f, 42,
@@ -79,7 +79,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("String LIKE % in the middle filter pushdown", P0Test) {
+  test("String LIKE % in the middle filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT * FROM test_table WHERE teststring LIKE 'as%f'"""),
       Seq(Row(1.toByte, false, TestUtils.toDate(2015, 6, 2), 0.0, 0.0f, 42,
@@ -97,7 +97,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Integer equal filter pushdown", P0Test) {
+  test("Integer equal filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT testint FROM test_table WHERE testint=4141214"""),
       Seq(Row(4141214))
@@ -112,7 +112,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("GreaterThan filter pushdown", P0Test) {
+  test("GreaterThan filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT testint FROM test_table WHERE testint>45"""),
       Seq(Row(4141214))
@@ -127,7 +127,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("GreaterThanOrEqual filter pushdown", P0Test) {
+  test("GreaterThanOrEqual filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT testint FROM test_table WHERE testint>=45"""),
       Seq(Row(4141214))
@@ -142,7 +142,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("LessThan filter pushdown", P0Test) {
+  test("LessThan filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT testshort FROM test_table WHERE testshort<0"""),
       Seq(Row(-13))
@@ -157,7 +157,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("LessThanOrEqual filter pushdown", P0Test) {
+  test("LessThanOrEqual filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT testshort FROM test_table WHERE testshort<=0"""),
       Seq(Row(-13))
@@ -172,7 +172,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Between filter pushdown", P0Test) {
+  test("Between filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT testshort FROM test_table WHERE testshort BETWEEN -15 AND 0"""),
       Seq(Row(-13))
@@ -188,7 +188,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("IN filter pushdown", P0Test) {
+  test("IN filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT testshort FROM test_table WHERE testshort IN (-15, -13, 0)"""),
       Seq(Row(-13))
@@ -203,7 +203,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("AND filter pushdown", P0Test) {
+  test("AND filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testshort FROM test_table
@@ -221,7 +221,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("OR filter pushdown", P0Test) {
+  test("OR filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testshort, testint FROM test_table
@@ -240,7 +240,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("IS NULL filter pushdown", P0Test) {
+  test("IS NULL filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testshort, testint FROM test_table WHERE testshort IS NULL""".stripMargin),
@@ -256,7 +256,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("IS NOT NULL filter pushdown", P0Test) {
+  test("IS NOT NULL filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testshort FROM test_table WHERE testshort IS NOT NULL""".stripMargin),
@@ -271,7 +271,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("NOT filter pushdown", P0Test) {
+  test("NOT filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testlong FROM test_table WHERE NOT testlong = 1239012341823719""".stripMargin),
@@ -288,7 +288,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Combined condition NOT filter optimized", P0Test) {
+  test("Combined condition NOT filter optimized", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT teststring, testfloat FROM test_table
@@ -309,7 +309,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Filter NOT LIKE filter pushdown", P0Test) {
+  test("Filter NOT LIKE filter pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testlong FROM test_table WHERE NOT teststring LIKE 'asd%'""".stripMargin),
@@ -328,7 +328,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Filter EqualNullSafe not supported: operator <=>", P0Test) {
+  test("Filter EqualNullSafe not supported: operator <=>", P0Test, P1Test) {
 
     conn.createStatement().executeUpdate(
       s""" create table $test_table_safe_null(c1 varchar, c2 varchar)""")
@@ -1879,7 +1879,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
          |"SUBQUERY_1"LIMIT1""".stripMargin
     )
 
-  test("Test AND statements") {
+  test("Test AND statements", P1Test) {
     doTest(sqlContext, testAnd0)
     doTest(sqlContext, testAnd1)
     doTest(sqlContext, testAnd2)
@@ -1891,7 +1891,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     doTest(sqlContext, testAnd8)
   }
 
-  test("Test OR statements") {
+  test("Test OR statements", P1Test) {
     doTest(sqlContext, testOr0)
     doTest(sqlContext, testOr1)
     doTest(sqlContext, testOr2)
@@ -1899,7 +1899,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     doTest(sqlContext, testOr4)
   }
 
-  test("Test Binary + operator") {
+  test("Test Binary + operator", P1Test) {
     doTest(sqlContext, testBinaryPlus0)
     doTest(sqlContext, testBinaryPlus1)
     doTest(sqlContext, testBinaryPlus2)
@@ -2002,7 +2002,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     doTest(sqlContext, testBinaryDivide25)
   }
 
-  test("Test Literal") {
+  test("Test Literal", P1Test) {
     doTest(sqlContext, testLiteral0)
     doTest(sqlContext, testLiteral1)
     doTest(sqlContext, testLiteral2)

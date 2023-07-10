@@ -80,7 +80,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
     })
   }
 
-  test("child in list pushdown") {
+  test("child in list pushdown", P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT count(*) FROM test_table where testdouble in (0.0, 2.0)"""),
       Seq(Row(2)))
@@ -134,7 +134,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
   }
 
-  test("child IS NULL pushdown") {
+  test("child IS NULL pushdown", P1Test) {
     // "Column name" and result size
     val input = List(
       ("testbyte", 1),
@@ -163,7 +163,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
     })
   }
 
-  test("child IS NOT NULL pushdown") {
+  test("child IS NOT NULL pushdown", P1Test) {
     // "Column name" and result size
     val input = List(
       ("testbyte", 4),
@@ -193,7 +193,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
     })
   }
 
-  test("child EqualTo pushdown") {
+  test("child EqualTo pushdown", P1Test) {
     // "Column name",match value and result size
     val input = List(
       ("testbyte", 0, 2),
@@ -341,7 +341,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
   }
 
-  test("child NOT EqualTo pushdown") {
+  test("child NOT EqualTo pushdown", P1Test) {
     // "Column name",match value and result size
     val input = List(
       ("testbyte", 0, 2),
@@ -438,7 +438,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
   }
 
-  test("child GreaterThanOrEqual pushdown") {
+  test("child GreaterThanOrEqual pushdown", P1Test) {
     // "Column name",match value and result size
     val input = List(
       ("testbyte", 0, 4),
@@ -492,7 +492,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |LIMIT 1""".stripMargin)
   }
 
-  test("child LessThanOrEqual pushdown") {
+  test("child LessThanOrEqual pushdown", P1Test) {
     // "Column name",match value and result size
     val input = List(
       ("testbyte", 0, 2),
@@ -547,7 +547,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |LIMIT 1""".stripMargin)
   }
 
-  test("child GreaterThan pushdown") {
+  test("child GreaterThan pushdown", P1Test) {
     // "Column name",match value and result size
     val input = List(
       ("testbyte", 0, 2),
@@ -601,7 +601,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |LIMIT 1""".stripMargin)
   }
 
-  test("child LessThan pushdown") {
+  test("child LessThan pushdown", P1Test) {
     // "Column name",match value and result size
     val input = List(
       ("testbyte", 0, 0),
@@ -657,7 +657,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |LIMIT 1""".stripMargin)
   }
 
-  test("child contains pushdown") {
+  test("child contains pushdown", P1Test) {
     checkAnswer(
       sqlContext.sql(s"""SELECT count(*) FROM test_table where teststring LIKE '%asdf%' """),
       Seq(Row(1)))
@@ -685,7 +685,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |LIMIT 1""".stripMargin)
   }
 
-  test("child startswith pushdown") {
+  test("child startswith pushdown", P1Test) {
     checkAnswer(
       sqlContext.sql(s"""SELECT count(*) FROM test_table where teststring LIKE 'asdf%' """),
       Seq(Row(1)))
@@ -703,7 +703,9 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       sqlContext.sql(s"""SELECT count(*) FROM test_table where teststring LIKE '%\\'%' """),
       Seq(Row(1)))
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT "teststring" FROM $test_table WHERE "teststring" IS NOT NULL""".stripMargin)
+		expectedAnswerSpark3_2 =
+      s"""SELECT "teststring" FROM $test_table
+         | WHERE "teststring" IS NOT NULL""".stripMargin)
   }
 
   test("child startswith pushdown - long string") {
@@ -721,7 +723,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |LIMIT 1""".stripMargin)
   }
 
-  test("child endswith pushdown") {
+  test("child endswith pushdown", P1Test) {
     checkAnswer(
       sqlContext.sql(s"""SELECT count(*) FROM test_table where teststring LIKE '%asdf' """),
       Seq(Row(1)))

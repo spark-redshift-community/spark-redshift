@@ -19,7 +19,7 @@ import org.apache.spark.sql.Row
 
 abstract class PushdownStringTranslateSuite extends StringIntegrationPushdownSuiteBase {
 
-  test("Translate Single-Byte Characters") {
+  test("Translate Single-Byte Characters", P1Test) {
     // Column names
     val columns = List("testfixedstring", "testvarstring")
     // (id, from, to, result)
@@ -62,7 +62,7 @@ abstract class PushdownStringTranslateSuite extends StringIntegrationPushdownSui
     })
   }
 
- test("Translate Multi-Byte Characters") {
+ test("Translate Multi-Byte Characters", P1Test) {
     // Column names
     val columns = List("testvarstring")
     // (id, from, to, result)

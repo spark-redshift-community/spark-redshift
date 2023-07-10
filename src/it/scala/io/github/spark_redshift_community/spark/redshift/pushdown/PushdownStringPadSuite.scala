@@ -19,7 +19,7 @@ import org.apache.spark.sql.Row
 
 abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase {
 
-  test("Left Pad without pad") {
+  test("Left Pad without pad", P1Test) {
     // Column names
     val columns = List("testfixedstring", "testvarstring")
     // (id, length, result)
@@ -53,7 +53,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
     })
   }
 
-  test("Left Pad with pad") {
+  test("Left Pad with pad", P1Test) {
     // Column
     val columns = List("testfixedstring", "testvarstring")
     // (id, length, pad, result)
@@ -90,7 +90,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
     })
   }
 
-  test("Right Pad without pad") {
+  test("Right Pad without pad", P1Test) {
     // Column names
     val columns = List(/* "testfixedstring", */ "testvarstring")
     // (id, length, result)
@@ -124,7 +124,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
     })
   }
 
-  test("Right Pad with pad") {
+  test("Right Pad with pad", P1Test) {
     // Column
     val columns = List("testfixedstring", "testvarstring")
     // (id, length, pad, result)

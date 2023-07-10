@@ -21,9 +21,15 @@ import org.apache.spark.sql.{DataFrameReader, SQLContext}
 import java.time.format.DateTimeFormatter
 import org.scalatest.Tag
 
+// Test tag to specify the functional tests for Redshift timestamptz type.
 object TimestamptzTest extends Tag("TimestamptzTest")
-object P0Test extends Tag("P0Test")
+// Test tag to specify the functional tests that needs preloaded Redshift correctness dataset
+// on cluster.
 object PreloadTest extends Tag("PreloadTest")
+// P0 functional test set to run within half an hour, which can be used in every development build.
+object P0Test extends Tag("P0Test")
+// P1 functional test set to run in about one hour and a half, which can be used in nightly build.
+object P1Test extends Tag("P1Test")
 
 class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected var test_table: String = setTestTableName()
