@@ -175,12 +175,14 @@ private[redshift] case class RedshiftRelation(
       s"UNLOAD ('$query') TO '$fixedUrl'" +
       s" WITH CREDENTIALS '$credsString'" +
       s" FORMAT AS PARQUET  MANIFEST" + // temp
-      s" $sseKmsClause"
+      s" $sseKmsClause" +
+      s" ${params.extraUnloadOptions}"
     } else {
       s"UNLOAD ('$query') TO '$fixedUrl'" +
       s" WITH CREDENTIALS '$credsString'" +
       s" ESCAPE MANIFEST NULL AS '${params.nullString}'" +
-      s" $sseKmsClause"
+      s" $sseKmsClause" +
+      s" ${params.extraUnloadOptions}"
     }
 
     unloadStmt
@@ -213,12 +215,14 @@ private[redshift] case class RedshiftRelation(
       s"UNLOAD ('SELECT * FROM ($query)') TO '$fixedUrl'" +
       s" WITH CREDENTIALS '$credsString'" +
       s" FORMAT AS PARQUET  MANIFEST" +
-      s" $sseKmsClause"
+      s" $sseKmsClause" +
+      s" ${params.extraUnloadOptions}"
     } else {
       s"UNLOAD ('SELECT * FROM ($query)') TO '$fixedUrl'" +
       s" WITH CREDENTIALS '$credsString'" +
       s" ESCAPE MANIFEST NULL AS '${params.nullString}'" +
-      s" $sseKmsClause"
+      s" $sseKmsClause" +
+      s" ${params.extraUnloadOptions}"
     }
 
     unloadStmt
