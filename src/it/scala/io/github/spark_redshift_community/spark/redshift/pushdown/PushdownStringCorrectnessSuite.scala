@@ -142,9 +142,9 @@ abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectness
     doTest(sqlContext, testSubstr09)
     doTest(sqlContext, testSubstr10)
     doTest(sqlContext, testSubstr11)
-//    doTest(sqlContext, testSubstr12) // Disable for [Redshift-7057]
+    doTest(sqlContext, testSubstr12)
     doTest(sqlContext, testSubstr13)
-//    doTest(sqlContext, testSubstr14) // Disable for [Redshift-7057]
+    doTest(sqlContext, testSubstr14)
     doTest(sqlContext, testSubstr15)
     doTest(sqlContext, testSubstr16)
     doTest(sqlContext, testSubstr17)
@@ -173,7 +173,7 @@ abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectness
     doTest(sqlContext, testSubstr40)
     doTest(sqlContext, testSubstr41)
     doTest(sqlContext, testSubstr42)
-//    doTest(sqlContext, testSubstr43) // Disable for [Redshift-7057]
+    doTest(sqlContext, testSubstr43)
     doTest(sqlContext, testSubstr44)
     doTest(sqlContext, testSubstr45)
     doTest(sqlContext, testSubstr46)
@@ -195,7 +195,6 @@ class DefaultNoPushdownStringCorrectnessSuite extends PushdownStringCorrectnessS
   override protected val auto_pushdown: String = "false"
 }
 
-@DoNotDiscover // Disable until the following SIM is fixed: [Redshift-7057]
 class ParquetNoPushdownStringCorrectnessSuite extends PushdownStringCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"

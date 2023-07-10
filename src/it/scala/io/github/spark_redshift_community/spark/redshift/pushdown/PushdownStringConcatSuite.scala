@@ -160,7 +160,6 @@ class DefaultNoPushdownStringConcatSuite extends PushdownStringConcatSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-@DoNotDiscover // Disabled until this issue is fixed: [Redshift-7057]
 class ParquetNoPushdownStringConcatSuite extends PushdownStringConcatSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"

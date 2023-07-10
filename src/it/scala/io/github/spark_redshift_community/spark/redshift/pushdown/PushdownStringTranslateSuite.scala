@@ -114,7 +114,6 @@ class DefaultNoPushdownStringTranslateSuite extends PushdownStringTranslateSuite
   override protected val auto_pushdown: String = "false"
 }
 
-@DoNotDiscover // Disable until the following SIM is fixed: [Redshift-7057]
 class ParquetNoPushdownStringTranslateSuite extends PushdownStringTranslateSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
