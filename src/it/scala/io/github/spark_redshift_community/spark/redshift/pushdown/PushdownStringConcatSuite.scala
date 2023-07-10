@@ -145,12 +145,12 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
   }
 }
 
-class DefaultPushdownStringConcatSuite extends PushdownStringConcatSuite {
+class DefaultStringConcatPushdownSuite extends PushdownStringConcatSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetPushdownStringConcatSuite extends PushdownStringConcatSuite {
+class ParquetStringConcatPushdownSuite extends PushdownStringConcatSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }

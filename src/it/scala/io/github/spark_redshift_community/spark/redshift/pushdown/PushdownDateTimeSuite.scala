@@ -294,7 +294,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class DefaultPushdownDateTimeSuite extends PushdownDateTimeSuite {
+class DefaultDateTimePushdownSuite extends PushdownDateTimeSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "true"
 
@@ -409,12 +409,12 @@ class DefaultPushdownDateTimeSuite extends PushdownDateTimeSuite {
   }
 }
 
-class ParquetPushdownDateTimeSuite extends PushdownDateTimeSuite {
+class ParquetDateTimePushdownSuite extends PushdownDateTimeSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
 
-class DefaultNoPushdownDateTimeSuite extends DefaultPushdownDateTimeSuite {
+class DefaultNoPushdownDateTimeSuite extends DefaultDateTimePushdownSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "false"
 }

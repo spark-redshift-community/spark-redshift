@@ -66,13 +66,13 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
 }
 
 @DoNotDiscover // Disable until the following SIM is fixed: [Redshift-7150]
-class DefaultPushdownStringLikeSuite extends PushdownStringLikeSuite {
+class DefaultStringLikePushdownSuite extends PushdownStringLikeSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "true"
 }
 
 @DoNotDiscover // Disable until the following SIM is fixed: [Redshift-7150]
-class ParquetPushdownStringLikeSuite extends PushdownStringLikeSuite {
+class ParquetStringLikePushdownSuite extends PushdownStringLikeSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }

@@ -1413,11 +1413,11 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
   }
 }
 
-class DefaultPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOperatorSuite {
+class DefaultLogicalPlanOperatorPushdownSuite extends PushdownLogicalPlanOperatorSuite {
   override protected val s3format: String = "DEFAULT"
 }
 
-class ParquetPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOperatorSuite {
+class ParquetLogicalPlanOperatorPushdownSuite extends PushdownLogicalPlanOperatorSuite {
   override protected val s3format: String = "PARQUET"
 }
 
