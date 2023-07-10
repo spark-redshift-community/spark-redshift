@@ -117,7 +117,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_1"""".stripMargin
   )
 
-  test("Test DateAdd datetime expressions") {
+  test("Test DateAdd datetime expressions", P0Test) {
     doTest(sqlContext, testDateAdd1)
     doTest(sqlContext, testDateAdd2)
     doTest(sqlContext, testDateAdd3)
@@ -188,7 +188,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_1"""".stripMargin
   )
 
-  test("Test DateSub datetime expressions") {
+  test("Test DateSub datetime expressions", P0Test) {
     doTest(sqlContext, testDateSub1)
     doTest(sqlContext, testDateSub2)
     doTest(sqlContext, testDateSub3)
@@ -223,7 +223,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_1"""".stripMargin
   )
 
-  test("Test casting datetime expressions") {
+  test("Test casting datetime expressions", P0Test) {
     doTest(sqlContext, testDatetimeCast1)
     doTest(sqlContext, testDatetimeCast2)
   }
@@ -338,12 +338,12 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_1"""".stripMargin
   )
 
-  test("Test ADD_MONTHS datetime expressions") {
+  test("Test ADD_MONTHS datetime expressions", P0Test) {
     doTest(sqlContext, testAddMonths1)
     doTest(sqlContext, testAddMonths2)
   }
 
-  test("Test max timestamptz type", TimestamptzTest) {
+  test("Test max timestamptz type", TimestamptzTest, P0Test) {
     checkAnswer(
       sqlContext.sql("""SELECT MAX(testtimestamptz) FROM test_tz_table"""),
       Seq(Row(Timestamp.from(
@@ -356,7 +356,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
          | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
   }
 
-  test("Test timestamptz type", TimestamptzTest) {
+  test("Test timestamptz type", TimestamptzTest, P0Test) {
     checkAnswer(
       sqlContext.sql(
         s"""SELECT testid, testtimestamp,  testtimestamptz FROM test_tz_table
@@ -381,7 +381,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
          | AS "SUBQUERY_1" ORDER BY ( "SUBQUERY_1"."TESTID" ) ASC NULLS FIRST""".stripMargin)
   }
 
-  test("Test DATE_ADD on timestamptz type", TimestamptzTest) {
+  test("Test DATE_ADD on timestamptz type", TimestamptzTest, P0Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT COUNT(DATE_ADD(testtimestamptz, 1)) FROM test_tz_table
@@ -399,7 +399,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
          | AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin)
   }
 
-  test("Test DATE_SUB on timestamptz type", TimestamptzTest) {
+  test("Test DATE_SUB on timestamptz type", TimestamptzTest, P0Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT COUNT(DATE_SUB(testtimestamptz, 1)) FROM test_tz_table
@@ -418,7 +418,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
          | AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin)
   }
 
-  test("Test DATE_TRUNC on timestamptz type", TimestamptzTest) {
+  test("Test DATE_TRUNC on timestamptz type", TimestamptzTest, P0Test) {
     checkAnswer(
       sqlContext.sql(
         s"""SELECT date_trunc('YEAR', testtimestamptz),
