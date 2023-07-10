@@ -55,6 +55,7 @@ trait IntegrationSuiteBase
   protected val AWS_REDSHIFT_PASSWORD: String = loadConfigFromEnv("AWS_REDSHIFT_PASSWORD")
   protected val AWS_ACCESS_KEY_ID: String = loadConfigFromEnv("AWS_ACCESS_KEY_ID")
   protected val AWS_SECRET_ACCESS_KEY: String = loadConfigFromEnv("AWS_SECRET_ACCESS_KEY")
+  protected val AWS_SESSION_TOKEN: String = loadConfigFromEnv("AWS_SESSION_TOKEN")
   // Path to a directory in S3 (e.g. 's3n://bucket-name/path/to/scratch/space').
   protected val AWS_S3_SCRATCH_SPACE: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE")
   require(AWS_S3_SCRATCH_SPACE.contains("s3a"), "must use s3a:// URL")
@@ -88,12 +89,11 @@ trait IntegrationSuiteBase
     // Bypass Hadoop's FileSystem caching mechanism so that we don't cache the credentials:
     sc.hadoopConfiguration.setBoolean("fs.s3.impl.disable.cache", true)
     sc.hadoopConfiguration.setBoolean("fs.s3n.impl.disable.cache", true)
-    sc.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", AWS_ACCESS_KEY_ID)
-    sc.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", AWS_SECRET_ACCESS_KEY)
     sc.hadoopConfiguration.set("fs.s3a.access.key", AWS_ACCESS_KEY_ID)
     sc.hadoopConfiguration.set("fs.s3a.secret.key", AWS_SECRET_ACCESS_KEY)
+    sc.hadoopConfiguration.set("fs.s3a.session.token", AWS_SESSION_TOKEN)
     sc.hadoopConfiguration.set("fs.s3a.aws.credentials.provider",
-      "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
+      "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
     sc.hadoopConfiguration.setBoolean("fs.s3a.bucket.all.committer.magic.enabled", true)
     conn = DefaultJDBCWrapper.getConnector(None, jdbcUrl, None)
   }
@@ -101,10 +101,9 @@ trait IntegrationSuiteBase
   override def afterAll(): Unit = {
     try {
       val conf = new Configuration(false)
-      conf.set("fs.s3n.awsAccessKeyId", AWS_ACCESS_KEY_ID)
-      conf.set("fs.s3n.awsSecretAccessKey", AWS_SECRET_ACCESS_KEY)
       conf.set("fs.s3a.access.key", AWS_ACCESS_KEY_ID)
       conf.set("fs.s3a.secret.key", AWS_SECRET_ACCESS_KEY)
+      conf.set("fs.s3a.session.token", AWS_SESSION_TOKEN)
       // Bypass Hadoop's FileSystem caching mechanism so that we don't cache the credentials:
       conf.setBoolean("fs.s3.impl.disable.cache", true)
       conf.setBoolean("fs.s3n.impl.disable.cache", true)
