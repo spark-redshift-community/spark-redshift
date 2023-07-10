@@ -169,11 +169,12 @@ private[redshift] object Conversions {
       case StringType if from!=null =>
         org.apache.spark.unsafe.types.UTF8String.fromString(
           from.asInstanceOf[String]
-        )
+        ).trim()
 
       // For date or timestamp without time zone, Redshift unloads timestamps
       // to Parquet as if they were UTC even if they are intended to represent local times.
       // We need to convert 17:00 UTC to 17:00 Spark time zone.
+      // NOTE: timestamp with time zone is not supported in parquet format.
       case DateType if from!=null && from.isInstanceOf[Timestamp] =>
         DateTimeUtils.microsToDays(
           from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS,
