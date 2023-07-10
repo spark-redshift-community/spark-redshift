@@ -37,7 +37,10 @@ class DefaultSource(
   with CreatableRelationProvider {
 
   private val log = LoggerFactory.getLogger(getClass)
-
+  log.info(BuildInfo.toString)
+  if (BuildInfo.version.contains("-amzn-")) {
+    log.info("amazon-spark-redshift-connector")
+  }
   /**
    * Default constructor required by Data Source API
    */

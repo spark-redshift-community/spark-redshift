@@ -34,6 +34,7 @@ val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.103
 
 
 lazy val root = Project("spark-redshift", file("."))
+  .enablePlugins(BuildInfoPlugin)
   .configs(IntegrationTest)
   .settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
   .settings(Project.inConfig(IntegrationTest)(rawScalastyleSettings()): _*)
@@ -53,7 +54,7 @@ lazy val root = Project("spark-redshift", file("."))
 
       "com.google.guava" % "guava" % "27.0.1-jre" % "test",
       "org.scalatest" %% "scalatest" % "3.0.5" % "test",
-      "org.mockito" % "mockito-core" % "1.10.19" % "test",
+      "org.mockito" % "mockito-inline" % "4.9.0" % "test",
 
       "com.amazon.redshift" % "redshift-jdbc42" % "2.1.0.9" % "provided",
 
@@ -142,5 +143,7 @@ lazy val root = Project("spark-redshift", file("."))
       setNextVersion,
       commitNextVersion,
       pushChanges
-    )
+    ),
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "io.github.spark_redshift_community.spark.redshift"
   )

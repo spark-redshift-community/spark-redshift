@@ -19,7 +19,7 @@ package io.github.spark_redshift_community.spark.redshift
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 
 import org.apache.spark.sql.types.StructType
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers.{any, anyString, same}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer

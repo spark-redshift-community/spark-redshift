@@ -19,15 +19,14 @@ package io.github.spark_redshift_community.spark.redshift
 
 import java.io.{ByteArrayInputStream, OutputStreamWriter}
 import java.net.URI
-
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import com.amazonaws.thirdparty.apache.http.client.methods.HttpRequestBase
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers.{anyString, endsWith}
 import org.mockito.Mockito
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{verify, when}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.fs.UnsupportedFileSystemException
 import org.mockito.invocation.InvocationOnMock
@@ -39,6 +38,9 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.scalatest.mockito.MockitoSugar.mock
+import org.slf4j.LoggerFactory
+import org.slf4j.Logger;
 
 
 /**
@@ -724,5 +726,31 @@ class RedshiftSourceSuite
         .load()
     }
     assert(e.getMessage.contains("No FileSystem for scheme"))
+  }
+
+  test("DefaultSource constructor logs buildinfo to INFO") {
+    val mockLogger = mock[Logger]
+    val mockLoggerFactory = Mockito.mockStatic(classOf[LoggerFactory])
+    try {
+      when(LoggerFactory.getLogger(classOf[DefaultSource])).thenReturn(mockLogger)
+      new DefaultSource()
+    } finally {
+      mockLoggerFactory.close()
+    }
+    verify(mockLogger).info(BuildInfo.toString)
+  }
+
+  test("DefaultSource constructor outputs unique log to when version includes -amzn- INFO") {
+    val mockLogger = mock[Logger]
+    val mockLoggerFactory = Mockito.mockStatic(classOf[LoggerFactory])
+    try {
+      when(LoggerFactory.getLogger(classOf[DefaultSource])).thenReturn(mockLogger)
+      new DefaultSource()
+    } finally {
+      mockLoggerFactory.close()
+    }
+    if (BuildInfo.version.contains("-amzn-")){
+      verify(mockLogger).info("amazon-spark-redshift-connector")
+    }
   }
 }
