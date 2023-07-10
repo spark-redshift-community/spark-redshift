@@ -94,6 +94,7 @@ trait IntegrationSuiteBase
     sc.hadoopConfiguration.set("fs.s3a.secret.key", AWS_SECRET_ACCESS_KEY)
     sc.hadoopConfiguration.set("fs.s3a.aws.credentials.provider",
       "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
+    sc.hadoopConfiguration.setBoolean("fs.s3a.bucket.all.committer.magic.enabled", true)
     conn = DefaultJDBCWrapper.getConnector(None, jdbcUrl, None)
   }
 
