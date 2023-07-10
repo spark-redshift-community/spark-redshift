@@ -416,13 +416,20 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
 
 class DefaultPushdownSqlClauseSuite extends PushdownSqlClauseSuite {
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "true"
 }
 
 class ParquetPushdownSqlClauseSuite extends PushdownSqlClauseSuite {
   override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "true"
 }
 
 class DefaultNoPushdownSqlClauseSuite extends PushdownSqlClauseSuite {
-  override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "false"
+}
+
+class ParquetNoPushdownSqlFuncSuite extends PushdownSqlClauseSuite {
+  override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "false"
 }

@@ -133,7 +133,11 @@ private[redshift] case class RedshiftRelation(
 
       val prunedSchema = pruneSchema(schema, requiredColumns)
 
-      readRDD(prunedSchema, filesToRead)
+      if (params.unloadS3Format == "PARQUET") {
+        readRDDFromParquet(prunedSchema, filesToRead)
+      } else {
+        readRDD(prunedSchema, filesToRead)
+      }
     }
   }
 
@@ -166,9 +170,17 @@ private[redshift] case class RedshiftRelation(
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
 
     val sseKmsClause = sseKmsKey.map(key => s"KMS_KEY_ID '$key' ENCRYPTED").getOrElse("")
-    val unloadStmt = s"UNLOAD ('$query') TO '$fixedUrl' WITH CREDENTIALS '$credsString'" +
+    val unloadStmt = if (params.unloadS3Format == "PARQUET") {
+      s"UNLOAD ('$query') TO '$fixedUrl'" +
+      s" WITH CREDENTIALS '$credsString'" +
+      s" FORMAT AS PARQUET  MANIFEST" + // temp
+      s" $sseKmsClause"
+    } else {
+      s"UNLOAD ('$query') TO '$fixedUrl'" +
+      s" WITH CREDENTIALS '$credsString'" +
       s" ESCAPE MANIFEST NULL AS '${params.nullString}'" +
       s" $sseKmsClause"
+    }
 
     unloadStmt
   }
@@ -196,7 +208,7 @@ private[redshift] case class RedshiftRelation(
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
 
     val sseKmsClause = sseKmsKey.map(key => s"KMS_KEY_ID '$key' ENCRYPTED").getOrElse("")
-    val unloadStmt = if (params.pushdownUnloadS3Format == "PARQUET") {
+    val unloadStmt = if (params.unloadS3Format == "PARQUET") {
       s"UNLOAD ('SELECT * FROM ($query)') TO '$fixedUrl'" +
       s" WITH CREDENTIALS '$credsString'" +
       s" FORMAT AS PARQUET  MANIFEST" +
@@ -240,11 +252,11 @@ def buildScanFromSQL[Row](statement: RedshiftSQLStatement,
     }
 
     val filesToRead: Seq[String] = getFilesToRead(creds, tempDir.get)
-  if (params.pushdownUnloadS3Format == "PARQUET") {
-    readRDDFromParquet(resultSchema, filesToRead)
-  } else {
-    readRDD(resultSchema, filesToRead)
-  }
+    if (params.unloadS3Format == "PARQUET") {
+      readRDDFromParquet(resultSchema, filesToRead)
+    } else {
+      readRDD(resultSchema, filesToRead)
+    }
   }
 
   // Unload data from Redshift into a temporary directory in S3

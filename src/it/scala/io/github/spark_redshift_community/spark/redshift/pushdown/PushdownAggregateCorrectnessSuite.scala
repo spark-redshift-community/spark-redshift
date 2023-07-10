@@ -544,6 +544,8 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
 @DoNotDiscover
 class DefaultPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "true"
+
   // Timestamptz column is not handled correctly in parquet format as time zone information is not
   // unloaded.
   test("Test COUNT(timestamptz) aggregation statements against correctness dataset" +
@@ -582,10 +584,17 @@ class DefaultPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectn
 @DoNotDiscover
 class ParquetPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "true"
 }
 
 @DoNotDiscover
 class DefaultNoPushdownAggregateCorrectnessSuite extends DefaultPushdownAggregateCorrectnessSuite {
-  override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
+  override protected val auto_pushdown: String = "false"
+}
+
+@DoNotDiscover
+class ParquetNoPushdownDAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
+  override protected val s3format: String = "PARQUET"
+  override protected val auto_pushdown: String = "false"
 }
