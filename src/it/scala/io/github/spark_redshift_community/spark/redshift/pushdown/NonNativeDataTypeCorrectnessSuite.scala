@@ -48,7 +48,7 @@ abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuit
     // scalastyle:on
   }
 
-  test("Test super data type") {
+  test("Test super data type", P1Test) {
     // (id, result)
     val testCases = List(
       (0, "null"),
@@ -76,7 +76,7 @@ abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuit
     })
   }
 
-  test("Test unsupported data types") {
+  test("Test unsupported data types", P1Test) {
     // (Redshift data type, Java sql type value)
     val testCases = List(
       ("geometry", java.sql.Types.LONGVARBINARY),

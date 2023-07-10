@@ -57,7 +57,7 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
   )
 
-  test("Test COUNT aggregation statements", P0Test) {
+  test("Test COUNT aggregation statements", P0Test, P1Test) {
     doTest(sqlContext, testCount)
     doTest(sqlContext, testCountDistinct)
     doTest(sqlContext, testCountGroupBy1)
@@ -84,7 +84,7 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
   )
 
-  test("Test Max aggregation statements", P0Test) {
+  test("Test Max aggregation statements", P0Test, P1Test) {
     doTest(sqlContext, testMax)
     doTest(sqlContext, testMaxGroupBy)
   }
@@ -109,7 +109,7 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
   )
 
-  test("Test Min aggregation statements", P0Test) {
+  test("Test Min aggregation statements", P0Test, P1Test) {
     doTest(sqlContext, testMin)
     doTest(sqlContext, testMinGroupBy)
   }
@@ -134,7 +134,7 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
   )
 
-  test("Test Avg aggregation statements", P0Test) {
+  test("Test Avg aggregation statements", P0Test, P1Test) {
     doTest(sqlContext, testAvg)
     doTest(sqlContext, testAvgGroupBy)
   }
@@ -159,7 +159,7 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
        | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
   )
 
-  test("Test Sum aggregation statements", P0Test) {
+  test("Test Sum aggregation statements", P0Test, P1Test) {
     doTest(sqlContext, testSum)
     doTest(sqlContext, testSumGroupBy)
   }

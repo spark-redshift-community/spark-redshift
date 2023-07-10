@@ -20,7 +20,7 @@ import org.apache.spark.sql.{Row, SparkSession}
 
 abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
 
-  test("Limit clause pushdown", P0Test) {
+  test("Limit clause pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT testbyte FROM test_table LIMIT 1"""),
       Seq(Row(null))
@@ -35,7 +35,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Union clause pushdown", P0Test) {
+  test("Union clause pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testString, testshort FROM test_table  WHERE testString IS NOT NULL
@@ -66,7 +66,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Union All clause pushdown", P0Test) {
+  test("Union All clause pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testString, testshort FROM test_table  WHERE testString IS NOT NULL
@@ -95,7 +95,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Order by pushdown", P0Test) {
+  test("Order by pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT testshort FROM test_table where testshort > 0 ORDER BY testshort"""),
       Seq(Row(23), Row(24))
@@ -112,7 +112,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Order by DESC pushdown", P0Test) {
+  test("Order by DESC pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testshort FROM test_table where testshort > 0
@@ -131,7 +131,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Inner Join pushdown", P0Test) {
+  test("Inner Join pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT table1.testint, table2.testshort
@@ -169,7 +169,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Left outer Join pushdown", P0Test) {
+  test("Left outer Join pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT table1.testint, new_table.testshort
@@ -205,7 +205,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Right Join pushdown", P0Test) {
+  test("Right Join pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT table2.testint, new_table.testshort
@@ -240,7 +240,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Full Join pushdown", P0Test) {
+  test("Full Join pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT new_table1.teststring as S1, new_table2.teststring as S2
@@ -276,7 +276,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Join with Non-redshift table - partial pushdown", P0Test) {
+  test("Join with Non-redshift table - partial pushdown", P0Test, P1Test) {
     val spark = SparkSession.getActiveSession.get
     import spark.implicits._
 
@@ -307,7 +307,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Cast long to decimal", P0Test) {
+  test("Cast long to decimal", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT CAST(testlong AS DECIMAL(20,2)) FROM
@@ -330,7 +330,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Distinct pushdown", P0Test) {
+  test("Distinct pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT DISTINCT testlong FROM
@@ -349,7 +349,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Use option query", P0Test) {
+  test("Use option query", P0Test, P1Test) {
       val df = read
         .option("query",
         s"""SELECT avg(testlong) FROM
@@ -370,7 +370,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Use option query join with Non-redshift table - partial pushdown", P0Test) {
+  test("Use option query join with Non-redshift table - partial pushdown", P0Test, P1Test) {
     val spark = SparkSession.getActiveSession.get
     import spark.implicits._
 

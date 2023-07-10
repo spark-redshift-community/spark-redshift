@@ -65,7 +65,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     // scalastyle:on
   }
 
-  test("Test JOIN logical plan operator") {
+  test("Test JOIN logical plan operator", P1Test) {
     // "Column name" and result set
     val input = List(
       ("testbyte", Seq(Row(0), Row(0), Row(1), Row(1))),
@@ -535,7 +535,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     doTest(sqlContext, testJoin14)
   }
 
-  test("Test UNION logical plan operator") {
+  test("Test UNION logical plan operator", P1Test) {
     // "Column name" and result set
     val input = List(
       ("testbyte", Seq(Row(null), Row(0), Row(1), Row(2), Row(3), Row(42))),
@@ -1403,7 +1403,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
        | ( "SUBQUERY_1"."SUBQUERY_1_COL_1 " >= 1 ) ) ) AS "SUBQUERY_2" """.stripMargin
   )
 
-  test("Test INTERSECT logical plan operator with different column type") {
+  test("Test INTERSECT logical plan operator with different column type", P1Test) {
     doTest(sqlContext, testIntersect01)
     doTest(sqlContext, testIntersect02)
     doTest(sqlContext, testIntersect03)

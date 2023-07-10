@@ -18,7 +18,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown
 import org.apache.spark.sql.Row
 
 abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
-  test("Abs pushdown", P0Test) {
+  test("Abs pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT ABS(testfloat) FROM test_table WHERE testfloat < 0 """),
       Seq(Row(1.0))
@@ -34,7 +34,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Cos, Sin, Acos, Asin, Atan, Tan pushdown", P0Test) {
+  test("Cos, Sin, Acos, Asin, Atan, Tan pushdown", P0Test, P1Test) {
 
     checkAnswer(
       sqlContext.sql(
@@ -70,7 +70,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Sqrt pushdown", P0Test) {
+  test("Sqrt pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT SQRT(testfloat) FROM test_table WHERE testfloat > 0
@@ -88,7 +88,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Log10 pushdown", P0Test) {
+  test("Log10 pushdown", P0Test, P1Test) {
 
     checkAnswer(
       sqlContext.sql(
@@ -108,7 +108,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Ceil pushdown", P0Test) {
+  test("Ceil pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT CEIL(testdouble) FROM test_table WHERE testdouble < 0 """),
       Seq(Row(-1234152))
@@ -123,7 +123,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Floor pushdown", P0Test) {
+  test("Floor pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT FLOOR(testdouble) FROM test_table WHERE testdouble < 0 """),
       Seq(Row(-1234153))
@@ -139,7 +139,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Round pushdown", P0Test) {
+  test("Round pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT ROUND(testdouble) FROM test_table WHERE testdouble < 0 """),
       Seq(Row(-1234152))
@@ -155,7 +155,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Greatest pushdown", P0Test) {
+  test("Greatest pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT GREATEST(testdouble, testint)
@@ -179,7 +179,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Least pushdown", P0Test) {
+  test("Least pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT LEAST(teststring, CONCAT('A',CAST(testshort as String)))
@@ -206,7 +206,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
 
   }
 
-  test("Exponential precision on float", P0Test) {
+  test("Exponential precision on float", P0Test, P1Test) {
     // "Column name" and result size
     val input = List(
       (0.9, "DECIMAL(12,1)", Seq(Row(1.1051709180756477))),
@@ -236,7 +236,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     })
   }
 
-  test("Arithmetic add pushdown", P0Test) {
+  test("Arithmetic add pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testint + 23 FROM test_table WHERE testbool = true """.stripMargin),
@@ -257,7 +257,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Arithmetic substract pushdown", P0Test) {
+  test("Arithmetic substract pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testint - 5 FROM test_table WHERE testbool = true """.stripMargin),
@@ -278,7 +278,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Arithmetic multiply pushdown", P0Test) {
+  test("Arithmetic multiply pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testint*5 FROM test_table WHERE testbool = true """.stripMargin),
@@ -299,7 +299,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Arithmetic divide pushdown", P0Test) {
+  test("Arithmetic divide pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testint/2 FROM test_table WHERE testbool = true """.stripMargin),
@@ -330,7 +330,7 @@ class DefaultMathFuncPushdownSuite extends PushdownMathFuncSuite {
   // Precision return w/o pushdown is different.
   // When running this test without pushdown, the result is 2.7182818284590455.
   // Issue is tracked in SIM [Redshift-7037].
-  test("Exponential precision on int2") {
+  test("Exponential precision on int2", P1Test) {
     // "Column name" and result size
     val input = List(
       (0, Seq(Row(2.718281828459045))),
@@ -372,7 +372,7 @@ class DefaultNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
   // Precision return w/o pushdown is different.
   // When running this test without pushdown, the result is 2.7182818284590455.
   // Issue is tracked in SIM [Redshift-7037].
-  test("Exponential precision on int2") {
+  test("Exponential precision on int2", P1Test) {
     // "Column name" and result size
     val input = List(
       (0, Seq(Row(2.7182818284590455))),
