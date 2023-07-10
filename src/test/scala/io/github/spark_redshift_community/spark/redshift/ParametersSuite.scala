@@ -39,6 +39,7 @@ class ParametersSuite extends FunSuite with Matchers {
     mergedParams.table shouldBe Some(TableName("test_schema", "test_table"))
     assert(mergedParams.forwardSparkS3Credentials)
     assert(mergedParams.includeColumnList)
+    assert(!mergedParams.glueLegacyJdbcRealTypeMapping)
 
     // Check that the defaults have been added
     (
