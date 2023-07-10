@@ -1,5 +1,8 @@
 /*
+ *
+ * Copyright 2015-2018 Snowflake Computing
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +27,10 @@ import com.amazonaws.auth.{AWSCredentialsProvider, BasicSessionCredentials}
  */
 private[redshift] object Parameters {
 
+  val PARAM_AUTO_PUSHDOWN: String = "autopushdown"
+  val PARAM_PUSHDOWN_S3_RESULT_CACHE: String = "autopushdown.s3_result_cache"
+  val PARAM_PUSHDOWN_UNLOAD_S3_FORMAT: String = "autopushdown.unload_s3_format"
+
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
     // * tempdir, dbtable and url have no default and they *must* be provided
@@ -40,7 +47,10 @@ private[redshift] object Parameters {
     "usestagingtable" -> "true",
     "preactions" -> ";",
     "postactions" -> ";",
-    "include_column_list" -> "false"
+    "include_column_list" -> "false",
+    PARAM_AUTO_PUSHDOWN -> "false",
+    PARAM_PUSHDOWN_S3_RESULT_CACHE -> "true",
+    PARAM_PUSHDOWN_UNLOAD_S3_FORMAT -> "DEFAULT" // values: DEFAULT, PARQUET
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
@@ -299,5 +309,10 @@ private[redshift] object Parameters {
      * instead of AWS's default encryption
      */
     def sseKmsKey: Option[String] = parameters.get("sse_kms_key")
+
+    def autoPushdown: Boolean = parameters(PARAM_AUTO_PUSHDOWN).toBoolean
+    def pushdownS3ResultCache: Boolean = parameters(PARAM_PUSHDOWN_S3_RESULT_CACHE).toBoolean
+    def pushdownUnloadS3Format: String = parameters(PARAM_PUSHDOWN_UNLOAD_S3_FORMAT).toUpperCase
+
   }
 }

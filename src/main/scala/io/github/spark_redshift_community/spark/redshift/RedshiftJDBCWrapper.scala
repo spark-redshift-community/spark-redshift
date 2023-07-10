@@ -1,4 +1,7 @@
 /*
+ * Copyright 2015-2018 Snowflake Computing
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,21 +20,23 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.sql.{ResultSet, PreparedStatement, Connection, Driver, DriverManager, ResultSetMetaData, SQLException}
-import java.util.Properties
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ThreadFactory, Executors}
-
-import scala.collection.JavaConverters._
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration.Duration
-import scala.util.Try
-import scala.util.control.NonFatal
-
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, Identifier, RedshiftSQLStatement}
 import org.apache.spark.SPARK_VERSION
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.types._
 import org.slf4j.LoggerFactory
+
+import java.sql.{Connection, Driver, DriverManager, PreparedStatement, ResultSet, ResultSetMetaData, SQLException}
+import java.util.Properties
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{Executors, ThreadFactory}
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.language.postfixOps
+import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
  * Shim which exposes some JDBC helper functions. Most of this code is copied from Spark SQL, with
@@ -169,7 +174,9 @@ private[redshift] class JDBCWrapper {
     try {
       val rsmd = executeInterruptibly(ps, _.getMetaData)
       val ncols = rsmd.getColumnCount
-      val fields = new Array[StructField](ncols)
+      val fields = {
+        new Array[StructField](ncols)
+      }
       var i = 0
       while (i < ncols) {
         val columnName = rsmd.getColumnLabel(i + 1)
@@ -186,6 +193,33 @@ private[redshift] class JDBCWrapper {
     } finally {
       ps.close()
     }
+  }
+
+  def resolveTableFromMeta(conn: Connection,
+                           rsmd: ResultSetMetaData,
+                           params: MergedParameters): StructType = {
+    val ncols = rsmd.getColumnCount
+    val fields = new Array[StructField](ncols)
+    var i = 0
+    while (i < ncols) {
+      val columnName = rsmd.getColumnLabel(i + 1)
+      val dataType = rsmd.getColumnType(i + 1)
+      val fieldSize = rsmd.getPrecision(i + 1)
+      val fieldScale = rsmd.getScale(i + 1)
+      val isSigned = rsmd.isSigned(i + 1)
+      val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
+      val columnType =
+        getCatalystType(dataType, fieldSize, fieldScale, isSigned)
+      fields(i) = StructField(
+        // Add quotes around column names if Redshift would usually require them.
+        if (columnName.matches("[_A-Z]([_0-9A-Z])*")) columnName
+        else s""""$columnName"""",
+        columnType,
+        nullable
+      )
+      i = i + 1
+    }
+    new StructType(fields)
   }
 
   /**
@@ -297,7 +331,7 @@ private[redshift] class JDBCWrapper {
       precision: Int,
       scale: Int,
       signed: Boolean): DataType = {
-    // TODO: cleanup types which are irrelevant for Redshift.
+
     val answer = sqlType match {
       // scalastyle:off
       // Null Type
@@ -343,4 +377,111 @@ private[redshift] class JDBCWrapper {
   }
 }
 
-private[redshift] object DefaultJDBCWrapper extends JDBCWrapper
+private[redshift] object DefaultJDBCWrapper extends JDBCWrapper {
+
+  private val LOGGER = LoggerFactory.getLogger(getClass.getName)
+
+  implicit class DataBaseOperations(connection: Connection) {
+
+    /**
+     * @return telemetry connector
+     */
+//    def getTelemetry: Telemetry = TelemetryClient.createTelemetry(connection)
+
+    /**
+     * Create a table
+     *
+     * @param name      table name
+     * @param schema    table schema
+     * @param overwrite use "create or replace" if true,
+     *                  otherwise, use "create if not exists"
+     */
+    def createTable(name: String,
+                    schema: StructType,
+                    params: MergedParameters,
+                    overwrite: Boolean,
+                    temporary: Boolean,
+                    bindVariableEnabled: Boolean = true): Unit =
+      (ConstantString("create") +
+        (if (overwrite) "or replace" else "") +
+        (if (temporary) "temporary" else "") + "table" +
+        (if (!overwrite) "if not exists" else "") + Identifier(name) +
+        s"(${schemaString(schema)})")
+        .execute(bindVariableEnabled)(connection)
+
+    def createTableLike(newTable: String,
+                        originalTable: String,
+                        bindVariableEnabled: Boolean = true): Unit = {
+      (ConstantString("create or replace table") + Identifier(newTable) +
+        "like" + Identifier(originalTable))
+        .execute(bindVariableEnabled)(connection)
+    }
+
+    def truncateTable(table: String,
+                      bindVariableEnabled: Boolean = true): Unit =
+      (ConstantString("truncate") + table)
+        .execute(bindVariableEnabled)(connection)
+
+    def swapTable(newTable: String,
+                  originalTable: String,
+                  bindVariableEnabled: Boolean = true): Unit =
+      (ConstantString("alter table") + Identifier(newTable) + "swap with" +
+        Identifier(originalTable)).execute(bindVariableEnabled)(connection)
+
+    def renameTable(newName: String,
+                    oldName: String,
+                    bindVariableEnabled: Boolean = true): Unit =
+      (ConstantString("alter table") + Identifier(oldName) + "rename to" +
+        Identifier(newName)).execute(bindVariableEnabled)(connection)
+
+    /**
+     * @param name table name
+     * @return true if table exists, otherwise false
+     */
+    def tableExists(name: String,
+                    bindVariableEnabled: Boolean = true): Boolean =
+      Try {
+        (EmptyRedshiftSQLStatement() + "desc table" + Identifier(name))
+          .execute(bindVariableEnabled)(connection)
+      }.isSuccess
+
+    /**
+     * Drop a table
+     *
+     * @param name table name
+     * @return true if table dropped, false if the given table not exists
+     */
+    def dropTable(name: String, bindVariableEnabled: Boolean = true): Boolean =
+      Try {
+        (EmptyRedshiftSQLStatement() + "drop table" + Identifier(name))
+          .execute(bindVariableEnabled)(connection)
+      }.isSuccess
+
+    def tableMetaData(name: String): ResultSetMetaData =
+      tableMetaDataFromStatement(ConstantString(name) !)
+
+    def tableMetaDataFromStatement(
+                                    statement: RedshiftSQLStatement,
+                                    bindVariableEnabled: Boolean = true
+                                  ): ResultSetMetaData =
+      (ConstantString("select * from") + statement + "where 1 = 0")
+        .prepareStatement(bindVariableEnabled)(connection)
+        .getMetaData
+
+    def tableSchema(name: String, params: MergedParameters): StructType =
+      resolveTable(connection, name)
+
+    def tableSchema(statement: RedshiftSQLStatement,
+                    params: MergedParameters): StructType =
+      resolveTableFromMeta(
+        connection,
+        tableMetaDataFromStatement(statement),
+        params
+      )
+
+    def execute(statement: RedshiftSQLStatement,
+                bindVariableEnabled: Boolean = true): Unit =
+      statement.execute(bindVariableEnabled)(connection)
+  }
+
+}

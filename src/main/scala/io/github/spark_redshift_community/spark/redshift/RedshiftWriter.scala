@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +17,6 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.net.URI
-import java.sql.{Connection, Date, SQLException, Timestamp}
-
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3Client
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
@@ -29,7 +27,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
+import java.net.URI
+import java.sql.{Connection, Date, SQLException, Timestamp}
 import scala.util.control.NonFatal
 
 /**
@@ -103,8 +102,12 @@ private[redshift] class RedshiftWriter(
       ""
     }
 
-    s"COPY ${params.table.get} ${columns}FROM '$fixedUrl' CREDENTIALS '$credsString' FORMAT AS " +
+    val copySqlStatement = s"COPY ${params.table.get} ${columns}FROM '$fixedUrl' FORMAT AS " +
       s"${format} manifest ${params.extraCopyOptions}"
+
+    log.debug(s"copySqlStatement is: $copySqlStatement (CREDENTIALS skipped)")
+
+    s"$copySqlStatement CREDENTIALS '$credsString'"
   }
 
   /**
@@ -131,7 +134,7 @@ private[redshift] class RedshiftWriter(
 
     // If the table doesn't exist, we need to create it first, using JDBC to infer column types
     val createStatement = createTableSql(data, params)
-    log.info(createStatement)
+    log.debug(createStatement)
     jdbcWrapper.executeInterruptibly(conn.prepareStatement(createStatement))
 
     val preActions = commentActions(params.description, data.schema) ++ params.preActions
@@ -139,14 +142,14 @@ private[redshift] class RedshiftWriter(
     // Execute preActions
     preActions.foreach { action =>
       val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
-      log.info("Executing preAction: " + actionSql)
+      log.debug("Executing preAction: " + actionSql)
       jdbcWrapper.executeInterruptibly(conn.prepareStatement(actionSql))
     }
 
     manifestUrl.foreach { manifestUrl =>
       // Load the temporary data into the new file
       val copyStatement = copySql(data.sqlContext, data.schema, params, creds, manifestUrl)
-      log.info(copyStatement)
+
       try {
         jdbcWrapper.executeInterruptibly(conn.prepareStatement(copyStatement))
       } catch {
@@ -319,17 +322,13 @@ private[redshift] class RedshiftWriter(
         }
       }
       // It's possible that tempDir contains AWS access keys. We shouldn't save those credentials to
-      // S3, so let's first sanitize `tempdir`
-      val sanitizedTempDir = Utils.removeCredentialsFromURI(URI.create(tempDir)).toString.stripSuffix("/")
-      // For file paths inside the manifest file, they are required to have s3:// scheme, so make sure
-      // that it is the case
-      val schemeFixedTempDir = Utils.fixS3Url(sanitizedTempDir).stripSuffix("/")
+      // S3, so let's first sanitize `tempdir` and make sure that it uses the s3:// scheme:
+      val sanitizedTempDir = Utils.fixS3Url(
+        Utils.removeCredentialsFromURI(URI.create(tempDir)).toString).stripSuffix("/")
       val manifestEntries = filesToLoad.map { file =>
-        s"""{"url":"$schemeFixedTempDir/$file", "mandatory":true}"""
+        s"""{"url":"$sanitizedTempDir/$file", "mandatory":true}"""
       }
       val manifest = s"""{"entries": [${manifestEntries.mkString(",\n")}]}"""
-      // For the path to the manifest file itself it is required to have the original s3a/s3n scheme
-      // so don't used the fixed URL here
       val manifestPath = sanitizedTempDir + "/manifest.json"
       val fsDataOut = fs.create(new Path(manifestPath))
       try {

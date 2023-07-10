@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,6 +135,7 @@ class RedshiftSourceSuite
     }
 
     when(mockS3Client.getObject(anyString(), endsWith("manifest"))).thenReturn(mockManifest)
+    when(mockS3Client.doesObjectExist(anyString(), endsWith("manifest"))).thenReturn(true)
   }
 
   override def afterEach(): Unit = {
