@@ -323,8 +323,8 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class DefaultMathFuncPushdownSuite extends PushdownMathFuncSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextMathFuncPushdownSuite extends PushdownMathFuncSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 
   // Precision return w/o pushdown is different.
@@ -360,13 +360,13 @@ class DefaultMathFuncPushdownSuite extends PushdownMathFuncSuite {
   }
 }
 
-class ParquetMathFuncPushdownSuite extends DefaultMathFuncPushdownSuite {
+class ParquetMathFuncPushdownSuite extends TextMathFuncPushdownSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
 
-class DefaultNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "false"
 
   // Precision return w/o pushdown is different.
@@ -402,7 +402,7 @@ class DefaultNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
   }
 }
 
-class ParquetNoPushdownMathFuncSuite extends DefaultNoPushdownMathFuncSuite {
+class ParquetNoPushdownMathFuncSuite extends TextNoPushdownMathFuncSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }

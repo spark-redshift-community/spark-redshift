@@ -42,8 +42,8 @@ class StringSelectCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
   }
 }
 
-class DefaultStringSelectCorrectnessSuite extends PushdownStringConcatSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextStringSelectCorrectnessSuite extends PushdownStringConcatSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
@@ -52,8 +52,8 @@ class ParquetStringSelectCorrectnessSuite extends PushdownStringConcatSuite {
   override protected val auto_pushdown: String = "true"
 }
 
-class DefaultNoPushdownStringSelectCorrectnessSuite extends PushdownStringConcatSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextNoPushdownStringSelectCorrectnessSuite extends PushdownStringConcatSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "false"
 }
 

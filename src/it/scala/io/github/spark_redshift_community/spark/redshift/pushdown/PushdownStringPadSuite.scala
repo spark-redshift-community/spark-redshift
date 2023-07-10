@@ -162,8 +162,8 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
   }
 }
 
-class DefaultStringPadPushdownSuite extends PushdownStringPadSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextStringPadPushdownSuite extends PushdownStringPadSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
@@ -172,8 +172,8 @@ class ParquetStringPadPushdownSuite extends PushdownStringPadSuite {
   override protected val auto_pushdown: String = "true"
 }
 
-class DefaultNoPushdownStringPadSuite extends PushdownStringPadSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextNoPushdownStringPadSuite extends PushdownStringPadSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "false"
 }
 

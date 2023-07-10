@@ -98,8 +98,8 @@ abstract class PushdownStringTranslateSuite extends StringIntegrationPushdownSui
   }
 }
 
-class DefaultStringTranslatePushdownSuite extends PushdownStringTranslateSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextStringTranslatePushdownSuite extends PushdownStringTranslateSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
@@ -108,8 +108,8 @@ class ParquetStringTranslatePushdownSuite extends PushdownStringTranslateSuite {
   override protected val auto_pushdown: String = "true"
 }
 
-class DefaultNoPushdownStringTranslateSuite extends PushdownStringTranslateSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextNoPushdownStringTranslateSuite extends PushdownStringTranslateSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "false"
 }
 

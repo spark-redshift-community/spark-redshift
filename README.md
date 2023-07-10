@@ -686,10 +686,10 @@ for more information.</p>
  <tr>
     <td><tt>unload_s3_format</tt></td>
     <td>No</td>
-    <td>DEFAULT</td>
+    <td>TEXT</td>
     <td>
         <p>
-        DEFAULT - unload the query result to text file format.
+        TEXT - unload the query result to pipe-delimited text file format.
         </p>
         <p>
         PARQUET - unload the query result to parquet file format.

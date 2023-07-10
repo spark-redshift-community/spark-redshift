@@ -137,8 +137,8 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
   }
 }
 
-class DefaultPushdownStringLikeSuite extends PushdownStringLikeSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextPushdownStringLikeSuite extends PushdownStringLikeSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
@@ -147,8 +147,8 @@ class ParquetPushdownStringLikeSuite extends PushdownStringLikeSuite {
   override protected val auto_pushdown: String = "true"
 }
 
-class DefaultNoPushdownStringLikeSuite extends PushdownStringLikeSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextNoPushdownStringLikeSuite extends PushdownStringLikeSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "false"
 }
 

@@ -1413,17 +1413,17 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
   }
 }
 
-class DefaultLogicalPlanOperatorPushdownSuite extends PushdownLogicalPlanOperatorSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextLogicalPlanOperatorPushdownSuite extends PushdownLogicalPlanOperatorSuite {
+  override protected val s3format: String = "TEXT"
 }
 
 class ParquetLogicalPlanOperatorPushdownSuite extends PushdownLogicalPlanOperatorSuite {
   override protected val s3format: String = "PARQUET"
 }
 
-class DefaultNoPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOperatorSuite {
+class TextNoPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOperatorSuite {
   override protected val auto_pushdown: String = "false"
-  override protected val s3format: String = "DEFAULT"
+  override protected val s3format: String = "TEXT"
 }
 
 class ParquetNoPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOperatorSuite {

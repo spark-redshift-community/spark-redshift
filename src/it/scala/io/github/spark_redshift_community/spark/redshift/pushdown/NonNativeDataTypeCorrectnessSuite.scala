@@ -109,8 +109,8 @@ abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuit
   }
 }
 
-class DefaultPushdownNonNativeDataTypeCorrectnessSuite extends NonNativeDataTypeCorrectnessSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextPushdownNonNativeDataTypeCorrectnessSuite extends NonNativeDataTypeCorrectnessSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
@@ -119,8 +119,8 @@ class ParquetPushdownNonNativeDataTypeCorrectnessSuite extends NonNativeDataType
   override protected val auto_pushdown: String = "true"
 }
 
-class DefaultNoPushdownNonNativeDataTypeCorrectnessSuite extends NonNativeDataTypeCorrectnessSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextNoPushdownNonNativeDataTypeCorrectnessSuite extends NonNativeDataTypeCorrectnessSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "false"
 }
 
