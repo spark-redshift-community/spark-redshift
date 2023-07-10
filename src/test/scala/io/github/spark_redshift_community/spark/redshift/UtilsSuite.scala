@@ -20,10 +20,13 @@ import java.net.URI
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
+import org.mockito.Mockito.{verify, when}
+import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FunSuite, Matchers}
-import org.mockito.Mockito._
+import org.slf4j.Logger
 
 import java.sql.Timestamp
 
@@ -132,5 +135,26 @@ class UtilsSuite extends FunSuite with Matchers {
     Utils.getMicrosFromTimestamp(Timestamp.valueOf("1970-01-01 00:00:00.0001")) shouldBe 100L
     Utils.getMicrosFromTimestamp(Timestamp.valueOf("1970-01-01 00:00:00.00001")) shouldBe 10L
     Utils.getMicrosFromTimestamp(Timestamp.valueOf("1970-01-01 00:00:00.000001")) shouldBe 1L
+  }
+
+  val fakeCredentials: Map[String, String] = Map[String, String](
+    "forward_spark_s3_credentials" -> "true",
+    "legacy_jdbc_real_type_mapping" -> "false"
+  )
+
+  test("collectMetrics logs buildinfo to INFO") {
+    val mockLogger = mock[Logger]
+    Utils.collectMetrics(MergedParameters(fakeCredentials), Some(mockLogger))
+
+    verify(mockLogger).info(BuildInfo.toString)
+  }
+
+  test("collectMetrics outputs unique log to INFO when version includes -amzn- INFO") {
+    val mockLogger = mock[Logger]
+
+    Utils.collectMetrics(MergedParameters(fakeCredentials), Some(mockLogger))
+    if (BuildInfo.version.contains("-amzn-")) {
+      verify(mockLogger).info("amazon-spark-redshift-connector")
+    }
   }
 }

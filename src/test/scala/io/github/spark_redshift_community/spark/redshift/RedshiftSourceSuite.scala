@@ -38,9 +38,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.scalatest.mockito.MockitoSugar.mock
-import org.slf4j.LoggerFactory
-import org.slf4j.Logger;
 
 
 /**
@@ -726,31 +723,5 @@ class RedshiftSourceSuite
         .load()
     }
     assert(e.getMessage.contains("No FileSystem for scheme"))
-  }
-
-  test("DefaultSource constructor logs buildinfo to INFO") {
-    val mockLogger = mock[Logger]
-    val mockLoggerFactory = Mockito.mockStatic(classOf[LoggerFactory])
-    try {
-      when(LoggerFactory.getLogger(classOf[DefaultSource])).thenReturn(mockLogger)
-      new DefaultSource()
-    } finally {
-      mockLoggerFactory.close()
-    }
-    verify(mockLogger).info(BuildInfo.toString)
-  }
-
-  test("DefaultSource constructor outputs unique log to when version includes -amzn- INFO") {
-    val mockLogger = mock[Logger]
-    val mockLoggerFactory = Mockito.mockStatic(classOf[LoggerFactory])
-    try {
-      when(LoggerFactory.getLogger(classOf[DefaultSource])).thenReturn(mockLogger)
-      new DefaultSource()
-    } finally {
-      mockLoggerFactory.close()
-    }
-    if (BuildInfo.version.contains("-amzn-")){
-      verify(mockLogger).info("amazon-spark-redshift-connector")
-    }
   }
 }

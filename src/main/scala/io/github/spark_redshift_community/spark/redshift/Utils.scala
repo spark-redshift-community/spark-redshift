@@ -19,12 +19,11 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
-
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
 import com.amazonaws.services.s3.{AmazonS3Client, AmazonS3URI}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.sql.Timestamp
@@ -260,10 +259,18 @@ private[redshift] object Utils {
     }
   }
 
-  def collectMetrics(params: MergedParameters): Unit = {
+  def collectMetrics(params: MergedParameters, logger: Option[Logger] = None): Unit = {
+    val metricLogger = logger.getOrElse(log)
+
+    // Emit the build and connector information.
+    metricLogger.info(BuildInfo.toString)
+    if (BuildInfo.version.contains("-amzn-")) {
+      metricLogger.info("amazon-spark-redshift-connector")
+    }
+
     // Track legacy parameters for deprecation
     if (params.legacyJdbcRealTypeMapping) {
-      log.info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
+      metricLogger.info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
     }
   }
 
