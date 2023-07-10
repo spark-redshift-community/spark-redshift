@@ -241,6 +241,11 @@ private[redshift] object Parameters {
     def extraCopyOptions: String = parameters.getOrElse("extracopyoptions", "")
 
     /**
+     * Extra options to append to the Redshift UNLOAD command (e.g. ENCRYPTED).
+     */
+    def extraUnloadOptions: String = parameters.getOrElse("extraunloadoptions", "")
+
+    /**
       * Description of the table, set using the SQL COMMENT command.
       */
     def description: Option[String] = parameters.get("description")

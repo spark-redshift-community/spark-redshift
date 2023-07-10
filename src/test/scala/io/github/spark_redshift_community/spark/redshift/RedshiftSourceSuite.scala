@@ -359,6 +359,50 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
   }
 
+  test("DefaultSource includes extraunloadoptions") {
+    // scalastyle:off
+    unloadedData =
+      """
+        |1|t
+        |1|f
+        |0|
+        |0|f
+        ||
+      """.stripMargin.trim
+    // scalastyle:on
+    val expectedQuery = (
+      "UNLOAD \\('SELECT \"testbyte\", \"testbool\" FROM \"PUBLIC\".\"test_table\" '\\) " +
+        "TO '.*' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
+        "ESCAPE MANIFEST NULL AS '@NULL@' KMS_KEY_ID 'abc-123' ENCRYPTED CLEANPATH").r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    // Construct the source with a custom schema
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val paramsWithKms = defaultParams + ("sse_kms_key" -> "abc-123")
+    val paramsWithExtraUnloadOptions = paramsWithKms + ("extraunloadoptions" -> "CLEANPATH")
+    val relation = source.createRelation(
+      testSqlContext, paramsWithExtraUnloadOptions, TestUtils.testSchema)
+    val resultSchema =
+      StructType(Seq(StructField("testbyte", ByteType), StructField("testbool", BooleanType)))
+
+    val rdd = relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+      .mapPartitions { iter =>
+        val fromRow = RowEncoder(resultSchema).resolveAndBind().createDeserializer().apply(_)
+        iter.asInstanceOf[Iterator[InternalRow]].map(fromRow)
+      }
+    val prunedExpectedValues = Array(
+      Row(1.toByte, true),
+      Row(1.toByte, false),
+      Row(0.toByte, null),
+      Row(0.toByte, false),
+      Row(null, null))
+    assert(rdd.collect() === prunedExpectedValues)
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+  }
+
   ignore("DefaultSource supports preactions options to run queries before running COPY command") {
     val mockRedshift = new MockRedshift(
       defaultParams("url"),

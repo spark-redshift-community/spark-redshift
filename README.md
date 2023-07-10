@@ -744,6 +744,15 @@ for more information.</p>
     <td>False</td>
     <td>Cache the query SQL to unload data S3 path mapping in memory so that the same query don't need to execute again in the same Spark session.</td>
  </tr>
+<tr>
+    <td><tt>extraunloadoptions</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+        Extra options to append to the Redshift UNLOAD command (e.g. ENCRYPTED).
+        A complete list of possible options may be seen in the <a href="https://docs.aws.amazon.com/redshift/latest/dg/r_UNLOAD.html">Redshift docs</a> though not all are guaranteed to work and may conflict with other options set in the connector resulting in exceptions.
+    </td>
+</tr>
 </table>
 
 ## Additional configuration options
