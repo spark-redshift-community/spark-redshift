@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.FileSystem
 import org.slf4j.LoggerFactory
 
 import java.net.URI
+import java.sql.Timestamp
 import java.util.UUID
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
@@ -255,5 +256,14 @@ private[redshift] object Utils {
 
       }
     }
+  }
+
+  /**
+   * Retrieve just the microsecond portion of a timestamp
+   * @param timestamp a timestamp
+   * @return Long microseconds in a timestamp
+   */
+  def getMicrosFromTimestamp(timestamp: Timestamp): Long = {
+    timestamp.getNanos / 1000L % 1000L
   }
 }

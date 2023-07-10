@@ -233,9 +233,8 @@ private[redshift] class RedshiftWriter(
             if (v == null) null else dateFormat.format(v.asInstanceOf[Date])
           }
         case TimestampType =>
-          val timestampFormat = Conversions.createRedshiftTimestampFormat()
           (v: Any) => {
-            if (v == null) null else timestampFormat.format(v.asInstanceOf[Timestamp])
+            if (v == null) null else Conversions.createRedshiftTimestampFormat().format(v.asInstanceOf[Timestamp].toLocalDateTime)
           }
         case _ => (v: Any) => v
       }

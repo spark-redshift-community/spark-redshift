@@ -80,8 +80,8 @@ private[redshift] object Conversions {
    * Note that Java Formatters are NOT thread-safe, so you should not re-use instances of this
    * SimpleDateFormat across threads.
    */
-  def createRedshiftTimestampFormat(): SimpleDateFormat = {
-    new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
+  def createRedshiftTimestampFormat(): DateTimeFormatter = {
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSSSS")
   }
 
   def parseRedshiftTimestamp(s: String): Timestamp = {
@@ -201,7 +201,7 @@ private[redshift] object Conversions {
           from.asInstanceOf[Date].getTime * DateTimeConstants.MICROS_PER_MILLIS,
           ZoneId.of("UTC"))
       case TimestampType if from!=null && from.isInstanceOf[Timestamp] =>
-        if (redshiftType == "timestamptz") {
+        val millisecondTime = if (redshiftType == "timestamptz") {
           val tz: ZoneId = ZoneId.systemDefault()
           Timestamp.from(
             DateTimeUtils.microsToInstant(
@@ -213,7 +213,7 @@ private[redshift] object Conversions {
               from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS)
           )
           .getTime * DateTimeConstants.MICROS_PER_MILLIS
-
+        millisecondTime + Utils.getMicrosFromTimestamp(from.asInstanceOf[Timestamp])
       case _ => from
     }
   }
