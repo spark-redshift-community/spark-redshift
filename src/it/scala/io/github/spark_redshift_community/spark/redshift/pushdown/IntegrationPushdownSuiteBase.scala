@@ -36,8 +36,8 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected val test_table_safe_null = s""""PUBLIC"."pushdown_suite_test_safe_null_$randomSuffix""""
   // This flag controls whether auto pushdown operations into Redshift is enabled.
   protected val auto_pushdown: String = "true"
-  // This flag controls whether to unload data as parquet or default pipe-delimited text.
-  protected val s3format: String = "DEFAULT"
+  // This flag controls whether to unload data as parquet or pipe-delimited text.
+  protected val s3format: String = "TEXT"
   // This flag controls whether to use preloaded Redshift correctness test dataset on cluster.
   protected val preloaded_data: String = "false"
   // This is used for timestamptz related tests

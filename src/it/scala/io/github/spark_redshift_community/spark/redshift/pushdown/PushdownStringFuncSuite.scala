@@ -328,8 +328,8 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class DefaultStringFuncPushdownSuite extends PushdownStringFuncSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextStringFuncPushdownSuite extends PushdownStringFuncSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
@@ -338,8 +338,8 @@ class ParquetStringFuncPushdownSuite extends PushdownStringFuncSuite {
   override protected val auto_pushdown: String = "true"
 }
 
-class DefaultNoPushdownStringFuncSuite extends PushdownStringFuncSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextNoPushdownStringFuncSuite extends PushdownStringFuncSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "false"
 }
 

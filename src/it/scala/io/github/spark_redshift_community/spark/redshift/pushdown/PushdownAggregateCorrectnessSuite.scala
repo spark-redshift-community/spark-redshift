@@ -686,8 +686,8 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
   }
 }
 
-class DefaultPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 
   // Unloading fixed-length char column data in parquet format does not trim the trailing spaces.
@@ -723,8 +723,8 @@ class ParquetPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectn
   override protected val auto_pushdown: String = "true"
 }
 
-class DefaultNoPushdownAggregateCorrectnessSuite extends DefaultPushdownAggregateCorrectnessSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextNoPushdownAggregateCorrectnessSuite extends TextPushdownAggregateCorrectnessSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "false"
 }
 

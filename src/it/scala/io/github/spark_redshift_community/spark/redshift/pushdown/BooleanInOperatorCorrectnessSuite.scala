@@ -416,18 +416,18 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
 
 }
 
-class DefaultInOperatorBooleanCorrectnessSuite extends BooleanInOperatorCorrectnessSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextInOperatorBooleanCorrectnessSuite extends BooleanInOperatorCorrectnessSuite {
+  override protected val s3format: String = "TEXT"
 }
 
 class ParquetInOperatorBooleanCorrectnessSuite extends BooleanInOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
-class DefaultNoPushdownBooleanInOperatorCorrectnessSuite
+class TextNoPushdownBooleanInOperatorCorrectnessSuite
   extends BooleanInOperatorCorrectnessSuite {
   override protected val auto_pushdown: String = "false"
-  override protected val s3format: String = "DEFAULT"
+  override protected val s3format: String = "TEXT"
 }
 
 class ParquetNoPushdownBooleanInOperatorCorrectnessSuite

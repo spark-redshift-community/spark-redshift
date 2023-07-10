@@ -973,18 +973,18 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
 
 }
 
-class DefaultCompareOperatorBooleanCorrectnessSuite extends BooleanCompareOperatorCorrectnessSuite {
-  override protected val s3format: String = "DEFAULT"
+class TextCompareOperatorBooleanCorrectnessSuite extends BooleanCompareOperatorCorrectnessSuite {
+  override protected val s3format: String = "TEXT"
 }
 
 class ParquetCompareOperatorBooleanCorrectnessSuite extends BooleanCompareOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
-class BooleanCompareBooleanCompareOperatorCorrectnessSuite
+class TextNoPushdownBooleanCompareOperatorCorrectnessSuite
   extends BooleanEqualOperatorCorrectnessSuite {
+  override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "false"
-  override protected val s3format: String = "DEFAULT"
 }
 
 class ParquetNoPushdownBooleanCompareOperatorCorrectnessSuite
