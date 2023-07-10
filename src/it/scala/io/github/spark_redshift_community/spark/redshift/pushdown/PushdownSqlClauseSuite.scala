@@ -107,7 +107,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTSHORT" > 0 ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
-         |ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC
+         |ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
          |""".stripMargin
     )
   }
@@ -125,7 +125,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTSHORT" > 0 ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
-         |ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) DESC
+         |ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) DESC NULLS LAST
          |""".stripMargin
     )
   }
@@ -325,7 +325,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
          |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
          |WHERE ( ( "SUBQUERY_0"."TESTLONG" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTLONG" > 0 ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
-         |ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC
+         |ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
          |""".stripMargin
     )
   }

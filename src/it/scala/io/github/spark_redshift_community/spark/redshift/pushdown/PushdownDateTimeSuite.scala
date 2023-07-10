@@ -319,7 +319,7 @@ class DefaultPushdownDateTimeSuite extends PushdownDateTimeSuite {
          | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
          | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
          | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-01 00:00:00\\' ::TIMESTAMP ) ) )
-         | AS "SUBQUERY_1" ORDER BY ( "SUBQUERY_1"."TESTID" ) ASC""".stripMargin
+         | AS "SUBQUERY_1" ORDER BY ( "SUBQUERY_1"."TESTID" ) ASC NULLS FIRST""".stripMargin
     )
 
     val testTimestampTz2: TestCase = TestCase(

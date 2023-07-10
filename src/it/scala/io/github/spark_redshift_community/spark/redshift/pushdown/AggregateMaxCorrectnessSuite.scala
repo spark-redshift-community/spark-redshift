@@ -101,9 +101,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_SMALLINT_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMax10: TestCase = TestCase(
@@ -185,9 +185,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_INT_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMax20: TestCase = TestCase(
@@ -269,9 +269,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_BIGINT_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMax30: TestCase = TestCase(
@@ -371,9 +371,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_DECIMAL_18_18_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMax40: TestCase = TestCase(
@@ -464,9 +464,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_FLOAT4_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMax49: TestCase = TestCase(
@@ -485,9 +485,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_FLOAT8_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   // function max(boolean) does not exist in redshift
@@ -527,9 +527,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_BOOLEAN_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMax60: TestCase = TestCase(
@@ -584,9 +584,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_CHAR_MAX_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMax70: TestCase = TestCase(
@@ -641,9 +641,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_VARCHAR_MAX_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMax80: TestCase = TestCase(
@@ -725,9 +725,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_DATE_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMax90: TestCase = TestCase(
@@ -810,9 +810,9 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_TIMESTAMP_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMax100: TestCase = TestCase(
@@ -907,8 +907,8 @@ trait AggregateMaxCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
-       | LIMIT5""".stripMargin // expectedPushdownStatement
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 }

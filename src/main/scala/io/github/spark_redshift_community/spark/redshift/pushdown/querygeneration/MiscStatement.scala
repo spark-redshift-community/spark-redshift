@@ -19,7 +19,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown.querygenerati
 
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, IntVariable, RedshiftSQLStatement}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Cast, Coalesce, Descending, Expression, If, In, InSet, Literal, MakeDecimal, ScalarSubquery, SortOrder, UnscaledValue}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Cast, Coalesce, Descending, Expression, If, In, InSet, Literal, MakeDecimal, NullsFirst, NullsLast, ScalarSubquery, SortOrder, UnscaledValue}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -50,7 +50,7 @@ private[querygeneration] object MiscStatement {
             // pushdown process.
             (child.dataType, t) match {
               case (_: DateType | _: TimestampType,
-              _: IntegerType | _: LongType | _: FloatType | _: DoubleType | _: DecimalType) => {
+              _: IntegerType | _: LongType | _: FloatType | _: DoubleType | _: DecimalType) =>
                 // This exception will not break the connector. It will be caught in
                 // QueryBuilder.treeRoot.
                 throw new RedshiftPushdownUnsupportedException(
@@ -58,7 +58,6 @@ private[querygeneration] object MiscStatement {
                   s"Don't support to convert ${child.dataType} column to $t type",
                   "",
                   false)
-              }
               case _ =>
             }
 
@@ -90,10 +89,14 @@ private[querygeneration] object MiscStatement {
             IntVariable(Some(scale)) + ")"
         )
 
-      case SortOrder(child, Ascending, _, _) =>
-        blockStatement(convertStatement(child, fields)) + "ASC"
-      case SortOrder(child, Descending, _, _) =>
-        blockStatement(convertStatement(child, fields)) + "DESC"
+      case SortOrder(child, Ascending, NullsFirst, _) =>
+        blockStatement(convertStatement(child, fields)) + "ASC NULLS FIRST"
+      case SortOrder(child, Ascending, NullsLast, _) =>
+        blockStatement(convertStatement(child, fields)) + "ASC NULLS LAST"
+      case SortOrder(child, Descending, NullsFirst, _) =>
+        blockStatement(convertStatement(child, fields)) + "DESC NULLS FIRST"
+      case SortOrder(child, Descending, NullsLast, _) =>
+        blockStatement(convertStatement(child, fields)) + "DESC NULLS LAST"
       
       // Spark 3.2 introduces below new field
       //   joinCond: Seq[Expression] = Seq.empty

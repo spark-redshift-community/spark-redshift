@@ -97,8 +97,8 @@ trait AggregateAvgCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_SMALLINT_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
@@ -181,8 +181,8 @@ trait AggregateAvgCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_INT_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
@@ -198,8 +198,8 @@ trait AggregateAvgCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_BOOLEAN_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
@@ -282,8 +282,8 @@ trait AggregateAvgCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_BIGINT_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
@@ -349,8 +349,8 @@ trait AggregateAvgCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_DECIMAL_18_0_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
@@ -442,8 +442,8 @@ trait AggregateAvgCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_FLOAT4_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
@@ -463,8 +463,8 @@ trait AggregateAvgCorrectnessSuite extends IntegrationPushdownSuiteBase {
        | ( "SUBQUERY_0"."COL_FLOAT8_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
        | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 }
