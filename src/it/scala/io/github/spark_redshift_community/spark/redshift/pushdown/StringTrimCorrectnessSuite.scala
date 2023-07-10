@@ -23,7 +23,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testfixedstring) FROM test_table
       | WHERE testid=0""".stripMargin, // sparkStatement
     Seq(Row(null)), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
        | ( "SUBQUERY_0"."TESTID" = 0 ) ) ) AS
@@ -34,7 +34,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testvarstring) FROM test_table
       | WHERE testid=0""".stripMargin, // sparkStatement
     Seq(Row(null)), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
        | ( "SUBQUERY_0"."TESTID" = 0 ) ) ) AS
@@ -45,7 +45,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testfixedstring) FROM test_table
       | WHERE testid=1""".stripMargin, // sparkStatement
     Seq(Row("Hello World")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
        | ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS
@@ -56,7 +56,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testvarstring) FROM test_table
       | WHERE testid=1""".stripMargin, // sparkStatement
     Seq(Row("Hello World")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
       | "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID"
       | = 1 ) ) ) AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -66,7 +66,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testfixedstring) FROM test_table
       | WHERE testid=5""".stripMargin, // sparkStatement
     Seq(Row("")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
        | "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID"
        | = 5 ) ) ) AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -76,7 +76,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testvarstring) FROM test_table
       | WHERE testid=5""".stripMargin, // sparkStatement
     Seq(Row("")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" ) ) AS "SUBQUERY_2_COL_0" FROM
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0" FROM
        | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
        | WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 5 ) ) )
        | AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -86,7 +86,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testfixedstring) FROM test_table
       | WHERE testid=6""".stripMargin, // sparkStatement
     Seq(Row("Hello World")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
        | "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID"
        | = 6 ) ) ) AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -96,7 +96,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testvarstring) FROM test_table
       | WHERE testid=6""".stripMargin, // sparkStatement
     Seq(Row("Hello World")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" ) ) AS "SUBQUERY_2_COL_0" FROM
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0" FROM
        | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
        | WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 6 ) ) )
        | AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -106,7 +106,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testfixedstring) FROM test_table
       | WHERE testid=7""".stripMargin, // sparkStatement
     Seq(Row("\t\b\nFoo\r\f\\'\"")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
        | "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID"
        | = 7 ) ) ) AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -116,7 +116,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testvarstring) FROM test_table
       | WHERE testid=7""".stripMargin, // sparkStatement
     Seq(Row("\t\b\nFoo\r\f\\'\"")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" ) ) AS "SUBQUERY_2_COL_0" FROM
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0" FROM
        | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
        | WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 7 ) ) )
        | AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -126,7 +126,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testfixedstring) FROM test_table
       | WHERE testid=8""".stripMargin, // sparkStatement
     Seq(Row("/%Foo%/")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
        | "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID"
        | = 8 ) ) ) AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -136,7 +136,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testvarstring) FROM test_table
       | WHERE testid=8""".stripMargin, // sparkStatement
     Seq(Row("/%Foo%/")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" ) ) AS "SUBQUERY_2_COL_0" FROM
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0" FROM
        | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
        | WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 8 ) ) )
        | AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -146,7 +146,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testfixedstring) FROM test_table
       | WHERE testid=9""".stripMargin, // sparkStatement
     Seq(Row("_Single_")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
        | "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID"
        | = 9 ) ) ) AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -156,7 +156,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(testvarstring) FROM test_table
       | WHERE testid=9""".stripMargin, // sparkStatement
     Seq(Row("\u6A02Multi\u8DA3")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" ) ) AS "SUBQUERY_2_COL_0" FROM
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0" FROM
        | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
        | WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 9 ) ) )
        | AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
@@ -166,7 +166,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(BOTH FROM testfixedstring) FROM test_table
       | WHERE testid=6""".stripMargin, // sparkStatement
     Seq(Row("Hello World")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
        | ( "SUBQUERY_0"."TESTID" = 6 ) ) ) AS
@@ -177,7 +177,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(BOTH FROM testvarstring) FROM test_table
       | WHERE testid=6""".stripMargin, // sparkStatement
     Seq(Row("Hello World")), // expectedResult
-    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
        | ( "SUBQUERY_0"."TESTID" = 6 ) ) ) AS
@@ -188,7 +188,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(LEADING FROM testfixedstring) FROM test_table
       | WHERE testid=6""".stripMargin, // sparkStatement
     Seq(Row("Hello World")), // expectedResult
-    s"""SELECT ( LTRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( LTRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
        | ( "SUBQUERY_0"."TESTID" = 6 ) ) ) AS
@@ -199,7 +199,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(LEADING FROM testvarstring) FROM test_table
       | WHERE testid=6""".stripMargin, // sparkStatement
     Seq(Row("Hello World  ")), // expectedResult
-    s"""SELECT ( LTRIM ( "SUBQUERY_1"."TESTVARSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( LTRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
        | ( "SUBQUERY_0"."TESTID" = 6 ) ) ) AS
@@ -210,7 +210,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(TRAILING FROM testfixedstring) FROM test_table
       | WHERE testid=6""".stripMargin, // sparkStatement
     Seq(Row("  Hello World")), // expectedResult
-    s"""SELECT ( RTRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( RTRIM ( "SUBQUERY_1"."TESTFIXEDSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
        | ( "SUBQUERY_0"."TESTID" = 6 ) ) ) AS
@@ -221,7 +221,7 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
     """SELECT TRIM(TRAILING FROM testvarstring) FROM test_table
       | WHERE testid=6""".stripMargin, // sparkStatement
     Seq(Row("  Hello World")), // expectedResult
-    s"""SELECT ( RTRIM ( "SUBQUERY_1"."TESTVARSTRING" ) ) AS "SUBQUERY_2_COL_0"
+    s"""SELECT ( RTRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
        | ( "SUBQUERY_0"."TESTID" = 6 ) ) ) AS
@@ -380,5 +380,35 @@ trait StringTrimCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
       | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
       | ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID"
       | = 9 ) ) ) AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+  )
+
+  val testTrim34: TestCase = TestCase(
+    """SELECT TRIM(LEADING FROM testvarstring) FROM test_table
+      | WHERE testid=7""".stripMargin, // sparkStatement
+    Seq(Row("\t\b\nFoo\r\f\\'\"  ")), // expectedResult
+    s"""SELECT ( LTRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0"
+       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
+       | "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID"
+       | = 7 ) ) ) AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+  )
+
+  val testTrim35: TestCase = TestCase(
+    """SELECT TRIM(TRAILING FROM testvarstring) FROM test_table
+      | WHERE testid=7""".stripMargin, // sparkStatement
+    Seq(Row("  \t\b\nFoo\r\f\\'\"")), // expectedResult
+    s"""SELECT ( RTRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0" FROM
+       | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+       | WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 7 ) ) )
+       | AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+  )
+
+  val testTrim36: TestCase = TestCase(
+    """SELECT TRIM(BOTH FROM testvarstring) FROM test_table
+      | WHERE testid=7""".stripMargin, // sparkStatement
+    Seq(Row("\t\b\nFoo\r\f\\'\"")), // expectedResult
+    s"""SELECT ( TRIM ( "SUBQUERY_1"."TESTVARSTRING" , \\' \\' ) ) AS "SUBQUERY_2_COL_0" FROM
+       | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+       | WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 7 ) ) )
+       | AS "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
   )
 }

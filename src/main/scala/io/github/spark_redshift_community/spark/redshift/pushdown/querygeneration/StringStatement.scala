@@ -44,10 +44,21 @@ private[querygeneration] object StringStatement {
 
     Option(expr match {
       case _: Ascii | _: Lower | _: StringLPad | _: StringRPad |
-          _: StringTranslate | _: StringTrim | _: StringTrimLeft |
-          _: StringTrimRight | _: Upper | _: Length =>
+          _: StringTranslate | _: Upper | _: Length =>
         ConstantString(expr.prettyName.toUpperCase) +
           blockStatement(convertStatements(fields, expr.children: _*))
+
+      case _: StringTrim | _: StringTrimLeft | _: StringTrimRight =>
+        if (expr.children.length == 1) {
+          // If a trim string wasn't provided, explicitly make it a space character
+          // so that Redshift does not also trim tabs or other whitespace characters.
+          // See SIM [Redshift-7056] for further details.
+          ConstantString(expr.prettyName.toUpperCase) +
+            blockStatement(convertStatements(fields, expr.children: _*) + ", ' '")
+        } else {
+          ConstantString(expr.prettyName.toUpperCase) +
+            blockStatement(convertStatements(fields, expr.children: _*))
+        }
 
       case _: Substring =>
         ConstantString("SUBSTRING") +
