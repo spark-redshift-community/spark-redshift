@@ -152,7 +152,7 @@ private[redshift] case class RedshiftRelation(
     assert(!requiredColumns.isEmpty)
     // Always quote column names:
     val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
-    val whereClause = FilterPushdown.buildWhereClause(schema, filters)
+    val whereClause = FilterPushdown.buildWhereClause(schema, filters, escapeQuote = true)
     val credsString: String =
       AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.getCredentials)
     val query = {
