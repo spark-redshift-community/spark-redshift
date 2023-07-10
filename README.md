@@ -750,9 +750,9 @@ for more information.</p>
 
 ### Configuring the maximum size of string columns
 
-When creating Redshift tables, this library's default behavior is to create `TEXT` columns for string columns. Redshift stores `TEXT` columns as `VARCHAR(256)`, so these columns have a maximum size of 256 characters ([source](http://docs.aws.amazon.com/redshift/latest/dg/r_Character_types.html)).
+When creating Redshift tables, this library's default behavior is to create `VARCHAR(MAX)` columns for string columns. These columns have a maximum size of 65535 characters ([source](http://docs.aws.amazon.com/redshift/latest/dg/r_Character_types.html)).
 
-To support larger columns, you can use the `maxlength` column metadata field to specify the maximum length of individual string columns. This can also be done as a space-savings performance optimization in order to declare columns with a smaller maximum length than the default.
+To support smaller columns, you can use the `maxlength` column metadata field to specify the maximum length of individual string columns. This can be done as a space-savings performance optimization in order to declare columns with a smaller maximum length than the default.
 
 > **:warning: Note**: Due to limitations in Spark, metadata modification is unsupported in the Python, SQL, and R language APIs.
 
