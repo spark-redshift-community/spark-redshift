@@ -276,3 +276,8 @@ class DefaultPushdownMathFuncSuite extends PushdownMathFuncSuite {
 class ParquetPushdownMathFuncSuite extends PushdownMathFuncSuite {
   override protected val s3format: String = "PARQUET"
 }
+
+class DefaultNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
+  override protected val auto_pushdown: String = "false"
+  override protected val s3format: String = "DEFAULT"
+}

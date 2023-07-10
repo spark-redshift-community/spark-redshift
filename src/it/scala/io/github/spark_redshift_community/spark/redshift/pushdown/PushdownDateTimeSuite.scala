@@ -237,3 +237,8 @@ class DefaultPushdownDateTimeSuite extends PushdownDateTimeSuite {
 class ParquetPushdownDateTimeSuite extends PushdownDateTimeSuite {
   override protected val s3format: String = "PARQUET"
 }
+
+class DefaultNoPushdownDateTimeSuite extends PushdownDateTimeSuite {
+  override protected val auto_pushdown: String = "false"
+  override protected val s3format: String = "DEFAULT"
+}

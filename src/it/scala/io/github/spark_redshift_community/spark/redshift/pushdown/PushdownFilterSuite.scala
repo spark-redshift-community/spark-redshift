@@ -352,3 +352,8 @@ class DefaultPushdownFilterSuite extends PushdownFilterSuite {
 class ParquetPushdownFilterSuite extends PushdownFilterSuite {
   override protected val s3format: String = "PARQUET"
 }
+
+class DefaultNoPushdownFilterSuite extends PushdownDateTimeSuite {
+  override protected val auto_pushdown: String = "false"
+  override protected val s3format: String = "DEFAULT"
+}

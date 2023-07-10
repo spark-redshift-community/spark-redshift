@@ -20,61 +20,52 @@ import org.apache.spark.sql.Row
 
 abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
 
-  test("Count(1) pushdown") {
-    checkAnswer(
-      sqlContext.sql("""SELECT COUNT(1) FROM test_table"""),
-      Seq(Row(5)))
+  val testCount: TestCase = TestCase (
+    """SELECT COUNT(1) FROM test_table""",
+    Seq(Row(5)),
+    s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_1_COL_0"
+       |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+       |AS "SUBQUERY_0" LIMIT 1
+       |""".stripMargin
+  )
 
-    checkSqlStatement(
-      s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_1_COL_0"
-         |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" LIMIT 1
-         |""".stripMargin
-    )
-  }
+  val testCountDistinct: TestCase = TestCase (
+    """SELECT COUNT(DISTINCT testdouble) FROM test_table""",
+    Seq(Row(3)),
+    s"""SELECT ( COUNT ( DISTINCT "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0" FROM
+       |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+       |AS "SUBQUERY_1" LIMIT 1
+       |""".stripMargin
+  )
 
-  test("Count distinct pushdown") {
-    checkAnswer(
-      sqlContext.sql("""SELECT COUNT(DISTINCT testdouble) FROM test_table"""),
-      Seq(Row(3)))
+  val testCountGroupBy1: TestCase = TestCase (
+    """SELECT COUNT(1), testbyte FROM test_table GROUP BY testbyte""",
+    Seq(Row(1, null), Row(2, 0), Row(2, 1)),
+    s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" ,
+       |( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
+       |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
+       |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+       |AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"
+       |""".stripMargin
+  )
 
-    checkSqlStatement(
-      s"""SELECT ( COUNT ( DISTINCT "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0" FROM
-         |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-         |AS "SUBQUERY_1" LIMIT 1
-         |""".stripMargin
-    )
-  }
+  val testCountGroupBy2: TestCase = TestCase (
+    """SELECT COUNT(testbyte), testbyte FROM test_table GROUP BY testbyte""",
+    Seq(Row(0, null), Row(2, 0), Row(2, 1)),
+    s"""SELECT ( COUNT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0" ,
+       |( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
+       |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
+       |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+       |AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"
+       |""".stripMargin
+  )
 
-  test("Count(1) Group By pushdown") {
-    checkAnswer(
-      sqlContext.sql("""SELECT COUNT(1), testbyte FROM test_table GROUP BY testbyte"""),
-      Seq(Row(1, null), Row(2, 0), Row(2, 1)))
-
-    checkSqlStatement(
-      s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" ,
-        |( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
-        |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
-        |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-        |AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"
-        |""".stripMargin
-    )
-  }
-
-  test("Count(testbyte) Group By pushdown") {
-    checkAnswer(
-      sqlContext.sql("""SELECT COUNT(testbyte), testbyte FROM test_table GROUP BY testbyte"""),
-      Seq(Row(0, null), Row(2, 0), Row(2, 1)))
-
-    checkSqlStatement(
-      s"""SELECT ( COUNT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0" ,
-         |( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
-         |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
-         |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-         |AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"
-         |""".stripMargin
-    )
+  test("Test COUNT aggregation statements") {
+    doTest(sqlContext, testCount)
+    doTest(sqlContext, testCountDistinct)
+    doTest(sqlContext, testCountGroupBy1)
+    doTest(sqlContext, testCountGroupBy2)
   }
 
   test("Max() Group By pushdown") {
@@ -172,5 +163,10 @@ class DefaultPushdownAggregateSuite extends PushdownAggregateSuite {
 
 class ParquetPushdownAggregateSuite extends PushdownAggregateSuite {
   override protected val s3format: String = "PARQUET"
+}
+
+class DefaultNoPushdownAggregateSuite extends PushdownAggregateSuite {
+  override protected val auto_pushdown: String = "false"
+  override protected val s3format: String = "DEFAULT"
 }
 

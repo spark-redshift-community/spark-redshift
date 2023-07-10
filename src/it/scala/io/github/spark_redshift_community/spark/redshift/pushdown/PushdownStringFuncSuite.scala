@@ -322,3 +322,8 @@ class DefaultPushdownStringFuncSuite extends PushdownStringFuncSuite {
 class ParquetPushdownStringFuncSuite extends PushdownStringFuncSuite {
   override protected val s3format: String = "PARQUET"
 }
+
+class DefaultNoPushdownStringFuncSuite extends PushdownStringFuncSuite {
+  override protected val auto_pushdown: String = "false"
+  override protected val s3format: String = "DEFAULT"
+}
