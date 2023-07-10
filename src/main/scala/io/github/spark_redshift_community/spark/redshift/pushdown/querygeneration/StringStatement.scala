@@ -89,10 +89,11 @@ private[querygeneration] object StringStatement {
           } else {
             s"ESCAPE '${escapeChar}'"
           }
-        convertStatement(left, fields) + "LIKE" + convertStatement(
-          right,
-          fields
-        ) + escapeClause
+        // Cast the left string into a varchar to ensure fixed-length strings are right-trimmed
+        // since Redshift doesn't do this automatically for LIKE expressions. We want the push-down
+        // behavior to always match the non-push-down behavior which trims fixed-length strings.
+        ConstantString("CAST") + blockStatement(convertStatement(left, fields) + "AS VARCHAR") +
+          ConstantString("LIKE") + convertStatement(right, fields) + escapeClause
 
       case _ => null
     })

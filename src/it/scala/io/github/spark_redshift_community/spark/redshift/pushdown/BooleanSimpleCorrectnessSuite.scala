@@ -665,7 +665,8 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
 		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" LIKE \\'%asdf%\\' ) ) ) AS "SUBQUERY_1"
+         |AND ( CAST( "SUBQUERY_0"."TESTSTRING" AS VARCHAR )
+         |LIKE \\'%asdf%\\' ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 
@@ -679,7 +680,8 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
 		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" LIKE \\'%$string2000Char%\\' ) ) ) AS "SUBQUERY_1"
+         |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
+         |\\'%$string2000Char%\\' ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 
@@ -691,7 +693,8 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
 		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" LIKE \\'asdf%\\' ) ) ) AS "SUBQUERY_1"
+         |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
+         |\\'asdf%\\' ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 
@@ -713,7 +716,8 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
 		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" LIKE \\'%$string2000Char\\' ) ) ) AS "SUBQUERY_1"
+         |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
+         | \\'%$string2000Char\\' ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 
@@ -725,7 +729,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
 		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" LIKE \\'%asdf\\' ) ) ) AS "SUBQUERY_1"
+         |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE \\'%asdf\\' ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 
@@ -739,7 +743,8 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
 		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" LIKE \\'$string2000Char%\\' ) ) ) AS "SUBQUERY_1"
+         |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
+         | \\'$string2000Char%\\' ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 }
