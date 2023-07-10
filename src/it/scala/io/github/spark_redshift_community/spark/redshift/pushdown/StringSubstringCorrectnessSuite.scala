@@ -111,91 +111,75 @@ trait StringSubstringCorrectnessSuite extends StringIntegrationPushdownSuiteBase
   )
 
   val testSubstr08: TestCase = TestCase(
-    """SELECT SUBSTRING(testfixedstring, 0, 6) FROM test_table
+    """SELECT SUBSTRING(testfixedstring, 0, 5) FROM test_table
       | WHERE testid=1""".stripMargin, // sparkStatement
     Seq(Row("Hello")), // expectedResult
-    s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTFIXEDSTRING" , 0, 6 ) ) AS
-       | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-       | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-       | ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS
-       | "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+    // No pushdown expected due to non-positive starting position.
+    s"""SELECT "testfixedstring" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
   )
 
   val testSubstr09: TestCase = TestCase(
-    """SELECT SUBSTRING(testvarstring, 0, 6) FROM test_table
+    """SELECT SUBSTRING(testvarstring, 0, 5) FROM test_table
       | WHERE testid=1""".stripMargin, // sparkStatement
     Seq(Row("Hello")), // expectedResult
-    s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTVARSTRING" , 0 , 6 ) ) AS
-       | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-       | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-       | ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS
-       | "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+    // No pushdown expected due to non-positive starting position.
+    s"""SELECT "testvarstring" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
   )
 
   val testSubstr10: TestCase = TestCase(
-    """SELECT SUBSTRING(testfixedstring FROM 0 FOR 6) FROM test_table
+    """SELECT SUBSTRING(testfixedstring FROM 0 FOR 5) FROM test_table
       | WHERE testid=1""".stripMargin, // sparkStatement
     Seq(Row("Hello")), // expectedResult
-    s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTFIXEDSTRING" , 0 , 6 ) ) AS
-       | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-       | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-       | ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS
-       | "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+    // No pushdown expected due to non-positive starting position.
+    s"""SELECT "testfixedstring" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
   )
 
   val testSubstr11: TestCase = TestCase(
-    """SELECT SUBSTRING(testvarstring FROM 0 FOR 6) FROM test_table
+    """SELECT SUBSTRING(testvarstring FROM 0 FOR 5) FROM test_table
       | WHERE testid=1""".stripMargin, // sparkStatement
     Seq(Row("Hello")), // expectedResult
-    s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTVARSTRING" , 0 , 6 ) ) AS
-       | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-       | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-       | ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS
-       | "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+    // No pushdown expected due to non-positive starting position.
+    s"""SELECT "testvarstring" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
   )
 
   val testSubstr12: TestCase = TestCase(
-    """SELECT SUBSTRING(testfixedstring, -5, 11) FROM test_table
+    """SELECT SUBSTRING(testfixedstring, -5, 5) FROM test_table
       | WHERE testid=1""".stripMargin, // sparkStatement
-    Seq(Row("Hello")), // expectedResult
-    s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTFIXEDSTRING" , -5 , 11 ) ) AS
-       | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-       | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-       | ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS
-       | "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+    Seq(Row("World")), // expectedResult
+    // No pushdown expected due to non-positive starting position.
+    s"""SELECT "testfixedstring" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
   )
 
   val testSubstr13: TestCase = TestCase(
-    """SELECT SUBSTRING(testvarstring, -5, 11) FROM test_table
+    """SELECT SUBSTRING(testvarstring, -5, 5) FROM test_table
       | WHERE testid=1""".stripMargin, // sparkStatement
-    Seq(Row("Hello")), // expectedResult
-    s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTVARSTRING" , -5 , 11 ) ) AS
-       | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-       | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-       | ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS
-       | "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+    Seq(Row("World")), // expectedResult
+    // No pushdown expected due to non-positive starting position.
+    s"""SELECT "testvarstring" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
   )
 
   val testSubstr14: TestCase = TestCase(
-    """SELECT SUBSTRING(testfixedstring FROM -5 FOR 11) FROM test_table
+    """SELECT SUBSTRING(testfixedstring FROM -5 FOR 5) FROM test_table
       | WHERE testid=1""".stripMargin, // sparkStatement
-    Seq(Row("Hello")), // expectedResult
-    s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTFIXEDSTRING" , -5 , 11 ) ) AS
-       | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-       | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-       | ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS
-       | "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+    Seq(Row("World")), // expectedResult
+    // No pushdown expected due to non-positive starting position.
+    s"""SELECT "testfixedstring" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
   )
 
   val testSubstr15: TestCase = TestCase(
-    """SELECT SUBSTRING(testvarstring FROM -5 FOR 11) FROM test_table
+    """SELECT SUBSTRING(testvarstring FROM -5 FOR 5) FROM test_table
       | WHERE testid=1""".stripMargin, // sparkStatement
-    Seq(Row("Hello")), // expectedResult
-    s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTVARSTRING" , -5 , 11 ) ) AS
-       | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-       | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-       | ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS
-       | "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+    Seq(Row("World")), // expectedResult
+    // No pushdown expected due to non-positive starting position.
+    s"""SELECT "testvarstring" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
   )
 
   val testSubstr16: TestCase = TestCase(
@@ -493,5 +477,41 @@ trait StringSubstringCorrectnessSuite extends StringIntegrationPushdownSuiteBase
        | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
        | ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS
        | "SUBQUERY_1"""".stripMargin // expectedPushdownStatement
+  )
+
+  val testSubstr43: TestCase = TestCase(
+    """SELECT SUBSTRING(testfixedstring FROM -5 FOR 50) FROM test_table
+      | WHERE testid=1""".stripMargin, // sparkStatement
+    Seq(Row("World")), // expectedResult
+    // No pushdown expected due to non-positive starting position.
+    s"""SELECT "testfixedstring" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
+  )
+
+  val testSubstr44: TestCase = TestCase(
+    """SELECT SUBSTRING(testvarstring FROM -5 FOR 50) FROM test_table
+      | WHERE testid=1""".stripMargin, // sparkStatement
+    Seq(Row("World")), // expectedResult
+    // No pushdown expected due to non-positive starting position.
+    s"""SELECT "testvarstring" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
+  )
+
+  val testSubstr45: TestCase = TestCase(
+    """SELECT SUBSTRING(testfixedstring, testid, 5) FROM test_table
+      | WHERE testid=1""".stripMargin, // sparkStatement
+    Seq(Row("Hello")), // expectedResult
+    // No pushdown expected due to non-literal starting position.
+    s"""SELECT "testfixedstring", "testid" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
+  )
+
+  val testSubstr46: TestCase = TestCase(
+    """SELECT SUBSTRING(testvarstring, testid, 5) FROM test_table
+      | WHERE testid=1""".stripMargin, // sparkStatement
+    Seq(Row("Hello")), // expectedResult
+    // No pushdown expected due to non-literal starting position.
+    s"""SELECT "testvarstring", "testid" FROM $test_table WHERE "testid" IS NOT NULL
+       | AND "testid" = 1""".stripMargin // expectedPushdownStatement
   )
 }

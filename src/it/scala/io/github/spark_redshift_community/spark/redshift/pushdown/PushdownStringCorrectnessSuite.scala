@@ -138,17 +138,14 @@ abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectness
     doTest(sqlContext, testSubstr05)
     doTest(sqlContext, testSubstr06)
     doTest(sqlContext, testSubstr07)
-  /* These cause errors as Redshift and Spark don't agree on zero and negative starting indices
-     SIM [Redshift-7038] has been opened to address this issue.
-  doTest(sqlContext, testSubstr08)
-  doTest(sqlContext, testSubstr09)
-  doTest(sqlContext, testSubstr10)
-  doTest(sqlContext, testSubstr11)
-  doTest(sqlContext, testSubstr12)
-  doTest(sqlContext, testSubstr13)
-  doTest(sqlContext, testSubstr14)
-  doTest(sqlContext, testSubstr15)
-  */
+    doTest(sqlContext, testSubstr08)
+    doTest(sqlContext, testSubstr09)
+    doTest(sqlContext, testSubstr10)
+    doTest(sqlContext, testSubstr11)
+//    doTest(sqlContext, testSubstr12) // Disable for [Redshift-7057]
+    doTest(sqlContext, testSubstr13)
+//    doTest(sqlContext, testSubstr14) // Disable for [Redshift-7057]
+    doTest(sqlContext, testSubstr15)
     doTest(sqlContext, testSubstr16)
     doTest(sqlContext, testSubstr17)
     doTest(sqlContext, testSubstr18)
@@ -176,15 +173,19 @@ abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectness
     doTest(sqlContext, testSubstr40)
     doTest(sqlContext, testSubstr41)
     doTest(sqlContext, testSubstr42)
+//    doTest(sqlContext, testSubstr43) // Disable for [Redshift-7057]
+    doTest(sqlContext, testSubstr44)
+    doTest(sqlContext, testSubstr45)
+    doTest(sqlContext, testSubstr46)
   }
 }
 
-class DefaultStringPushdownSuite extends PushdownStringCorrectnessSuite {
+class DefaultPushdownStringCorrectnessSuite extends PushdownStringCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetStringPushdownSuite extends PushdownStringCorrectnessSuite {
+class ParquetPushdownStringCorrectnessSuite extends PushdownStringCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }

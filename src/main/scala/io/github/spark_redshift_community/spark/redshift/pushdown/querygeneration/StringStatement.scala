@@ -18,7 +18,7 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, RedshiftSQLStatement}
-import org.apache.spark.sql.catalyst.expressions.{Ascii, Attribute, Concat, Expression, Length, Like, Lower, StringLPad, StringRPad, StringTranslate, StringTrim, StringTrimLeft, StringTrimRight, Substring, Upper}
+import org.apache.spark.sql.catalyst.expressions.{Ascii, Attribute, Concat, Expression, Length, Like, Literal, Lower, StringLPad, StringRPad, StringTranslate, StringTrim, StringTrimLeft, StringTrimRight, Substring, Upper}
 
 /** Extractor for boolean expressions (return true or false). */
 private[querygeneration] object StringStatement {
@@ -60,9 +60,18 @@ private[querygeneration] object StringStatement {
             blockStatement(convertStatements(fields, expr.children: _*))
         }
 
-      case _: Substring =>
-        ConstantString("SUBSTRING") +
-          blockStatement(convertStatements(fields, expr.children: _*))
+      case Substring(_, pos, _) =>
+        // Only support pushdown when the starting position is a positive number as Spark
+        // and Redshift have differences in interpreting non-positive starting indices.
+        pos match {
+          case (l: Literal) => l.value match {
+            case (i: Integer) if (i.intValue() > 0) =>
+              ConstantString("SUBSTRING") +
+              blockStatement(convertStatements(fields, expr.children: _*))
+            case _ => null
+          }
+          case _ => null
+        }
 
       case Concat(children) =>
         val rightSide =
