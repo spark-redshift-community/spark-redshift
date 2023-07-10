@@ -16,7 +16,7 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import com.amazonaws.auth.{AWSSessionCredentials, BasicAWSCredentials, BasicSessionCredentials}
+import com.amazonaws.auth.{AWSSessionCredentials, BasicAWSCredentials, BasicSessionCredentials, DefaultAWSCredentialsProviderChain}
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.hadoop.conf.Configuration
 import org.scalatest.FunSuite
@@ -81,58 +81,40 @@ class AWSCredentialsUtilsSuite extends FunSuite {
   }
 
   test("AWSCredentials.load() credentials precedence for s3:// URIs") {
-    val conf = new Configuration(false)
-    conf.set("fs.s3.awsAccessKeyId", "CONFID")
-    conf.set("fs.s3.awsSecretAccessKey", "CONFKEY")
-
     {
-      val creds = AWSCredentialsUtils.load("s3://URIID:URIKEY@bucket/path", conf).getCredentials
-      assert(creds.getAWSAccessKeyId === "URIID")
-      assert(creds.getAWSSecretKey === "URIKEY")
+      val creds = AWSCredentialsUtils.load("s3://URIID:URIKEY@bucket/path", null)
+      assert(creds.isInstanceOf[DefaultAWSCredentialsProviderChain])
     }
 
     {
-      val creds = AWSCredentialsUtils.load("s3://bucket/path", conf).getCredentials
-      assert(creds.getAWSAccessKeyId === "CONFID")
-      assert(creds.getAWSSecretKey === "CONFKEY")
+      val creds = AWSCredentialsUtils.load("s3://bucket/path", null)
+      assert(creds.isInstanceOf[DefaultAWSCredentialsProviderChain])
     }
 
   }
 
   test("AWSCredentials.load() credentials precedence for s3n:// URIs") {
-    val conf = new Configuration(false)
-    conf.set("fs.s3n.awsAccessKeyId", "CONFID")
-    conf.set("fs.s3n.awsSecretAccessKey", "CONFKEY")
-
     {
-      val creds = AWSCredentialsUtils.load("s3n://URIID:URIKEY@bucket/path", conf).getCredentials
-      assert(creds.getAWSAccessKeyId === "URIID")
-      assert(creds.getAWSSecretKey === "URIKEY")
+      val creds = AWSCredentialsUtils.load("s3n://URIID:URIKEY@bucket/path", null)
+      assert(creds.isInstanceOf[DefaultAWSCredentialsProviderChain])
     }
 
     {
-      val creds = AWSCredentialsUtils.load("s3n://bucket/path", conf).getCredentials
-      assert(creds.getAWSAccessKeyId === "CONFID")
-      assert(creds.getAWSSecretKey === "CONFKEY")
+      val creds = AWSCredentialsUtils.load("s3n://bucket/path", null)
+      assert(creds.isInstanceOf[DefaultAWSCredentialsProviderChain])
     }
 
   }
 
   test("AWSCredentials.load() credentials precedence for s3a:// URIs") {
-    val conf = new Configuration(false)
-    conf.set("fs.s3a.access.key", "CONFID")
-    conf.set("fs.s3a.secret.key", "CONFKEY")
-
     {
-      val creds = AWSCredentialsUtils.load("s3a://URIID:URIKEY@bucket/path", conf).getCredentials
-      assert(creds.getAWSAccessKeyId === "URIID")
-      assert(creds.getAWSSecretKey === "URIKEY")
+      val creds = AWSCredentialsUtils.load("s3a://URIID:URIKEY@bucket/path", null)
+      assert(creds.isInstanceOf[DefaultAWSCredentialsProviderChain])
     }
 
     {
-      val creds = AWSCredentialsUtils.load("s3a://bucket/path", conf).getCredentials
-      assert(creds.getAWSAccessKeyId === "CONFID")
-      assert(creds.getAWSSecretKey === "CONFKEY")
+      val creds = AWSCredentialsUtils.load("s3a://bucket/path", null)
+      assert(creds.isInstanceOf[DefaultAWSCredentialsProviderChain])
     }
 
   }

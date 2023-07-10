@@ -97,10 +97,6 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
       case e: RedshiftPushdownUnsupportedException => {
         if (foundRedshiftRelation) {
           LOG.warn(s"""Unsupported pushdown: ${e.unsupportedOperation} - ${e.details}""")
-
-          if(LOG.isDebugEnabled()) {
-            LOG.debug(plan.toString(), e)
-          }
         }
         null
       }
@@ -108,7 +104,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
         if (foundRedshiftRelation) {
           val stringWriter = new StringWriter
           e.printStackTrace(new PrintWriter(stringWriter))
-          LOG.error(plan.toString(), e)
+          LOG.error("Logical plan error", e)
         }
       }
       null

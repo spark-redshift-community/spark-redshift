@@ -73,7 +73,8 @@ class RedshiftSourceSuite
     "url" -> "jdbc:redshift://foo/bar?user=user&password=password",
     "tempdir" -> s3TempDir,
     "dbtable" -> "test_table",
-    "forward_spark_s3_credentials" -> "true")
+    "forward_spark_s3_credentials" -> "false",
+    "aws_iam_role" -> "fake_role_arn")
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -85,11 +86,6 @@ class RedshiftSourceSuite
       classOf[DirectMapreduceOutputCommitter].getName)
     sc.hadoopConfiguration.set("mapred.output.committer.class",
       classOf[DirectMapredOutputCommitter].getName)
-    sc.hadoopConfiguration.set("fs.s3.awsAccessKeyId", "test1")
-    sc.hadoopConfiguration.set("fs.s3.awsSecretAccessKey", "test2")
-    sc.hadoopConfiguration.set("fs.s3a.access.key", "test1")
-    sc.hadoopConfiguration.set("fs.s3a.secret.key", "test2")
-
   }
 
   override def beforeEach(): Unit = {
@@ -168,7 +164,7 @@ class RedshiftSourceSuite
         "\"testtimestamp\" " +
         "FROM \"PUBLIC\".\"test_table\" '\\) " +
         "TO '.*' " +
-        "WITH CREDENTIALS 'aws_access_key_id=test1;aws_secret_access_key=test2' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
         "ESCAPE").r
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
@@ -240,7 +236,7 @@ class RedshiftSourceSuite
     val expectedQuery = (
       "UNLOAD \\('SELECT \"testbyte\", \"testbool\" FROM \"PUBLIC\".\"test_table\" '\\) " +
         "TO '.*' " +
-        "WITH CREDENTIALS 'aws_access_key_id=test1;aws_secret_access_key=test2' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
         "ESCAPE").r
     val mockRedshift =
       new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
@@ -280,7 +276,7 @@ class RedshiftSourceSuite
         "AND \"testfloat\" >= 1.0 " +
         "AND \"testint\" <= 43'\\) " +
         "TO '.*' " +
-        "WITH CREDENTIALS 'aws_access_key_id=test1;aws_secret_access_key=test2' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
         "ESCAPE").r
     // scalastyle:on
     val mockRedshift = new MockRedshift(
@@ -329,7 +325,7 @@ class RedshiftSourceSuite
     val expectedQuery = (
       "UNLOAD \\('SELECT \"testbyte\", \"testbool\" FROM \"PUBLIC\".\"test_table\" '\\) " +
         "TO '.*' " +
-        "WITH CREDENTIALS 'aws_access_key_id=test1;aws_secret_access_key=test2' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
         "ESCAPE MANIFEST NULL AS '@NULL@' KMS_KEY_ID 'abc-123' ENCRYPTED").r
     val mockRedshift =
       new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))

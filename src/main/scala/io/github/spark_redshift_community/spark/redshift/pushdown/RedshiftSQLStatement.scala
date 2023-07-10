@@ -85,7 +85,6 @@ private[redshift] class RedshiftSQLStatement(
     val logPrefix = s"""${MASTER_LOG_PREFIX}:
                        | execute query without bind variable:
                        |""".stripMargin.filter(_ >= ' ')
-    log.info(s"$logPrefix $query")
 
     conn.prepareStatement(query)
   }
@@ -111,7 +110,6 @@ private[redshift] class RedshiftSQLStatement(
     val logPrefix = s"""${MASTER_LOG_PREFIX}:
                        | execute query with bind variable:
                        |""".stripMargin.filter(_ >= ' ')
-    log.info(s"$logPrefix $query")
 
     val statement = conn.prepareStatement(query)
     varArray.zipWithIndex.foreach {

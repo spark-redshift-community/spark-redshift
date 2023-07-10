@@ -105,8 +105,6 @@ private[redshift] class RedshiftWriter(
     val copySqlStatement = s"COPY ${params.table.get} ${columns}FROM '$fixedUrl' FORMAT AS " +
       s"${format} manifest ${params.extraCopyOptions}"
 
-    log.debug(s"copySqlStatement is: $copySqlStatement (CREDENTIALS skipped)")
-
     s"$copySqlStatement CREDENTIALS '$credsString'"
   }
 
@@ -134,7 +132,6 @@ private[redshift] class RedshiftWriter(
 
     // If the table doesn't exist, we need to create it first, using JDBC to infer column types
     val createStatement = createTableSql(data, params)
-    log.debug(createStatement)
     jdbcWrapper.executeInterruptibly(conn.prepareStatement(createStatement))
 
     val preActions = commentActions(params.description, data.schema) ++ params.preActions
@@ -142,7 +139,6 @@ private[redshift] class RedshiftWriter(
     // Execute preActions
     preActions.foreach { action =>
       val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
-      log.debug("Executing preAction: " + actionSql)
       jdbcWrapper.executeInterruptibly(conn.prepareStatement(actionSql))
     }
 
@@ -202,7 +198,6 @@ private[redshift] class RedshiftWriter(
     // Execute postActions
     params.postActions.foreach { action =>
       val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
-      log.info("Executing postAction: " + actionSql)
       jdbcWrapper.executeInterruptibly(conn.prepareStatement(actionSql))
     }
   }

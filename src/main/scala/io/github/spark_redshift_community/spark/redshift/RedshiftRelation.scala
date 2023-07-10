@@ -101,7 +101,6 @@ private[redshift] case class RedshiftRelation(
       // rather than unloading data.
       val whereClause = FilterPushdown.buildWhereClause(schema, filters)
       val countQuery = s"SELECT count(*) FROM $tableNameOrSubquery $whereClause"
-      log.debug(s"""buildScan: ${countQuery}""")
       val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
       try {
         val results = jdbcWrapper.executeQueryInterruptibly(conn.prepareStatement(countQuery))
@@ -162,9 +161,6 @@ private[redshift] case class RedshiftRelation(
     // Save the last query so it can be inspected
     Utils.lastBuildStmt = query
 
-    log.debug(s"""buildUnloadStmt: ${query}""")
-
-
     // We need to remove S3 credentials from the unload path URI because they will conflict with
     // the credentials passed via `credsString`.
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
@@ -195,9 +191,6 @@ private[redshift] case class RedshiftRelation(
     // Save the last query so it can be inspected
     Utils.lastBuildStmt = query
 
-    log.debug(s"""buildUnloadStmt with RedshiftSQLStatement: ${query}""")
-
-
     // We need to remove S3 credentials from the unload path URI because they will conflict with
     // the credentials passed via `credsString`.
     val fixedUrl = Utils.fixS3Url(Utils.removeCredentialsFromURI(new URI(tempDir)).toString)
@@ -227,7 +220,6 @@ private[redshift] case class RedshiftRelation(
 // Type can be InternalRow to comply with SparkPlan's doExecute().
 def buildScanFromSQL[Row](statement: RedshiftSQLStatement,
                                   schema: Option[StructType]): RDD[Row] = {
-    log.debug("buildScanFromSQL:" + statement.statementString)
 
     val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
     val resultSchema: StructType = getResultSchema(statement, schema, conn)
