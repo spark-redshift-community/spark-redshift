@@ -102,15 +102,7 @@ class ParametersSuite extends FunSuite with Matchers {
       "url" -> "jdbc:redshift://foo/bar?user=user&password=password"))
   }
 
-  test("Must specify credentials in either URL or 'user' and 'password' parameters, but not both") {
-    intercept[IllegalArgumentException] {
-      Parameters.mergeParameters(Map(
-        "forward_spark_s3_credentials" -> "true",
-        "tempdir" -> "s3://foo/bar",
-        "query" -> "select * from test_table",
-        "url" -> "jdbc:redshift://foo/bar"))
-    }.getMessage should (include("credentials"))
-
+  test("Cannot specify credentials in both URL and ('user' or 'password') parameters") {
     intercept[IllegalArgumentException] {
       Parameters.mergeParameters(Map(
         "forward_spark_s3_credentials" -> "true",

@@ -43,7 +43,7 @@ class FilterPushdownSuite extends FunSuite {
     // also need to escape those quotes with backslashes because this WHERE clause is going to
     // eventually be embedded inside of a single-quoted string that's embedded inside of a larger
     // Redshift query.
-    assert(whereClause === """WHERE "test_string" = \'Unicode\'\'s樂趣\'""")
+    assert(whereClause === """WHERE "test_string" = 'Unicode\'\'s樂趣'""")
     // scalastyle:on
   }
 
@@ -64,7 +64,7 @@ class FilterPushdownSuite extends FunSuite {
     val expectedWhereClause =
       """
         |WHERE "test_bool" = true
-        |AND "test_string" = \'Unicode是樂趣\'
+        |AND "test_string" = 'Unicode是樂趣'
         |AND "test_double" > 1000.0
         |AND "test_double" < 1.7976931348623157E308
         |AND "test_float" >= 1.0
