@@ -48,7 +48,7 @@ private[redshift] object Parameters {
     "preactions" -> ";",
     "postactions" -> ";",
     "include_column_list" -> "false",
-    PARAM_AUTO_PUSHDOWN -> "false",
+    PARAM_AUTO_PUSHDOWN -> "true",
     PARAM_PUSHDOWN_S3_RESULT_CACHE -> "true",
     PARAM_UNLOAD_S3_FORMAT -> "DEFAULT" // values: DEFAULT, PARQUET
   )
