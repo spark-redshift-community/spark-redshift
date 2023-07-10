@@ -544,6 +544,24 @@ trait AggregateCountCorrectnessSuite extends IntegrationPushdownSuiteBase {
   )
 
   val testCount58: TestCase = TestCase(
+    """SELECT col_float4_zstd, COUNT(col_float4_zstd) FROM test_table
+      | group by col_float4_zstd
+      | order by col_float4_zstd limit 5""".stripMargin, // sparkStatement
+    Seq(Row(-39.99878.toFloat, 1), Row(-39.968693.toFloat, 1),
+      Row(-39.94803.toFloat, 1), Row(-39.920315.toFloat, 1),
+      Row(-39.919968.toFloat, 1)), // expectedResult
+    s"""SELECT * FROM ( SELECT * FROM (
+       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0",
+       | ( COUNT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
+       | SELECT ( "SUBQUERY_0"."COL_FLOAT4_ZSTD" ) AS "SUBQUERY_1_COL_0" FROM (
+       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
+       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2"
+       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC ) AS"SUBQUERY_3"
+       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC
+       | LIMIT5""".stripMargin // expectedPushdownStatement
+  )
+
+  val testCount59: TestCase = TestCase(
     """SELECT col_float8_bytedict, COUNT(col_float8_bytedict) FROM test_table
       | group by col_float8_bytedict
       | order by col_float8_bytedict limit 5""".stripMargin, // sparkStatement

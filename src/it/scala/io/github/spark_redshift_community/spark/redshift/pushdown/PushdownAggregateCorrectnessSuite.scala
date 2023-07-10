@@ -19,7 +19,10 @@ import org.scalatest.DoNotDiscover
 
 
 abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectnessSuite
-                                                 with AggregateMaxCorrectnessSuite {
+                                                 with AggregateMaxCorrectnessSuite
+                                                 with AggregateMinCorrectnessSuite
+                                                 with AggregateAvgCorrectnessSuite
+                                                 with AggregateSumCorrectnessSuite {
   override protected val preloaded_data: String = "true"
   override def setTestTableName(): String = """"PUBLIC"."all_shapes_dist_all_sort_compound_12col""""
 
@@ -103,6 +106,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
     doTest(sqlContext, testCount57)
     // group by
     doTest(sqlContext, testCount58)
+    doTest(sqlContext, testCount59)
   }
 
   // define a test for count(boolean)
@@ -119,10 +123,10 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
 
   // define a test for count(char)
   test("Test COUNT(char) aggregation statements against correctness dataset") {
-    // doTest(sqlContext, testCount70)
-    // doTest(sqlContext, testCount71)
-    // doTest(sqlContext, testCount72)
-    // doTest(sqlContext, testCount73)
+    doTest(sqlContext, testCount70)
+    doTest(sqlContext, testCount71)
+    doTest(sqlContext, testCount72)
+    doTest(sqlContext, testCount73)
     // group by
     doTest(sqlContext, testCount74)
   }
@@ -186,17 +190,392 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
     // group by
     doTest(sqlContext, testMax07)
   }
+
+  // define a test for max(int)
+  test("Test MAX(int) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax10)
+    doTest(sqlContext, testMax11)
+    doTest(sqlContext, testMax12)
+    doTest(sqlContext, testMax13)
+    doTest(sqlContext, testMax14)
+    doTest(sqlContext, testMax15)
+    doTest(sqlContext, testMax16)
+    // group by
+    doTest(sqlContext, testMax17)
+  }
+
+  // define a test for max(long)
+  test("Test MAX(long) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax20)
+    doTest(sqlContext, testMax21)
+    doTest(sqlContext, testMax22)
+    doTest(sqlContext, testMax23)
+    doTest(sqlContext, testMax24)
+    doTest(sqlContext, testMax25)
+    doTest(sqlContext, testMax26)
+    // group by
+    doTest(sqlContext, testMax27)
+  }
+
+  // define a test for max(decimal)
+  test("Test MAX(decimal) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax30)
+    doTest(sqlContext, testMax31)
+    doTest(sqlContext, testMax32)
+    doTest(sqlContext, testMax33)
+    doTest(sqlContext, testMax34)
+    doTest(sqlContext, testMax35)
+    doTest(sqlContext, testMax36)
+    doTest(sqlContext, testMax37)
+    doTest(sqlContext, testMax38)
+    // group by
+    doTest(sqlContext, testMax39)
+  }
+
+  // define a test for max(float)
+  test("Test MAX(float) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax40)
+    doTest(sqlContext, testMax41)
+    doTest(sqlContext, testMax42)
+    doTest(sqlContext, testMax43)
+    doTest(sqlContext, testMax44)
+    doTest(sqlContext, testMax45)
+    doTest(sqlContext, testMax46)
+    doTest(sqlContext, testMax47)
+    // group by
+    doTest(sqlContext, testMax48)
+    doTest(sqlContext, testMax49)
+  }
+
+  // define a test for max(boolean)
+  // function max(boolean) does not exist in redshift
+  test("Test MAX(boolean) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax50_unsupported)
+    doTest(sqlContext, testMax51_unsupported)
+    doTest(sqlContext, testMax52_unsupported)
+    // group by
+    doTest(sqlContext, testMax53)
+  }
+
+  // define a test for max(char)
+  test("Test MAX(char) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax60)
+    doTest(sqlContext, testMax61)
+    doTest(sqlContext, testMax62)
+    doTest(sqlContext, testMax63)
+    // group by
+    doTest(sqlContext, testMax64)
+  }
+
+  // define a test for max(varchar)
+  test("Test MAX(varchar) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax70)
+    doTest(sqlContext, testMax71)
+    doTest(sqlContext, testMax72)
+    doTest(sqlContext, testMax73)
+    // group by
+    doTest(sqlContext, testMax74)
+  }
+
+  // define a test for max(date)
+  test("Test MAX(date) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax80)
+    doTest(sqlContext, testMax81)
+    doTest(sqlContext, testMax82)
+    doTest(sqlContext, testMax83)
+    doTest(sqlContext, testMax84)
+    doTest(sqlContext, testMax85)
+    doTest(sqlContext, testMax86)
+    // group by
+    doTest(sqlContext, testMax87)
+  }
+
+  // define a test for max(timestamp)
+  test("Test MAX(timestamp) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax90)
+    doTest(sqlContext, testMax91)
+    doTest(sqlContext, testMax92)
+    doTest(sqlContext, testMax93)
+    doTest(sqlContext, testMax94)
+    doTest(sqlContext, testMax95)
+    doTest(sqlContext, testMax96)
+    // group by
+    doTest(sqlContext, testMax97)
+  }
+
+  // define a test for min(short)
+  test("Test MIN(short) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin00)
+    doTest(sqlContext, testMin01)
+    doTest(sqlContext, testMin02)
+    doTest(sqlContext, testMin03)
+    doTest(sqlContext, testMin04)
+    doTest(sqlContext, testMin05)
+    doTest(sqlContext, testMin06)
+    // group by
+    doTest(sqlContext, testMin07)
+  }
+
+  // define a test for min(int)
+  test("Test MIN(int) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin10)
+    doTest(sqlContext, testMin11)
+    doTest(sqlContext, testMin12)
+    doTest(sqlContext, testMin13)
+    doTest(sqlContext, testMin14)
+    doTest(sqlContext, testMin15)
+    doTest(sqlContext, testMin16)
+    // group by
+    doTest(sqlContext, testMin17)
+  }
+
+  // define a test for min(long)
+  test("Test MIN(long) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin20)
+    doTest(sqlContext, testMin21)
+    doTest(sqlContext, testMin22)
+    doTest(sqlContext, testMin23)
+    doTest(sqlContext, testMin24)
+    doTest(sqlContext, testMin25)
+    doTest(sqlContext, testMin26)
+    // group by
+    doTest(sqlContext, testMin27)
+  }
+
+  // define a test for min(decimal)
+  test("Test MIN(decimal) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin30)
+    doTest(sqlContext, testMin31)
+    doTest(sqlContext, testMin32)
+    doTest(sqlContext, testMin33)
+    doTest(sqlContext, testMin34)
+    doTest(sqlContext, testMin35)
+    doTest(sqlContext, testMin36)
+    doTest(sqlContext, testMin37)
+    doTest(sqlContext, testMin38)
+    // group by
+    doTest(sqlContext, testMin39)
+  }
+
+  // define a test for min(float)
+  test("Test MIN(float) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin40)
+    doTest(sqlContext, testMin41)
+    doTest(sqlContext, testMin42)
+    doTest(sqlContext, testMin43)
+    doTest(sqlContext, testMin44)
+    doTest(sqlContext, testMin45)
+    doTest(sqlContext, testMin46)
+    doTest(sqlContext, testMin47)
+    // group by
+    doTest(sqlContext, testMin48)
+    doTest(sqlContext, testMin49)
+  }
+
+  // define a test for min(boolean)
+  // function min(boolean) does not exist in redshift
+  test("Test MIN(boolean) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin50_unsupported)
+    doTest(sqlContext, testMin51_unsupported)
+    doTest(sqlContext, testMin52_unsupported)
+    // group by
+    doTest(sqlContext, testMin53)
+  }
+
+  // define a test for min(char)
+  test("Test MIN(char) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin60)
+    doTest(sqlContext, testMin61)
+    doTest(sqlContext, testMin62)
+    doTest(sqlContext, testMin63)
+    // group by
+    doTest(sqlContext, testMin64)
+  }
+
+  // define a test for min(varchar)
+  test("Test MIN(varchar) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin70)
+    doTest(sqlContext, testMin71)
+    doTest(sqlContext, testMin72)
+    doTest(sqlContext, testMin73)
+    // group by
+    doTest(sqlContext, testMin74)
+  }
+
+  // define a test for min(date)
+  test("Test MIN(date) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin80)
+    doTest(sqlContext, testMin81)
+    doTest(sqlContext, testMin82)
+    doTest(sqlContext, testMin83)
+    doTest(sqlContext, testMin84)
+    doTest(sqlContext, testMin85)
+    doTest(sqlContext, testMin86)
+    // group by
+    doTest(sqlContext, testMin87)
+  }
+
+  // define a test for min(timestamp)
+  test("Test MIN(timestamp) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin90)
+    doTest(sqlContext, testMin91)
+    doTest(sqlContext, testMin92)
+    doTest(sqlContext, testMin93)
+    doTest(sqlContext, testMin94)
+    doTest(sqlContext, testMin95)
+    doTest(sqlContext, testMin96)
+    // group by
+    doTest(sqlContext, testMin97)
+  }
+
+  // define a test for avg(short)
+  test("Test AVG(short) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testAvg00)
+    doTest(sqlContext, testAvg01)
+    doTest(sqlContext, testAvg02)
+    doTest(sqlContext, testAvg03)
+    doTest(sqlContext, testAvg04)
+    doTest(sqlContext, testAvg05)
+    doTest(sqlContext, testAvg06)
+    // group by
+    doTest(sqlContext, testAvg07)
+  }
+
+  // define a test for avg(int)
+  test("Test AVG(int) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testAvg10)
+    doTest(sqlContext, testAvg11)
+    doTest(sqlContext, testAvg12)
+    doTest(sqlContext, testAvg13)
+    doTest(sqlContext, testAvg14)
+    doTest(sqlContext, testAvg15)
+    doTest(sqlContext, testAvg16)
+    // group by
+    doTest(sqlContext, testAvg17)
+    doTest(sqlContext, testAvg18)
+  }
+
+  // define a test for avg(long)
+  test("Test AVG(long) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testAvg20)
+    doTest(sqlContext, testAvg21)
+    doTest(sqlContext, testAvg22)
+    doTest(sqlContext, testAvg23)
+    doTest(sqlContext, testAvg24)
+    doTest(sqlContext, testAvg25)
+    doTest(sqlContext, testAvg26)
+    // group by
+    doTest(sqlContext, testAvg27)
+  }
+
+  // define a test for avg(decimal)
+  test("Test AVG(decimal) aggregation statements against correctness dataset") {
+    // doTest(sqlContext, testAvg30)
+    doTest(sqlContext, testAvg31)
+    doTest(sqlContext, testAvg32)
+    doTest(sqlContext, testAvg33)
+    doTest(sqlContext, testAvg34)
+    // group by
+    doTest(sqlContext, testAvg35)
+  }
+
+  // define a test for avg(float)
+  test("Test AVG(float) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testAvg40)
+    doTest(sqlContext, testAvg41)
+    doTest(sqlContext, testAvg42)
+    doTest(sqlContext, testAvg43)
+    doTest(sqlContext, testAvg44)
+    doTest(sqlContext, testAvg45)
+    doTest(sqlContext, testAvg46)
+    doTest(sqlContext, testAvg47)
+    // group by
+    doTest(sqlContext, testAvg48)
+    doTest(sqlContext, testAvg49)
+  }
+
+  // define a test for sum(short)
+  test("Test SUM(short) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testSum00)
+    doTest(sqlContext, testSum01)
+    doTest(sqlContext, testSum02)
+    doTest(sqlContext, testSum03)
+  }
+
+  // define a test for sum(int)
+  test("Test SUM(int) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testSum10)
+    doTest(sqlContext, testSum11)
+    doTest(sqlContext, testSum12)
+    doTest(sqlContext, testSum13)
+  }
+
+  // define a test for sum(long)
+  test("Test SUM(long) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testSum20)
+    doTest(sqlContext, testSum21)
+    doTest(sqlContext, testSum22)
+    doTest(sqlContext, testSum23)
+  }
+
+  // define a test for sum(decimal)
+  test("Test SUM(decimal) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testSum30)
+    doTest(sqlContext, testSum31)
+    doTest(sqlContext, testSum32)
+    doTest(sqlContext, testSum33)
+  }
+
+  // define a test for sum(float)
+  test("Test SUM(float) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testSum40)
+    doTest(sqlContext, testSum41)
+    doTest(sqlContext, testSum42)
+    doTest(sqlContext, testSum43)
+    doTest(sqlContext, testSum44)
+    doTest(sqlContext, testSum45)
+    doTest(sqlContext, testSum46)
+    doTest(sqlContext, testSum47)
+  }
 }
 
-// Plz comment out this tag when you have set up test framework and want to run this against it
+// Please comment out this tag when you have set up test framework, preloaded dataset,
+// and want to run this against it.
 @DoNotDiscover
 class DefaultPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
   override protected val s3format: String = "DEFAULT"
   // Timestamptz column is not handled correctly in parquet format as time zone information is not
   // unloaded.
-  test("Test COUNT(timestamptz) aggregation statements against correctness dataset with group by") {
+  test("Test COUNT(timestamptz) aggregation statements against correctness dataset" +
+    " with group by") {
     // group by
     doTest(sqlContext, testCount117)
+  }
+
+  // define a test for max(timestamptz)
+  test("Test MAX(timestamptz) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMax100)
+    doTest(sqlContext, testMax101)
+    doTest(sqlContext, testMax102)
+    doTest(sqlContext, testMax103)
+    doTest(sqlContext, testMax104)
+    doTest(sqlContext, testMax105)
+    doTest(sqlContext, testMax106)
+    // group by
+    doTest(sqlContext, testMax107)
+  }
+
+  // define a test for min(timestamptz)
+  test("Test MIN(timestamptz) aggregation statements against correctness dataset") {
+    doTest(sqlContext, testMin100)
+    doTest(sqlContext, testMin101)
+    doTest(sqlContext, testMin102)
+    doTest(sqlContext, testMin103)
+    doTest(sqlContext, testMin104)
+    doTest(sqlContext, testMin105)
+    doTest(sqlContext, testMin106)
+    // group by
+    doTest(sqlContext, testMin107)
   }
 }
 
@@ -206,12 +585,7 @@ class ParquetPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectn
 }
 
 @DoNotDiscover
-class DefaultNoPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
+class DefaultNoPushdownAggregateCorrectnessSuite extends DefaultPushdownAggregateCorrectnessSuite {
   override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "DEFAULT"
-  // define a test for count(timestamptz) with group by
-  test("Test COUNT(timestamptz) aggregation statements against correctness dataset with group by") {
-    // group by
-    doTest(sqlContext, testCount117)
-  }
 }
