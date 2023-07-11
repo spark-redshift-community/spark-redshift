@@ -27,3 +27,9 @@
       language: system
       types: [file]
       pass_filenames: false
+    - id: compile-integration-tests
+      name: compile-integration-tests
+      entry: bash -c 'sbt it:compile'
+      language: system
+      types: [file]
+      pass_filenames: false
