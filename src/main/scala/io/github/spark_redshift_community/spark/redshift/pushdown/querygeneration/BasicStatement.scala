@@ -19,7 +19,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown.querygenerati
 
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
 import io.github.spark_redshift_community.spark.redshift.pushdown._
-import org.apache.spark.sql.catalyst.expressions.{And, Attribute, BinaryOperator, BitwiseAnd, BitwiseNot, BitwiseOr, BitwiseXor, CaseWhen, EqualNullSafe, EqualTo, Expression, IsNull, Literal, Or}
+import org.apache.spark.sql.catalyst.expressions.{And, Attribute, BinaryOperator, BitwiseAnd, BitwiseNot, BitwiseOr, BitwiseXor, EqualNullSafe, Expression, Literal, Or}
 import org.apache.spark.sql.types._
 
 import scala.language.postfixOps
@@ -65,11 +65,7 @@ private[querygeneration] object BasicStatement {
       case BitwiseOr(left, right) => null
       case BitwiseXor(left, right) => null
       case BitwiseNot(child) => null
-      // EqualNullSafe is similar to equalTo with special handling for null
-      // https://spark.apache.org/docs/1.6.0/api/java/org/apache/spark/sql/sources/EqualNullSafe.html
-      case EqualNullSafe(left, right) => convertStatement(CaseWhen(
-        Seq((Or(IsNull(left), IsNull(right)), And(IsNull(left), IsNull(right)))),
-        EqualTo(left, right)), fields)
+      case EqualNullSafe(left, right) => null
       case b: BinaryOperator =>
         blockStatement(
           convertStatement(b.left, fields) + b.symbol + convertStatement(
