@@ -56,6 +56,7 @@ class FilterPushdownSuite extends FunSuite {
       GreaterThan("test_double", 1000.0),
       LessThan("test_double", Double.MaxValue),
       GreaterThanOrEqual("test_float", 1.0f),
+      GreaterThanOrEqual("test_float", 1.0d),
       LessThanOrEqual("test_int", 43),
       IsNotNull("test_int"),
       IsNull("test_int"))
@@ -67,6 +68,7 @@ class FilterPushdownSuite extends FunSuite {
         |AND "test_string" = 'Unicode是樂趣'
         |AND "test_double" > 1000.0
         |AND "test_double" < 1.7976931348623157E308
+        |AND "test_float" >= 1.0::float4
         |AND "test_float" >= 1.0
         |AND "test_int" <= 43
         |AND "test_int" IS NOT NULL

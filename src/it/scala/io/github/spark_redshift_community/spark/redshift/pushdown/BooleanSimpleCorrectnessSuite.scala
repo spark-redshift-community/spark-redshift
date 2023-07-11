@@ -54,20 +54,21 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       |""".stripMargin
 
   test("child in list pushdown -v2") {
-    // "Column name" and result size
+    // "Column name", list in spark query, result size, list in pushdown
     val input = List(
-      ("testbyte", "(0,1)", 4),
-      ("testbool", "(true, false)", 3),
-      ("testdouble", "(0.0, 0.2)", 2),
-      ("testfloat", "(0.0, 0.5)", 1),
-      ("testint", "(42, 43)", 2),
-      ("testlong", "(1239012341823719, 1)", 4),
-      ("testshort", "(23, 24)", 2)
+      ("testbyte", "(0,1)", 4, "(0,1)"),
+      ("testbool", "(true, false)", 3, "(true, false)"),
+      ("testdouble", "(0.0, 0.2)", 2, "(0.0, 0.2)"),
+      ("testfloat", "(0.0, 0.5)", 1, "(0.0::float4, 0.5::float4)"),
+      ("testint", "(42, 43)", 2, "(42, 43)"),
+      ("testlong", "(1239012341823719, 1)", 4, "(1239012341823719, 1)"),
+      ("testshort", "(23, 24)", 2, "(23, 24)")
     )
     input.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
+      val pushdown_list = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name in $expected_res"""),
         Seq(Row(result_size)))
@@ -75,7 +76,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       checkSqlStatement(
 		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
            |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE "SUBQUERY_0"."$column_name" IN $expected_res )
+           |AS "SUBQUERY_0" WHERE "SUBQUERY_0"."$column_name" IN $pushdown_list )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
@@ -194,19 +195,20 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
   }
 
   test("child EqualTo pushdown", P1Test) {
-    // "Column name",match value and result size
+    // "Column name",match value, result size, needed cast
     val input = List(
-      ("testbyte", 0, 2),
-      ("testdouble", 1234152.12312498, 1),
-      ("testfloat", 1.0, 1),
-      ("testint", 42, 2),
-      ("testlong", 1239012341823719L, 4),
-      ("testshort", 23, 1)
+      ("testbyte", 0, 2, ""),
+      ("testdouble", 1234152.12312498, 1, ""),
+      ("testfloat", 1.0, 1, "::float4"),
+      ("testint", 42, 2, ""),
+      ("testlong", 1239012341823719L, 4, ""),
+      ("testshort", 23, 1, "")
     )
     input.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
+      val cast = test_case._4
         checkAnswer(
           sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name = $match_value """),
           Seq(Row(result_size)))
@@ -215,7 +217,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
              |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
              |AS "SUBQUERY_0"
              |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-             |AND ( "SUBQUERY_0"."$column_name" = $match_value ) ) )
+             |AND ( "SUBQUERY_0"."$column_name" = $match_value $cast ) ) )
              |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
@@ -275,7 +277,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
 		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
          |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
          |WHERE ( ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTFLOAT" = 1.0 ) ) ) AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+         |AND ( "SUBQUERY_0"."TESTFLOAT" = 1.0::float4 ) ) ) AS "SUBQUERY_1" LIMIT 1""".stripMargin)
   }
 
   test("child EqualTo pushdown (int different type)") {
@@ -342,19 +344,20 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
   }
 
   test("child NOT EqualTo pushdown", P1Test) {
-    // "Column name",match value and result size
+    // "Column name",match value, result size, needed cast
     val input = List(
-      ("testbyte", 0, 2),
-      ("testdouble", 1234152.12312498, 3),
-      ("testfloat", 1.0, 3),
-      ("testint", 42, 1),
-      ("testlong", 1239012341823719L, 0),
-      ("testshort", 23, 2)
+      ("testbyte", 0, 2, ""),
+      ("testdouble", 1234152.12312498, 3, ""),
+      ("testfloat", 1.0, 3, "::float4"),
+      ("testint", 42, 1, ""),
+      ("testlong", 1239012341823719L, 0, ""),
+      ("testshort", 23, 2, "")
     )
     input.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
+      val cast = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name != $match_value """),
         Seq(Row(result_size)))
@@ -363,7 +366,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
            |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" != $match_value ) ) ) AS "SUBQUERY_1" LIMIT 1
+           |AND ( "SUBQUERY_0"."$column_name" != $match_value $cast ) ) ) AS "SUBQUERY_1" LIMIT 1
            |""".stripMargin)
     })
   }
@@ -439,20 +442,21 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
   }
 
   test("child GreaterThanOrEqual pushdown", P1Test) {
-    // "Column name",match value and result size
+    // "Column name",match value, result size, needed cast
     val input = List(
-      ("testbyte", 0, 4),
-      ("testbool", true, 1),
-      ("testdouble", 1234152.12312498, 1),
-      ("testfloat", 1.0, 2),
-      ("testint", 42, 3),
-      ("testlong", 1239012341823719L, 4),
-      ("testshort", 23, 2)
+      ("testbyte", 0, 4, ""),
+      ("testbool", true, 1, ""),
+      ("testdouble", 1234152.12312498, 1, ""),
+      ("testfloat", 1.0, 2, "::float4"),
+      ("testint", 42, 3, ""),
+      ("testlong", 1239012341823719L, 4, ""),
+      ("testshort", 23, 2, "")
     )
     input.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
+      val cast = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $match_value """),
         Seq(Row(result_size)))
@@ -461,7 +465,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
            |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >= $match_value ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" >= $match_value $cast ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
@@ -493,20 +497,21 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
   }
 
   test("child LessThanOrEqual pushdown", P1Test) {
-    // "Column name",match value and result size
+    // "Column name",match value, result size, needed cast
     val input = List(
-      ("testbyte", 0, 2),
-      ("testbool", true, 3),
-      ("testdouble", 1234152.12312498, 4),
-      ("testfloat", 1.0, 3),
-      ("testint", 42, 2),
-      ("testlong", 1239012341823719L, 4),
-      ("testshort", 23, 2)
+      ("testbyte", 0, 2, ""),
+      ("testbool", true, 3, ""),
+      ("testdouble", 1234152.12312498, 4, ""),
+      ("testfloat", 1.0, 3, "::float4"),
+      ("testint", 42, 2, ""),
+      ("testlong", 1239012341823719L, 4, ""),
+      ("testshort", 23, 2, "")
     )
     input.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
+      val cast = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name <= $match_value """),
         Seq(Row(result_size)))
@@ -515,7 +520,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
            |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name"<= $match_value ) ) )
+           |AND ( "SUBQUERY_0"."$column_name"<= $match_value $cast ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
@@ -548,20 +553,21 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
   }
 
   test("child GreaterThan pushdown", P1Test) {
-    // "Column name",match value and result size
+    // "Column name",match value, result size, needed cast
     val input = List(
-      ("testbyte", 0, 2),
-      ("testbool", true, 0),
-      ("testdouble", 1234152.12312498, 0),
-      ("testfloat", 1.0, 1),
-      ("testint", 42, 1),
-      ("testlong", 1239012341823719L, 0),
-      ("testshort", 23, 1)
+      ("testbyte", 0, 2, ""),
+      ("testbool", true, 0, ""),
+      ("testdouble", 1234152.12312498, 0, ""),
+      ("testfloat", 1.0, 1, "::float4"),
+      ("testint", 42, 1, ""),
+      ("testlong", 1239012341823719L, 0, ""),
+      ("testshort", 23, 1, "")
     )
     input.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
+      val cast = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $match_value """),
         Seq(Row(result_size)))
@@ -570,7 +576,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
            |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" > $match_value ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" > $match_value $cast) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
@@ -602,20 +608,21 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
   }
 
   test("child LessThan pushdown", P1Test) {
-    // "Column name",match value and result size
+    // "Column name",match value, result size, needed cast
     val input = List(
-      ("testbyte", 0, 0),
-      ("testbool", true, 2),
-      ("testdouble", 1234152.12312498, 3),
-      ("testfloat", 1.0, 2),
-      ("testint", 42, 0),
-      ("testlong", 1239012341823719L, 0),
-      ("testshort", 23, 1)
+      ("testbyte", 0, 0, ""),
+      ("testbool", true, 2, ""),
+      ("testdouble", 1234152.12312498, 3, ""),
+      ("testfloat", 1.0, 2, "::float4"),
+      ("testint", 42, 0, ""),
+      ("testlong", 1239012341823719L, 0, ""),
+      ("testshort", 23, 1, "")
     )
     input.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
+      val cast = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name < $match_value """),
         Seq(Row(result_size)))
@@ -624,7 +631,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
            |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" < $match_value ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" < $match_value $cast ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }

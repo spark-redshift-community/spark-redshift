@@ -29,7 +29,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
          |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
          |WHERE ( ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTFLOAT" < 0.0 ) ) ) AS "SUBQUERY_1"
+         |AND ( "SUBQUERY_0"."TESTFLOAT" < 0.0::float4 ) ) ) AS "SUBQUERY_1"
          |""".stripMargin
     )
   }
@@ -65,7 +65,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
          |( TAN ( CAST ( "SUBQUERY_1"."TESTFLOAT" AS FLOAT8 ) ) ) AS "SUBQUERY_2_COL_5"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTFLOAT" < 0.0 ) ) ) AS "SUBQUERY_1"
+         |AND ( "SUBQUERY_0"."TESTFLOAT" < 0.0::float4 ) ) ) AS "SUBQUERY_1"
          |""".stripMargin
     )
   }
@@ -82,8 +82,8 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
 		expectedAnswerSpark3_2 = s"""SELECT ( SQRT ( CAST ( "SUBQUERY_1"."TESTFLOAT" AS FLOAT8 ) ) )
          |AS "SUBQUERY_2_COL_0" FROM ( SELECT *
          |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL ) AND ( ( "SUBQUERY_0"."TESTFLOAT" > 0.0 )
-         |AND ( "SUBQUERY_0"."TESTFLOAT" < 5.0 ) ) ) ) AS "SUBQUERY_1"
+         |WHERE ( ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL ) AND ( ( "SUBQUERY_0"."TESTFLOAT" > 0.0::float4 )
+         |AND ( "SUBQUERY_0"."TESTFLOAT" < 5.0::float4 ) ) ) ) AS "SUBQUERY_1"
          |""".stripMargin
     )
   }
@@ -98,12 +98,12 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( LOG ( CAST ( ( "SUBQUERY_1"."TESTFLOAT" * 100.0 )
+		expectedAnswerSpark3_2 = s"""SELECT ( LOG ( CAST ( ( "SUBQUERY_1"."TESTFLOAT" * 100.0::float4 )
          |AS FLOAT8 ) ) )
          |AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT *
          |FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-         |( ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL ) AND ( ( "SUBQUERY_0"."TESTFLOAT" > 0.0 )
-         |AND ( "SUBQUERY_0"."TESTFLOAT" < 5.0 ) ) ) ) AS "SUBQUERY_1"
+         |( ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL ) AND ( ( "SUBQUERY_0"."TESTFLOAT" > 0.0::float4 )
+         |AND ( "SUBQUERY_0"."TESTFLOAT" < 5.0::float4 ) ) ) ) AS "SUBQUERY_1"
          |""".stripMargin
     )
   }

@@ -93,7 +93,7 @@ private[querygeneration] object BasicStatement {
               case v: Long => LongVariable(Some(v)) !
               case v: Short => ShortVariable(Some(v)) !
               case v: Boolean => BooleanVariable(Some(v)) !
-              case v: Float => FloatVariable(Some(v)) !
+              case v: Float => FloatVariable(Some(v)) + "::float4"
               case v: Double => DoubleVariable(Some(v)) !
               case v: Byte => ByteVariable(Some(v)) !
               case _ => ConstantStringVal(l.value) !

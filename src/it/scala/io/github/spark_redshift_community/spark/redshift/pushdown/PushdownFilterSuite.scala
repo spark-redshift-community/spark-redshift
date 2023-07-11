@@ -304,7 +304,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
          |AS "SUBQUERY_0" WHERE ( ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL ) )
          |AND ( ( "SUBQUERY_0"."TESTSTRING" != \\'asdf\\' )
-         |AND ( "SUBQUERY_0"."TESTFLOAT" <= 0.0 ) ) ) ) AS "SUBQUERY_1"
+         |AND ( "SUBQUERY_0"."TESTFLOAT" <= 0.0::float4 ) ) ) ) AS "SUBQUERY_1"
          |""".stripMargin
     )
   }
@@ -385,7 +385,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
        |WHERE((("SUBQUERY_0"."TESTDATE"ISNOTNULL)AND
        |("SUBQUERY_0"."TESTFLOAT"ISNOTNULL))AND
        |(("SUBQUERY_0"."TESTDATE"=DATEADD(day,16619,TO_DATE(\\'1970-01-01\\',\\'YYYY-MM-DD\\')))
-       |AND("SUBQUERY_0"."TESTFLOAT"=-1.0))))AS"SUBQUERY_1"""".stripMargin
+       |AND("SUBQUERY_0"."TESTFLOAT"=-1.0::float4))))AS"SUBQUERY_1"""".stripMargin
   )
 
   val testAnd2: TestCase = TestCase(
