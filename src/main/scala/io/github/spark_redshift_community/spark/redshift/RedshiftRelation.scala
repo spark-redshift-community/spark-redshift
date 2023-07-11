@@ -66,7 +66,7 @@ private[redshift] case class RedshiftRelation(
     userSchema.getOrElse {
       val tableNameOrSubquery =
         params.query.map(q => s"($q)").orElse(params.table.map(_.toString)).get
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
+      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
       try {
         jdbcWrapper.resolveTable(conn, tableNameOrSubquery, Some(params))
       } finally {
@@ -109,7 +109,7 @@ private[redshift] case class RedshiftRelation(
       // rather than unloading data.
       val whereClause = FilterPushdown.buildWhereClause(schema, filters)
       val countQuery = s"SELECT count(*) FROM $tableNameOrSubquery $whereClause"
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
+      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
       try {
         val results = jdbcWrapper.executeQueryInterruptibly(conn.prepareStatement(countQuery))
         if (results.next()) {
@@ -130,7 +130,7 @@ private[redshift] case class RedshiftRelation(
       // Unload data from Redshift into a temporary directory in S3:
       val tempDir = params.createPerQueryTempDir()
       val unloadSql = buildUnloadStmt(requiredColumns, filters, tempDir, creds, params.sseKmsKey)
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
+      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
       try {
         jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
       } finally {
@@ -242,7 +242,7 @@ private[redshift] case class RedshiftRelation(
   // Type can be InternalRow to comply with SparkPlan's doExecute().
   def buildScanFromSQL[Row](statement: RedshiftSQLStatement,
                                     schema: Option[StructType]): RDD[Row] = {
-    val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
+    val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
 
     val (resultSchema, tempDir) = try {

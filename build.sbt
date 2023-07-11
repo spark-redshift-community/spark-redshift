@@ -129,6 +129,9 @@ lazy val root = Project("spark-redshift", file("."))
 
       "com.amazon.redshift" % "redshift-jdbc42" % testJDBCVersion % "provided",
 
+      "com.amazonaws.secretsmanager" % "aws-secretsmanager-jdbc" % "1.0.12" % "provided" excludeAll
+      (ExclusionRule(organization = "com.fasterxml.jackson.core")),
+
       "com.amazonaws" % "aws-java-sdk" % testAWSJavaSDKVersion % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core")),
 

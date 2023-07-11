@@ -522,6 +522,18 @@ The parameter map or <tt>OPTIONS</tt> provided in Spark SQL supports the followi
     <td>No default</td>
     <td>The Redshift password.  Must be used in tandem with <tt>user</tt> option.  May only be used if the user and password are not passed in the URL; passing both will result in an error.</td>
  </tr>
+<tr> 
+    <td><tt>secret.id</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td> The Name or ARN of your secret. May only be used if the user, password and DbUser are not passed in the URL or as options.</td>
+</tr>
+<tr> 
+    <td><tt>secret.region</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>The AWS region (e.g., 'us-east-1') where your secret resides. Required when using a name instead of an ARN for <tt>secret.id</tt>. </td>
+</tr>
  <tr>
     <td><tt>url</tt></td>
     <td>Yes</td>
