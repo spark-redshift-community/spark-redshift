@@ -57,7 +57,8 @@ private[querygeneration] object AggregationStatement {
                 "MIN(Boolean) is not defined in redshift",
                 true
               )
-            case _: Count | _: Max | _: Min | _: Sum =>
+            case _: Count | _: Max | _: Min | _: Sum | _: StddevSamp | _: StddevPop |
+                 _: VariancePop | _: VarianceSamp =>
               ConstantString(agg_fun.prettyName.toUpperCase) +
                 blockStatement(
                   distinct + convertStatements(fields, agg_fun.children: _*)
