@@ -307,15 +307,6 @@ private[redshift] object Utils {
   }
 
   /**
-   * Retrieve just the microsecond portion of a timestamp
-   * @param timestamp a timestamp
-   * @return Long microseconds in a timestamp
-   */
-  def getMicrosFromTimestamp(timestamp: Timestamp): Long = {
-    timestamp.getNanos / 1000L % 1000L
-  }
-
-  /**
    * Perform a block until it succeeds or retry count reaches zero.
    * Success is determined by whether the passed block throws
    * an exception or not. If the block is not successful and retry count

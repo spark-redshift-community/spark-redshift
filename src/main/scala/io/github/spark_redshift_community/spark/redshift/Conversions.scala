@@ -21,7 +21,7 @@ import java.sql.{Date, Timestamp}
 import java.text.{DecimalFormat, DecimalFormatSymbols, SimpleDateFormat}
 import java.time.{DateTimeException, LocalDateTime, ZoneId, ZonedDateTime}
 import java.time.format.DateTimeFormatter
-import java.util.{Locale, TimeZone}
+import java.util.Locale
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.GenericRow
@@ -170,6 +170,8 @@ private[redshift] object Conversions {
                              overrideNullable: Boolean): Any = {
     dataType match {
       case _ if overrideNullable && from!= null && from.toString.isEmpty => null
+       // Redshift does not have a cast for single byte so it will be received as a string
+      case ByteType if from != null => java.lang.Byte.parseByte(from.asInstanceOf[String])
       case DoubleType if from!= null => from.asInstanceOf[Number].doubleValue
       case FloatType if from!= null => from.asInstanceOf[Number].floatValue
       case IntegerType if from!=null => from.asInstanceOf[Number].intValue
@@ -188,43 +190,50 @@ private[redshift] object Conversions {
         // is the null literal instead of the null value (i.e., "null" versus null).
         // Therefore, we do the conversion here to workaround the Redshift limitation.
         if (from == null && redshiftType == "super") {
-          org.apache.spark.unsafe.types.UTF8String.fromString("null")
+          "null"
         } else if (from != null && redshiftType == "bpchar") {
           org.apache.spark.unsafe.types.UTF8String.fromString(
-            from.asInstanceOf[String]).trimRight()
+            from.asInstanceOf[String]).trimRight().toString
         } else {
-          org.apache.spark.unsafe.types.UTF8String.fromString(
-            from.asInstanceOf[String])
+            from.asInstanceOf[String]
         }
 
-      // For date or timestamp without time zone, as it does not have time zone information,
-      // when reading unloaded data from PARQUET format, it can always be treated as datetime in
-      // local time zone.
-      // For timestamp with time zone, when Redshift unloading timestamptz to PARQUET, it will be
-      // converted into timestamp in UTC, so when reading unloaded data back, it should be
-      // converted back to Spark local time zone.
+      // When Redshift TIMESTAMPTZ fields are unloaded from Redshift in Parquet, Redshift
+      // will always convert the timestamps to UTC prior to unloading as Parquet. This is
+      // correct behavior by Redshift as Parquet only supports UTC timezones. For this case,
+      // we can load these unloaded values directly into Java Timestamps as the constructor
+      // also assumes UTC-relative timestamp values. In contrast, when Redshift TIMESTAMP fields
+      // (i.e., no timezone) are unloaded from Redshift, Redshift will not do any conversion and the
+      // times will be non-instant times and relative. Unfortunately, Spark does not have a
+      // corresponding relative timestamp type. Instead, it supports the TimestampType which is an
+      // instant type with a timezone. Therefore, the connector must make an assumption here as
+      // there is simply not enough information in the data. For handling this case, the connector
+      // assumes any relative timestamps are relative to the local timezone where the connector is
+      // running. Note that if this is not correct, the user can set the spark local timezone to
+      // match the data since the connector always uses the local timezone to convert any relative
+      // timestamp data.
       case DateType if from!=null && from.isInstanceOf[Timestamp] =>
-        DateTimeUtils.microsToDays(
-          from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS,
-          ZoneId.of("UTC"))
+        DateTimeUtils.toJavaDate(
+          DateTimeUtils.microsToDays(
+            from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS,
+            ZoneId.of("UTC"))
+        )
       case DateType if from!=null && from.isInstanceOf[Date] =>
-        DateTimeUtils.microsToDays(
-          from.asInstanceOf[Date].getTime * DateTimeConstants.MICROS_PER_MILLIS,
-          ZoneId.of("UTC"))
+        DateTimeUtils.toJavaDate(
+          DateTimeUtils.microsToDays(
+            from.asInstanceOf[Date].getTime * DateTimeConstants.MICROS_PER_MILLIS,
+            ZoneId.of("UTC"))
+        )
       case TimestampType if from!=null && from.isInstanceOf[Timestamp] =>
-        val millisecondTime = if (redshiftType == "timestamptz") {
-          val tz: ZoneId = ZoneId.systemDefault()
-          Timestamp.from(
-            DateTimeUtils.microsToInstant(
-            from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS)
-            .atZone(tz).toInstant).getTime * DateTimeConstants.MICROS_PER_MILLIS
-        } else Timestamp
-          .valueOf(
+        if (redshiftType == "timestamptz") {
+          from.asInstanceOf[Timestamp]
+        } else {
+          Timestamp.valueOf(
             DateTimeUtils.microsToLocalDateTime(
-              from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS)
+              DateTimeUtils.instantToMicros(from.asInstanceOf[Timestamp].toInstant)
+            )
           )
-          .getTime * DateTimeConstants.MICROS_PER_MILLIS
-        millisecondTime + Utils.getMicrosFromTimestamp(from.asInstanceOf[Timestamp])
+        }
       case _ => from
     }
   }

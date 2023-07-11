@@ -84,11 +84,16 @@ private[redshift] object FilterPushdown {
     }
 
     filter match {
-      case EqualTo(attr, value) => buildComparison(attr, value, "=", escapeQuote)
-      case LessThan(attr, value) => buildComparison(attr, value, "<", escapeQuote)
-      case GreaterThan(attr, value) => buildComparison(attr, value, ">", escapeQuote)
-      case LessThanOrEqual(attr, value) => buildComparison(attr, value, "<=", escapeQuote)
-      case GreaterThanOrEqual(attr, value) => buildComparison(attr, value, ">=", escapeQuote)
+      case EqualTo(attr, value) if !attributeIsComplexDatatype(schema, attr) =>
+        buildComparison(attr, value, "=", escapeQuote)
+      case LessThan(attr, value) if !attributeIsComplexDatatype(schema, attr) =>
+        buildComparison(attr, value, "<", escapeQuote)
+      case GreaterThan(attr, value) if !attributeIsComplexDatatype(schema, attr) =>
+        buildComparison(attr, value, ">", escapeQuote)
+      case LessThanOrEqual(attr, value) if !attributeIsComplexDatatype(schema, attr) =>
+        buildComparison(attr, value, "<=", escapeQuote)
+      case GreaterThanOrEqual(attr, value) if !attributeIsComplexDatatype(schema, attr) =>
+        buildComparison(attr, value, ">=", escapeQuote)
       case IsNotNull(attr) =>
         getTypeForAttribute(schema, attr).map(dataType => s""""$attr" IS NOT NULL""")
       case IsNull(attr) =>
@@ -106,6 +111,13 @@ private[redshift] object FilterPushdown {
       Some(schema(attribute).dataType)
     } else {
       None
+    }
+  }
+
+  private def attributeIsComplexDatatype(schema: StructType, attribute: String) : Boolean = {
+    getTypeForAttribute(schema, attribute) match {
+      case Some(_ : StructType) | Some(_ : MapType) | Some(_ : ArrayType) => true
+      case _ => false
     }
   }
 }

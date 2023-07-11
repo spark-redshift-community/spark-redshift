@@ -67,6 +67,14 @@ private[querygeneration] object MiscStatement {
                 ConstantString("CASE") +
                   convertStatement(child, fields) +
                   ConstantString("WHEN TRUE THEN 'true' WHEN FALSE THEN 'false' ELSE 'null' END")
+              // casting complex types does not work in redshift
+              case (_: StructType | _: MapType | _: ArrayType, _) =>
+                throw new RedshiftPushdownUnsupportedException(
+                  RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_CONVERSION,
+                  s"Converting complex datatype ${child.dataType} to ${t} is not supported",
+                  "",
+                  false
+                )
               case _ =>
                 ConstantString("CAST") +
                   blockStatement(convertStatement(child, fields) + "AS" + cast)
