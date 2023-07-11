@@ -884,6 +884,78 @@ By default, query results are unloaded to S3 as Parquet files. There is an optio
 
 Refer to integration test cases for supported operations for pushdown.
 
+## Schema for redshift super columns of complex types (Struct, Map, Array)
+
+By default, query results which include a super column will provide the super column as a string.
+However if the schema of the super column is known ahead of time it can be provided as part of the read
+and the column will be returned as the provided schema type. This will also enable the pushdown of operations
+such as getting a struct field, getting a map value by key, or getting the item at an array index. In the case of
+a table with a super containing a struct created like:
+
+```sql
+create table contains_super (a super);
+```
+
+The connector can be used to query a StringType field `hello` from the super column `a` in the table using a schema like:
+
+```scala
+import org.apache.spark.sql.types._
+
+val sc = // existing SparkContext
+val sqlContext = new SQLContext(sc)
+
+val schema = StructType(StructField("a", StructType(StructField("hello", StringType) ::Nil)) :: Nil)
+
+val helloDF = sqlContext.read
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("url", jdbcURL )
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "contains_super")
+  .schema(schema)
+  .load().selectExpr("a.hello")
+```
+
+If the column `a` might be better represented as a map
+(it only has keys corresponding to values where all the values are of the same type like String -> Int)
+then a MapType can be provided as the schema and the value of a map's key `'hello'` can be queried like:
+
+```scala
+import org.apache.spark.sql.types._
+
+val sc = // existing SparkContext
+val sqlContext = new SQLContext(sc)
+
+val schema = StructType(StructField("a", MapType(StringType, IntegerType))::Nil)
+
+val helloDF = sqlContext.read
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("url", jdbcURL )
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "contains_super")
+  .schema(schema)
+  .load().selectExpr("a['hello']")
+```
+
+If the column `a` contained an array instead of a struct, the connector could be used to query for the first element in that array like:
+
+```scala
+import org.apache.spark.sql.types._
+
+val sc = // existing SparkContext
+val sqlContext = new SQLContext(sc)
+
+val schema = StructType(StructField("a", ArrayType(IntegerType)):: Nil)
+
+val helloDF = sqlContext.read
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("url", jdbcURL )
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "contains_super")
+  .schema(schema)
+  .load().selectExpr("a[0]")
+```
+
+
 #### Acknowledgments
 Auto Pushdown is adapted from **[spark-snowflake connector](https://github.com/snowflakedb/spark-snowflake)** project.
 

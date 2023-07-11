@@ -27,11 +27,11 @@ import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper.Data
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_OVERRIDE_NULLABLE}
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftSQLStatement, SqlToS3TempCache}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.functions.{col, from_json}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
+import org.apache.spark.sql.{Column, DataFrame, Row, SQLContext, SaveMode}
 import org.slf4j.LoggerFactory
 
 import java.io.InputStreamReader
@@ -307,14 +307,51 @@ private[redshift] case class RedshiftRelation(
     Some(newTempDir)
   }
 
+  /**
+   * Copy the inputSchema but replace any fields of StructType, ArrayType, or MapType
+   * with otherwise identical fields that are of StringType. Retains name, nullability and metadata.
+   * @param inputSchema schema to modify
+   * @return Copied schema with complex types replaced with string types
+   */
+  private def convertComplexTypesToString(inputSchema: StructType): StructType = {
+    StructType(inputSchema.map(field => field.dataType match {
+      case _: StructType | _: ArrayType |
+           _: MapType => StructField(field.name, StringType, field.nullable, field.metadata)
+      case _ => field
+    }))
+  }
+
+  /**
+   * Convert a schema to a mapping of field/column names to a projection of the column of
+   * the same name passed to the from_json function along with its datatype for fields of
+   * StructType, ArrayType, or MapType. This mapping can be passed to dataframe.withColumns
+   * to add these projections as columns to the dataframe.
+   * @param inputSchema schema to convert to a mapping
+   * @return A mapping of column names to their projection
+   */
+  private def mapComplexTypesToJson(inputSchema: StructType): Map[String, Column] = {
+    inputSchema.fields.filter({field => field.dataType match {
+        case _ : StructType | _: ArrayType | _: MapType => true
+        case _ => false
+      }
+    }).map({field => (field.name -> from_json(col(field.name), field.dataType))}).toMap
+  }
+
   private def readRDD[T](resultSchema: StructType, filesToRead: Seq[String]): RDD[T] = {
-    sqlContext.read
+    // convert complex types to string types since they are loaded from redshift as json
+    // This is also necessary to use the from_json function as it only works on strings
+    val modifiedSchema = convertComplexTypesToString(resultSchema)
+
+    val dataFrame = sqlContext.read
       .format(classOf[RedshiftFileFormat].getName)
-      .schema(resultSchema)
+      .schema(modifiedSchema)
       .option("nullString", params.nullString)
       .option(PARAM_OVERRIDE_NULLABLE, params.overrideNullable)
       .load(filesToRead: _*)
-      .queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]
+
+    val mapping = mapComplexTypesToJson(resultSchema)
+
+    dataFrame.withColumns(mapping).queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]
   }
 
   private def readRDDFromParquet[T](resultSchema: StructType, filesToRead: Seq[String]): RDD[T] = {
@@ -322,23 +359,28 @@ private[redshift] case class RedshiftRelation(
     val reader = sqlContext.read
       .format("parquet")
 
-    if (filesToRead.isEmpty) reader.schema(resultSchema)
+    // convert complex types to string types since they are loaded from redshift as json
+    // This is also necessary to use the from_json function as it only works on strings
+    val modifiedSchema = convertComplexTypesToString(resultSchema)
+    val mapping = mapComplexTypesToJson(resultSchema)
+
+    if (filesToRead.isEmpty) reader.schema(modifiedSchema)
     // cannot pass params.overrideNullable directly as it results in unserializable task
     val overrideNullable = params.overrideNullable
 
-    reader.load(filesToRead: _*)
-      .rdd
-      .map{row =>
-        val typeConvertedRow = row.toSeq.zipWithIndex.map {
-          case (f, i) =>
-            parquetDataTypeConvert(f, resultSchema.fields(i).dataType,
-              if (resultSchema.fields(i).metadata.contains("redshift_type")) {
-                resultSchema.fields(i).metadata.getString("redshift_type")
-              } else null, overrideNullable)
-        }
-        InternalRow(typeConvertedRow: _*)
+    val encoder = RowEncoder(modifiedSchema)
+    val data = reader.load(filesToRead: _*).map({row: Row =>
+      val typeConvertedRow = row.toSeq.zipWithIndex.map {
+        case (f, i) =>
+          parquetDataTypeConvert(f, modifiedSchema.fields(i).dataType,
+            if (modifiedSchema.fields(i).metadata.contains("redshift_type")) {
+              modifiedSchema.fields(i).metadata.getString("redshift_type")
+            } else null, overrideNullable)
       }
-      .asInstanceOf[RDD[T]]
+      Row(typeConvertedRow: _*)
+    }, encoder).withColumns(mapping).queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]
+
+    data
   }
 
   // Read the MANIFEST file to get the list of S3 part files that were written by Redshift.
