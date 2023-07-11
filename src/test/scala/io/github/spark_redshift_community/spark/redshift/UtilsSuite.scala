@@ -137,6 +137,26 @@ class UtilsSuite extends FunSuite with Matchers {
     Utils.getMicrosFromTimestamp(Timestamp.valueOf("1970-01-01 00:00:00.000001")) shouldBe 1L
   }
 
+  test("retry calls block correct number of times with correct delay") {
+    val timeToSleep = 100
+    var timesCalled = 0
+    val startTime = System.currentTimeMillis()
+
+    try {
+      Utils.retry(1, timeToSleep) {
+        timesCalled += 1
+        throw new Exception("Failure")
+      }
+    } catch {
+      case exception: Exception => assert(exception.getMessage == "Failure")
+    }
+    val timeTaken = System.currentTimeMillis() - startTime
+
+    assert(timesCalled == 2)
+    // check that at least timeToSleep passed but allow for slightly longer
+    assert(timeTaken > timeToSleep && timeTaken < timeToSleep + 50)
+  }
+
   val fakeCredentials: Map[String, String] = Map[String, String](
     "forward_spark_s3_credentials" -> "true",
     "legacy_jdbc_real_type_mapping" -> "false"

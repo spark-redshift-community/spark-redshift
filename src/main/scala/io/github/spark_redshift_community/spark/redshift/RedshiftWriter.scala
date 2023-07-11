@@ -18,8 +18,8 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.AWSCredentialsProvider
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_COPY_DELAY}
 import com.amazonaws.services.s3.AmazonS3
-import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
@@ -396,35 +396,45 @@ private[redshift] class RedshiftWriter(
       tempDir = params.createPerQueryTempDir(),
       tempFormat = params.tempFormat,
       nullString = params.nullString)
-    val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
-    conn.setAutoCommit(false)
-    try {
-      val table: TableName = params.table.get
-      if (saveMode == SaveMode.Overwrite) {
-        // Overwrites must drop the table in case there has been a schema update
-        jdbcWrapper.executeInterruptibly(conn.prepareStatement(s"DROP TABLE IF EXISTS $table;"))
-        if (!params.useStagingTable) {
-          // If we're not using a staging table, commit now so that Redshift doesn't have to
-          // maintain a snapshot of the old table during the COPY; this sacrifices atomicity for
-          // performance.
-          conn.commit()
+
+    // Uncertain if this is necessary as s3 is now strongly consistent
+    // https://aws.amazon.com/s3/consistency/
+    if (params.parameters(PARAM_COPY_DELAY).toLong > 0) {
+      log.info(s"Sleeping ${params.copyDelay} milliseconds before proceeding to redshift copy")
+      Thread.sleep(params.copyDelay)
+    }
+
+    Utils.retry(params.copyRetryCount, params.copyDelay) {
+      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
+      conn.setAutoCommit(false)
+      try {
+        val table: TableName = params.table.get
+        if (saveMode == SaveMode.Overwrite) {
+          // Overwrites must drop the table in case there has been a schema update
+          jdbcWrapper.executeInterruptibly(conn.prepareStatement(s"DROP TABLE IF EXISTS $table;"))
+          if (!params.useStagingTable) {
+            // If we're not using a staging table, commit now so that Redshift doesn't have to
+            // maintain a snapshot of the old table during the COPY; this sacrifices atomicity for
+            // performance.
+            conn.commit()
+          }
         }
+        log.info(s"Loading new Redshift data to: $table")
+        doRedshiftLoad(conn, data, params, creds, manifestUrl)
+        conn.commit()
+      } catch {
+        case NonFatal(e) =>
+          try {
+            log.error("Exception thrown during Redshift load; will roll back transaction", e)
+            conn.rollback()
+          } catch {
+            case NonFatal(e2) =>
+              log.error("Exception while rolling back transaction", e2)
+          }
+          throw e
+      } finally {
+        conn.close()
       }
-      log.info(s"Loading new Redshift data to: $table")
-      doRedshiftLoad(conn, data, params, creds, manifestUrl)
-      conn.commit()
-    } catch {
-      case NonFatal(e) =>
-        try {
-          log.error("Exception thrown during Redshift load; will roll back transaction", e)
-          conn.rollback()
-        } catch {
-          case NonFatal(e2) =>
-            log.error("Exception while rolling back transaction", e2)
-        }
-        throw e
-    } finally {
-      conn.close()
     }
   }
 }

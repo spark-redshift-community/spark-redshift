@@ -31,6 +31,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.net.URI
 import java.sql.Timestamp
 import java.util.UUID
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
@@ -309,5 +310,33 @@ private[redshift] object Utils {
    */
   def getMicrosFromTimestamp(timestamp: Timestamp): Long = {
     timestamp.getNanos / 1000L % 1000L
+  }
+
+  /**
+   * Perform a block until it succeeds or retry count reaches zero.
+   * Success is determined by whether the passed block throws
+   * an exception or not. If the block is not successful and retry count
+   * is zero this function will throw the last exception thrown while attempting the passed block.
+   * @param count Number of times to attempt the block
+   * @param delay Milliseconds to wait between attempts
+   * @param retryBlock Block to execute
+   * @tparam T Return type of the passed block
+   * @return Result of the blocks successful execution
+   */
+  @tailrec
+  def retry[T](count: Int, delay: Long)(retryBlock: => T): T = {
+    try {
+     retryBlock
+    } catch {
+      case e: Throwable => {
+        if (count <= 0) {
+          throw e
+        }
+        log.warn(s"Sleeping $delay milliseconds before proceeding to retry redshift operation;" +
+          s" $count retries remain")
+        Thread.sleep(delay)
+        retry(count - 1, delay)(retryBlock)
+      }
+    }
   }
 }

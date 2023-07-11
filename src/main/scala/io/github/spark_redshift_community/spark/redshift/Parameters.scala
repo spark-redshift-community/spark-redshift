@@ -31,6 +31,8 @@ private[redshift] object Parameters {
   val PARAM_AUTO_PUSHDOWN: String = "autopushdown"
   val PARAM_PUSHDOWN_S3_RESULT_CACHE: String = "autopushdown.s3_result_cache"
   val PARAM_UNLOAD_S3_FORMAT: String = "unload_s3_format"
+  val PARAM_COPY_RETRY_COUNT: String = "copyretrycount"
+  val PARAM_COPY_DELAY: String = "copydelay"
   val PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING: String = "legacy_jdbc_real_type_mapping"
   val PARAM_TEMPDIR_REGION: String = "tempdir_region"
 
@@ -54,11 +56,14 @@ private[redshift] object Parameters {
     PARAM_AUTO_PUSHDOWN -> "true",
     PARAM_PUSHDOWN_S3_RESULT_CACHE -> "false",
     PARAM_UNLOAD_S3_FORMAT -> "PARQUET", // values: PARQUET, TEXT
+    PARAM_COPY_RETRY_COUNT -> "2",
+    PARAM_COPY_DELAY -> "0",
     PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
     PARAM_TEMPDIR_REGION -> ""
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
+  val DEFAULT_RETRY_DELAY: Long = 30000
 
   /**
    * Merge user parameters with the defaults, preferring user parameters if specified
@@ -342,6 +347,22 @@ private[redshift] object Parameters {
     def autoPushdown: Boolean = parameters(PARAM_AUTO_PUSHDOWN).toBoolean
     def pushdownS3ResultCache: Boolean = parameters(PARAM_PUSHDOWN_S3_RESULT_CACHE).toBoolean
     def unloadS3Format: String = parameters(PARAM_UNLOAD_S3_FORMAT).toUpperCase
+
+    /**
+     * Number of times to retry redshift copy
+     * @return Int
+     */
+    def copyRetryCount : Int = parameters(PARAM_COPY_RETRY_COUNT).toInt
+
+    /**
+     * Milliseconds to sleep between copy retry attempts.
+     * Negative and zero values are treated as 30s.
+     * @return Long
+     */
+    def copyDelay : Long = {
+      val configuredValue = parameters(PARAM_COPY_DELAY).toLong
+      if (configuredValue > 0) configuredValue else DEFAULT_RETRY_DELAY
+    }
 
     /**
      * Enables the use of doubles for real to support legacy applications

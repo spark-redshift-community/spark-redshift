@@ -769,6 +769,18 @@ for more information.</p>
         A complete list of possible options may be seen in the <a href="https://docs.aws.amazon.com/redshift/latest/dg/r_UNLOAD.html">Redshift docs</a> though not all are guaranteed to work and may conflict with other options set in the connector resulting in exceptions.
     </td>
 </tr>
+<tr>
+<td><tt>copyretrycount</tt></td>
+<td>No</td>
+<td>2</td>
+<td>Number of times to retry a copy operation including dropping and creating any required table before failing.</td>
+</tr>
+<tr>
+<td><tt>copydelay</tt></td>
+<td>No</td>
+<td>30000</td>
+<td>Number of milliseconds to wait between retrying copy operations. Non-positive values will be treated as 30 seconds.</td>
+</tr>
 </table>
 
 ## Additional configuration options
