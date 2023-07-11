@@ -18,8 +18,6 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import io.github.spark_redshift_community.spark.redshift.Parameters.{DEFAULT_PARAMETERS, PARAM_OVERRIDE_NULLABLE}
-
-import java.net.URI
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
 import org.apache.hadoop.mapreduce._
@@ -31,6 +29,8 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.types._
+
+import java.net.URI
 
 /**
  * Internal data source used for reading Redshift UNLOAD files.

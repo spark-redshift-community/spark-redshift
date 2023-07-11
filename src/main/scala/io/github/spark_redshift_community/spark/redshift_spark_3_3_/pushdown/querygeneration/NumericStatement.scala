@@ -69,7 +69,7 @@ private[querygeneration] object NumericStatement {
       case PromotePrecision(child) => convertStatement(child, fields)
 
       case CheckOverflow(child, t, _) =>
-        MiscStatement.getCastType(t) match {
+        getCastType(t) match {
           case Some(cast) =>
             ConstantString("CAST") +
               blockStatement(convertStatement(child, fields) + "AS" + cast)

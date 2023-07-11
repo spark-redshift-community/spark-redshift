@@ -231,7 +231,14 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
              |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
              |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
              |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
-             |""".stripMargin)
+             |""".stripMargin,
+          s"""SELECT ( EXP ( CAST ( ( CAST ( "SUBQUERY_1"."TESTBYTE" AS DECIMAL(10, 0) )
+              |- $add_on ) AS FLOAT8 ) ) ) AS "SUBQUERY_2_COL_0"
+              |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+              |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
+              |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
+              |""".stripMargin // spark 3.4 casts to Decimal(10, 0) in all of these cases
+      )
     })
   }
 

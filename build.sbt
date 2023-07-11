@@ -26,7 +26,7 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
-val sparkVersion = "3.3.2"
+val sparkVersion = "3.4.0"
 val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
@@ -44,6 +44,13 @@ val internalReleaseRepoPass = sys.props.get("ci.internalTeamMvnPassword").getOrE
 // remove the PATCH portion of the spark version number for use in release binary
 // e.g. MAJOR.MINOR.PATCH => MAJOR.MINOR
 val releaseSparkVersion = testSparkVersion.substring(0, testSparkVersion.lastIndexOf("."))
+
+def incompatibleSparkVersions(): FileFilter = {
+  val versionArray = testSparkVersion.split("""\.""").map(Integer.parseInt)
+  val major = versionArray(0)
+  val minor = versionArray(1)
+  ("*_spark_*_*_*" -- s"*_spark_${major}_${minor}_*")
+}
 
 def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
   if (condition) {
@@ -110,6 +117,7 @@ lazy val root = Project("spark-redshift", file("."))
   .settings(Defaults.itSettings: _*)
   .settings(ciPipelineSettings(isCI))
   .settings(
+    excludeFilter in unmanagedSources := HiddenFileFilter || incompatibleSparkVersions(),
     name := "spark-redshift",
     version += s"-spark_${releaseSparkVersion}",
     organization := "io.github.spark-redshift-community",

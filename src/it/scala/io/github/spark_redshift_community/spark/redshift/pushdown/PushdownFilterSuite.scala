@@ -953,6 +953,14 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
        |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
        |AS"SUBQUERY_2"""".stripMargin,
+    s"""SELECT ( "SUBQUERY_2"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_3_COL_0" FROM
+       |( SELECT * FROM ( SELECT
+       |( ( CAST ( "SUBQUERY_0"."TESTLONG" AS DECIMAL(20, 0) )
+       |- 9223372036854775808 ) ) AS "SUBQUERY_1_COL_0" ,
+       |( "SUBQUERY_0"."TESTLONG" ) AS "SUBQUERY_1_COL_1"
+       |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+       |AS "SUBQUERY_0" ) AS "SUBQUERY_1" ORDER BY
+       |( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) ASC NULLS LAST ) AS "SUBQUERY_2"""".stripMargin
   )
 
   val testBinarySubtract12: TestCase = TestCase(

@@ -18,7 +18,7 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, NamedExpression}
-import org.apache.spark.sql.types.MetadataBuilder
+import org.apache.spark.sql.types._
 import org.slf4j.LoggerFactory
 
 import scala.language.postfixOps
@@ -182,4 +182,25 @@ package object querygeneration {
   final def mkStatement(seq: Seq[RedshiftSQLStatement],
                         delimiter: String): RedshiftSQLStatement =
     mkStatement(seq, ConstantString(delimiter) !)
+
+
+  /** Attempts a best effort conversion from a SparkType
+   * to a Redshift type to be used in a Cast.
+   */
+  private[querygeneration] final def getCastType(t: DataType): Option[String] =
+    Option(t match {
+      case StringType => "VARCHAR"
+      case BinaryType => "VARBINARY"
+      case DateType => "DATE"
+      case TimestampType => "TIMESTAMP"
+      case d: DecimalType =>
+        "DECIMAL(" + d.precision + ", " + d.scale + ")"
+      case IntegerType => "INTEGER"
+      case LongType => "BIGINT"
+      case FloatType => "FLOAT4"
+      case DoubleType => "FLOAT8"
+      case ShortType => "SMALLINT"
+      case BooleanType => "BOOLEAN"
+      case _ => null
+    })
 }
