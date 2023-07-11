@@ -253,6 +253,37 @@ private[redshift] object Utils {
     }
   }
 
+  /**
+   * Performs the same check as checkRedshiftAndS3OnSameRegion but ignores the tempdir_region
+   * since when parquet is used as the copy format, the region copy option is not available.
+   * In addition if the check is failed throw an exception to prevent execution. This stricter
+   * check is only applicable when using the connector to write.
+   * @param params parameters configured on the connector
+   * @param s3Client S3 client to use when getting the s3 bucket region
+   */
+  def checkRedshiftAndS3OnSameRegionParquetWrite
+  (params: MergedParameters, s3Client: AmazonS3): Unit = {
+    val redshiftRegion = Utils.getRegionForRedshiftCluster(params.jdbcUrl)
+    if (redshiftRegion.isEmpty) {
+      log.warn("Unable to determine region for redshift cluster, copy may fail if " +
+        "S3 bucket region does not match redshift cluster region.")
+      return
+    }
+    val s3Region = Utils.getRegionForS3Bucket(params.rootTempDir, s3Client)
+    if (s3Region.isEmpty) {
+      log.warn("Unable to determine region for S3 bucket, copy may fail if redshift cluster" +
+        " region does not match S3 bucket region.")
+      return
+    }
+    if (redshiftRegion.get != s3Region.get) {
+      log.error("The Redshift cluster and S3 bucket are in different regions " +
+        s"($redshiftRegion and $s3Region, respectively). Cross-region copy operation is not " +
+        "available when tempformat is set to parquet")
+      throw new IllegalArgumentException("Redshift cluster and S3 bucket are in different " +
+        "regions when tempformat is set to parquet")
+    }
+  }
+
   def getDefaultTempDirRegion(tempDirRegion: Option[String]): Regions = {
     // If the user provided a region, use it above everything else.
     if (tempDirRegion.isDefined) return Regions.fromName(tempDirRegion.get)
