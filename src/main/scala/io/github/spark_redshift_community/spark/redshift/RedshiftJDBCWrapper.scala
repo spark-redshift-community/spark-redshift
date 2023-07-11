@@ -309,6 +309,7 @@ private[redshift] class JDBCWrapper {
           case TimestampType => "TIMESTAMP"
           case DateType => "DATE"
           case t: DecimalType => s"DECIMAL(${t.precision},${t.scale})"
+          case _ : ArrayType | _ : MapType | _ : StructType => "SUPER"
           case _ => throw new IllegalArgumentException(s"Don't know how to save $field to JDBC")
         }
       }
