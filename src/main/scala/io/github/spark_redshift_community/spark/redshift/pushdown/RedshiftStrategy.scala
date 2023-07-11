@@ -18,17 +18,15 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration.QueryBuilder
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Strategy
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.{SparkSession, Strategy}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
 import org.apache.spark.sql.execution.SparkPlan
 
 /**
  * Clean up the plan, then try to generate a query from it for Redshift.
  */
-class RedshiftStrategy extends Strategy {
+class RedshiftStrategy(session: SparkSession) extends Strategy {
+  private val LAZY_CONF_KEY = "spark.datasource.redshift.community.autopushdown.lazyMode"
 
   def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     try {
@@ -54,9 +52,24 @@ class RedshiftStrategy extends Strategy {
    * @return An Option of Seq[RedshiftPlan] that contains the PhysicalPlan if
    *         query generation was successful, None if not.
    */
-  private def buildQueryRDD(plan: LogicalPlan): Option[Seq[RedshiftPlan]] =
-    QueryBuilder.getRDDFromPlan(plan).map {
-      case (output: Seq[Attribute], rdd: RDD[InternalRow]) =>
-        Seq(RedshiftPlan(output, rdd))
+  private def buildQueryRDD(plan: LogicalPlan): Option[Seq[SparkPlan]] = {
+    val useLazyMode = session.conf.get(LAZY_CONF_KEY, "true")
+      .toBoolean
+
+    if (useLazyMode) {
+      logInfo("Using lazy mode for redshift query push down")
+      QueryBuilder.getQueryFromPlan(plan).map {
+        case (output, query, relation) =>
+          Seq(RedshiftScanExec(output, query, relation))
+      }
+    } else {
+      logWarning("Using eager mode for redshift query push down. " +
+        "To improve performance please run " +
+        s"`SET $LAZY_CONF_KEY=true`")
+      QueryBuilder.getRDDFromPlan(plan).map {
+        case (output, rdd) =>
+          Seq(RedshiftPlan(output, rdd))
+      }
     }
+  }
 }

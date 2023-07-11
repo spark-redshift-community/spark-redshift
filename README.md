@@ -878,6 +878,14 @@ val eventsDF = sqlContext.read
 eventsDF.show()
 ```
 
+## Spark SQL Configuration
+
+The Spark Connector pushdown redshift query in lazy mode. This allows spark's adaptive query execution mode to further optimize query. This behavior is enabled by default.
+To disable it, run following command:
+
+```sparksql
+SET spark.datasource.redshift.community.autopushdown.lazyMode=false
+```
 
 ## Unload Format
 
