@@ -94,6 +94,7 @@ trait IntegrationSuiteBase
     sc.hadoopConfiguration.set("fs.s3a.access.key", AWS_ACCESS_KEY_ID)
     sc.hadoopConfiguration.set("fs.s3a.secret.key", AWS_SECRET_ACCESS_KEY)
     sc.hadoopConfiguration.set("fs.s3a.session.token", AWS_SESSION_TOKEN)
+    sc.hadoopConfiguration.set("fs.s3a.bucket.probe", "2")
     sc.hadoopConfiguration.set("fs.s3a.aws.credentials.provider",
       "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
     sc.hadoopConfiguration.setBoolean("fs.s3a.bucket.all.committer.magic.enabled", true)
