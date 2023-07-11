@@ -47,6 +47,7 @@ private[redshift] class JDBCWrapper extends Serializable {
 
   private val log = LoggerFactory.getLogger(getClass)
   private val DEFAULT_APP_NAME = "spark-redshift-connector"
+  private val CONNECTOR_SERVICE_NAME_ENV_VAR = "AWS_SPARK_REDSHIFT_CONNECTOR_SERVICE_NAME"
 
   // Note: marking field `implicit transient lazy` this allows spark to
   //  recreate upon de-serialization
@@ -240,6 +241,17 @@ private[redshift] class JDBCWrapper extends Serializable {
   }
 
   /**
+   * Returns the default application name.
+   */
+  def defaultAppName: String = {
+    Option(System.getenv(CONNECTOR_SERVICE_NAME_ENV_VAR)) match {
+      case Some(serviceName) if serviceName.trim.length > 0 =>
+        DEFAULT_APP_NAME + "_" + serviceName.trim
+      case _ => DEFAULT_APP_NAME
+    }
+  }
+
+  /**
    * Given a driver string and a JDBC url, load the specified driver and return a DB connection.
    *
    * @param userProvidedDriverClass the class name of the JDBC driver for the given url. If this
@@ -276,7 +288,7 @@ private[redshift] class JDBCWrapper extends Serializable {
     // Set the application name property if not already specified by the client.
     if (!updatedURL.toLowerCase().contains("applicationname=") &&
         !driverProperties.containsKey("applicationname")) {
-      driverProperties.setProperty("ApplicationName", DEFAULT_APP_NAME)
+      driverProperties.setProperty("applicationname", defaultAppName)
     }
 
     val subprotocol = updatedURL.stripPrefix("jdbc:").split(":")(0)
