@@ -1,3 +1,20 @@
+
+[//]: # (                                                                                  )
+[//]: # ( Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. )
+[//]: # (                                                                                  )
+[//]: # ( Licensed under the Apache License, Version 2.0 \(the "License"\);                )
+[//]: # ( you may not use this file except in compliance with the License.                 )
+[//]: # ( You may obtain a copy of the License at                                          )
+[//]: # (                                                                                  )
+[//]: # (    http://www.apache.org/licenses/LICENSE-2.0                                    )
+[//]: # (                                                                                  )
+[//]: # ( Unless required by applicable law or agreed to in writing, software              )
+[//]: # ( distributed under the License is distributed on an "AS IS" BASIS,                )
+[//]: # ( WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.         )
+[//]: # ( See the License for the specific language governing permissions and              )
+[//]: # ( limitations under the License.                                                   )
+[//]: # (                                                                                  )
+
 # Performant Redshift Data Source for Apache Spark - Community Edition
 
 [![Build Status](https://travis-ci.org/spark-redshift-community/spark-redshift.svg?branch=master)](https://travis-ci.com/spark-redshift-community/spark-redshift)
@@ -1003,9 +1020,6 @@ mydf.write.format("io.github.spark_redshift_community.spark.redshift").
   mode(SaveMode.Append).save
 ```
 
-#### Acknowledgments
-Auto Pushdown is adapted from **[spark-snowflake connector](https://github.com/snowflakedb/spark-snowflake)** project.
-
 ## Transactional Guarantees
 
 This section describes the transactional guarantees of the Redshift data source for Spark
@@ -1077,3 +1091,8 @@ To resolve this, set the 'tempdir_region' parameter to the AWS region of the S3 
   using their previous Redshift to S3 authentication mechanism. For a discussion of the three
   authentication mechanisms and their security trade-offs, see the [_Authenticating to S3 and
   Redshift_](#authenticating-to-s3-and-redshift) section of this README.
+
+## Acknowledgments ##
+This project was originally forked from the [Databricks Spark-Redshift project](https://github.com/databricks/spark-redshift).
+The pushdown improvements were inspired by the work done by Snowflake in their [Spark-Snowflake project](https://github.com/snowflakedb/spark-snowflake).
+We would like to acknowledge and thank the developers of these projects for their significant contributions to the open source community.
