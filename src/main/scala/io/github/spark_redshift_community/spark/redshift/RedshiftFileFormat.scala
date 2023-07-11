@@ -83,7 +83,7 @@ private[redshift] class RedshiftFileFormat extends FileFormat {
       val conf = broadcastedConf.value.value
 
       val fileSplit = new FileSplit(
-        new Path(new URI(file.filePath)),
+        new Path(RedshiftFileFormatUtils.uriFromPartitionedFile(file)),
         file.start,
         file.length,
         // TODO: Implement Locality
