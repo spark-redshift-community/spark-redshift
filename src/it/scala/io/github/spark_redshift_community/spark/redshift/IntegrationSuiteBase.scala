@@ -17,7 +17,7 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import io.github.spark_redshift_community.spark.redshift.Parameters.PARAM_TEMPDIR_REGION
+import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_TEMPDIR_REGION}
 
 import java.net.URI
 import java.sql.Connection
@@ -61,6 +61,8 @@ trait IntegrationSuiteBase
   protected val AWS_S3_SCRATCH_SPACE: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE")
   protected val AWS_S3_SCRATCH_SPACE_REGION: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE_REGION")
   require(AWS_S3_SCRATCH_SPACE.contains("s3a"), "must use s3a:// URL")
+
+  protected val auto_pushdown: String = "false"
 
   protected def jdbcUrl: String = {
     s"$AWS_REDSHIFT_JDBC_URL?user=$AWS_REDSHIFT_USER&password=$AWS_REDSHIFT_PASSWORD&ssl=true"
@@ -144,6 +146,7 @@ trait IntegrationSuiteBase
       .option("tempdir", tempDir)
       .option("forward_spark_s3_credentials", "true")
       .option(PARAM_TEMPDIR_REGION, AWS_S3_SCRATCH_SPACE_REGION)
+      .option(PARAM_AUTO_PUSHDOWN, auto_pushdown)
   }
   /**
    * Create a new DataFrameWriter using common options for writing to Redshift.
