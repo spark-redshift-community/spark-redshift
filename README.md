@@ -719,13 +719,18 @@ for more information.</p>
     <td>
     <p>
         The format in which to save temporary files in S3 when writing to Redshift.
-        Defaults to "AVRO"; the other allowed values are "CSV" and "CSV GZIP" for CSV
-        and gzipped CSV, respectively.
+        Defaults to "AVRO"; the other allowed values are "CSV", "CSV GZIP", and "PARQUET" for CSV,
+        gzipped CSV, and parquet, respectively.
     </p>
     <p>
         Redshift is significantly faster when loading CSV than when loading Avro files, so
         using that <tt>tempformat</tt> may provide a large performance boost when writing
         to Redshift.
+    </p>
+    <p>
+        Parquet should not be used as the tempformat when using an S3 bucket (tempdir) in a region that is different
+        from the region where the redshift cluster you are writing to resides. This is because cross-region copies are
+        not supported in redshift when using parquet as the format.
     </p>
     </td>
  </tr>
@@ -967,7 +972,7 @@ then the connector can be used to write the field to redshift. There are few imp
 
 1. No nested fields may have names containing upper case letters
 2. No map keys may contain upper case letters
-3. tempformat must be one of `CSV` or `CSV GZIP`
+3. tempformat must be one of `CSV`, `CSV GZIP`, or `PARQUET`
 
 Using the connector, writing a struct to a column `a` looks like:
 
