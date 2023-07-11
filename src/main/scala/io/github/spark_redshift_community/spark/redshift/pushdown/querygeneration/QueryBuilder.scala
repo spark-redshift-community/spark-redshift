@@ -191,11 +191,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
                     LeftSemiJoinQuery(l, r, condition, isAntiJoin = false, alias)
                   case LeftAnti =>
                     LeftSemiJoinQuery(l, r, condition, isAntiJoin = true, alias)
-                  case Cross => throw new RedshiftPushdownUnsupportedException(
-                    RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_JOIN,
-                    joinType.sql,
-                    joinType.getClass.getName,
-                    true)
+                  case Cross => JoinQuery(l, r, condition, joinType, alias.next)
                   case _ => throw new MatchError
                 }
             }
