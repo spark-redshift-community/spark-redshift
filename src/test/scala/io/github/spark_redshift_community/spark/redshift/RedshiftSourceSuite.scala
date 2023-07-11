@@ -278,7 +278,7 @@ class RedshiftSourceSuite
         "AND \"teststring\" = ''Unicode\\\\'\\\\'s樂趣'' " +
         "AND \"testdouble\" > 1000.0 " +
         "AND \"testdouble\" < 1.7976931348623157E308 " +
-        "AND \"testfloat\" >= 1.0 " +
+        "AND \"testfloat\" >= 1.0::float4 " +
         "AND \"testint\" <= 43'\\) " +
         "TO '.*' " +
         "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +

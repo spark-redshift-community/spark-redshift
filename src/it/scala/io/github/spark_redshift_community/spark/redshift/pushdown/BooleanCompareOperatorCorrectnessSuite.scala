@@ -856,19 +856,20 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
   test("child GreaterThanOrEqual and LessThan pushdown - float type", PreloadTest) {
     // "Column name", value of right operand, and result size
     val input = List(
-      ("col_float4_raw", -26.2983, 4144),
-      ("col_float4_bytedict", -26.2983, 4128),
-      ("col_float4_runlength", -26.2983, 4154),
-      ("col_float4_zstd", -26.2983, 4164),
-      ("col_float8_raw", -6.5868966897085, 2805),
-      ("col_float8_bytedict", -6.5868966897085, 2808),
-      ("col_float8_runlength", -6.5868966897085, 2747),
-      ("col_float8_zstd", -6.5868966897085, 2792)
+      ("col_float4_raw", -26.2983, 4144, "::float4"),
+      ("col_float4_bytedict", -26.2983, 4128, "::float4"),
+      ("col_float4_runlength", -26.2983, 4154, "::float4"),
+      ("col_float4_zstd", -26.2983, 4164, "::float4"),
+      ("col_float8_raw", -6.5868966897085, 2805, ""),
+      ("col_float8_bytedict", -6.5868966897085, 2808, ""),
+      ("col_float8_runlength", -6.5868966897085, 2747, ""),
+      ("col_float8_zstd", -6.5868966897085, 2792, "")
     )
     input.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
+      val cast = test_case._4
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name >= $expected_res"""),
         Seq(Row(result_size)))
@@ -878,7 +879,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
            |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >= $expected_res ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" >= $expected_res $cast ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
@@ -890,7 +891,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
            |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" < $expected_res ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" < $expected_res $cast ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
@@ -916,7 +917,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
            |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <= $expected_res ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" <= $expected_res::float4) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
@@ -928,7 +929,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
            |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
            |AS "SUBQUERY_0"
            |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" > $expected_res ) ) )
+           |AND ( "SUBQUERY_0"."$column_name" > $expected_res::float4 ) ) )
            |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }

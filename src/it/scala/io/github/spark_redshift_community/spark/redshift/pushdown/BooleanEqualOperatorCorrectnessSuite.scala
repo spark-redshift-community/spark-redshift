@@ -306,31 +306,35 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
 
   // float pushdown is not well supported.
   // SIM: [Redshift-6989]
-  ignore("child Equal pushdown - float type") {
+  test("child Equal pushdown - float type") {
     // "Column name" and result size
     val input = List(
-      ("col_float4_raw", -0.51, 0),
-//      ("col_float4_bytedict", -6.5868966897085, 0),
-//      ("col_float4_runlength", -6.5868966897085, 0),
-//      ("col_float4_zstd", -6.5868966897085, 0),
-//      ("col_float8_raw", -6.5868966897085, 0),
-//      ("col_float8_bytedict", -6.5868966897085, 0),
-//      ("col_float8_runlength", -6.5868966897085, 0),
-//      ("col_float8_zstd", -6.5868966897085, 0)
+      ("col_float4_raw", "-16.851456f" , 1, -16.851456f, "::float4"),
+      ("col_float4_bytedict", "-0.885395f", 1, -0.885395f, "::float4"),
+      ("col_float4_runlength", "31.999588f", 1, 31.999588f, "::float4"),
+      ("col_float4_zstd", "-31.701588f", 1, -31.701588f, "::float4"),
+      ("col_float8_raw", 16.788795891192493, 1, 16.788795891192493, ""),
+      ("col_float8_bytedict", -13.420439076870196, 1, -13.420439076870196, ""),
+      ("col_float8_runlength", -31.353153006228958, 1, -31.353153006228958, ""),
+      ("col_float8_zstd", 0.008006913654249, 1, 0.008006913654249, "")
     )
     input.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
+      val scala_value = test_case._4
+      val expected_cast = test_case._5
+
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name = $expected_res"""),
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE "SUBQUERY_0"."$column_name" IN $expected_res )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           | WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
+           | AND ( "SUBQUERY_0"."$column_name" = $scala_value $expected_cast ) ) )
+           | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
     })
   }
 

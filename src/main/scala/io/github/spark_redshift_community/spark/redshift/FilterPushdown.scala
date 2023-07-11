@@ -76,6 +76,7 @@ private[redshift] object FilterPushdown {
             } else {
               s"'${value.asInstanceOf[Timestamp]}'"
             }
+          case _ if value.isInstanceOf[Float] => s"$value::float4"
           case _ => value.toString
         }
         s""""$attr" $comparisonOp $sqlEscapedValue"""
