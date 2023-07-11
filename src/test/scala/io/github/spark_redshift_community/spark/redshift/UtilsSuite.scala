@@ -30,6 +30,7 @@ import org.scalatest.{FunSuite, Matchers}
 import org.slf4j.Logger
 
 import java.sql.Timestamp
+import java.util.Properties
 
 /**
  * Unit tests for helper functions
@@ -204,5 +205,33 @@ class UtilsSuite extends FunSuite with Matchers {
 
     Utils.collectMetrics(params, Some(mockLogger))
     verify(mockLogger, never()).info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
+  }
+
+  test("copyProperty and copyProperties map and convert matching parameter names") {
+    val sourceProps = Map[String, String](
+      "param1" -> "value1", // Ignore
+      "param2" -> "value2", // Copy
+      "param3" -> "value3", // Copy
+      "jdbc.param4" -> "value4", // Copy
+      "jdbc.param5" -> "value5", // Copy
+      "secret.param6" -> "value6", // Copy
+      "secret.param7" -> "value7", // Copy
+      "jdbc." -> "jdbcValue", // Ignore
+      "secret." -> "secretValue" // Ignore
+    )
+
+    val destProps = new Properties()
+    Utils.copyProperty("param2", sourceProps, destProps)
+    Utils.copyProperty("param3", "param33", sourceProps, destProps)
+    Utils.copyProperties("^jdbc\\..+", "^jdbc\\.", "", sourceProps, destProps)
+    Utils.copyProperties("^secret\\..+", "^secret\\.", "drivers\\.", sourceProps, destProps)
+
+    assert(destProps.size() == 6)
+    assert(destProps.getProperty("param2") == "value2")
+    assert(destProps.getProperty("param33") == "value3")
+    assert(destProps.getProperty("param4") == "value4")
+    assert(destProps.getProperty("param5") == "value5")
+    assert(destProps.getProperty("drivers.param6") == "value6")
+    assert(destProps.getProperty("drivers.param7") == "value7")
   }
 }

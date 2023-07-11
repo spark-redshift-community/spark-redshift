@@ -602,11 +602,11 @@ and use that as a temp location for this data.
     <td>No</td>
     <td>No default</td>
     <td>
-       <p>AWS region where 'tempdir' is located. Setting this option will improve connector performance for interactions with 'tempdir' as well as automatically supply this value as part of COPY and UNLOAD operations during connector writes and reads. If the region is not specified, the connector will attempt to use the default S3 provider chain for resolving where the 'tempdir' region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
+       <p>AWS region where <tt>tempdir</tt> is located. Setting this option will improve connector performance for interactions with <tt>tempdir</tt> as well as automatically supply this value as part of COPY and UNLOAD operations during connector writes and reads. If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>tempdir</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
        <ol>
           <li>When the connector is running outside of AWS as automatic region discovery will fail and negatively affect connector performance.</li>
-          <li>When 'tempdir' is in a different region than the Redshift cluster as using this setting alleviates the need to supply the region manually using the 'extracopyoptions' and 'extraunloadoptions' parameters.</li>
-          <li>When the connector is running in a different region than 'tempdir' as it improves the connector's access performance of 'tempdir'.</li>
+          <li>When <tt>tempdir</tt> is in a different region than the Redshift cluster as using this setting alleviates the need to supply the region manually using the <tt>extracopyoptions</tt> and <tt>extraunloadoptions</tt> parameters.</li>
+          <li>When the connector is running in a different region than <tt>tempdir</tt> as it improves the connector's access performance of <tt>tempdir</tt>.</li>
        </ol>
     </td>
  </tr>
@@ -804,18 +804,57 @@ for more information.</p>
     </td>
 </tr>
 <tr>
-<td><tt>copyretrycount</tt></td>
-<td>No</td>
-<td>2</td>
-<td>Number of times to retry a copy operation including dropping and creating any required table before failing.</td>
+    <td><tt>copyretrycount</tt></td>
+    <td>No</td>
+    <td>2</td>
+    <td>Number of times to retry a copy operation including dropping and creating any required table before failing.</td>
 </tr>
 <tr>
-<td><tt>copydelay</tt></td>
-<td>No</td>
-<td>30000</td>
-<td>Number of milliseconds to wait between retrying copy operations. Non-positive values will be treated as 30 seconds.</td>
+    <td><tt>copydelay</tt></td>
+    <td>No</td>
+    <td>30000</td>
+    <td>Number of milliseconds to wait between retrying copy operations. Non-positive values will be treated as 30 seconds.</td>
 </tr>
-</table>
+<tr> 
+    <td><tt>secret.id</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td> The Name or ARN of your secret stored in AWS Secrets Manager. May be used to automatically supply Redshift credentials but only if the user, password and DbUser are not passed in the URL or as options.</td>
+</tr>
+<tr> 
+    <td><tt>secret.region</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+       <p>The primary AWS region (e.g., <tt>us-east-1</tt>) for searching for the <tt>secret.id</tt> value. </p>
+       <p>If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>secret.id</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
+       <ol>
+          <li>When the connector is running outside of AWS as automatic region discovery will fail and may prevent authenticating with Redshift.</li>
+          <li>When the connector is running in a different region than <tt>secret.id</tt> as it improves the connector's access performance of the secret.</li>
+       </ol>
+    </td>
+</tr>
+<tr> 
+    <td><tt>secret.vpcEndpointUrl</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>The PrivateLink DNS endpoint URL for AWS Secrets Manager when overriding the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> </td>
+</tr>
+<tr> 
+    <td><tt>secret.vpcEndpointRegion</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>The PrivateLink DNS endpoint Region for AWS Secrets Manager when overriding the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> </td>
+</tr>
+<tr>
+    <td><tt>jdbc.*</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+        Additional parameters to pass to the underlying JDBC driver where the wildcard is the name of the JDBC parameter (e.g., <tt>jdbc.ssl</tt>). Note that the <tt>jdbc</tt> prefix will be stripped off before passing to the JDBC driver.
+        A complete list of possible options for the Redshift JDBC driver may be seen in the <a href="https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-configuration-options.html">Redshift docs</a>.
+    </td>
+</tr></table>
 
 ## Additional configuration options
 
@@ -1084,16 +1123,22 @@ To support an S3 bucket in a different region than the Redshift cluster for eith
 ```
 
 ### Warnings Associated with EC2MetadataUtils 
-The connector will attempt to automatically determine the cluster's region when the 'tempdir_region' parameter is not set. This can cause performance problems and metedata exceptions to be thrown such as the following:
+The connector will attempt to automatically determine the cluster's region when the <tt>tempdir_region</tt> parameter is not set. This can cause performance problems and metedata exceptions to be thrown such as the following:
 
 ```
 WARN EC2MetadataUtils: Unable to retrieve the requested metadata (/latest/dynamic/instance-identity/document). Failed to connect to service endpoint: 
 com.amazonaws.SdkClientException: Failed to connect to service endpoint:
 ```
 
-To resolve this, set the 'tempdir_region' parameter to the AWS region of the S3 bucket specified in 'tempdir' whenever the connector is being used outside an AWS environment (e.g., local Spark cluster) like so:
+To resolve this, set the <tt>tempdir_region</tt> parameter to the AWS region of the S3 bucket specified in <tt>tempdir</tt> whenever the connector is being used outside an AWS environment (e.g., local Spark cluster) like so:
 ```
 .option("tempdir_region", "us-east-1")
+```
+
+This same problem can also occur when using <tt>secret.id</tt> as the connector will try to determine what AWS region stores the secret. To resolve this, set the <tt>secret.region</tt> parameter like so:
+
+```
+.option("secret.region", "us-east-1")
 ```
 
 ## Migration Guide
