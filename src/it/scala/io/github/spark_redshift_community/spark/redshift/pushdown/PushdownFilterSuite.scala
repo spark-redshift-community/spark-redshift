@@ -328,7 +328,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Filter EqualNullSafe pushdown: operator <=>", P0Test, P1Test) {
+  test("Filter EqualNullSafe not supported: operator <=>", P0Test, P1Test) {
 
     conn.createStatement().executeUpdate(
       s""" create table $test_table_safe_null(c1 varchar, c2 varchar)""")
@@ -345,10 +345,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Seq(Row(null, null), Row("a", "a"))
     )
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT * FROM $test_table_safe_null AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE CASE WHEN ( ( "SUBQUERY_0"."C1" IS NULL ) OR ( "SUBQUERY_0"."C2" IS NULL ) )
-         |THEN ( ( "SUBQUERY_0"."C1" IS NULL ) AND ( "SUBQUERY_0"."C2" IS NULL ) )
-         |ELSE ( "SUBQUERY_0"."C1" = "SUBQUERY_0"."C2" ) END""".stripMargin
+      s"""SELECT "c1", "c2" FROM $test_table_safe_null"""
     )
 
   }
