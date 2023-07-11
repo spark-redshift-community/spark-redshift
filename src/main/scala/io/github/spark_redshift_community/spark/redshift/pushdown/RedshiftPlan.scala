@@ -32,15 +32,7 @@ case class RedshiftPlan(output: Seq[Attribute], rdd: RDD[InternalRow])
 
   override def children: Seq[SparkPlan] = Nil
   protected override def doExecute(): RDD[InternalRow] = {
-
-    val schema = StructType(
-      output.map(attr => StructField(attr.name, attr.dataType, attr.nullable))
-    )
-
-    rdd.mapPartitions { iter =>
-      val project = UnsafeProjection.create(schema)
-      iter.map(project)
-    }
+    rdd
   }
 
   override def simpleString(maxFields: Int): String = {

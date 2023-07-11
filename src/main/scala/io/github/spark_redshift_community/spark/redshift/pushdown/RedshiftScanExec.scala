@@ -68,10 +68,7 @@ case class RedshiftScanExec(output: Seq[Attribute],
       throw data.get().failure.get
     }
 
-    data.get().data.get.mapPartitions { iter =>
-      val project = UnsafeProjection.create(schema)
-      iter.map(project)
-    }
+    data.get().data.get
   }
 
   override def cleanupResources(): Unit = {

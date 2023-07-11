@@ -17,7 +17,8 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.sql.{Date, Timestamp}
+
+import java.sql.Timestamp
 import java.text.{DecimalFormat, DecimalFormatSymbols, SimpleDateFormat}
 import java.time.{DateTimeException, LocalDateTime, ZoneId, ZonedDateTime}
 import java.time.format.DateTimeFormatter
@@ -25,7 +26,7 @@ import java.util.Locale
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.GenericRow
-import org.apache.spark.sql.catalyst.util.{DateTimeConstants, DateTimeUtils}
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
 
 /**
@@ -170,32 +171,30 @@ private[redshift] object Conversions {
                              overrideNullable: Boolean): Any = {
     dataType match {
       case _ if overrideNullable && from!= null && from.toString.isEmpty => null
-       // Redshift does not have a cast for single byte so it will be received as a string
-      case ByteType if from != null => java.lang.Byte.parseByte(from.asInstanceOf[String])
-      case DoubleType if from!= null => from.asInstanceOf[Number].doubleValue
-      case FloatType if from!= null => from.asInstanceOf[Number].floatValue
-      case IntegerType if from!=null => from.asInstanceOf[Number].intValue
-      case LongType if from!=null => from.asInstanceOf[Number].longValue
-      case ShortType if from!=null => from.asInstanceOf[Number].shortValue
-      case DecimalType() if from!=null =>
-        if (from.isInstanceOf[Double]) {
-          org.apache.spark.sql.types.Decimal(from.asInstanceOf[Double].doubleValue)
-        } else {
-          org.apache.spark.sql.types.Decimal(from.asInstanceOf[java.math.BigDecimal])
-        }
-
+      // Redshift does not have a cast for single byte so it will be received as a string
+      case ByteType if from != null => java.lang.Byte.parseByte(from.toString)
+      case DoubleType if from != null => from.asInstanceOf[Number].doubleValue
+      case FloatType if from != null => from.asInstanceOf[Number].floatValue
+      case IntegerType if from != null => from.asInstanceOf[Number].intValue
+      case LongType if from != null => from.asInstanceOf[Number].longValue
+      case ShortType if from != null => from.asInstanceOf[Number].shortValue
+      case _: DecimalType if from != null && from.isInstanceOf[Double] =>
+        org.apache.spark.sql.types.Decimal(from.asInstanceOf[Double])
+      case _: DecimalType if from != null & from.isInstanceOf[org.apache.spark.sql.types.Decimal] =>
+        // needed when the schema decimals differ by precision and scale
+        org.apache.spark.sql.types.Decimal(
+          from.asInstanceOf[org.apache.spark.sql.types.Decimal].toBigDecimal)
       case StringType =>
         // Redshift returns null values in Parquet format as null values. This is fine
         // except for super data types which are supposed to be returned as valid JSON which
         // is the null literal instead of the null value (i.e., "null" versus null).
         // Therefore, we do the conversion here to workaround the Redshift limitation.
         if (from == null && redshiftType == "super") {
-          "null"
+          org.apache.spark.unsafe.types.UTF8String.fromString("null")
         } else if (from != null && redshiftType == "bpchar") {
-          org.apache.spark.unsafe.types.UTF8String.fromString(
-            from.asInstanceOf[String]).trimRight().toString
+          from.asInstanceOf[org.apache.spark.unsafe.types.UTF8String].trimRight()
         } else {
-            from.asInstanceOf[String]
+          from
         }
 
       // When Redshift TIMESTAMPTZ fields are unloaded from Redshift in Parquet, Redshift
@@ -212,28 +211,13 @@ private[redshift] object Conversions {
       // running. Note that if this is not correct, the user can set the spark local timezone to
       // match the data since the connector always uses the local timezone to convert any relative
       // timestamp data.
-      case DateType if from!=null && from.isInstanceOf[Timestamp] =>
-        DateTimeUtils.toJavaDate(
-          DateTimeUtils.microsToDays(
-            from.asInstanceOf[Timestamp].getTime * DateTimeConstants.MICROS_PER_MILLIS,
-            ZoneId.of("UTC"))
-        )
-      case DateType if from!=null && from.isInstanceOf[Date] =>
-        DateTimeUtils.toJavaDate(
-          DateTimeUtils.microsToDays(
-            from.asInstanceOf[Date].getTime * DateTimeConstants.MICROS_PER_MILLIS,
-            ZoneId.of("UTC"))
-        )
-      case TimestampType if from!=null && from.isInstanceOf[Timestamp] =>
+      case DateType if from!=null && from.isInstanceOf[Long] =>
+        DateTimeUtils.microsToDays(
+          from.asInstanceOf[Long], ZoneId.of("UTC"))
+      case TimestampType if from!=null =>
         if (redshiftType == "timestamptz") {
-          from.asInstanceOf[Timestamp]
-        } else {
-          Timestamp.valueOf(
-            DateTimeUtils.microsToLocalDateTime(
-              DateTimeUtils.instantToMicros(from.asInstanceOf[Timestamp].toInstant)
-            )
-          )
-        }
+          from
+        } else DateTimeUtils.toUTCTime(from.asInstanceOf[Long], ZoneId.systemDefault().getId)
       case _ => from
     }
   }
