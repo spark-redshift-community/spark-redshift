@@ -173,7 +173,7 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
       Seq(Row(84f, 1)))
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( CAST ( ( SUM ( (
+      s"""SELECT ( CAST ( ( SUM ( (
          |CAST ( "SUBQUERY_2"."SUBQUERY_2_COL_1" AS DECIMAL(5, 2) ) * POW(10, 2 ) ) ) / POW(10, 2 ) )
          |AS DECIMAL( 15 , 2 ) ) ) AS "SUBQUERY_3_COL_0" ,
          |( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_1"

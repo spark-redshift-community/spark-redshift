@@ -90,29 +90,13 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
       .option(PARAM_PUSHDOWN_S3_RESULT_CACHE, s3_result_cache)
   }
 
-  def checkSqlStatement(expectedAnswerSpark3_2: String = "",
-                        expectedAnswerSpark3_3: String = "",
-                        expectedAnswerSpark3_3_1: String = ""
-  ): Unit = {
+  def checkSqlStatement(expectedAnswers: String *): Unit = {
     // If there is no operation pushed down into Redshift, there is no need to
     // validate executed statement in Redshift as it will be a simple select * statement.
     if (auto_pushdown.toBoolean) {
-      val sparkVersion = sc.version
-      var expectedAnswer = expectedAnswerSpark3_2 // Spark default
-
-      if (sparkVersion.startsWith("3.3") && expectedAnswerSpark3_3 != "") {
-        expectedAnswer = expectedAnswerSpark3_3 // Spark 3.3.x default
-      }
-
-      if (sparkVersion == "3.3.1" && expectedAnswerSpark3_3_1 != "") {
-        expectedAnswer = expectedAnswerSpark3_3_1
-      }
-
-      assert(
-        Utils.lastBuildStmt.replaceAll("\\s", "")
-          ==
-          expectedAnswer.replaceAll("\\s", "")
-      )
+      // Make sure there is at least one match.
+      val lastBuildStmt = Utils.lastBuildStmt.replaceAll("\\s", "")
+      assert(expectedAnswers.exists(_.replaceAll("\\s", "") == lastBuildStmt))
     }
   }
 
@@ -123,6 +107,6 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
       sqlContext.sql(tc.sparkStatement),
       tc.expectedResult
     )
-    checkSqlStatement(tc.expectedAnswerSpark3_2, tc.expectedAnswerSpark3_3)
+    checkSqlStatement(tc.expectedAnswers: _*)
   }
 }

@@ -25,7 +25,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( ABS ( "SUBQUERY_1"."TESTFLOAT" ) ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( ABS ( "SUBQUERY_1"."TESTFLOAT" ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
          |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
          |WHERE ( ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL )
@@ -56,7 +56,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( COS ( CAST ( "SUBQUERY_1"."TESTFLOAT" AS FLOAT8 ) ) )
+      s"""SELECT ( COS ( CAST ( "SUBQUERY_1"."TESTFLOAT" AS FLOAT8 ) ) )
          |AS "SUBQUERY_2_COL_0" ,
          |( SIN ( CAST ( "SUBQUERY_1"."TESTFLOAT" AS FLOAT8 ) ) ) AS "SUBQUERY_2_COL_1" ,
          |( ACOS ( CAST ( "SUBQUERY_1"."TESTFLOAT" AS FLOAT8 ) ) ) AS "SUBQUERY_2_COL_2" ,
@@ -79,7 +79,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( SQRT ( CAST ( "SUBQUERY_1"."TESTFLOAT" AS FLOAT8 ) ) )
+      s"""SELECT ( SQRT ( CAST ( "SUBQUERY_1"."TESTFLOAT" AS FLOAT8 ) ) )
          |AS "SUBQUERY_2_COL_0" FROM ( SELECT *
          |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
          |WHERE ( ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL ) AND ( ( "SUBQUERY_0"."TESTFLOAT" > 0.0::float4 )
@@ -98,7 +98,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( LOG ( CAST ( ( "SUBQUERY_1"."TESTFLOAT" * 100.0::float4 )
+      s"""SELECT ( LOG ( CAST ( ( "SUBQUERY_1"."TESTFLOAT" * 100.0::float4 )
          |AS FLOAT8 ) ) )
          |AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT *
          |FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
@@ -115,7 +115,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( CEIL ( "SUBQUERY_1"."TESTDOUBLE" ) ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( CEIL ( "SUBQUERY_1"."TESTDOUBLE" ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTDOUBLE" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTDOUBLE" < 0.0 ) ) ) AS "SUBQUERY_1"
@@ -130,7 +130,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( FLOOR ( "SUBQUERY_1"."TESTDOUBLE" ) )
+      s"""SELECT ( FLOOR ( "SUBQUERY_1"."TESTDOUBLE" ) )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTDOUBLE" IS NOT NULL )
@@ -146,7 +146,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( ROUND ( "SUBQUERY_1"."TESTDOUBLE", 0 ) )
+      s"""SELECT ( ROUND ( "SUBQUERY_1"."TESTDOUBLE", 0 ) )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTDOUBLE" IS NOT NULL )
@@ -164,13 +164,13 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( GREATEST ( "SUBQUERY_1"."TESTDOUBLE" ,
+      s"""SELECT ( GREATEST ( "SUBQUERY_1"."TESTDOUBLE" ,
          |CAST ( "SUBQUERY_1"."TESTINT" AS FLOAT8 ) ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
          |""".stripMargin,
-    expectedAnswerSpark3_3 = s"""SELECT ( GREATEST ( "SUBQUERY_1"."TESTDOUBLE" ,
+      s"""SELECT ( GREATEST ( "SUBQUERY_1"."TESTDOUBLE" ,
          |CAST ( "SUBQUERY_1"."TESTINT" AS FLOAT8 ) ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
@@ -188,14 +188,14 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( LEAST ( "SUBQUERY_1"."TESTSTRING" ,
+      s"""SELECT ( LEAST ( "SUBQUERY_1"."TESTSTRING" ,
          |CONCAT ( \\'A\\' , CAST ( "SUBQUERY_1"."TESTSHORT" AS VARCHAR ) ) ) )
          |AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
          |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
          |""".stripMargin,
-    expectedAnswerSpark3_3 = s"""SELECT ( LEAST ( "SUBQUERY_1"."TESTSTRING" ,
+      s"""SELECT ( LEAST ( "SUBQUERY_1"."TESTSTRING" ,
          |CONCAT ( \\'A\\' , CAST ( "SUBQUERY_1"."TESTSHORT" AS VARCHAR ) ) ) )
          |AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
          |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
@@ -226,7 +226,6 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
         expected_res)
 
       checkSqlStatement(
-        expectedAnswerSpark3_3 =
           s"""SELECT ( EXP ( CAST ( CAST ( ( CAST ( "SUBQUERY_1"."TESTBYTE" AS $cast_type )
              |- $add_on ) AS $cast_type ) AS FLOAT8 ) ) ) AS "SUBQUERY_2_COL_0"
              |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
@@ -244,12 +243,12 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( (  "SUBQUERY_1"."TESTINT" + 23 ) ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( (  "SUBQUERY_1"."TESTINT" + 23 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
          |""".stripMargin,
-    expectedAnswerSpark3_3 = s"""SELECT ( (  "SUBQUERY_1"."TESTINT" + 23 ) ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( (  "SUBQUERY_1"."TESTINT" + 23 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
          |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
@@ -265,12 +264,12 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( (  "SUBQUERY_1"."TESTINT" - 5 ) ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( (  "SUBQUERY_1"."TESTINT" - 5 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
          |""".stripMargin,
-    expectedAnswerSpark3_3 = s"""SELECT ( (  "SUBQUERY_1"."TESTINT" - 5 ) ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( (  "SUBQUERY_1"."TESTINT" - 5 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
          |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
@@ -286,12 +285,12 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( ( "SUBQUERY_1"."TESTINT" * 5) ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( ( "SUBQUERY_1"."TESTINT" * 5) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
          |""".stripMargin,
-    expectedAnswerSpark3_3 = s"""SELECT ( ( "SUBQUERY_1"."TESTINT" * 5) ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( ( "SUBQUERY_1"."TESTINT" * 5) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
          |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
@@ -307,13 +306,13 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( ( CAST ( "SUBQUERY_1"."TESTINT" AS FLOAT8 ) / 2.0 ) )
+      s"""SELECT ( ( CAST ( "SUBQUERY_1"."TESTINT" AS FLOAT8 ) / 2.0 ) )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
          |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
          |""".stripMargin,
-    expectedAnswerSpark3_3 = s"""SELECT ( ( CAST ( "SUBQUERY_1"."TESTINT" AS FLOAT8 ) / 2.0 ) )
+      s"""SELECT ( ( CAST ( "SUBQUERY_1"."TESTINT" AS FLOAT8 ) / 2.0 ) )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
@@ -349,7 +348,6 @@ class TextMathFuncPushdownSuite extends PushdownMathFuncSuite {
         expected_res)
 
       checkSqlStatement(
-        expectedAnswerSpark3_3 =
           s"""SELECT ( EXP ( CAST ( ( "SUBQUERY_1"."TESTBYTE" + $add_on) AS FLOAT8 ) ) )
              |AS "SUBQUERY_2_COL_0"
              |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
@@ -391,7 +389,6 @@ class TextNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
         expected_res)
 
       checkSqlStatement(
-        expectedAnswerSpark3_3 =
           s"""SELECT ( EXP ( CAST ( ( "SUBQUERY_1"."TESTBYTE" + $add_on) AS FLOAT8 ) ) )
              |AS "SUBQUERY_2_COL_0"
              |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
