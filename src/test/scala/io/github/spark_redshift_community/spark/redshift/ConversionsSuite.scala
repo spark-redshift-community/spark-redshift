@@ -30,7 +30,7 @@ import org.scalatest.FunSuite
 class ConversionsSuite extends FunSuite {
 
   private def createRowConverter(schema: StructType) = {
-    Conversions.createRowConverter(schema, Parameters.DEFAULT_PARAMETERS("csvnullstring"))
+    Conversions.createRowConverter(schema, Parameters.DEFAULT_PARAMETERS("csvnullstring"), false)
       .andThen(RowEncoder(schema).resolveAndBind().createDeserializer())
   }
 

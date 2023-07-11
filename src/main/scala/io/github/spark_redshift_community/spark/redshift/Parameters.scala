@@ -34,6 +34,7 @@ private[redshift] object Parameters {
   val PARAM_COPY_RETRY_COUNT: String = "copyretrycount"
   val PARAM_COPY_DELAY: String = "copydelay"
   val PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING: String = "legacy_jdbc_real_type_mapping"
+  val PARAM_OVERRIDE_NULLABLE: String = "overridenullable"
   val PARAM_TEMPDIR_REGION: String = "tempdir_region"
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
@@ -56,6 +57,7 @@ private[redshift] object Parameters {
     PARAM_AUTO_PUSHDOWN -> "true",
     PARAM_PUSHDOWN_S3_RESULT_CACHE -> "false",
     PARAM_UNLOAD_S3_FORMAT -> "PARQUET", // values: PARQUET, TEXT
+    PARAM_OVERRIDE_NULLABLE -> "false",
     PARAM_COPY_RETRY_COUNT -> "2",
     PARAM_COPY_DELAY -> "0",
     PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
@@ -369,5 +371,11 @@ private[redshift] object Parameters {
      */
     def legacyJdbcRealTypeMapping: Boolean =
       parameters(PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING).toBoolean
+
+    /**
+     * Turns empty strings into nulls
+     */
+    def overrideNullable: Boolean =
+      parameters(PARAM_OVERRIDE_NULLABLE).toBoolean
   }
 }

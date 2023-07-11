@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import io.github.spark_redshift_community.spark.redshift.Conversions.parquetDataTypeConvert
 import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper.DataBaseOperations
-import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_OVERRIDE_NULLABLE}
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftSQLStatement, SqlToS3TempCache}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -312,6 +312,7 @@ private[redshift] case class RedshiftRelation(
       .format(classOf[RedshiftFileFormat].getName)
       .schema(resultSchema)
       .option("nullString", params.nullString)
+      .option(PARAM_OVERRIDE_NULLABLE, params.overrideNullable)
       .load(filesToRead: _*)
       .queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]
   }
@@ -321,21 +322,23 @@ private[redshift] case class RedshiftRelation(
     val reader = sqlContext.read
       .format("parquet")
 
-    if(filesToRead.isEmpty) reader.schema(resultSchema)
+    if (filesToRead.isEmpty) reader.schema(resultSchema)
+    // cannot pass params.overrideNullable directly as it results in unserializable task
+    val overrideNullable = params.overrideNullable
 
     reader.load(filesToRead: _*)
-    .rdd
-    .map{row =>
-      val typeConvertedRow = row.toSeq.zipWithIndex.map {
-        case (f, i) =>
-          parquetDataTypeConvert(f, resultSchema.fields(i).dataType,
-            if (resultSchema.fields(i).metadata.contains("redshift_type")) {
-              resultSchema.fields(i).metadata.getString("redshift_type")
-            } else null)
+      .rdd
+      .map{row =>
+        val typeConvertedRow = row.toSeq.zipWithIndex.map {
+          case (f, i) =>
+            parquetDataTypeConvert(f, resultSchema.fields(i).dataType,
+              if (resultSchema.fields(i).metadata.contains("redshift_type")) {
+                resultSchema.fields(i).metadata.getString("redshift_type")
+              } else null, overrideNullable)
+        }
+        InternalRow(typeConvertedRow: _*)
       }
-      InternalRow(typeConvertedRow: _*)
-    }
-    .asInstanceOf[RDD[T]]
+      .asInstanceOf[RDD[T]]
   }
 
   // Read the MANIFEST file to get the list of S3 part files that were written by Redshift.
