@@ -43,6 +43,7 @@ Community's contributions are very welcome! Feel free to:
 * Open a PR on github. To ensure a smooth code review process, please follow these steps:
   * Install the project pre-commit hooks: `pre-commit install`
   * Run unit tests: `./build/sbt test` 
+  * [Install integration test data](#install-integration-test-data)
   * Run integration tests:
     * Export the following environment variables with your values:
       ```
@@ -166,6 +167,15 @@ You will also need to provide a JDBC driver that is compatible with Redshift. Am
 **Note on Hadoop versions**: This library depends on [`spark-avro`](https://github.com/databricks/spark-avro), which should automatically be downloaded because it is declared as a dependency. However, you may need to provide the corresponding `avro-mapred` dependency which matches your Hadoop distribution. In most deployments, however, this dependency will be automatically provided by your cluster's Spark assemblies and no additional action will be required.
 
 **Note on dependencies**: This library declares a `provided` dependency on multiple libraries, such as the AWS SDK. This means they must be provided in your development environment. In many cases, these libraries will be provided by your deployment environment. However, if you encounter a `ClassNotFoundException` then you will need to add explicit dependencies for these libraries. For a complete list of provided dependencies please see the project's `build.sbt` file.
+
+### Install Integration Test Data
+The integration tests tagged with `PreloadTest` require prerequisite data loaded into Redshift prior to running. The following procedure can be used to prepopulate this test data.
+1. Locate the folder `src/it/resources/PreloadTestData` for the below operations.
+2. Copy all the files with the prefix `all_shapes_data...csv` to a temporary S3 bucket.
+3. Within the file `setup_all_shapes_default_null.sql`, modify the four `copy` instructions on lines 160, 322, 484, and 646 to point to the temporary S3 bucket folder, S3 bucket region, and IAM role associated with the Redshift cluster that has the necessary permissions to read from the S3 bucket. 
+4. Execute the file `setup_all_shapes_default_null.sql` using a SQL command tool (e.g., Redshift query editor or PSQL).
+5. Remove the temporary S3 bucket.
+
 
 ## Usage
 
