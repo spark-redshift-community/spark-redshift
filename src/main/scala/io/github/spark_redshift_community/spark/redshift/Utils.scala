@@ -29,7 +29,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.sql.Timestamp
-import java.util.UUID
+import java.util.{Properties, UUID}
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
@@ -363,6 +363,58 @@ private[redshift] object Utils {
         Thread.sleep(delay)
         retry(count - 1, delay)(retryBlock)
       }
+    }
+  }
+
+  /**
+   * Copies a property (if it exists) from one set of properties to another.
+   *
+   * @param name        The name of the property.
+   * @param sourceProps The set of source properties.
+   * @param destProps   The set of destination properties.
+   */
+  def copyProperty(name: String,
+                   sourceProps: Map[String, String],
+                   destProps: Properties): Unit = {
+    copyProperty(name, name, sourceProps, destProps)
+  }
+
+  /**
+   * Copies a property (if it exists) from one set of properties to another while also
+   * renaming the property.
+   *
+   * @param searchName  The name of the property to search within sourceProps.
+   * @param replaceName The replacement name to write into destProps.
+   * @param sourceProps The set of source properties.
+   * @param destProps   The set of destination properties.
+   */
+  def copyProperty(searchName: String,
+                   replaceName: String,
+                   sourceProps: Map[String, String],
+                   destProps: Properties): Unit = {
+    sourceProps.get(searchName).foreach(destProps.setProperty(replaceName, _))
+  }
+
+  /**
+   * Copy a set of properties from one collection to another with string replacement using
+   * regular expressions.
+   *
+   * @param matchRegex   The regex used to match a property name.
+   * @param searchRegex  The search regex used for replacing a property name.
+   * @param replaceName  The name to use when replacing the property name.
+   * @param sourceProps  The set of source properties.
+   * @param destProps    The set of destination properties.
+   */
+  def copyProperties(matchRegex: String,
+                     searchRegex: String,
+                     replaceName: String,
+                     sourceProps: Map[String, String],
+                     destProps: Properties): Unit = {
+    sourceProps.foreach {
+      case (key, value) =>
+        if (key.matches(matchRegex)) {
+          destProps.setProperty(key.replaceFirst(searchRegex, replaceName), value)
+        }
     }
   }
 }

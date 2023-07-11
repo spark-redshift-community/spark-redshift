@@ -247,40 +247,39 @@ private[redshift] class JDBCWrapper extends Serializable {
    *                                discover the appropriate driver class.
    * @param url the JDBC url to connect to.
    */
-  def getConnector(
-      userProvidedDriverClass: Option[String],
-      url: String,
-      params: Option[MergedParameters]): Connection = {
-    // Updates the url if we are using secrets manager.
+  def getConnector(userProvidedDriverClass: Option[String],
+                   url: String,
+                   params: Option[MergedParameters]): Connection = {
+    // Update the url if we are using secrets manager.
     val updatedURL = if (params.isDefined && params.get.secretId.isDefined) {
       url.replaceFirst("jdbc", "jdbc-secretsmanager")
     } else {
       url
     }
-    // Setting properties
-    val properties = new Properties()
-    params.foreach { params =>
-      params.credentials.foreach { case (user, password) =>
-        properties.setProperty("user", user)
-        properties.setProperty("password", password)
-      }
-      params.secretId.foreach { secretId =>
-        properties.setProperty("user", secretId)
-      }
-      params.secretRegion.foreach { secretRegion =>
-        // AWS Secrets Manager uses system properties for "drivers.region" property.
-        // We must set "drivers.region" property prior to registering the driverClass
-        // to avoid the driver attempting to access the EC2 metadata server to retrieve the region
-        System.setProperty("drivers.region", secretRegion)
-      }
+
+    // Map any embedded driver properties for both JDBC and Secrets Manager. For some properties
+    // we designate a particular prefix to allow passing these properties through to their related
+    // driver. Note that AWS Secrets Manager uses System properties for "drivers.region" property
+    // and that this property must be set before registering the secret manager driver class.
+    // Otherwise, EC2 metadata server requests will occur for determining the secret's region which
+    // can fail when running outside of AWS environments.
+    val driverProperties = new Properties()
+    params.foreach { case MergedParameters(sourceParams) =>
+      Utils.copyProperty("user", sourceParams, driverProperties)
+      Utils.copyProperty("password", sourceParams, driverProperties)
+      Utils.copyProperty("secret.id", "user", sourceParams, driverProperties)
+      Utils.copyProperties("^jdbc\\..+", "^jdbc\\.", "", sourceParams, driverProperties)
+      Utils.copyProperties("^secret\\..+", "^secret\\.", "drivers\\.",
+        sourceParams - "secret.id", System.getProperties)
     }
+
     // Set the application name property if not already specified by the client.
-    if (!updatedURL.toLowerCase().contains("applicationname=")) {
-      properties.setProperty("ApplicationName", DEFAULT_APP_NAME)
+    if (!updatedURL.toLowerCase().contains("applicationname=") &&
+        !driverProperties.containsKey("applicationname")) {
+      driverProperties.setProperty("ApplicationName", DEFAULT_APP_NAME)
     }
 
     val subprotocol = updatedURL.stripPrefix("jdbc:").split(":")(0)
-
     val driverClass: String = getDriverClass(subprotocol, userProvidedDriverClass)
     DriverRegistry.register(driverClass)
     val driverWrapperClass: Class[_] = if (SPARK_VERSION.startsWith("1.4")) {
@@ -288,10 +287,12 @@ private[redshift] class JDBCWrapper extends Serializable {
     } else { // Spark 1.5.0+
       Utils.classForName("org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper")
     }
+
     def getWrapped(d: Driver): Driver = {
       require(driverWrapperClass.isAssignableFrom(d.getClass))
       driverWrapperClass.getDeclaredMethod("wrapped").invoke(d).asInstanceOf[Driver]
     }
+
     // Note that we purposely don't call DriverManager.getConnection() here: we want to ensure
     // that an explicitly-specified user-provided driver class can take precedence over the default
     // class, but DriverManager.getConnection() might return a according to a different precedence.
@@ -305,7 +306,8 @@ private[redshift] class JDBCWrapper extends Serializable {
       throw new IllegalArgumentException(s"Did not find registered driver with class $driverClass")
     }
 
-    driver.connect(updatedURL, properties)
+    // Make the connection.
+    driver.connect(updatedURL, driverProperties)
   }
 
   /**
