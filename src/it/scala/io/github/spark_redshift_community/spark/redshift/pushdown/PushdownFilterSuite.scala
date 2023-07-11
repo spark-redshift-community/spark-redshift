@@ -45,7 +45,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
                          |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
                          |( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
                          |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR )
-                         |LIKE \\'asd%\\' ) )""".stripMargin
+                         |LIKE CONCAT(\\'asd\\', \\'%\\') ) )""".stripMargin
     )
   }
 
@@ -60,7 +60,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
                          |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
                          |( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
                          |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR )
-                         |LIKE \\'%sd%\\' ) )""".stripMargin
+                         |LIKE CONCAT(\\'%\\', CONCAT(\\'sd\\', \\'%\\') ) ) )""".stripMargin
     )
   }
 
@@ -75,7 +75,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
                          |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
                          |( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
                          |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR )
-                         |LIKE \\'%sdf\\' ) )""".stripMargin
+                         |LIKE CONCAT(\\'%\\', \\'sdf\\' ) ) )""".stripMargin
     )
   }
 
@@ -91,8 +91,8 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
          |AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( ( LENGTH ( "SUBQUERY_0"."TESTSTRING" ) >= 3 )
-         |AND ( ( CAST( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE \\'as%\\' )
-         |AND ( CAST( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE \\'%f\\' )
+         |AND ( ( CAST( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT(\\'as\\', \\'%\\' ) )
+         |AND ( CAST( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT(\\'%\\', \\'f\\') )
          |) ) )""".stripMargin
     )
   }
@@ -323,7 +323,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
          |AS "SUBQUERY_0"
          |WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND NOT ( ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR )
-         |LIKE \\'asd%\\' ) ) ) ) AS "SUBQUERY_1"
+         |LIKE CONCAT(\\'asd\\', \\'%\\') ) ) ) ) AS "SUBQUERY_1"
          |""".stripMargin
     )
   }
@@ -462,13 +462,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   val testAnd7: TestCase = TestCase(
     s"""SELECT COUNT(*) FROM test_table WHERE teststring LIKE 'Unicode%' AND testint > 22""",
     Seq(Row(1)),
-    s"""SELECT(COUNT(1))AS"SUBQUERY_2_COL_0"FROM(SELECT*FROM(
-       |SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"WHERE
-       |((("SUBQUERY_0"."TESTSTRING"ISNOTNULL)AND
-       |("SUBQUERY_0"."TESTINT"ISNOTNULL))AND
-       |((CAST("SUBQUERY_0"."TESTSTRING"ASVARCHAR)LIKE\\'Unicode%\\')AND
-       |("SUBQUERY_0"."TESTINT">22))))AS"SUBQUERY_1"LIMIT1""".stripMargin
+    s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM (
+       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
+       | ( ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) AND
+       | ( "SUBQUERY_0"."TESTINT" IS NOT NULL ) ) AND
+       | ( ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT (\\'Unicode\\', \\'%\\') ) AND
+       | ("SUBQUERY_0"."TESTINT" > 22 ) ) ) ) AS "SUBQUERY_1" LIMIT 1""".stripMargin
   )
 
   val testAnd8: TestCase = TestCase(
