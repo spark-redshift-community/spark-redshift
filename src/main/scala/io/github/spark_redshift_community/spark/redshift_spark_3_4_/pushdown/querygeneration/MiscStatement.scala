@@ -17,11 +17,10 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
-import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, IntVariable, RedshiftSQLStatement}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Cast, Coalesce, Descending, Expression, If, In, InSet, Literal, MakeDecimal, NullsFirst, NullsLast, ScalarSubquery, SortOrder, UnscaledValue}
+import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Cast, Coalesce, Descending, Expression, If, In, InSet, MakeDecimal, NullsFirst, NullsLast, ScalarSubquery, SortOrder, UnscaledValue}
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.types.UTF8String
 
 /** Extractors for everything else. */
 private[querygeneration] object MiscStatement {
@@ -43,7 +42,7 @@ private[querygeneration] object MiscStatement {
 
       // To support spark 3.1 as below
       // case Cast(child, t, _) =>
-      case Cast(child, t, _, ansiEnabled) if !ansiEnabled =>
+      case c @ Cast(child, t, _, _) if !c.ansiEnabled =>
         getCastType(t) match {
           case Some(cast) =>
             // For known unsupported data conversion, raise exception to break the
@@ -95,7 +94,7 @@ private[querygeneration] object MiscStatement {
         )
 
       case InSet(child, hset) =>
-        convertStatement(In(child, setToExpr(hset)), fields)
+        convertStatement(In(child, MiscStatementCommon.setToExpr(hset)), fields)
 
       case MakeDecimal(child, precision, scale, _) =>
         ConstantString("CAST") + blockStatement(
@@ -120,7 +119,8 @@ private[querygeneration] object MiscStatement {
       // https://github.com/apache/spark/commit/806da9d6fae403f88aac42213a58923cf6c2cb05
       // To support spark 3.1
       //      case ScalarSubquery(subquery, _, _) =>
-      case ScalarSubquery(subquery, _, _, joinCond) if joinCond.isEmpty =>
+      // currently ignoring hintinfo which is last parameter of match
+      case ScalarSubquery(subquery, _, _, joinCond, _) if joinCond.isEmpty =>
         blockStatement(new QueryBuilder(subquery).statement)
 
       case UnscaledValue(child) =>
@@ -157,43 +157,4 @@ private[querygeneration] object MiscStatement {
       case _ => null
     })
   }
-
-  private final def setToExpr(set: Set[Any]): Seq[Expression] = {
-    set.map {
-      case d: Decimal => Literal(d, DecimalType(d.precision, d.scale))
-      case s @ (_: String | _: UTF8String) => Literal(s, StringType)
-      case d: Double => Literal(d, DoubleType)
-      case e: Expression => e
-      case default =>
-        // This exception will not break the connector. It will be caught in
-        // QueryBuilder.treeRoot.
-        throw new RedshiftPushdownUnsupportedException(
-          RedshiftFailMessage.FAIL_PUSHDOWN_SET_TO_EXPR,
-          s"${default.getClass.getSimpleName} @ MiscStatement.setToExpr",
-          "Class " + default.getClass.getName + " is not supported in the 'in()' expression",
-          false
-        )
-    }.toSeq
-  }
-
-  /** Attempts a best effort conversion from a SparkType
-    * to a Redshift type to be used in a Cast.
-    */
-  private[querygeneration] final def getCastType(t: DataType): Option[String] =
-    Option(t match {
-      case StringType => "VARCHAR"
-      case BinaryType => "VARBINARY"
-      case DateType => "DATE"
-      case TimestampType => "TIMESTAMP"
-      case d: DecimalType =>
-        "DECIMAL(" + d.precision + ", " + d.scale + ")"
-      case IntegerType => "INTEGER"
-      case LongType => "BIGINT"
-      case FloatType => "FLOAT4"
-      case DoubleType => "FLOAT8"
-      case ShortType => "SMALLINT"
-      case BooleanType => "BOOLEAN"
-      case _ => null
-    })
-
 }

@@ -96,7 +96,8 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
     if (auto_pushdown.toBoolean) {
       // Make sure there is at least one match.
       val lastBuildStmt = Utils.lastBuildStmt.replaceAll("\\s", "")
-      assert(expectedAnswers.exists(_.replaceAll("\\s", "") == lastBuildStmt))
+      assert(expectedAnswers.exists(_.replaceAll("\\s", "") == lastBuildStmt),
+        s"Actual sql: ${Utils.lastBuildStmt}")
     }
   }
 

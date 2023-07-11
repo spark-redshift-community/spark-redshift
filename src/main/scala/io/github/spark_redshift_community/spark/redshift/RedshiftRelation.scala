@@ -33,7 +33,6 @@ import org.apache.spark.sql.functions.{col, from_json}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, Row, SQLContext, SaveMode}
-import org.slf4j.LoggerFactory
 
 import java.io.InputStreamReader
 import java.net.URI

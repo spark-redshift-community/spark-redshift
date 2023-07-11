@@ -76,7 +76,9 @@ case class RedshiftScanExec(output: Seq[Attribute],
 
   override def cleanupResources(): Unit = {
     logDebug(s"shutting down service to clean up resources")
-    service.shutdown()
+    if (service != null) {
+      service.shutdown()
+    }
   }
 }
 
