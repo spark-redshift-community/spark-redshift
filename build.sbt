@@ -34,6 +34,7 @@ val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 lazy val IntegrationTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.3")
+val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.9")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
 val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.1033")
 // access tokens for aws/shared and our own internal CodeArtifacts repo
@@ -126,7 +127,7 @@ lazy val root = Project("spark-redshift", file("."))
       "org.scalatest" %% "scalatest" % "3.0.5" % "test",
       "org.mockito" % "mockito-inline" % "4.9.0" % "test",
 
-      "com.amazon.redshift" % "redshift-jdbc42" % "2.1.0.9" % "provided",
+      "com.amazon.redshift" % "redshift-jdbc42" % testJDBCVersion % "provided",
 
       "com.amazonaws" % "aws-java-sdk" % testAWSJavaSDKVersion % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core")),
