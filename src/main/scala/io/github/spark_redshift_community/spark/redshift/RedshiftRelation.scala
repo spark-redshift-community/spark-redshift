@@ -25,10 +25,13 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import io.github.spark_redshift_community.spark.redshift.Conversions.parquetDataTypeConvert
 import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper.DataBaseOperations
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_OVERRIDE_NULLABLE}
+import io.github.spark_redshift_community.spark.redshift.RedshiftRelation.schemaTypesMatch
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftSQLStatement, SqlToS3TempCache}
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 import org.apache.spark.sql.functions.{col, from_json}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
@@ -357,8 +360,14 @@ private[redshift] case class RedshiftRelation(
 
     val mapping = mapComplexTypesToJson(resultSchema)
 
-    dataFrame.withColumns(mapping).queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]
+    if (mapping.nonEmpty) {
+      dataFrame.withColumns(mapping).queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]
+    } else {
+      dataFrame.queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]
+    }
   }
+
+
 
   private def readRDDFromParquet[T](resultSchema: StructType, filesToRead: Seq[String]): RDD[T] = {
 
@@ -368,25 +377,58 @@ private[redshift] case class RedshiftRelation(
     // convert complex types to string types since they are loaded from redshift as json
     // This is also necessary to use the from_json function as it only works on strings
     val modifiedSchema = convertComplexTypesToString(resultSchema)
-    val mapping = mapComplexTypesToJson(resultSchema)
 
     if (filesToRead.isEmpty) reader.schema(modifiedSchema)
     // cannot pass params.overrideNullable directly as it results in unserializable task
     val overrideNullable = params.overrideNullable
 
-    val encoder = RowEncoder(modifiedSchema)
-    val data = reader.load(filesToRead: _*).map({row: Row =>
-      val typeConvertedRow = row.toSeq.zipWithIndex.map {
-        case (f, i) =>
-          parquetDataTypeConvert(f, modifiedSchema.fields(i).dataType,
-            if (modifiedSchema.fields(i).metadata.contains("redshift_type")) {
-              modifiedSchema.fields(i).metadata.getString("redshift_type")
-            } else null, overrideNullable)
-      }
-      Row(typeConvertedRow: _*)
-    }, encoder).withColumns(mapping).queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]
+    val data = reader.load(filesToRead: _*)
 
-    data
+    // use the actual schema to get the names of columns for the mapping
+    val mapping = mapComplexTypesToJson(StructType(data.schema.fields.zip(resultSchema).map {
+      case (actualField, expectedField) => StructField(
+        actualField.name, expectedField.dataType, expectedField.nullable, expectedField.metadata)
+    }))
+
+    val jsonLoaded = if (mapping.nonEmpty) {
+      data.withColumns(mapping)
+    } else {
+      data
+    }
+    val jsonLoadedSchema = jsonLoaded.schema
+    val schemasDoNotMatch = !schemaTypesMatch(resultSchema, jsonLoadedSchema)
+
+    // determine if conversion is needed
+    val conversionNeeded = resultSchema.fields.exists({field: StructField => field.dataType match {
+      case StringType =>
+        field.metadata.contains("redshift_type") &&
+          Seq("super", "bpchar").contains(field.metadata.getString("redshift_type"))
+      case TimestampType | ShortType | ByteType => true
+      case _ => false
+    }}) || overrideNullable || schemasDoNotMatch
+
+    if (schemasDoNotMatch) {
+      log.warn("Expected schema does not match schema of loaded parquet")
+    }
+
+    if (conversionNeeded) {
+      jsonLoaded.queryExecution.executedPlan.execute.map({ row: InternalRow =>
+        val typeConvertedRow = row.toSeq(jsonLoadedSchema).zipWithIndex.map {
+          case (f, i) =>
+            parquetDataTypeConvert(f, resultSchema.fields(i).dataType,
+              if (resultSchema.fields(i).metadata.contains("redshift_type")) {
+                resultSchema.fields(i).metadata.getString("redshift_type")
+              } else null, overrideNullable)
+        }
+        InternalRow(typeConvertedRow: _*)
+      }).mapPartitions(
+        { iter =>
+          val projection = UnsafeProjection.create(resultSchema)
+          iter.map(projection)
+        }).asInstanceOf[RDD[T]]
+    } else {
+      jsonLoaded.queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]
+    }
   }
 
   // Read the MANIFEST file to get the list of S3 part files that were written by Redshift.
@@ -439,4 +481,26 @@ private[redshift] case class RedshiftRelation(
     }
     resultSchema
   }
+}
+
+private[redshift] object RedshiftRelation {
+  /**
+   * Check if two schemas match in types ignoring differences of metadata and name.
+   * Intended only for use in readRDDFromParquet.
+   * @param schema1 Schema to compare
+   * @param schema2 Schema to compare
+   * @return If the schemas have the same types in all fields
+   */
+  def schemaTypesMatch(schema1: DataType, schema2: DataType): Boolean =
+    (schema1, schema2) match {
+      case (s1: StructType, s2: StructType) if s1.length != s2.length =>
+        throw new IllegalStateException("Schema types do not match in length")
+      case (s1: StructType, s2: StructType) => s1.fields.zip(s2.fields).
+        forall({
+          case (f1: StructField, f2: StructField) => schemaTypesMatch(f1.dataType, f2.dataType)})
+      case (ArrayType(dt1, _), ArrayType(dt2, _)) => schemaTypesMatch(dt1, dt2)
+      case (MapType(kt1, vt1, _), MapType(kt2, vt2, _)) =>
+        schemaTypesMatch(kt1, kt2) && schemaTypesMatch(vt1, vt2 )
+      case _ => schema1.typeName == schema2.typeName
+    }
 }
