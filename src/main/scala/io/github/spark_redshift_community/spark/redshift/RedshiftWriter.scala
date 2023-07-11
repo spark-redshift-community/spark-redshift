@@ -25,7 +25,7 @@ import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
+import org.apache.spark.sql.{Column, DataFrame, Row, SQLContext, SaveMode}
 import org.apache.spark.sql.functions.{col, to_json}
 import org.slf4j.LoggerFactory
 
@@ -110,8 +110,12 @@ private[redshift] class RedshiftWriter(
     val regionClause = if (format == "PARQUET") { "" } else {
       params.tempDirRegion.map(region => s"REGION '$region'").getOrElse("")
     }
+
+    // Parquet needs this to handle complex data types
+    val serializeToJSON = if (format == "PARQUET") {"SERIALIZETOJSON"} else ""
+
     val copySqlStatement = s"COPY ${params.table.get} ${columns}FROM '$fixedUrl'" +
-      s" FORMAT AS ${format} manifest" +
+      s" FORMAT AS ${format} ${serializeToJSON} manifest" +
       s" $regionClause" +
       s" ${params.extraCopyOptions}"
 
@@ -274,7 +278,12 @@ private[redshift] class RedshiftWriter(
       )
     }
 
-    val mapping = complexFields.map({field => (field.name, to_json(col(field.name)))}).toMap
+    // Produce this mapping if using csv
+    val mapping = if (tempFormat.startsWith("CSV")) {
+      complexFields.map({field => (field.name, to_json(col(field.name)))}).toMap
+    } else {
+      Map[String, Column]()
+    }
 
     // replace any columns in above mapping
     val complexTypesReplaced = data.withColumns(mapping)
