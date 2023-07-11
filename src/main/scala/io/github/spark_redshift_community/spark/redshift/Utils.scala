@@ -301,7 +301,7 @@ private[redshift] object Utils {
       metricLogger.info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
     }
     if (params.overrideNullable) {
-      log.info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
+      metricLogger.info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
     }
 
   }
