@@ -673,7 +673,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( CAST( "SUBQUERY_0"."TESTSTRING" AS VARCHAR )
-         |LIKE \\'%asdf%\\' ) ) ) AS "SUBQUERY_1"
+         |LIKE CONCAT(\\'%\\', CONCAT(\\'asdf\\', \\'%\\') ) ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 
@@ -688,7 +688,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
-         |\\'%$string2000Char%\\' ) ) ) AS "SUBQUERY_1"
+         |CONCAT(\\'%\\', CONCAT(\\'$string2000Char\\', \\'%\\') ) ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 
@@ -701,32 +701,64 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
-         |\\'asdf%\\' ) ) ) AS "SUBQUERY_1"
+         |CONCAT(\\'asdf\\', \\'%\\' ) ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 
+  test("child endswith pushdown - with quote") {
+    checkAnswer(
+      sqlContext.sql(s"""SELECT count(*) FROM test_table where teststring LIKE '%\\'s樂趣' """),
+      Seq(Row(1)))
+    checkSqlStatement(
+		expectedAnswerSpark3_2 =
+      s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
+      |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+      |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+      |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
+      |CONCAT(\\'%\\', \\'\\'\\'s樂趣\\') ) ) ) AS "SUBQUERY_1"
+      |LIMIT 1""".stripMargin)
+  }
+
   test("child startswith pushdown - with quote") {
+    checkAnswer(
+      sqlContext.sql(s"""SELECT count(*) FROM test_table where teststring LIKE 'Unicode\\'%' """),
+      Seq(Row(1)))
+    checkSqlStatement(
+		expectedAnswerSpark3_2 =
+      s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
+      |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS")
+      |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+      |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
+      |CONCAT(\\'Unicode\\'\\'\\', \\'%\\') ) ) ) AS "SUBQUERY_1"
+      |LIMIT 1""".stripMargin)
+  }
+
+  test("child contains pushdown - with quote") {
     checkAnswer(
       sqlContext.sql(s"""SELECT count(*) FROM test_table where teststring LIKE '%\\'%' """),
       Seq(Row(1)))
     checkSqlStatement(
 		expectedAnswerSpark3_2 =
-      s"""SELECT "teststring" FROM $test_table
-         | WHERE "teststring" IS NOT NULL""".stripMargin)
+      s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
+      |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS")
+      |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+      |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VAR CHAR ) LIKE
+      |CONCAT( \\'%\\' , CONCAT(\\'\\'\\'\\', \\'%\\' ) ) ) ) ) AS "SUBQUERY_1"
+      |LIMIT 1""".stripMargin)
   }
 
   test("child startswith pushdown - long string") {
     checkAnswer(
       sqlContext.sql(
         s"""SELECT count(*) FROM test_table where teststring
-           |LIKE '%$string2000Char' """.stripMargin),
+           |LIKE '$string2000Char%' """.stripMargin),
       Seq(Row(0)))
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
+      expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
-         | \\'%$string2000Char\\' ) ) ) AS "SUBQUERY_1"
+         |CONCAT( \\'$string2000Char\\', \\'%\\' ) ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 
@@ -738,7 +770,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
 		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE \\'%asdf\\' ) ) ) AS "SUBQUERY_1"
+         |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT(\\'%\\', \\'asdf\\') ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 
@@ -746,14 +778,14 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
     checkAnswer(
       sqlContext.sql(
         s"""SELECT count(*) FROM test_table where teststring
-           |LIKE '$string2000Char%' """.stripMargin),
+           |LIKE '%$string2000Char' """.stripMargin),
       Seq(Row(0)))
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
+      expectedAnswerSpark3_2 = s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
          |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
-         | \\'$string2000Char%\\' ) ) ) AS "SUBQUERY_1"
+         |CONCAT(\\'%\\', \\'$string2000Char\\' ) ) ) ) AS "SUBQUERY_1"
          |LIMIT 1""".stripMargin)
   }
 }

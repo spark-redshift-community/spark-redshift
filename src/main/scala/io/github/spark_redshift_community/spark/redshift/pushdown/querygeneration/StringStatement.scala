@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.{Ascii, Attribute, Concat, Expr
 private[querygeneration] object StringStatement {
   // ESCAPE CHARACTER for LIKE is supported from Spark 3.0
   // The default escape character comes from the constructor of Like class.
-  private val DEFAULT_LIKE_ESCAPE_CHAR: Char = '\\'
+  val DEFAULT_LIKE_ESCAPE_CHAR: Char = '\\'
 
   /** Used mainly by QueryGeneration.convertExpression. This matches
     * a tuple of (Expression, Seq[Attribute]) representing the expression to

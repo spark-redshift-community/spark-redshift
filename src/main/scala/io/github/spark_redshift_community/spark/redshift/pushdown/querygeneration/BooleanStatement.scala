@@ -17,8 +17,9 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
+import io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration.StringStatement.DEFAULT_LIKE_ESCAPE_CHAR
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, RedshiftSQLStatement}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Contains, EndsWith, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Not, StartsWith}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Concat, Contains, EndsWith, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Like, Literal, Not, StartsWith}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -64,19 +65,15 @@ private[querygeneration] object BooleanStatement {
       // Cast the left string into a varchar to ensure fixed-length strings are right-trimmed
       // since Redshift doesn't do this automatically for LIKE expressions. We want the push-down
       // behavior to always match the non-push-down behavior which trims fixed-length strings.
-      case Contains(child, Literal(pattern: UTF8String, StringType)) =>
-        blockStatement(ConstantString("CAST") +
-          blockStatement(convertStatement(child, fields) + "AS VARCHAR") +
-          "LIKE" + s"'%${pattern.toString}%'")
-      case EndsWith(child, Literal(pattern: UTF8String, StringType)) =>
-        blockStatement(ConstantString("CAST") +
-          blockStatement(convertStatement(child, fields) + "AS VARCHAR") +
-          "LIKE" + s"'%${pattern.toString}'")
-      case StartsWith(child, Literal(pattern: UTF8String, StringType)) =>
-        blockStatement(ConstantString("CAST") +
-          blockStatement(convertStatement(child, fields) + "AS VARCHAR") +
-          "LIKE" + s"'${pattern.toString}%'")
-
+      case Contains(left, right) =>
+        blockStatement(convertStatement(Like(left, Concat(Seq(Literal("%"), right, Literal("%"))),
+          DEFAULT_LIKE_ESCAPE_CHAR), fields))
+      case EndsWith(left, right) =>
+        blockStatement(convertStatement(Like(left, Concat(Seq(Literal("%"), right)),
+          DEFAULT_LIKE_ESCAPE_CHAR), fields))
+      case StartsWith(left, right) =>
+        blockStatement(convertStatement(Like(left, Concat(Seq(right, Literal("%"))),
+          DEFAULT_LIKE_ESCAPE_CHAR), fields))
       case _ => null
     })
   }

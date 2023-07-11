@@ -79,7 +79,7 @@ private[querygeneration] object BasicStatement {
             if (l.value == null) {
               ConstantString("NULL") !
             } else {
-              StringVariable(Some(l.toString())) ! // else "'" + str + "'"
+              StringVariable(Some(l.toString().replace("'", "''"))) ! // else "'" + str + "'"
             }
           case DateType =>
             ConstantString("DATEADD(day,") + IntVariable(
