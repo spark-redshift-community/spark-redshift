@@ -146,6 +146,7 @@ private[redshift] class RedshiftWriter(
 
     // If the table doesn't exist, we need to create it first, using JDBC to infer column types
     val createStatement = createTableSql(data, params)
+    log.info("Creating table within Redshift: {}", params.table.get)
     jdbcWrapper.executeInterruptibly(conn.prepareStatement(createStatement))
 
     val preActions = commentActions(params.description, data.schema) ++ params.preActions
@@ -479,7 +480,7 @@ private[redshift] class RedshiftWriter(
     // Uncertain if this is necessary as s3 is now strongly consistent
     // https://aws.amazon.com/s3/consistency/
     if (params.parameters(PARAM_COPY_DELAY).toLong > 0) {
-      log.info(s"Sleeping ${params.copyDelay} milliseconds before proceeding to redshift copy")
+      log.info("Sleeping {} milliseconds before proceeding to redshift copy", params.copyDelay)
       Thread.sleep(params.copyDelay)
     }
     val queryGroup = Utils.queryGroupInfo(Utils.Write, params.user_query_group_label)
@@ -492,6 +493,7 @@ private[redshift] class RedshiftWriter(
         val table: TableName = params.table.get
         if (saveMode == SaveMode.Overwrite) {
           // Overwrites must drop the table in case there has been a schema update
+          log.info("Dropping table within Redshift: {}", table)
           jdbcWrapper.executeInterruptibly(conn.prepareStatement(s"DROP TABLE IF EXISTS $table;"))
           if (!params.useStagingTable) {
             // If we're not using a staging table, commit now so that Redshift doesn't have to
@@ -500,7 +502,7 @@ private[redshift] class RedshiftWriter(
             conn.commit()
           }
         }
-        log.info(s"Loading new Redshift data to: $table")
+        log.info("Loading new Redshift data to: {}", table)
         doRedshiftLoad(conn, data, params, creds, manifestUrl)
         conn.commit()
       } catch {

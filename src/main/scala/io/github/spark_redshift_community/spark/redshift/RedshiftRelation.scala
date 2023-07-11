@@ -115,9 +115,11 @@ private[redshift] case class RedshiftRelation(
       val conn = jdbcWrapper.getConnectorWithQueryGroup(
         params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
       try {
+        log.info("Getting number of rows from Redshift")
         val results = jdbcWrapper.executeQueryInterruptibly(conn.prepareStatement(countQuery))
         if (results.next()) {
           val numRows = results.getLong(1)
+          log.info("Number of rows is {}", numRows)
           val parallelism = sqlContext.getConf("spark.sql.shuffle.partitions", "200").toInt
           val emptyRow = RowEncoder(StructType(Seq.empty)).createSerializer().apply(Row(Seq.empty))
           sqlContext.sparkContext
@@ -137,6 +139,7 @@ private[redshift] case class RedshiftRelation(
       val conn = jdbcWrapper.getConnectorWithQueryGroup(
         params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
       try {
+        log.info("Unloading data from Redshift")
         jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
       } finally {
         conn.close()
@@ -315,6 +318,7 @@ private[redshift] case class RedshiftRelation(
                                     newTempDir,
                                     creds,
                                     params.sseKmsKey)
+    log.info("Unloading data from Redshift")
     jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
     SqlToS3TempCache.setS3Path(statement.statementString, newTempDir)
 
@@ -352,6 +356,8 @@ private[redshift] case class RedshiftRelation(
   }
 
   private def readRDD[T](resultSchema: StructType, filesToRead: Seq[String]): RDD[T] = {
+    log.info("Reading S3 Text files")
+
     // convert complex types to string types since they are loaded from redshift as json
     // This is also necessary to use the from_json function as it only works on strings
     val noRepeatSchema = StructType(resultSchema.zipWithIndex.map { case (f, index) =>
@@ -378,6 +384,7 @@ private[redshift] case class RedshiftRelation(
 
 
   private def readRDDFromParquet[T](resultSchema: StructType, filesToRead: Seq[String]): RDD[T] = {
+    log.info("Reading S3 Parquet files")
 
     val reader = sqlContext.read
       .format("parquet")
@@ -451,12 +458,16 @@ private[redshift] case class RedshiftRelation(
     if(s3Client.doesObjectExist(s3URI.getBucket, s3URI.getKey + "manifest")) {
       val is = s3Client.getObject(s3URI.getBucket, s3URI.getKey + "manifest").getObjectContent
       val s3Files = try {
+        log.info("Begin finding S3 files to read")
         val mapper = new ObjectMapper
         mapper.registerModule(DefaultScalaModule)
         val entries = mapper.readTree(new InputStreamReader(is)).get("entries")
-        entries.iterator().asScala.map(_.get("url").asText()).toSeq
+        val results = entries.iterator().asScala.map(_.get("url").asText()).toSeq
+        log.info("Found {} S3 file(s)", results.length)
+        results
       } finally {
         is.close()
+        log.info("End finding S3 files to read")
       }
       // The filenames in the manifest are of the form s3://bucket/key, without credentials.
       // If the S3 credentials were originally specified in the tempdir's URI, then we need to
