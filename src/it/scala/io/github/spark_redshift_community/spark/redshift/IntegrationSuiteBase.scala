@@ -40,9 +40,12 @@ trait IntegrationSuiteBase
   with BeforeAndAfterAll
   with BeforeAndAfterEach {
 
-  protected def loadConfigFromEnv(envVarName: String): String = {
+  protected def loadConfigFromEnv(envVarName: String, isRequired:Boolean = true): String = {
     Option(System.getenv(envVarName)).getOrElse {
-      fail(s"Must set $envVarName environment variable")
+      if (isRequired)
+        fail(s"Must set $envVarName environment variable")
+      else
+        null
     }
   }
 
@@ -56,7 +59,7 @@ trait IntegrationSuiteBase
   protected val AWS_REDSHIFT_PASSWORD: String = loadConfigFromEnv("AWS_REDSHIFT_PASSWORD")
   protected val AWS_ACCESS_KEY_ID: String = loadConfigFromEnv("AWS_ACCESS_KEY_ID")
   protected val AWS_SECRET_ACCESS_KEY: String = loadConfigFromEnv("AWS_SECRET_ACCESS_KEY")
-  protected val AWS_SESSION_TOKEN: String = loadConfigFromEnv("AWS_SESSION_TOKEN")
+  protected val AWS_SESSION_TOKEN: String = loadConfigFromEnv("AWS_SESSION_TOKEN", isRequired= false)
   // Path to a directory in S3 (e.g. 's3a://bucket-name/path/to/scratch/space').
   protected val AWS_S3_SCRATCH_SPACE: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE")
   protected val AWS_S3_SCRATCH_SPACE_REGION: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE_REGION")
@@ -95,10 +98,13 @@ trait IntegrationSuiteBase
     sc.hadoopConfiguration.setBoolean("fs.s3n.impl.disable.cache", true)
     sc.hadoopConfiguration.set("fs.s3a.access.key", AWS_ACCESS_KEY_ID)
     sc.hadoopConfiguration.set("fs.s3a.secret.key", AWS_SECRET_ACCESS_KEY)
-    sc.hadoopConfiguration.set("fs.s3a.session.token", AWS_SESSION_TOKEN)
+    if (AWS_SESSION_TOKEN != null) {
+      sc.hadoopConfiguration.set("fs.s3a.session.token", AWS_SESSION_TOKEN)
+      sc.hadoopConfiguration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
+    } else {
+      sc.hadoopConfiguration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
+    }
     sc.hadoopConfiguration.set("fs.s3a.bucket.probe", "2")
-    sc.hadoopConfiguration.set("fs.s3a.aws.credentials.provider",
-      "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
     sc.hadoopConfiguration.setBoolean("fs.s3a.bucket.all.committer.magic.enabled", true)
     conn = DefaultJDBCWrapper.getConnector(None, jdbcUrl, None)
   }
@@ -108,7 +114,9 @@ trait IntegrationSuiteBase
       val conf = new Configuration(false)
       conf.set("fs.s3a.access.key", AWS_ACCESS_KEY_ID)
       conf.set("fs.s3a.secret.key", AWS_SECRET_ACCESS_KEY)
-      conf.set("fs.s3a.session.token", AWS_SESSION_TOKEN)
+      if (AWS_SESSION_TOKEN != null) {
+        conf.set("fs.s3a.session.token", AWS_SESSION_TOKEN)
+      }
       // Bypass Hadoop's FileSystem caching mechanism so that we don't cache the credentials:
       conf.setBoolean("fs.s3.impl.disable.cache", true)
       conf.setBoolean("fs.s3n.impl.disable.cache", true)
