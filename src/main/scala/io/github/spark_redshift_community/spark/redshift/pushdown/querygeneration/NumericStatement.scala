@@ -18,7 +18,7 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, RedshiftSQLStatement}
-import org.apache.spark.sql.catalyst.expressions.{Abs, Acos, Asin, Atan, Attribute, Ceil, CheckOverflow, Cos, Exp, Expression, Floor, Greatest, Least, Log10, Pi, Pow, PromotePrecision, Round, Sin, Sqrt, Tan, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Acos, Asin, Atan, Attribute, Ceil, CheckOverflow, Cos, Exp, Expression, Floor, Greatest, Least, Log10, Pi, Pow, Sin, Sqrt, Tan, UnaryMinus}
 
 import scala.language.postfixOps
 
@@ -66,7 +66,7 @@ private[querygeneration] object NumericStatement {
             )
           )
 
-      case PromotePrecision(child) => convertStatement(child, fields)
+      case PromotePrecisionExtractor(child) => convertStatement(child, fields)
 
       case CheckOverflow(child, t, _) =>
         getCastType(t) match {
@@ -80,7 +80,7 @@ private[querygeneration] object NumericStatement {
       // Suppose connector can't see Pi().
       case Pi() => ConstantString("PI()") !
 
-      case Round(child, scale) =>
+      case RoundExtractor(child, scale, ansiEnabled) if !ansiEnabled =>
         ConstantString("ROUND") + blockStatement(
           convertStatements(fields, child, scale)
         )
