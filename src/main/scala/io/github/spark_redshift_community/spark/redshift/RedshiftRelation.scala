@@ -26,6 +26,7 @@ import io.github.spark_redshift_community.spark.redshift.Conversions.parquetData
 import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper.DataBaseOperations
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_OVERRIDE_NULLABLE}
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftSQLStatement, SqlToS3TempCache}
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.{col, from_json}
@@ -49,10 +50,9 @@ private[redshift] case class RedshiftRelation(
     userSchema: Option[StructType])
     (@transient val sqlContext: SQLContext)
   extends BaseRelation
-  with PrunedFilteredScan
-  with InsertableRelation {
-
-  private val log = LoggerFactory.getLogger(getClass)
+    with PrunedFilteredScan
+    with InsertableRelation
+    with Logging {
 
   if (sqlContext != null) {
     Utils.assertThatFileSystemIsNotS3BlockFileSystem(
@@ -243,18 +243,26 @@ private[redshift] case class RedshiftRelation(
   def buildScanFromSQL[Row](statement: RedshiftSQLStatement,
                                     schema: Option[StructType]): RDD[Row] = {
     val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
-    val resultSchema: StructType = getResultSchema(statement, schema, conn)
-
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
-    checkS3BucketUsage(params, s3ClientFactory(creds, params))
-    Utils.collectMetrics(params)
 
-    // If the same query was run before, get the result s3 path from the cache.
-    // Otherwise, unload the data.
-    val tempDir = GetCachedS3QueryPath(statement)
-      .orElse {
-        UnloadDataToS3(statement, conn, resultSchema, creds)
-      }
+    val (resultSchema, tempDir) = try {
+
+      val resultSchema: StructType = getResultSchema(statement, schema, conn)
+
+      checkS3BucketUsage(params, s3ClientFactory(creds, params))
+      Utils.collectMetrics(params)
+
+      // If the same query was run before, get the result s3 path from the cache.
+      // Otherwise, unload the data.
+      val tempDir = GetCachedS3QueryPath(statement)
+        .orElse {
+          UnloadDataToS3(statement, conn, resultSchema, creds)
+        }
+
+      (resultSchema, tempDir)
+    } finally {
+      conn.close()
+    }
 
     val filesToRead: Seq[String] = getFilesToRead(creds, tempDir.get)
     if (params.unloadS3Format == "PARQUET") {
@@ -286,7 +294,10 @@ private[redshift] case class RedshiftRelation(
   }
 
   // Unload data from Redshift into a temporary directory in S3
-  private def UnloadDataToS3[Row](statement: RedshiftSQLStatement,
+  // Note: Connection is passed to this method, & responsibility of
+  // managing connection lies to the caller. closing connection here
+  // leads to failure if caller method perform another operation on it
+  private def UnloadDataToS3(statement: RedshiftSQLStatement,
                                   conn: Connection,
                                   resultSchema: StructType,
                                   creds: AWSCredentialsProvider): Option[String] = {
@@ -297,13 +308,9 @@ private[redshift] case class RedshiftRelation(
                                     newTempDir,
                                     creds,
                                     params.sseKmsKey)
+    jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
+    SqlToS3TempCache.setS3Path(statement.statementString, newTempDir)
 
-    try {
-      jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
-      SqlToS3TempCache.setS3Path(statement.statementString, newTempDir)
-    } finally {
-      conn.close()
-    }
     Some(newTempDir)
   }
 
@@ -419,15 +426,14 @@ private[redshift] case class RedshiftRelation(
 
   }
 
-  private def getResultSchema[Row](statement: RedshiftSQLStatement,
-                                   schema: Option[StructType],
-                                   conn: Connection) = {
+  // Note: this method should not cause side effect.
+  // The connection is managed by the caller method.
+  private def getResultSchema(statement: RedshiftSQLStatement,
+                              schema: Option[StructType],
+                              conn: Connection): StructType = {
     val resultSchema = schema.getOrElse(
-      try {
         conn.tableSchema(statement, params)
-      } finally {
-        conn.close()
-      })
+      )
 
     if (resultSchema.isEmpty) {
       throw new Exception("resultSchema isEmpty for " + statement.statementString)

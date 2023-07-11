@@ -29,11 +29,12 @@ import org.slf4j.LoggerFactory
 
 import java.sql.{Connection, Driver, DriverManager, PreparedStatement, ResultSet, ResultSetMetaData, SQLException}
 import java.util.Properties
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, ThreadFactory}
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.ExecutionContext
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -42,12 +43,14 @@ import scala.util.control.NonFatal
  * Shim which exposes some JDBC helper functions. Most of this code is copied from Spark SQL, with
  * minor modifications for Redshift-specific features and limitations.
  */
-private[redshift] class JDBCWrapper {
+private[redshift] class JDBCWrapper extends Serializable {
 
   private val log = LoggerFactory.getLogger(getClass)
   private val DEFAULT_APP_NAME = "spark-redshift-connector"
 
-  private val ec: ExecutionContext = {
+  // Note: marking field `implicit transient lazy` this allows spark to
+  //  recreate upon de-serialization
+  @transient implicit private lazy val ec: ExecutionContext = {
     val threadFactory = new ThreadFactory {
       private[this] val count = new AtomicInteger()
       override def newThread(r: Runnable) = {
@@ -395,7 +398,9 @@ private[redshift] class JDBCWrapper {
   }
 }
 
-private[redshift] object DefaultJDBCWrapper extends JDBCWrapper {
+private[redshift] object DefaultJDBCWrapper
+  extends JDBCWrapper
+  with Serializable {
 
   private val LOGGER = LoggerFactory.getLogger(getClass.getName)
 

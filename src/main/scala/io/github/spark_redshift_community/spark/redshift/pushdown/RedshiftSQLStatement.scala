@@ -26,10 +26,9 @@ import java.sql.{Connection, PreparedStatement, ResultSet}
 /**
  * SQL string wrapper
  */
-private[redshift] class RedshiftSQLStatement(
-                                                val numOfVar: Int = 0,
-                                                val list: List[StatementElement] = Nil
-                                              ) {
+private[redshift] class RedshiftSQLStatement(val numOfVar: Int = 0,
+                                             val list: List[StatementElement] = Nil)
+  extends Serializable {
 
   private val log = LoggerFactory.getLogger(getClass)
 

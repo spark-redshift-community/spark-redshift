@@ -250,4 +250,15 @@ private[redshift] object QueryBuilder {
       (executedBuilder.getOutput, executedBuilder.rdd)
     }
   }
+
+  def getQueryFromPlan(plan: LogicalPlan):
+  Option[(Seq[Attribute], RedshiftSQLStatement, RedshiftRelation)] = {
+    val qb = new QueryBuilder(plan)
+
+    qb.tryBuild.map { executedBuilder =>
+      (executedBuilder.getOutput,
+        executedBuilder.statement,
+        executedBuilder.source.relation)
+    }
+  }
 }

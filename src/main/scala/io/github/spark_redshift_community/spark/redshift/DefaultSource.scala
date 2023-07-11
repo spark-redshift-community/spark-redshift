@@ -129,7 +129,7 @@ class DefaultSource(
       s => s.isInstanceOf[RedshiftStrategy]
     )) {
       log.info("Enable auto pushdown.")
-      session.experimental.extraStrategies ++= Seq(new RedshiftStrategy)
+      session.experimental.extraStrategies ++= Seq(new RedshiftStrategy(session))
     }
   }
 }
