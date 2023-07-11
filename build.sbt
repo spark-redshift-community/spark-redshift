@@ -34,7 +34,7 @@ val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 lazy val IntegrationTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.3")
-val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.14")
+val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.16")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
 val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.1033")
 // access tokens for aws/shared and our own internal CodeArtifacts repo

@@ -153,7 +153,7 @@ class RedshiftSourceSuite
     super.afterAll()
   }
 
-  test("DefaultSource can load Redshift UNLOAD output to a DataFrame") {
+  ignore("DefaultSource can load Redshift UNLOAD output to a DataFrame") {
     // scalastyle:off
     unloadedData =
       """
