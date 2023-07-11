@@ -21,8 +21,12 @@ import sbt._
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import sbtrelease.ReleasePlugin.autoImport._
 import scoverage.ScoverageKeys
+import java.util.Properties
+import java.io.FileInputStream
 
+val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
 val sparkVersion = "3.3.2"
+val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.
@@ -31,7 +35,70 @@ val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.3")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
 val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.1033")
+// access tokens for aws/shared and our own internal CodeArtifacts repo
+// these are retrieved during CodeBuild steps
+val awsSharedRepoPass = sys.props.get("ci.internalCentralMvnPassword").getOrElse("")
+val internalReleaseRepoPass = sys.props.get("ci.internalTeamMvnPassword").getOrElse("")
+// remove the PATCH portion of the spark version number for use in release binary
+// e.g. MAJOR.MINOR.PATCH => MAJOR.MINOR
+val releaseSparkVersion = testSparkVersion.substring(0, testSparkVersion.lastIndexOf("."))
 
+def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
+  if (condition) {
+    val (fetchRealm, publishRealm, fetchUrl, publishUrl, fetchRepo, publishRepo, userName) =
+      try {
+        val prop = new Properties()
+        prop.load(new FileInputStream("ci/internal_ci.properties"))
+        (
+          prop.getProperty("fetchRealm"),
+          prop.getProperty("publishRealm"),
+          prop.getProperty("fetchUrl"),
+          prop.getProperty("publishUrl"),
+          prop.getProperty("fetchRepo"),
+          prop.getProperty("publishRepo"),
+          prop.getProperty("userName")
+        )
+      } catch {
+        case e: Exception =>
+          e.printStackTrace()
+          sys.exit(1)
+      }
+    Seq(
+      credentials := Seq(
+        Credentials(fetchRealm, fetchUrl, userName, awsSharedRepoPass),
+        Credentials(publishRealm, publishUrl, userName, internalReleaseRepoPass)
+      ),
+      resolvers := Seq(fetchRealm at fetchRepo),
+      externalResolvers := Seq(fetchRealm at fetchRepo),
+      publishTo := Some (publishRealm at publishRepo),
+      pomIncludeRepository := { (_: MavenRepository) => false },
+//      skip in publish := true, // skip release to bintray
+      releaseProcess := Seq[ReleaseStep](publishArtifacts)
+    )
+  }
+  else Seq(
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    },
+    // Add publishing to spark packages as another step.
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      publishArtifacts,
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
+    )
+  )
+}
 
 lazy val root = Project("spark-redshift", file("."))
   .enablePlugins(BuildInfoPlugin)
@@ -40,10 +107,12 @@ lazy val root = Project("spark-redshift", file("."))
   .settings(Project.inConfig(IntegrationTest)(rawScalastyleSettings()): _*)
   .settings(Defaults.coreDefaultSettings: _*)
   .settings(Defaults.itSettings: _*)
+  .settings(ciPipelineSettings(isCI))
   .settings(
     name := "spark-redshift",
+    version += s"-spark_${releaseSparkVersion}",
     organization := "io.github.spark-redshift-community",
-    scalaVersion := "2.12.15",
+    scalaVersion := buildScalaVersion,
     licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0"),
     credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
     scalacOptions ++= Seq("-target:jvm-1.8"),
@@ -87,14 +156,6 @@ lazy val root = Project("spark-redshift", file("."))
      * Release settings *
      ********************/
 
-    publishTo := {
-      val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value)
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-    },
-
     publishMavenStyle := true,
     releaseCrossBuild := true,
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
@@ -129,21 +190,6 @@ lazy val root = Project("spark-redshift", file("."))
       </developer>
     </developers>,
 
-    bintrayReleaseOnPublish in ThisBuild := false,
-
-    // Add publishing to spark packages as another step.
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-      publishArtifacts,
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
-    ),
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
     buildInfoPackage := "io.github.spark_redshift_community.spark.redshift"
   )
