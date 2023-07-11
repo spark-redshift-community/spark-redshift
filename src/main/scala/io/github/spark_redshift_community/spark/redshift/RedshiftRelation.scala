@@ -349,7 +349,10 @@ private[redshift] case class RedshiftRelation(
   private def readRDD[T](resultSchema: StructType, filesToRead: Seq[String]): RDD[T] = {
     // convert complex types to string types since they are loaded from redshift as json
     // This is also necessary to use the from_json function as it only works on strings
-    val modifiedSchema = convertComplexTypesToString(resultSchema)
+    val noRepeatSchema = StructType(resultSchema.zipWithIndex.map { case (f, index) =>
+      StructField(s"field${index}", f.dataType, f.nullable, f.metadata)
+    })
+    val modifiedSchema = convertComplexTypesToString(noRepeatSchema)
 
     val dataFrame = sqlContext.read
       .format(classOf[RedshiftFileFormat].getName)
@@ -358,7 +361,7 @@ private[redshift] case class RedshiftRelation(
       .option(PARAM_OVERRIDE_NULLABLE, params.overrideNullable)
       .load(filesToRead: _*)
 
-    val mapping = mapComplexTypesToJson(resultSchema)
+    val mapping = mapComplexTypesToJson(noRepeatSchema)
 
     if (mapping.nonEmpty) {
       dataFrame.withColumns(mapping).queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]

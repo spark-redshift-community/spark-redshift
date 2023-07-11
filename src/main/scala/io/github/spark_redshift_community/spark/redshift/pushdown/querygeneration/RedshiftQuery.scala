@@ -314,6 +314,7 @@ case class JoinQuery(left: RedshiftQuery,
       right.helper.outputWithQualifier =
         right.helper.nullableOutputWithQualifier
       "FULL OUTER JOIN"
+    case Cross => "CROSS JOIN"
     case _ => throw new MatchError
   }
 
