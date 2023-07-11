@@ -2,7 +2,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.Row
 
-class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
+abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
 
   test("Boolean subquery cast to String") {
     checkAnswer(
