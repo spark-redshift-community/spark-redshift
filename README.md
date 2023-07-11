@@ -854,6 +854,16 @@ for more information.</p>
         Additional parameters to pass to the underlying JDBC driver where the wildcard is the name of the JDBC parameter (e.g., <tt>jdbc.ssl</tt>). Note that the <tt>jdbc</tt> prefix will be stripped off before passing to the JDBC driver.
         A complete list of possible options for the Redshift JDBC driver may be seen in the <a href="https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-configuration-options.html">Redshift docs</a>.
     </td>
+</tr>
+    <td><tt>label</tt></td>
+    <td>No</td>
+    <td>""</td>
+    <td>
+        An identifier to include in the query group set when running queries with the connector. Should be 100 or fewer characters and all characters must be valid unicodeIdentifierParts. Characters in excess of 100 will be trimmed.
+        When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"5.1.0-amzn-1-spark_3.3","op":"Read","lbl":""}}`). 
+        This option will be substituted for the value of the `lbl` key.
+    </td>
+<tr>
 </tr></table>
 
 ## Additional configuration options

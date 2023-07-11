@@ -105,13 +105,15 @@ private[redshift] case class RedshiftRelation(
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
     checkS3BucketUsage(params, s3ClientFactory(creds, params))
     Utils.collectMetrics(params)
+    val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label)
 
     if (requiredColumns.isEmpty) {
       // In the special case where no columns were requested, issue a `count(*)` against Redshift
       // rather than unloading data.
       val whereClause = FilterPushdown.buildWhereClause(schema, filters)
       val countQuery = s"SELECT count(*) FROM $tableNameOrSubquery $whereClause"
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
+      val conn = jdbcWrapper.getConnectorWithQueryGroup(
+        params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
       try {
         val results = jdbcWrapper.executeQueryInterruptibly(conn.prepareStatement(countQuery))
         if (results.next()) {
@@ -132,7 +134,8 @@ private[redshift] case class RedshiftRelation(
       // Unload data from Redshift into a temporary directory in S3:
       val tempDir = params.createPerQueryTempDir()
       val unloadSql = buildUnloadStmt(requiredColumns, filters, tempDir, creds, params.sseKmsKey)
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
+      val conn = jdbcWrapper.getConnectorWithQueryGroup(
+        params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
       try {
         jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
       } finally {
@@ -244,7 +247,9 @@ private[redshift] case class RedshiftRelation(
   // Type can be InternalRow to comply with SparkPlan's doExecute().
   def buildScanFromSQL[Row](statement: RedshiftSQLStatement,
                                     schema: Option[StructType]): RDD[Row] = {
-    val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
+    val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label)
+    val conn = jdbcWrapper.getConnectorWithQueryGroup(
+      params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
 
     val (resultSchema, tempDir) = try {

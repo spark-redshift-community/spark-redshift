@@ -38,6 +38,7 @@ private[redshift] object Parameters {
   val PARAM_TEMPDIR_REGION: String = "tempdir_region"
   val PARAM_SECRET_ID: String = "secret.id"
   val PARAM_SECRET_REGION: String = "secret.region"
+  val PARAM_USER_QUERY_GROUP_LABEL: String = "label"
 
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
@@ -64,7 +65,8 @@ private[redshift] object Parameters {
     PARAM_COPY_RETRY_COUNT -> "2",
     PARAM_COPY_DELAY -> "0",
     PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
-    PARAM_TEMPDIR_REGION -> ""
+    PARAM_TEMPDIR_REGION -> "",
+    PARAM_USER_QUERY_GROUP_LABEL -> ""
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP", "PARQUET")
@@ -112,6 +114,15 @@ private[redshift] object Parameters {
       userParameters.contains(PARAM_SECRET_ID)) {
       throw new IllegalArgumentException(
         "You cannot give a secret and specify user/password options"
+      )
+    }
+    if (userParameters.get(PARAM_USER_QUERY_GROUP_LABEL).
+      exists(_.exists(!_.isUnicodeIdentifierPart))) {
+      val invalid = userParameters(PARAM_USER_QUERY_GROUP_LABEL).
+        find(!_.isUnicodeIdentifierPart).get
+      throw new IllegalArgumentException(
+        "All characters in label option must be valid unicode identifier parts " +
+        s"(char.isUnicodeIdentifierPart == true), '${invalid}' character not allowed"
       )
     }
     MergedParameters(DEFAULT_PARAMETERS ++ userParameters)
@@ -305,6 +316,11 @@ private[redshift] object Parameters {
       * Description of the table, set using the SQL COMMENT command.
       */
     def description: Option[String] = parameters.get("description")
+
+    /**
+     * A user provided label to add to query group as value for key lbl
+     */
+    def user_query_group_label: String = parameters(PARAM_USER_QUERY_GROUP_LABEL)
 
     /**
       * List of semi-colon separated SQL statements to run before write operations.
