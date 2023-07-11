@@ -2,7 +2,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.Row
 
-class StringSelectCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
+abstract class StringSelectCorrectnessSuite extends StringIntegrationPushdownSuiteBase {
 
   test("Select StringType Column") {
     // (id, column, result)
