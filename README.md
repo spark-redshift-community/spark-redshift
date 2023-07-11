@@ -889,8 +889,13 @@ Refer to integration test cases for supported operations for pushdown.
 By default, query results which include a super column will provide the super column as a string.
 However if the schema of the super column is known ahead of time it can be provided as part of the read
 and the column will be returned as the provided schema type. This will also enable the pushdown of operations
-such as getting a struct field, getting a map value by key, or getting the item at an array index. In the case of
-a table with a super containing a struct created like:
+such as getting a struct field, getting a map value by key, or getting the item at an array index.
+Retrieving nested struct field names or map keys which contain upper case letters will return incorrect results, so the
+schema should not be provided to the connector unless all struct field names and map keys are lower case. In a case
+where upper case field names or map keys must be retrieved the schema can be used with the `from_json` function to
+convert the returned string data from a super into the correct struct, map, or array type.
+
+In the case of a table with a super containing a struct created like:
 
 ```sql
 create table contains_super (a super);
@@ -955,6 +960,35 @@ val helloDF = sqlContext.read
   .load().selectExpr("a[0]")
 ```
 
+### Writing complex types
+
+If a schema is provided for a dataframe that includes a complex type like StructType, ArrayType, or MapType
+then the connector can be used to write the field to redshift. There are few important limitations:
+
+1. No nested fields may have names containing upper case letters
+2. No map keys may contain upper case letters
+3. tempformat must be one of `CSV` or `CSV GZIP`
+
+Using the connector, writing a struct to a column `a` looks like:
+
+```scala
+import org.apache.spark.sql.types._
+import org.apache.spark.sql._
+
+val sc = // existing SparkContext
+val sqlContext = new SQLContext(sc)
+
+val schema = StructType(StructField("a", StructType(StructField("hello", StringType) ::Nil)) :: Nil)
+val data = sc.parallelize(Seq(Row(Row("world"))))
+val mydf = sqlContext.createDataFrame(data, schema)
+
+mydf.write.format("io.github.spark_redshift_community.spark.redshift").
+  option("url", jdbcUrl).
+  option("dbtable", tableName).
+  option("tempdir", tempS3Dir).
+  option("tempformat", "CSV").
+  mode(SaveMode.Append).save
+```
 
 #### Acknowledgments
 Auto Pushdown is adapted from **[spark-snowflake connector](https://github.com/snowflakedb/spark-snowflake)** project.

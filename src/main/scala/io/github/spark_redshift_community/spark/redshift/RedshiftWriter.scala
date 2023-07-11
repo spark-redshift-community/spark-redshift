@@ -26,6 +26,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
+import org.apache.spark.sql.functions.{col, to_json}
 import org.slf4j.LoggerFactory
 
 import java.net.URI
@@ -260,7 +261,26 @@ private[redshift] class RedshiftWriter(
     val nonEmptyPartitions = new SetAccumulator[Int]
     sqlContext.sparkContext.register(nonEmptyPartitions)
 
-    val convertedRows: RDD[Row] = data.rdd.mapPartitions { iter: Iterator[Row] =>
+    // find any columns of complex type and map them to_json
+    val complexFields = data.schema.fields.filter(_.dataType match {
+      case _ : MapType | _ : StructType | _ : ArrayType => true
+      case _ => false
+    })
+
+    if (tempFormat == "AVRO" && complexFields.nonEmpty) {
+      throw new IllegalArgumentException(
+        s"Cannot write complex type fields ${complexFields.mkString(", ")}" +
+          " with tempformat AVRO; use CSV or CSV GZIP instead."
+      )
+    }
+
+    val mapping = complexFields.map({field => (field.name, to_json(col(field.name)))}).toMap
+
+    // replace any columns in above mapping
+    val complexTypesReplaced = data.withColumns(mapping)
+
+
+    val convertedRows: RDD[Row] = complexTypesReplaced.rdd.mapPartitions { iter: Iterator[Row] =>
       if (iter.hasNext) {
         nonEmptyPartitions.add(TaskContext.get.partitionId())
       }
@@ -278,12 +298,12 @@ private[redshift] class RedshiftWriter(
     // Convert all column names to lowercase, which is necessary for Redshift to be able to load
     // those columns (see #51).
     val schemaWithLowercaseColumnNames: StructType =
-      StructType(data.schema.map(f => f.copy(name = f.name.toLowerCase)))
+      StructType(complexTypesReplaced.schema.map(f => f.copy(name = f.name.toLowerCase)))
 
-    if (schemaWithLowercaseColumnNames.map(_.name).toSet.size != data.schema.size) {
+    if (schemaWithLowercaseColumnNames.map(_.name).toSet.size != complexTypesReplaced.schema.size) {
       throw new IllegalArgumentException(
         "Cannot save table to Redshift because two or more column names would be identical" +
-        " after conversion to lowercase: " + data.schema.map(_.name).mkString(", "))
+        " after conversion to lowercase: " + complexTypesReplaced.schema.map(_.name).mkString(", "))
     }
 
     // Update the schema so that Avro writes date and timestamp columns as formatted timestamp
