@@ -45,9 +45,8 @@ import scala.util.control.NonFatal
  */
 private[redshift] class JDBCWrapper extends Serializable {
 
-  private val log = LoggerFactory.getLogger(getClass)
-  private val DEFAULT_APP_NAME = "spark-redshift-connector"
-  private val CONNECTOR_SERVICE_NAME_ENV_VAR = "AWS_SPARK_REDSHIFT_CONNECTOR_SERVICE_NAME"
+  protected val log = LoggerFactory.getLogger(getClass)
+
 
   // Note: marking field `implicit transient lazy` this allows spark to
   //  recreate upon de-serialization
@@ -243,11 +242,33 @@ private[redshift] class JDBCWrapper extends Serializable {
   /**
    * Returns the default application name.
    */
-  def defaultAppName: String = {
-    Option(System.getenv(CONNECTOR_SERVICE_NAME_ENV_VAR)) match {
-      case Some(serviceName) if serviceName.trim.length > 0 =>
-        DEFAULT_APP_NAME + "_" + serviceName.trim
-      case _ => DEFAULT_APP_NAME
+  def defaultAppName: String = Utils.connectorServiceName.
+    map(name => s"${Utils.DEFAULT_APP_NAME}_$name").getOrElse(Utils.DEFAULT_APP_NAME)
+
+  /**
+   * The same as get connector but after connection attempt to set the query group.
+   * If setting the query group fails for any reason return a new connection with
+   * the query group unset.
+   * @param userProvidedDriverClass the class name of the JDBC driver for the given url
+   * @param url the JDBC url to connect to
+   * @param params parameters set by the user
+   * @param queryGroup query group to set for the connection
+   * @return a connection
+   */
+  def getConnectorWithQueryGroup(userProvidedDriverClass: Option[String],
+                                 url: String,
+                                 params: Option[MergedParameters],
+                                 queryGroup: String): Connection = {
+    val conn = getConnector(userProvidedDriverClass, url, params)
+    try {
+      executeInterruptibly(conn.prepareStatement(s"""set query_group to '${queryGroup}'"""))
+      conn
+    } catch {
+      case e: Throwable => {
+        log.debug(s"Unable to set query group: $e")
+        conn.close()
+        getConnector(userProvidedDriverClass, url, params)
+      }
     }
   }
 

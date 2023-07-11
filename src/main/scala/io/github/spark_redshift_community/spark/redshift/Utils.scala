@@ -338,6 +338,42 @@ private[redshift] object Utils {
 
   }
 
+  val DEFAULT_APP_NAME = "spark-redshift-connector"
+  private val CONNECTOR_SERVICE_NAME_ENV_VAR = "AWS_SPARK_REDSHIFT_CONNECTOR_SERVICE_NAME"
+
+  /**
+   * Retrieve the name of the service using the connector.
+   * Is none if environment variable is unset or empty.
+   * @return trimmed service name
+   */
+  def connectorServiceName: Option[String] = System.getenv().asScala.
+    get(CONNECTOR_SERVICE_NAME_ENV_VAR).filter(_.trim.nonEmpty).map(_.trim)
+
+  sealed trait MetricOperation
+  case object Read extends MetricOperation
+  case object Write extends MetricOperation
+
+  /**
+   * Provides a string of json to be used for gathering metrics to be
+   * sent to redshift as the query group for all queries associated
+   * with a particular spark query. Limits the svc and lbl fields to
+   * ensure the overall length does not exceed the redshift allowed
+   * 320 characters for a query group.
+   * @param operation the type of operation performed
+   * @param label A user provided identifier to associate with a query
+   *              should be sanitized before use with this function
+   * @return a string to be used as a query group
+   */
+  def queryGroupInfo(operation: MetricOperation, label: String): String = {
+    val MAX_SVC_LENGTH = 30
+    val MAX_LBL_LENGTH = 100
+    val svcName = connectorServiceName.getOrElse("")
+    val trimmedSvcName = svcName.substring(0, math.min(svcName.length, MAX_SVC_LENGTH))
+    val trimmedLabel = label.substring(0, math.min(label.length, MAX_LBL_LENGTH))
+    s"""{"${DEFAULT_APP_NAME}":{"svc":"${trimmedSvcName}",""" +
+      s""""ver":"${BuildInfo.version}","op":"${operation}","lbl":"$trimmedLabel"}}"""
+  }
+
   /**
    * Perform a block until it succeeds or retry count reaches zero.
    * Success is determined by whether the passed block throws

@@ -22,7 +22,7 @@ import java.net.URI
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_USER_QUERY_GROUP_LABEL}
 import com.amazonaws.thirdparty.apache.http.client.methods.HttpRequestBase
 import org.mockito.ArgumentMatchers.{anyString, endsWith}
 import org.mockito.Mockito
@@ -40,6 +40,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.scalatest.exceptions.TestFailedException
+
+import scala.util.matching.Regex
 
 /**
   * Tests main DataFrame loading and writing functionality
@@ -81,6 +83,8 @@ class RedshiftSourceSuite
     Parameters.PARAM_PUSHDOWN_S3_RESULT_CACHE -> "false",
     Parameters.PARAM_UNLOAD_S3_FORMAT -> "TEXT"
   )
+
+  private val queryGroupPattern: Regex = "set query_group to .*".r
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -183,7 +187,7 @@ class RedshiftSourceSuite
 
     checkAnswer(df, TestUtils.expectedData)
     mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
   }
 
   test("Can load output of Redshift queries") {
@@ -213,7 +217,7 @@ class RedshiftSourceSuite
         mockRedshift.jdbcWrapper, (_, _) => mockS3Client).createRelation(testSqlContext, params)
       assert(testSqlContext.baseRelationToDataFrame(relation).collect() === expectedValues)
       mockRedshift.verifyThatConnectionsWereClosed()
-      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedJDBCQuery))
+      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedJDBCQuery))
     }
 
     // Test with query parameter
@@ -224,7 +228,7 @@ class RedshiftSourceSuite
         mockRedshift.jdbcWrapper, (_, _) => mockS3Client).createRelation(testSqlContext, params)
       assert(testSqlContext.baseRelationToDataFrame(relation).collect() === expectedValues)
       mockRedshift.verifyThatConnectionsWereClosed()
-      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedJDBCQuery))
+      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedJDBCQuery))
     }
   }
 
@@ -266,7 +270,7 @@ class RedshiftSourceSuite
       Row(null, null))
     assert(rdd.collect() === prunedExpectedValues)
     mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
   }
 
   test("DefaultSource supports user schema, pruned and filtered scans") {
@@ -314,7 +318,7 @@ class RedshiftSourceSuite
 
     assert(rdd.collect() === Array(Row(1, true)))
     mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
   }
 
   test("DefaultSource supports SSE-KMS key clause") {
@@ -356,7 +360,7 @@ class RedshiftSourceSuite
       Row(null, null))
     assert(rdd.collect() === prunedExpectedValues)
     mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
   }
 
   test("DefaultSource includes extraunloadoptions") {
@@ -400,7 +404,7 @@ class RedshiftSourceSuite
       Row(null, null))
     assert(rdd.collect() === prunedExpectedValues)
     mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
   }
 
   ignore("DefaultSource supports preactions options to run queries before running COPY command") {
@@ -742,7 +746,7 @@ class RedshiftSourceSuite
     relation.asInstanceOf[PrunedFilteredScan]
       .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
     mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
   }
 
   test("Redshift reads does not include region when tempdir_region is not set") {
@@ -761,8 +765,27 @@ class RedshiftSourceSuite
       .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
     mockRedshift.verifyThatConnectionsWereClosed()
     val e = intercept[TestFailedException] {
-      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
     }
     assert(e.getMessage.contains("Actual and expected JDBC queries did not match"))
+  }
+
+  test("Redshift reads include user provide query group label") {
+    val userLabel = "expected"
+    val queryGroupExpected = s"""set query_group to .*"lbl":"${userLabel}".*"""
+    val expectedQuery = (
+      "UNLOAD .*").r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    // Construct the source with a custom schema
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
+    val paramsWithRegion = defaultParams + ("tempdir_region" -> "us-west-1",
+      PARAM_USER_QUERY_GROUP_LABEL -> userLabel)
+    val relation = source.createRelation(
+      testSqlContext, paramsWithRegion, TestUtils.testSchema)
+    relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupExpected.r, expectedQuery))
   }
 }

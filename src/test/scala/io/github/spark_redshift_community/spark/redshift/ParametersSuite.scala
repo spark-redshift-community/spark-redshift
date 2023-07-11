@@ -209,4 +209,22 @@ class ParametersSuite extends AnyFunSuite with Matchers {
     assert(params.postActions.last == "update table2 set col2 = val2")
   }
 
+  test("Non identifier characters in user provided query group label are rejected") {
+    val params = Map(
+      "tempdir" -> "s3://foo/bar",
+      "dbtable" -> "test_schema.test_table",
+      "url" -> "jdbc:redshift://foo/bar?user=user&password=password",
+      "forward_spark_s3_credentials" -> "true",
+      "include_column_list" -> "true",
+      Parameters.PARAM_USER_QUERY_GROUP_LABEL -> "hello!"
+    )
+
+    val exception = intercept[IllegalArgumentException] {
+      Parameters.mergeParameters(params)
+    }
+
+    assert(exception.getMessage == "All characters in label option must " +
+      "be valid unicode identifier parts (char.isUnicodeIdentifierPart == true), " +
+      "'!' character not allowed")
+  }
 }

@@ -482,9 +482,11 @@ private[redshift] class RedshiftWriter(
       log.info(s"Sleeping ${params.copyDelay} milliseconds before proceeding to redshift copy")
       Thread.sleep(params.copyDelay)
     }
+    val queryGroup = Utils.queryGroupInfo(Utils.Write, params.user_query_group_label)
 
     Utils.retry(params.copyRetryCount, params.copyDelay) {
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
+      val conn = jdbcWrapper.getConnectorWithQueryGroup(
+        params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
       conn.setAutoCommit(false)
       try {
         val table: TableName = params.table.get

@@ -235,4 +235,13 @@ class UtilsSuite extends AnyFunSuite with Matchers {
     assert(destProps.getProperty("drivers.param6") == "value6")
     assert(destProps.getProperty("drivers.param7") == "value7")
   }
+
+  test("User provided label is trimmed in queryGroupInfo") {
+    val longString = "a" * 1000
+    val expectedLabel = "a" * 100
+    val expectedString = s""""lbl":"$expectedLabel""""
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, longString)
+
+    actualQueryGroup.contains(expectedString)
+  }
 }
