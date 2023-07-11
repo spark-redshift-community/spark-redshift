@@ -21,7 +21,7 @@ import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, R
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, RedshiftSQLStatement}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.types.{DecimalType, DoubleType, FloatType}
+import org.apache.spark.sql.types.{BooleanType, DecimalType, DoubleType, FloatType}
 
 import scala.language.postfixOps
 
@@ -43,6 +43,20 @@ private[querygeneration] object AggregationStatement {
             if (expr.sql contains "(DISTINCT ") ConstantString("DISTINCT") !
             else EmptyRedshiftSQLStatement()
           Option(agg_fun match {
+            case Max(child) if child.dataType == BooleanType =>
+              throw new RedshiftPushdownUnsupportedException(
+                RedshiftFailMessage.FAIL_PUSHDOWN_AGGREGATE_EXPRESSION,
+                s"${agg_fun.prettyName} @ AggregationStatement",
+                "MAX(Boolean) is not defined in redshift",
+                true
+              )
+            case Min(child) if child.dataType == BooleanType =>
+              throw new RedshiftPushdownUnsupportedException(
+                RedshiftFailMessage.FAIL_PUSHDOWN_AGGREGATE_EXPRESSION,
+                s"${agg_fun.prettyName} @ AggregationStatement",
+                "MIN(Boolean) is not defined in redshift",
+                true
+              )
             case _: Count | _: Max | _: Min | _: Sum =>
               ConstantString(agg_fun.prettyName.toUpperCase) +
                 blockStatement(
