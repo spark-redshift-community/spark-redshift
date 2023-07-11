@@ -803,7 +803,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     doTest(sqlContext, testUnion13)
   }
 
-  // No push down for except
+  // No push down for except on double/float columns
   test("Test EXCEPT logical plan operator") {
     // "Column name" and result set
     val input = List(
@@ -832,13 +832,32 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         expected_res)
 
       checkSqlStatement(
-        s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-           | """.stripMargin)
+        s"""SELECT * FROM ( SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" )
+           |AS "SUBQUERY_7_COL_0" FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+           |FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           |AS "SUBQUERY_1" WHERE NOT EXISTS ( SELECT * FROM ( SELECT ( "SUBQUERY_2"."$column_name")
+           |AS "SUBQUERY_3_COL_0" FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_2" ) AS "SUBQUERY_3" WHERE
+           |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) ) AS "SUBQUERY_4" )
+           |AS "SUBQUERY_6" GROUP BY "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7" ORDER BY
+           |( "SUBQUERY_7"."SUBQUERY_7_COL_0" ) ASC NULLS FIRST""".stripMargin,
+        // Column names written here instead of substituting column_name since
+        // only these two cases should match
+        s"""SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin,
+        s"""SELECT ( "SUBQUERY_0"."TESTFLOAT" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin
+      )
     })
   }
 
-  // No push down for except distinct
+  // No push down for except distinct on double/float
   test("Test EXCEPT DISTINCT logical plan operator") {
     // "Column name" and result set
     val input = List(
@@ -867,9 +886,26 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         expected_res)
 
       checkSqlStatement(
-        s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-           | """.stripMargin)
+        s"""SELECT * FROM ( SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" )
+           |AS "SUBQUERY_7_COL_0" FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" )
+           |AS "SUBQUERY_6_COL_0" FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" )
+           |AS "SUBQUERY_4_COL_0" FROM ( SELECT ( "SUBQUERY_0"."$column_name" )
+           |AS "SUBQUERY_1_COL_0" FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE NOT EXISTS
+           |( SELECT * FROM ( SELECT ( "SUBQUERY_2"."$column_name" )
+           |AS "SUBQUERY_3_COL_0" FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_2" ) AS "SUBQUERY_3" WHERE
+           |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) ) AS "SUBQUERY_4" )
+           |AS "SUBQUERY_6" GROUP BY "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7"
+           |ORDER BY ( "SUBQUERY_7"."SUBQUERY_7_COL_0" ) ASC NULLS FIRST""".stripMargin,
+        s"""SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin,
+        s"""SELECT ( "SUBQUERY_0"."TESTFLOAT" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin)
     })
   }
 
@@ -921,9 +957,18 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       | SELECT test_table.testint FROM test_table
       | ORDER BY 1""".stripMargin,
     Seq(Row(0), Row(1), Row(2), Row(3)),
-    s"""SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-       | """.stripMargin
+    s"""SELECT * FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0" FROM
+       |( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+       |AS "SUBQUERY_1" WHERE  NOT EXISTS ( SELECT * FROM ( SELECT ( "SUBQUERY_2"."TESTINT" )
+       |AS "SUBQUERY_3_COL_0" FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+       |AS "SUBQUERY_2" ) AS "SUBQUERY_3" WHERE
+       |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) )
+       |AS "SUBQUERY_4" GROUP BY "SUBQUERY_4"."SUBQUERY_4_COL_0" )
+       |AS "SUBQUERY_6" ORDER BY ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) ASC NULLS FIRST""".stripMargin
   )
 
   val testExcept02: TestCase = TestCase(
@@ -931,9 +976,18 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       | SELECT test_table.testint FROM test_table
       | ORDER BY 1""".stripMargin,
     Seq(Row(0), Row(1), Row(2), Row(3)),
-    s"""SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-       | """.stripMargin
+    s"""SELECT * FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0" FROM
+       |( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+       |AS "SUBQUERY_1" WHERE  NOT EXISTS ( SELECT * FROM ( SELECT ( "SUBQUERY_2"."TESTINT" )
+       |AS "SUBQUERY_3_COL_0" FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+       |AS "SUBQUERY_2" ) AS "SUBQUERY_3" WHERE
+       |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) )
+       |AS "SUBQUERY_4" GROUP BY "SUBQUERY_4"."SUBQUERY_4_COL_0" )
+       |AS "SUBQUERY_6" ORDER BY ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) ASC NULLS FIRST""".stripMargin,
   )
 
   val testExcept03: TestCase = TestCase(
@@ -1004,7 +1058,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     doTest(sqlContext, testExcept13)
   }
 
-  // No push down for minus
+  // No push down for minus on double/float
   test("Test MINUS logical plan operator") {
     // "Column name" and result set
     val input = List(
@@ -1033,13 +1087,30 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         expected_res)
 
       checkSqlStatement(
-        s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-           | """.stripMargin)
+        s"""SELECT * FROM ( SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+           |FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           |AS "SUBQUERY_1" WHERE
+           |NOT EXISTS ( SELECT * FROM ( SELECT ( "SUBQUERY_2"."$column_name" )
+           |AS "SUBQUERY_3_COL_0" FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_2" ) AS "SUBQUERY_3" WHERE
+           |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) )
+           |AS "SUBQUERY_4" ) AS "SUBQUERY_6" GROUP BY "SUBQUERY_6"."SUBQUERY_6_COL_0" )  AS "SUBQUERY_7"
+           |ORDER BY ( "SUBQUERY_7"."SUBQUERY_7_COL_0" ) ASC NULLS FIRST""".stripMargin,
+        s"""SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin,
+        s"""SELECT ( "SUBQUERY_0"."TESTFLOAT" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin)
     })
   }
 
-  // No push down for minus distinct
+  // No push down for minus distinct double/float
   test("Test MINUS DISTINCT logical plan operator") {
     // "Column name" and result set
     val input = List(
@@ -1068,9 +1139,26 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         expected_res)
 
       checkSqlStatement(
-        s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-           | """.stripMargin)
+        s"""SELECT * FROM ( SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+           |FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           |AS "SUBQUERY_1" WHERE
+           |NOT EXISTS ( SELECT * FROM ( SELECT ( "SUBQUERY_2"."$column_name" )
+           |AS "SUBQUERY_3_COL_0" FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_2" ) AS "SUBQUERY_3" WHERE
+           |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) ) AS "SUBQUERY_4" )
+           |AS "SUBQUERY_6" GROUP BY "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7"
+           |ORDER BY ( "SUBQUERY_7"."SUBQUERY_7_COL_0" ) ASC NULLS FIRST""".stripMargin,
+        s"""SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin,
+        s"""SELECT ( "SUBQUERY_0"."TESTFLOAT" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin)
     })
   }
 
@@ -1122,9 +1210,19 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       | SELECT test_table.testint FROM test_table
       | ORDER BY 1""".stripMargin,
     Seq(Row(0), Row(1), Row(2), Row(3)),
-    s"""SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-       | """.stripMargin
+    s"""SELECT * FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
+       |FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
+       |AS "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE NOT EXISTS
+       |( SELECT * FROM ( SELECT ( "SUBQUERY_2"."TESTINT" ) AS "SUBQUERY_3_COL_0"
+       |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" )
+       |AS "SUBQUERY_3" WHERE
+       |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) )
+       |AS "SUBQUERY_4" GROUP BY "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6"
+       |ORDER BY ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) ASC NULLS FIRST""".stripMargin
   )
 
   val testMinus02: TestCase = TestCase(
@@ -1132,9 +1230,19 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       | SELECT test_table.testint FROM test_table
       | ORDER BY 1""".stripMargin,
     Seq(Row(0), Row(1), Row(2), Row(3)),
-    s"""SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-       | """.stripMargin
+    s"""SELECT * FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
+       |FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
+       |AS "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE NOT EXISTS
+       |( SELECT * FROM ( SELECT ( "SUBQUERY_2"."TESTINT" ) AS "SUBQUERY_3_COL_0"
+       |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" )
+       |AS "SUBQUERY_3" WHERE
+       |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) )
+       |AS "SUBQUERY_4" GROUP BY "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6"
+       |ORDER BY ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) ASC NULLS FIRST""".stripMargin
   )
 
   val testMinus03: TestCase = TestCase(
@@ -1205,7 +1313,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     doTest(sqlContext, testMinus13)
   }
 
-  // No push down for intersect
+  // No push down for intersect on double/float
   test("Test INTERSECT logical plan operator") {
     // "Column name" and result set
     val input = List(
@@ -1237,13 +1345,31 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         expected_res)
 
       checkSqlStatement(
-        s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-           | """.stripMargin)
+        s"""SELECT * FROM ( SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+           |FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE EXISTS
+           |( SELECT * FROM ( SELECT ( "SUBQUERY_2"."$column_name" ) AS "SUBQUERY_3_COL_0"
+           |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" )
+           |AS "SUBQUERY_3" WHERE
+           |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) )
+           |AS "SUBQUERY_4" ) AS "SUBQUERY_6" GROUP BY "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7"
+           |ORDER BY ( "SUBQUERY_7"."SUBQUERY_7_COL_0" ) ASC NULLS FIRST""".stripMargin,
+        s"""SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin,
+        s"""SELECT ( "SUBQUERY_0"."TESTFLOAT" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin
+        )
     })
   }
 
-  // No push down for intersect distinct
+  // No push down for intersect distinct on double/float
   test("Test INTERSECT DISTINCT logical plan operator") {
     // "Column name" and result set
     val input = List(
@@ -1275,9 +1401,27 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         expected_res)
 
       checkSqlStatement(
-        s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-           | """.stripMargin)
+        s"""SELECT * FROM ( SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+           |FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+           |FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |AS "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE  EXISTS
+           |( SELECT * FROM ( SELECT ( "SUBQUERY_2"."$column_name" ) AS "SUBQUERY_3_COL_0"
+           |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" )
+           |AS "SUBQUERY_3" WHERE
+           |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+           |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) )
+           |AS "SUBQUERY_4" ) AS "SUBQUERY_6" GROUP BY "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7"
+           |ORDER BY ( "SUBQUERY_7"."SUBQUERY_7_COL_0" ) ASC NULLS FIRST""".stripMargin,
+      s"""SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin,
+        s"""SELECT ( "SUBQUERY_0"."TESTFLOAT" ) AS "SUBQUERY_1_COL_0" FROM
+           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0"""".stripMargin
+      )
     })
   }
 
@@ -1337,9 +1481,19 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       | SELECT test_table.testint FROM test_table
       | ORDER BY 1""".stripMargin,
     Seq(Row(null), Row(42)),
-    s"""SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-       | """.stripMargin
+    s"""SELECT * FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
+       |FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
+       |AS "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE EXISTS
+       |( SELECT * FROM ( SELECT ( "SUBQUERY_2"."TESTINT" ) AS "SUBQUERY_3_COL_0"
+       |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" )
+       |AS "SUBQUERY_3" WHERE
+       |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) )
+       |AS "SUBQUERY_4" GROUP BY "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6"
+       |ORDER BY ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) ASC NULLS FIRST""".stripMargin
   )
 
   val testIntersect02: TestCase = TestCase(
@@ -1347,9 +1501,19 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       | SELECT test_table.testint FROM test_table
       | ORDER BY 1""".stripMargin,
     Seq(Row(null), Row(42)),
-    s"""SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-       | """.stripMargin
+    s"""SELECT * FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0"
+       |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
+       |FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
+       |AS "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE EXISTS
+       |( SELECT * FROM ( SELECT ( "SUBQUERY_2"."TESTINT" ) AS "SUBQUERY_3_COL_0"
+       |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" )
+       |AS "SUBQUERY_3" WHERE
+       |CASE WHEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) OR ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |THEN ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" IS NULL ) AND ( "SUBQUERY_3"."SUBQUERY_3_COL_0" IS NULL ) )
+       |ELSE ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) END ) )
+       |AS "SUBQUERY_4" GROUP BY "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_6"
+       |ORDER BY ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) ASC NULLS FIRST""".stripMargin
   )
 
   val testIntersect03: TestCase = TestCase(
