@@ -20,10 +20,10 @@ package io.github.spark_redshift_community.spark.redshift
 import io.github.spark_redshift_community.spark.redshift.FilterPushdown._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 
-class FilterPushdownSuite extends FunSuite {
+class FilterPushdownSuite extends AnyFunSuite {
   test("buildWhereClause with empty list of filters") {
     assert(buildWhereClause(StructType(Nil), Seq.empty) === "")
   }

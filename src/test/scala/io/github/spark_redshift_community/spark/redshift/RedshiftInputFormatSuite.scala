@@ -23,11 +23,11 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SQLContext}
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
-
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.funsuite.AnyFunSuite
 import scala.language.implicitConversions
 
-class RedshiftInputFormatSuite extends FunSuite with BeforeAndAfterAll {
+class RedshiftInputFormatSuite extends AnyFunSuite with BeforeAndAfterAll {
 
   import RedshiftInputFormatSuite._
 

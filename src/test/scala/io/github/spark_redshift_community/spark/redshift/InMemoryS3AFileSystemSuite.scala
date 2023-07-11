@@ -4,9 +4,10 @@ import java.io.FileNotFoundException
 
 import org.apache.hadoop.fs.{FileAlreadyExistsException, FileStatus, Path}
 import org.apache.hadoop.fs.s3a.Tristate
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.matchers.should._
+import org.scalatest.funsuite.AnyFunSuite
 
-class InMemoryS3AFileSystemSuite extends FunSuite with Matchers  {
+class InMemoryS3AFileSystemSuite extends AnyFunSuite with Matchers  {
 
   test("Create a file creates all prefixes in the hierarchy") {
     val inMemoryS3AFileSystem = new InMemoryS3AFileSystem()

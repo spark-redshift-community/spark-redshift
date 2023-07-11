@@ -34,7 +34,7 @@ val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 lazy val IntegrationTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.3")
-val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.9")
+val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.14")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
 val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.1033")
 // access tokens for aws/shared and our own internal CodeArtifacts repo
@@ -74,7 +74,6 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
       externalResolvers := Seq(fetchRealm at fetchRepo),
       publishTo := Some (publishRealm at publishRepo),
       pomIncludeRepository := { (_: MavenRepository) => false },
-//      skip in publish := true, // skip release to bintray
       releaseProcess := Seq[ReleaseStep](publishArtifacts)
     )
   }
@@ -120,13 +119,12 @@ lazy val root = Project("spark-redshift", file("."))
     scalacOptions ++= Seq("-target:jvm-1.8"),
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api" % "1.7.32",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.1",
+      "org.slf4j" % "slf4j-api" % "2.0.7",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.1",
 
-      "com.google.guava" % "guava" % "27.0.1-jre" % "test",
-      "org.scalatest" %% "scalatest" % "3.0.5" % "test",
-      "org.mockito" % "mockito-inline" % "4.9.0" % "test",
-
+      "com.google.guava" % "guava" % "31.1-jre" % "test",
+      "org.scalatest" %% "scalatest" % "3.2.16" % "test",
+      "org.scalatestplus" %% "mockito-4-6" % "3.2.15.0" % "test",
       "com.amazon.redshift" % "redshift-jdbc42" % testJDBCVersion % "provided",
 
       "com.amazonaws.secretsmanager" % "aws-secretsmanager-jdbc" % "1.0.12" % "provided" excludeAll

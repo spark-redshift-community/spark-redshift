@@ -23,12 +23,12 @@ import java.util.Locale
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.types._
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
  * Unit test for data type conversions
  */
-class ConversionsSuite extends FunSuite {
+class ConversionsSuite extends AnyFunSuite {
 
   private def createRowConverter(schema: StructType) = {
     Conversions.createRowConverter(schema, Parameters.DEFAULT_PARAMETERS("csvnullstring"), false)

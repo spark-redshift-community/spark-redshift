@@ -20,11 +20,11 @@ package io.github.spark_redshift_community.spark.redshift
 import com.amazonaws.auth.{AWSSessionCredentials, BasicAWSCredentials, BasicSessionCredentials, DefaultAWSCredentialsProviderChain}
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.hadoop.conf.Configuration
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.language.implicitConversions
 
-class AWSCredentialsUtilsSuite extends FunSuite {
+class AWSCredentialsUtilsSuite extends AnyFunSuite {
 
   val baseParams = Map(
     "tempdir" -> "s3://foo/bar",
