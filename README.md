@@ -932,6 +932,7 @@ By default, query results which include a super column will provide the super co
 However if the schema of the super column is known ahead of time it can be provided as part of the read
 and the column will be returned as the provided schema type. This will also enable the pushdown of operations
 such as getting a struct field, getting a map value by key, or getting the item at an array index.
+Retrieving maps which use key types other than StringType is not supported.
 Retrieving nested struct field names or map keys which contain upper case letters will return incorrect results, so the
 schema should not be provided to the connector unless all struct field names and map keys are lower case. In a case
 where upper case field names or map keys must be retrieved the schema can be used with the `from_json` function to
@@ -1008,8 +1009,9 @@ If a schema is provided for a dataframe that includes a complex type like Struct
 then the connector can be used to write the field to redshift. There are few important limitations:
 
 1. No nested fields may have names containing upper case letters
-2. No map keys may contain upper case letters
-3. tempformat must be one of `CSV`, `CSV GZIP`, or `PARQUET`
+2. Any map keys must be StringType
+3. No map keys may contain upper case letters
+4. tempformat must be one of `CSV`, `CSV GZIP`, or `PARQUET`
 
 Using the connector, writing a struct to a column `a` looks like:
 

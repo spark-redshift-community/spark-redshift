@@ -138,4 +138,68 @@ trait ComplexWriteSuite extends IntegrationSuiteBase {
       checkAnswer(actualDf, Seq(expectedRow))
     }
   }
+
+  test("Unsupported map key types cause IllegalArgumentException") {
+    val superSchema = MapType(IntegerType, StringType)
+    val dataframeSchema = StructType(StructField("a", superSchema)::Nil)
+
+    val row = Row(Map(1 -> "value"))
+    val data = sc.parallelize(Seq(row))
+    val df = sqlContext.createDataFrame(data, dataframeSchema)
+
+    val exception = intercept[IllegalArgumentException] {
+      write(df).option("dbtable", "anything").mode(SaveMode.Append).save()
+    }
+
+    assert(exception.getMessage ==
+      "Cannot write map with key type IntegerType; Only maps with StringType keys are supported.")
+  }
+
+  test("Unsupported map key types nested in structs cause IllegalArgumentException") {
+    val superSchema = StructType(StructField("b", MapType(IntegerType, StringType))::Nil)
+    val dataframeSchema = StructType(StructField("a", superSchema)::Nil)
+
+    val row = Row(Row(Map(1 -> "value")))
+    val data = sc.parallelize(Seq(row))
+    val df = sqlContext.createDataFrame(data, dataframeSchema)
+
+    val exception = intercept[IllegalArgumentException] {
+      write(df).option("dbtable", "anything").mode(SaveMode.Append).save()
+    }
+
+    assert(exception.getMessage ==
+      "Cannot write map with key type IntegerType; Only maps with StringType keys are supported.")
+  }
+
+  test("Unsupported map key types nested in maps cause IllegalArgumentException") {
+    val superSchema = MapType(StringType, MapType(IntegerType, StringType))
+    val dataframeSchema = StructType(StructField("a", superSchema)::Nil)
+
+    val row = Row(Map("key" -> Map(1 -> "value")))
+    val data = sc.parallelize(Seq(row))
+    val df = sqlContext.createDataFrame(data, dataframeSchema)
+
+    val exception = intercept[IllegalArgumentException] {
+      write(df).option("dbtable", "anything").mode(SaveMode.Append).save()
+    }
+
+    assert(exception.getMessage ==
+      "Cannot write map with key type IntegerType; Only maps with StringType keys are supported.")
+  }
+
+  test("Unsupported map key types nested in array cause IllegalArgumentException") {
+    val superSchema = ArrayType(MapType(IntegerType, StringType))
+    val dataframeSchema = StructType(StructField("a", superSchema)::Nil)
+
+    val row = Row(mutable.WrappedArray.make(Array(Map(1 -> "value"))))
+    val data = sc.parallelize(Seq(row))
+    val df = sqlContext.createDataFrame(data, dataframeSchema)
+
+    val exception = intercept[IllegalArgumentException] {
+      write(df).option("dbtable", "anything").mode(SaveMode.Append).save()
+    }
+
+    assert(exception.getMessage ==
+      "Cannot write map with key type IntegerType; Only maps with StringType keys are supported.")
+  }
 }

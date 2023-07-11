@@ -217,6 +217,20 @@ private[redshift] class RedshiftWriter(
   }
 
   /**
+   * Find any unsupported key type in the provided schema.
+   * @param dataType Schema to search for
+   * @return The datatype used as a map key which is unsupported
+   */
+  private def findUnsupportedMapKeyType(dataType: DataType) : Option[DataType] = dataType match {
+    case dt: StructType => dt.fields.map(field => findUnsupportedMapKeyType(field.dataType)).
+      find(_.nonEmpty).flatten
+    case dt: ArrayType => findUnsupportedMapKeyType(dt.elementType)
+    case MapType(StringType, other, _) => findUnsupportedMapKeyType(other)
+    case MapType(keyType, _, _) => Some(keyType)
+    case _ => None
+  }
+
+  /**
    * Serialize temporary data to S3, ready for Redshift COPY, and create a manifest file which can
    * be used to instruct Redshift to load the non-empty temporary data partitions.
    *
@@ -277,6 +291,13 @@ private[redshift] class RedshiftWriter(
           " with tempformat AVRO; use CSV or CSV GZIP instead."
       )
     }
+
+    // Before writing ensure all map key types are supported
+    findUnsupportedMapKeyType(data.schema).foreach(
+      dt => throw new IllegalArgumentException(
+        s"Cannot write map with key type $dt; Only maps with StringType keys are supported."
+      )
+    )
 
     // Produce this mapping if using csv
     val mapping = if (tempFormat.startsWith("CSV")) {
