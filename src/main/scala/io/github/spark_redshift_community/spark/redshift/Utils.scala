@@ -141,8 +141,9 @@ private[redshift] object Utils {
    * Creates a randomly named temp directory path for intermediate data
    */
   def makeTempPath(tempRoot: String): String = {
-    lastTempPathGenerated = Utils.joinUrls(tempRoot, UUID.randomUUID().toString)
-    lastTempPathGenerated
+    val _lastTempPathGenerated = Utils.joinUrls(tempRoot, UUID.randomUUID().toString)
+    lastTempPathGenerated = _lastTempPathGenerated
+    _lastTempPathGenerated
   }
 
   /**
