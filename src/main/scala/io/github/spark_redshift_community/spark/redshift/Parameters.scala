@@ -36,6 +36,9 @@ private[redshift] object Parameters {
   val PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING: String = "legacy_jdbc_real_type_mapping"
   val PARAM_OVERRIDE_NULLABLE: String = "overridenullable"
   val PARAM_TEMPDIR_REGION: String = "tempdir_region"
+  val PARAM_SECRET_ID: String = "secret.id"
+  val PARAM_SECRET_REGION: String = "secret.region"
+
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
@@ -100,7 +103,17 @@ private[redshift] object Parameters {
           "You cannot specify credentials in both the URL and as user/password options")
         }
     }
-
+    if (credsInURL.isDefined && userParameters.contains(PARAM_SECRET_ID)) {
+        throw new IllegalArgumentException(
+          "You cannot give a secret and specify credentials in URL"
+        )
+    }
+    if ((userParameters.contains("user") || userParameters.contains("password")) &&
+      userParameters.contains(PARAM_SECRET_ID)) {
+      throw new IllegalArgumentException(
+        "You cannot give a secret and specify user/password options"
+      )
+    }
     MergedParameters(DEFAULT_PARAMETERS ++ userParameters)
   }
 
@@ -202,6 +215,15 @@ private[redshift] object Parameters {
       ) yield (user, password)
     }
 
+    /**
+    * Secret Id to be used to authenticate to Redshift.
+    */
+    def secretId: Option[String] = parameters.get(PARAM_SECRET_ID)
+
+    /**
+    * Secret Region is the region value where your secret resides.
+    */
+    def secretRegion: Option[String] = parameters.get(PARAM_SECRET_REGION)
     /**
      * A JDBC URL, of the format:
      *

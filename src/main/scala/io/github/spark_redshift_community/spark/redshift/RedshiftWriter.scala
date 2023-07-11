@@ -463,7 +463,7 @@ private[redshift] class RedshiftWriter(
     }
 
     Utils.retry(params.copyRetryCount, params.copyDelay) {
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
+      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
       conn.setAutoCommit(false)
       try {
         val table: TableName = params.table.get

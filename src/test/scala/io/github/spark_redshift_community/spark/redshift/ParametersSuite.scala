@@ -122,6 +122,47 @@ class ParametersSuite extends FunSuite with Matchers {
       "url" -> "jdbc:redshift://foo/bar?user=user&password=password"))
   }
 
+  test("Cannot specify a secret and credentials in URL") {
+    val err = intercept[IllegalArgumentException] {
+      Parameters.mergeParameters(Map(
+        "forward_spark_s3_credentials" -> "true",
+        "tempdir" -> "s3://foo/bar",
+        "query" -> "select * from test_table",
+        "secret.id" -> Parameters.PARAM_SECRET_ID,
+        "secret.region" -> Parameters.PARAM_SECRET_REGION,
+        "url" -> "jdbc:redshift://foo/bar?user=user&password=password"))
+    }
+    err.getMessage.contains("You cannot specify a secret and give credentials in URL")
+  }
+
+  test("Ensuring secret.id and secret.region values of MergedParameters are set") {
+    val params = Parameters.mergeParameters(Map(
+      "forward_spark_s3_credentials" -> "true",
+      "tempdir" -> "s3://foo/bar",
+      "query" -> "select * from test_table",
+      "secret.id" -> Parameters.PARAM_SECRET_ID,
+      "secret.region" -> Parameters.PARAM_SECRET_REGION,
+      "url" -> "jdbc:redshift://foo/bar"))
+
+    params.secretId.get shouldEqual Parameters.PARAM_SECRET_ID
+    params.secretRegion.get shouldEqual Parameters.PARAM_SECRET_REGION
+  }
+
+  test("Cannot specify a secret and user/password parameters") {
+    val err = intercept[IllegalArgumentException] {
+      Parameters.mergeParameters(Map(
+        "forward_spark_s3_credentials" -> "true",
+        "tempdir" -> "s3://foo/bar",
+        "query" -> "select * from test_table",
+        "user" -> "user",
+        "password" -> "password",
+        "secret.id" -> Parameters.PARAM_SECRET_ID,
+        "secret.region" -> Parameters.PARAM_SECRET_REGION,
+        "url" -> "jdbc:redshift://foo/bar"))
+    }
+    err.getMessage.contains("You cannot give a secret and specify user/password options")
+  }
+
   test("tempformat option is case-insensitive") {
     val params = Map(
       "forward_spark_s3_credentials" -> "true",

@@ -100,7 +100,11 @@ private[redshift] class JDBCWrapper extends Serializable {
                   }
               }
           }
-        case "postgresql" => "org.postgresql.Driver"
+        case "postgresql" =>
+          "org.postgresql.Driver"
+        case "jdbc-secretsmanager" =>
+          "com.amazonaws.secretsmanager.sql.AWSSecretsManagerRedshiftDriver"
+
         case other => throw new IllegalArgumentException(s"Unsupported JDBC protocol: '$other'")
       }
     }
@@ -246,8 +250,37 @@ private[redshift] class JDBCWrapper extends Serializable {
   def getConnector(
       userProvidedDriverClass: Option[String],
       url: String,
-      credentials: Option[(String, String)]) : Connection = {
-    val subprotocol = url.stripPrefix("jdbc:").split(":")(0)
+      params: Option[MergedParameters]): Connection = {
+    // Updates the url if we are using secrets manager.
+    val updatedURL = if (params.isDefined && params.get.secretId.isDefined) {
+      url.replaceFirst("jdbc", "jdbc-secretsmanager")
+    } else {
+      url
+    }
+    // Setting properties
+    val properties = new Properties()
+    params.foreach { params =>
+      params.credentials.foreach { case (user, password) =>
+        properties.setProperty("user", user)
+        properties.setProperty("password", password)
+      }
+      params.secretId.foreach { secretId =>
+        properties.setProperty("user", secretId)
+      }
+      params.secretRegion.foreach { secretRegion =>
+        // AWS Secrets Manager uses system properties for "drivers.region" property.
+        // We must set "drivers.region" property prior to registering the driverClass
+        // to avoid the driver attempting to access the EC2 metadata server to retrieve the region
+        System.setProperty("drivers.region", secretRegion)
+      }
+    }
+    // Set the application name property if not already specified by the client.
+    if (!updatedURL.toLowerCase().contains("applicationname=")) {
+      properties.setProperty("ApplicationName", DEFAULT_APP_NAME)
+    }
+
+    val subprotocol = updatedURL.stripPrefix("jdbc:").split(":")(0)
+
     val driverClass: String = getDriverClass(subprotocol, userProvidedDriverClass)
     DriverRegistry.register(driverClass)
     val driverWrapperClass: Class[_] = if (SPARK_VERSION.startsWith("1.4")) {
@@ -271,18 +304,8 @@ private[redshift] class JDBCWrapper extends Serializable {
     }.getOrElse {
       throw new IllegalArgumentException(s"Did not find registered driver with class $driverClass")
     }
-    val properties = new Properties()
-    credentials.foreach { case(user, password) =>
-      properties.setProperty("user", user)
-      properties.setProperty("password", password)
-    }
 
-    // Set the application name property if not already specified by the client.
-    if (!url.toLowerCase().contains("applicationname=")) {
-      properties.setProperty("ApplicationName", DEFAULT_APP_NAME)
-    }
-
-    driver.connect(url, properties)
+    driver.connect(updatedURL, properties)
   }
 
   /**
