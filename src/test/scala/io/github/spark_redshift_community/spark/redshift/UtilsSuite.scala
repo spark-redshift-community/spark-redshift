@@ -20,10 +20,10 @@ import java.net.URI
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_OVERRIDE_NULLABLE}
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, PARAM_OVERRIDE_NULLABLE}
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FunSuite, Matchers}
 import org.slf4j.Logger
@@ -156,12 +156,10 @@ class UtilsSuite extends FunSuite with Matchers {
     // check that at least timeToSleep passed but allow for slightly longer
     assert(timeTaken >= timeToSleep && timeTaken <= timeToSleep + 50)
   }
-
-  val fakeCredentials: Map[String, String] = Map[String, String](
-    "forward_spark_s3_credentials" -> "true",
-    "legacy_jdbc_real_type_mapping" -> "false",
-    PARAM_OVERRIDE_NULLABLE -> "false"
-  )
+ val fakeCredentials: Map[String, String] =
+   Map[String, String]("forward_spark_s3_credentials" -> "true",
+     Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
+     Parameters.PARAM_OVERRIDE_NULLABLE -> "false")
 
   test("collectMetrics logs buildinfo to INFO") {
     val mockLogger = mock[Logger]
@@ -172,10 +170,45 @@ class UtilsSuite extends FunSuite with Matchers {
 
   test("collectMetrics outputs unique log to INFO when version includes -amzn- INFO") {
     val mockLogger = mock[Logger]
-
     Utils.collectMetrics(MergedParameters(fakeCredentials), Some(mockLogger))
     if (BuildInfo.version.contains("-amzn-")) {
       verify(mockLogger).info("amazon-spark-redshift-connector")
     }
+  }
+
+  test("collectMetrics logs to INFO level when ParamLegacyJDBCRealTypeMapping is enabled") {
+    val mockLogger = mock[Logger]
+    val fakeCredentialsOverride = fakeCredentials +
+      (Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "true")
+    val params = MergedParameters(fakeCredentialsOverride)
+
+    Utils.collectMetrics(params, Some(mockLogger))
+      verify(mockLogger).info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
+  }
+
+  test("collectMetrics logs to INFO level when param OverrideNullable is enabled") {
+    val mockLogger = mock[Logger]
+    val fakeCredentialsOverride = fakeCredentials +
+      (Parameters.PARAM_OVERRIDE_NULLABLE -> "true")
+    val params = MergedParameters(fakeCredentialsOverride)
+
+    Utils.collectMetrics(params, Some(mockLogger))
+      verify(mockLogger).info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
+  }
+
+  test("collectMetrics does not log when param LegacyJdbcRealTypeMapping is disabled") {
+    val mockLogger = mock[Logger]
+    val params = MergedParameters(fakeCredentials)
+
+    Utils.collectMetrics(params, Some(mockLogger))
+    verify(mockLogger, never()).info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
+  }
+
+  test("collectMetrics does not log when param OverrideNullable is disabled") {
+    val mockLogger = mock[Logger]
+    val params = MergedParameters(fakeCredentials)
+
+    Utils.collectMetrics(params, Some(mockLogger))
+    verify(mockLogger, never()).info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
   }
 }
