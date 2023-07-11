@@ -64,7 +64,7 @@ private[redshift] object Parameters {
     PARAM_TEMPDIR_REGION -> ""
   )
 
-  val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
+  val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP", "PARQUET")
   val DEFAULT_RETRY_DELAY: Long = 30000
 
   /**

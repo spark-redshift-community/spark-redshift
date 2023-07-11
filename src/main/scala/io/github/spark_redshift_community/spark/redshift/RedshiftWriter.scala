@@ -23,12 +23,14 @@ import com.amazonaws.services.s3.AmazonS3
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 import org.slf4j.LoggerFactory
 
 import java.net.URI
 import java.sql.{Connection, Date, SQLException, Timestamp}
+import java.time.ZoneId
 import scala.util.control.NonFatal
 
 /**
@@ -94,6 +96,7 @@ private[redshift] class RedshiftWriter(
     val fixedUrl = Utils.fixS3Url(manifestUrl)
     val format = params.tempFormat match {
       case "AVRO" => "AVRO 'auto'"
+      case "PARQUET" => "PARQUET"
       case csv if csv == "CSV" || csv == "CSV GZIP" => csv + s" NULL AS '${params.nullString}'"
     }
     val columns = if (params.includeColumnList) {
@@ -102,7 +105,10 @@ private[redshift] class RedshiftWriter(
       ""
     }
 
-    val regionClause = params.tempDirRegion.map(region => s"REGION '$region'").getOrElse("")
+    // The region clause cannot be used if copy format is parquet
+    val regionClause = if (format == "PARQUET") { "" } else {
+      params.tempDirRegion.map(region => s"REGION '$region'").getOrElse("")
+    }
     val copySqlStatement = s"COPY ${params.table.get} ${columns}FROM '$fixedUrl'" +
       s" FORMAT AS ${format} manifest" +
       s" $regionClause" +
@@ -229,16 +235,23 @@ private[redshift] class RedshiftWriter(
     // However, each task gets its own deserialized copy, making this safe.
     val conversionFunctions: Array[Any => Any] = data.schema.fields.map { field =>
       field.dataType match {
-        case _: DecimalType => (v: Any) => if (v == null) null else v.toString
-        case DateType =>
+        case _: DecimalType if tempFormat != "PARQUET" =>
+          (v: Any) => if (v == null) null else v.toString
+        case DateType if tempFormat != "PARQUET" =>
           val dateFormat = Conversions.createRedshiftDateFormat()
           (v: Any) => {
             if (v == null) null else dateFormat.format(v.asInstanceOf[Date])
           }
-        case TimestampType =>
+        case TimestampType if tempFormat != "PARQUET" =>
           (v: Any) => {
             if (v == null) null else Conversions.createRedshiftTimestampFormat().format(v.asInstanceOf[Timestamp].toLocalDateTime)
           }
+        case TimestampType => (v: Any) => if (v == null) null else {
+          DateTimeUtils.toJavaTimestamp(DateTimeUtils.fromUTCTime(
+            DateTimeUtils.fromJavaTimestamp(v.asInstanceOf[Timestamp]),
+            ZoneId.systemDefault.getId
+          ))
+        }
         case _ => (v: Any) => v
       }
     }
@@ -277,6 +290,7 @@ private[redshift] class RedshiftWriter(
     // strings. This is necessary for Redshift to be able to load these columns (see #39).
     val convertedSchema: StructType = StructType(
       schemaWithLowercaseColumnNames.map {
+        case parquetType if tempFormat == "PARQUET" => parquetType
         case StructField(name, _: DecimalType, nullable, meta) =>
           StructField(name, StringType, nullable, meta)
         case StructField(name, DateType, nullable, meta) =>
@@ -300,6 +314,8 @@ private[redshift] class RedshiftWriter(
           .option("escape", "\"")
           .option("nullValue", nullString)
           .option("compression", "gzip")
+      case "PARQUET" =>
+        writer.format("parquet")
     }).save(tempDir)
 
     if (nonEmptyPartitions.value.isEmpty) {
@@ -312,10 +328,14 @@ private[redshift] class RedshiftWriter(
       // The partition filenames are of the form part-r-XXXXX-UUID.fileExtension.
       val fs = FileSystem.get(URI.create(tempDir), sqlContext.sparkContext.hadoopConfiguration)
       val partitionIdRegex = "^part-(?:r-)?(\\d+)[^\\d+].*$".r
-      val filesToLoad: Seq[String] = {
+      // retrieve all files to copy and their length
+      // length is necessary for parquet format
+      val filesToLoad: Seq[(String, Long)] = {
         val nonEmptyPartitionIds = nonEmptyPartitions.value.toSet
-        fs.listStatus(new Path(tempDir)).map(_.getPath.getName).collect {
-          case file @ partitionIdRegex(id) if nonEmptyPartitionIds.contains(id.toInt) => file
+        fs.listStatus(new Path(tempDir)).map(status => (status.getPath.getName, status.getLen))
+          .collect {
+          case file @ (partitionIdRegex(id), _) if nonEmptyPartitionIds.contains(id.toInt)
+          => file
         }
       }
       // It's possible that tempDir contains AWS access keys. We shouldn't save those credentials to
@@ -324,8 +344,10 @@ private[redshift] class RedshiftWriter(
       // and make sure that it uses the s3:// scheme:
       val sanitizedTempDir = Utils.fixS3Url(sameFileSystemDir)
 
-      val manifestEntries = filesToLoad.map { file =>
-        s"""{"url":"$sanitizedTempDir/$file", "mandatory":true}"""
+      val manifestEntries = filesToLoad.map { case (file, length) =>
+        s"""{"url":"$sanitizedTempDir/$file",
+           | "mandatory":true,
+           | "meta": {"content_length":$length}}""".stripMargin
       }
       val manifest = s"""{"entries": [${manifestEntries.mkString(",\n")}]}"""
       val manifestPath = sameFileSystemDir + "/manifest.json"
@@ -362,7 +384,11 @@ private[redshift] class RedshiftWriter(
       AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
 
     // Make sure a cross-region write has the necessary connector parameters set.
-    Utils.checkRedshiftAndS3OnSameRegion(params, s3ClientFactory(creds, params))
+    if (params.tempFormat == "PARQUET") {
+      Utils.checkRedshiftAndS3OnSameRegionParquetWrite(params, s3ClientFactory(creds, params))
+    } else {
+      Utils.checkRedshiftAndS3OnSameRegion(params, s3ClientFactory(creds, params))
+    }
 
     // When using the Avro tempformat, log an informative error message in case any column names
     // are unsupported by Avro's schema validation:

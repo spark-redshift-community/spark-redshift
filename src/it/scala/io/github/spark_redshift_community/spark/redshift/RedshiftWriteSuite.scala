@@ -177,3 +177,25 @@ class CSVGZIPRedshiftWriteSuite extends IntegrationSuiteBase {
     }
   }
 }
+
+class ParquetRedshiftWriteSuite extends BaseRedshiftWriteSuite {
+  override val tempformat: String = "PARQUET"
+
+  protected val AWS_S3_CROSS_REGION_SCRATCH_SPACE: String =
+    loadConfigFromEnv("AWS_S3_CROSS_REGION_SCRATCH_SPACE")
+
+  test("save fails on cross-region copy") {
+    val tableName = s"cross_region_copy_parquet_$randomSuffix"
+    val caught = intercept[Exception]({
+      write(
+        sqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testSchema))
+        .option("dbtable", tableName)
+        .option("tempdir", AWS_S3_CROSS_REGION_SCRATCH_SPACE)
+        .mode(SaveMode.ErrorIfExists)
+        .save()
+    })
+    assert(caught.getMessage == "Redshift cluster and S3 bucket are in different regions " +
+      "when tempformat is set to parquet")
+
+  }
+}
