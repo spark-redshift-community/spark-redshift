@@ -17,12 +17,13 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.matchers.should._
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
   * Check validation of parameter config
   */
-class ParametersSuite extends FunSuite with Matchers {
+class ParametersSuite extends AnyFunSuite with Matchers {
 
   test("Minimal valid parameter map is accepted") {
     val params = Map(

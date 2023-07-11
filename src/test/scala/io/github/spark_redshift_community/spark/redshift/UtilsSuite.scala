@@ -25,8 +25,9 @@ import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParam
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
-import org.scalatest.mockito.MockitoSugar.mock
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatestplus.mockito.MockitoSugar.mock
+import org.scalatest.matchers.should._
+import org.scalatest.funsuite.AnyFunSuite
 import org.slf4j.Logger
 
 import java.sql.Timestamp
@@ -35,7 +36,7 @@ import java.util.Properties
 /**
  * Unit tests for helper functions
  */
-class UtilsSuite extends FunSuite with Matchers {
+class UtilsSuite extends AnyFunSuite with Matchers {
 
   test("joinUrls preserves protocol information") {
     Utils.joinUrls("s3n://foo/bar/", "/baz") shouldBe "s3n://foo/bar/baz/"
@@ -88,7 +89,7 @@ class UtilsSuite extends FunSuite with Matchers {
 
   test("checkThatBucketHasObjectLifecycleConfiguration when no rule") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
       new BucketLifecycleConfiguration().withRules(
@@ -100,7 +101,7 @@ class UtilsSuite extends FunSuite with Matchers {
 
   test("checkThatBucketHasObjectLifecycleConfiguration when rule with prefix") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
       new BucketLifecycleConfiguration().withRules(
@@ -112,7 +113,7 @@ class UtilsSuite extends FunSuite with Matchers {
 
   test("checkThatBucketHasObjectLifecycleConfiguration when rule without prefix") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
       new BucketLifecycleConfiguration().withRules(
@@ -124,7 +125,7 @@ class UtilsSuite extends FunSuite with Matchers {
 
   test("checkThatBucketHasObjectLifecycleConfiguration when error in checking") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString()))
       .thenThrow(new NullPointerException())

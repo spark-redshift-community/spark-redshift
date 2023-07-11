@@ -16,9 +16,9 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class TableNameSuite extends FunSuite {
+class TableNameSuite extends AnyFunSuite {
   test("TableName.parseFromEscaped") {
     assert(TableName.parseFromEscaped("foo.bar") === TableName("foo", "bar"))
     assert(TableName.parseFromEscaped("foo") === TableName("PUBLIC", "foo"))

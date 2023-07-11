@@ -17,9 +17,10 @@ package io.github.spark_redshift_community.spark.redshift
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.RedshiftScanExec
 import org.apache.spark.sql.SparkSession
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.funsuite.AnyFunSuite
 
-class RedshiftQuerySuite extends FunSuite with BeforeAndAfterAll {
+class RedshiftQuerySuite extends AnyFunSuite with BeforeAndAfterAll {
 
   private var spark: SparkSession = _
 

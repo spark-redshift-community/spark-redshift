@@ -22,12 +22,12 @@ package io.github.spark_redshift_community.spark.redshift
 
 import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.{DataFrame, Row}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
  * Copy of Spark SQL's `QueryTest` trait.
  */
-trait QueryTest extends FunSuite {
+trait QueryTest extends AnyFunSuite {
   /**
    * Runs the plan and makes sure the answer matches the expected result.
    * @param df the [[DataFrame]] to be executed

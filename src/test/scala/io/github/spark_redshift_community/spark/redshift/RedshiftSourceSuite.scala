@@ -31,7 +31,8 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.fs.UnsupportedFileSystemException
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.matchers.should._
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql._

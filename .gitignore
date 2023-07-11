@@ -19,7 +19,7 @@ project/target
 .idea/
 .idea_modules/
 *.DS_Store
-build/*.jar
+build/
 aws_variables.env
 derby.log
 metastore_db/
