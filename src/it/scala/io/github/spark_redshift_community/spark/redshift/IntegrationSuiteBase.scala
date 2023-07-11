@@ -62,8 +62,8 @@ trait IntegrationSuiteBase
   // Path to a directory in S3 (e.g. 's3a://bucket-name/path/to/scratch/space').
   protected val AWS_S3_SCRATCH_SPACE: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE")
   protected val AWS_S3_SCRATCH_SPACE_REGION: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE_REGION")
-  protected val AWS_SECRET_ID: String = loadConfigFromEnv("AWS_SECRET_ID")
-  protected val AWS_SECRET_REGION: String = loadConfigFromEnv("AWS_SECRET_REGION")
+//  protected val AWS_SECRET_ID: String = loadConfigFromEnv("AWS_SECRET_ID")
+//  protected val AWS_SECRET_REGION: String = loadConfigFromEnv("AWS_SECRET_REGION")
   require(AWS_S3_SCRATCH_SPACE.contains("s3a"), "must use s3a:// URL")
 
   protected val auto_pushdown: String = "false"
