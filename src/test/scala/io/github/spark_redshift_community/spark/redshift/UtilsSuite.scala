@@ -154,7 +154,7 @@ class UtilsSuite extends FunSuite with Matchers {
 
     assert(timesCalled == 2)
     // check that at least timeToSleep passed but allow for slightly longer
-    assert(timeTaken > timeToSleep && timeTaken < timeToSleep + 50)
+    assert(timeTaken >= timeToSleep && timeTaken <= timeToSleep + 50)
   }
 
   val fakeCredentials: Map[String, String] = Map[String, String](
