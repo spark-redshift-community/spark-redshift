@@ -92,7 +92,27 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       )
     })
   }
+
+  // According to OptimizeIn rule,
+  // If the size of IN values list is larger than the predefined threshold,
+  // Spark Optimizer replaces IN operator with INSET operator
+  test("Test Integer type with InSet Operator") {
+
+    checkAnswer(sqlContext.sql(
+      s"""SELECT testint FROM test_table WHERE testint
+         | IN (42, 4141214, 1, 2, 2, 4, 5, 5, 7, 8, 9, 10, 11, 12, 13)"""
+        .stripMargin), Seq(Row(4141214), Row(42), Row(42))
+    )
+
+    checkSqlStatement(
+      s"""SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT
+         | * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |  AS "SUBQUERY_0" WHERE "SUBQUERY_0"."TESTINT" IN
+         | ( 4 , 13 , 8 , 9 , 10 , 7 , 2 , 42 , 11 , 1 , 4141214 , 12 , 5 ) )
+         |  AS "SUBQUERY_1"""".stripMargin)
+  }
 }
+
 
 class TextPushdownMiscSuite extends PushdownMiscSuite {
   override protected val s3format: String = "TEXT"
@@ -114,10 +134,10 @@ class ParquetNoPushdownMiscSuite extends PushdownMiscSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheMiscSuite extends PushdownMiscSuite {
+class TextNoCachePushdownMiscSuite extends TextPushdownMiscSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheMiscSuite extends PushdownMiscSuite {
+class ParquetNoCachePushdownMiscSuite extends ParquetPushdownMiscSuite {
   override protected val s3_result_cache = "false"
 }
