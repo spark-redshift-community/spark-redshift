@@ -81,8 +81,14 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
       "%Hello World%"
     )
 
+    val expectedSqlPattern = List(
+      """CONCAT(\'%\', \'Hello World\')""",
+      """CONCAT(\'Hello World\', \'%\')""",
+      """CONCAT(\'%\', CONCAT(\'Hello World\', \'%\'))"""
+    )
+
     columns.foreach(column => {
-      patterns.foreach(pattern => {
+      patterns.zip(expectedSqlPattern).foreach({case (pattern, sqlPattern) =>
         checkAnswer(
           sqlContext.sql(
             s"""SELECT LIKE($column, '$pattern') FROM test_table
@@ -91,7 +97,7 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
 
         checkSqlStatement(
           s"""SELECT ( ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR
-             | ) LIKE \\'$pattern\\' ) ) AS "SUBQUERY_2_COL_0" FROM ( SELECT *
+             | ) LIKE $sqlPattern ) ) AS "SUBQUERY_2_COL_0" FROM ( SELECT *
              | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
              | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
              | ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS "SUBQUERY_1"""".stripMargin)
@@ -110,8 +116,10 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
 
       checkSqlStatement(
         s"""SELECT ( ( ( LENGTH ( "SUBQUERY_1"."${column.toUpperCase}" ) >= 10 ) AND (
-           | ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR ) LIKE \\'Hello%\\' ) AND
-           | ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR ) LIKE \\'%World\\' ) ) ) )
+           | ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR )
+           | LIKE CONCAT(\\'Hello\\', \\'%\\') ) AND
+           | ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR )
+           | LIKE CONCAT(\\'%\\', \\'World\\' ) ) ) ) )
            | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
            | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID"
            | IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS "SUBQUERY_1"""".stripMargin)
