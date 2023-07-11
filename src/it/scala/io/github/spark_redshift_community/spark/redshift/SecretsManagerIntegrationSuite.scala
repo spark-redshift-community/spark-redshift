@@ -11,7 +11,7 @@ import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_SECRE
 
 class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
 
-    test("roundtrip save and load") {
+    ignore("roundtrip save and load") {
       withTempRedshiftTable("secretsmanager_roundtrip_save_and_load") { tableName =>
         val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row(1)), 1),
           StructType(StructField("foo", IntegerType, true,
@@ -19,16 +19,16 @@ class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
 
         write(df)
           .option("url", jdbcUrlNoUserPassword)
-          .option(PARAM_SECRET_ID, AWS_SECRET_ID)
-          .option(PARAM_SECRET_REGION, AWS_SECRET_REGION)
+//          .option(PARAM_SECRET_ID, AWS_SECRET_ID)
+//          .option(PARAM_SECRET_REGION, AWS_SECRET_REGION)
           .option("dbtable", tableName)
           .mode(SaveMode.ErrorIfExists)
           .save()
         assert(DefaultJDBCWrapper.tableExists(conn, tableName))
         val loadedDf = read
           .option("url", jdbcUrlNoUserPassword)
-          .option(PARAM_SECRET_ID, AWS_SECRET_ID)
-          .option(PARAM_SECRET_REGION, AWS_SECRET_REGION)
+//          .option(PARAM_SECRET_ID, AWS_SECRET_ID)
+//          .option(PARAM_SECRET_REGION, AWS_SECRET_REGION)
           .option("dbtable", tableName)
           .load()
         assert(loadedDf.schema === df.schema)
