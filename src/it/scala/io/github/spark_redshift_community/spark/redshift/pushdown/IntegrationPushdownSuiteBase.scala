@@ -36,7 +36,7 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   protected var test_table: String = setTestTableName()
   protected val test_table_safe_null = s""""PUBLIC"."pushdown_suite_test_safe_null_$randomSuffix""""
   // This flag controls whether auto pushdown operations into Redshift is enabled.
-  protected val auto_pushdown: String = "true"
+  override protected val auto_pushdown: String = "true"
   // This flag controls whether to unload data as parquet or pipe-delimited text.
   protected val s3format: String = "TEXT"
   // This flag controls whether to cache previously unloaded data in S3 with auto_pushdown
