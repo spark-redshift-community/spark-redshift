@@ -737,7 +737,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
     s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
        |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS")
        |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-       |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VAR CHAR ) LIKE
+       |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE
        |CONCAT( \\'%\\' , CONCAT(\\'\\'\\'\\', \\'%\\' ) ) ) ) ) AS "SUBQUERY_1"
        |LIMIT 1""".stripMargin
     )
