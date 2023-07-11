@@ -16,6 +16,8 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
+import io.github.spark_redshift_community.spark.redshift.Parameters.{DEFAULT_PARAMETERS, PARAM_OVERRIDE_NULLABLE}
+
 import java.net.URI
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
@@ -90,12 +92,15 @@ private[redshift] class RedshiftFileFormat extends FileFormat {
       val reader = new RedshiftRecordReader
       reader.initialize(fileSplit, hadoopAttemptContext)
       val iter = new RecordReaderIterator[Array[String]](reader)
+
       // Ensure that the record reader is closed upon task completion. It will ordinarily
       // be closed once it is completely iterated, but this is necessary to guard against
       // resource leaks in case the task fails or is interrupted.
       Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => iter.close()))
       val converter = Conversions.createRowConverter(requiredSchema,
-        options.getOrElse("nullString", Parameters.DEFAULT_PARAMETERS("csvnullstring")))
+        options.getOrElse("nullString", DEFAULT_PARAMETERS("csvnullstring")),
+        options.getOrElse(PARAM_OVERRIDE_NULLABLE,
+          DEFAULT_PARAMETERS(PARAM_OVERRIDE_NULLABLE)).toBoolean)
       iter.map(converter)
     }
   }

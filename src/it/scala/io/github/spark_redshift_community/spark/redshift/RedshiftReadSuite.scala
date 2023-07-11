@@ -17,8 +17,8 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import java.sql.Timestamp
-import org.apache.spark.sql.types.{CalendarIntervalType, DoubleType, FloatType, LongType, StructField, StructType}
-import org.apache.spark.sql.{AnalysisException, Row, execution}
+import org.apache.spark.sql.types.{CalendarIntervalType, DoubleType, FloatType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.{AnalysisException, Row, execution, types}
 
 /**
  * End-to-end tests of functionality which only impacts the read path (e.g. filter pushdown).
@@ -339,6 +339,193 @@ class RedshiftReadSuite extends IntegrationSuiteBase {
           .load
           .collect
       }
+    }
+  }
+
+  test("read empty strings as null when overridenullable is true") {
+    withTempRedshiftTable("overrideNullable") { name =>
+      conn.createStatement().
+        executeUpdate(s"create table $name (name text not null, nullable_name text)")
+      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      val df = read
+        .option(Parameters.PARAM_OVERRIDE_NULLABLE, true)
+        .option("dbtable", name)
+        .load
+      checkAnswer(
+        df,
+        Seq(Row(null, null))
+      )
+      assert (df.schema match {
+        case StructType(Array(StructField(_, StringType, true, _),
+        StructField(_, StringType, true, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("read empty strings as null when overridenullable is true and unload_s3_format is TEXT") {
+    withTempRedshiftTable("overrideNullable") { name =>
+      conn.createStatement().
+        executeUpdate(s"create table $name (name text not null, nullable_name text)")
+      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      val df = read
+        .option(Parameters.PARAM_OVERRIDE_NULLABLE, true)
+        .option("dbtable", name)
+        .option("unload_s3_format", "TEXT")
+        .load
+      checkAnswer(
+        df,
+        Seq(Row(null, null))
+      )
+      assert (df.schema match {
+        case StructType(Array(StructField(_, StringType, true, _),
+        StructField(_, StringType, true, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("read empty strings as empty strings when overridenullable is false") {
+    withTempRedshiftTable("overrideNullable") { name =>
+      conn.createStatement().
+        executeUpdate(s"create table $name (name text not null, nullable_name text)")
+      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      val df = read
+        .option(Parameters.PARAM_OVERRIDE_NULLABLE, false)
+        .option("dbtable", name)
+        .load
+      checkAnswer(
+        df,
+        Seq(Row("", ""))
+      )
+      assert (df.schema match {
+        case StructType(Array(StructField(_, StringType, false, _),
+        StructField(_, StringType, true, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("read empty strings as empty strings when overridenullable" +
+    " is false and unload_s3_format is TEXT") {
+    withTempRedshiftTable("overrideNullable") { name =>
+      conn.createStatement().
+        executeUpdate(s"create table $name (name text not null, nullable_name text)")
+      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      val df = read
+        .option(Parameters.PARAM_OVERRIDE_NULLABLE, false)
+        .option("dbtable", name)
+        .option("unload_s3_format", "TEXT")
+        .load
+      checkAnswer(
+        df,
+        Seq(Row("", ""))
+      )
+      assert(df.schema match {
+        case StructType(Array(StructField(_, StringType, false, _),
+        StructField(_, StringType, true, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test ("read empty strings as nulls when overridenullable is true using BuildScan") {
+    withTempRedshiftTable("overrideNullable") { name =>
+      conn.createStatement().
+        executeUpdate(s"create table $name (name text not null, nullable_name text)")
+      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      // scalastyle:off
+      val df = read
+        .option(Parameters.PARAM_OVERRIDE_NULLABLE, true)
+        .option("dbtable", name)
+        .load
+        .where("""name is null  OR name != "Unicode's樂趣"""") // makes spark run BuildScan
+      // scalastyle:on
+      checkAnswer(
+        df,
+        Seq(Row(null, null))
+      )
+      assert (df.schema match {
+        case StructType(Array(StructField(_, StringType, true, _),
+        StructField(_, StringType, true, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("read empty strings as nulls when overridenullable" +
+    " is true and unload_s3_format is TEXT using BuildScan") {
+    withTempRedshiftTable("overrideNullable") { name =>
+      conn.createStatement().
+        executeUpdate(s"create table $name (name text not null, nullable_name text)")
+      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      // scalastyle:off
+      val df = read
+        .option(Parameters.PARAM_OVERRIDE_NULLABLE, true)
+        .option("dbtable", name)
+        .option("unload_s3_format", "TEXT")
+        .load
+        .where("""name is null  OR name != "Unicode's樂趣"""") // makes spark run BuildScan
+      // scalastyle:on
+      checkAnswer(
+        df,
+        Seq(Row(null, null))
+      )
+      assert(df.schema match {
+        case StructType(Array(StructField(_, StringType, true, _),
+        StructField(_, StringType, true, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test ("read empty strings as empty strings when overridenullable is false using BuildScan") {
+    withTempRedshiftTable("overrideNullable") { name =>
+      conn.createStatement().
+        executeUpdate(s"create table $name (name text not null, nullable_name text)")
+      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      // scalastyle:off
+      val df = read
+        .option(Parameters.PARAM_OVERRIDE_NULLABLE, false)
+        .option("dbtable", name)
+        .load
+        .where("""name != "Unicode's樂趣"""") // makes spark run BuildScan
+      // scalastyle:on
+      checkAnswer(
+        df,
+        Seq(Row("", ""))
+      )
+      assert (df.schema match {
+        case StructType(Array(StructField(_, StringType, false, _),
+        StructField(_, StringType, true, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("read empty strings as empty strings when overridenullable" +
+    " is false and unload_s3_format is TEXT using BuildScan") {
+    withTempRedshiftTable("overrideNullable") { name =>
+      conn.createStatement().
+        executeUpdate(s"create table $name (name text not null, nullable_name text)")
+      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      // scalastyle:off
+      val df = read
+        .option(Parameters.PARAM_OVERRIDE_NULLABLE, false)
+        .option("dbtable", name)
+        .option("unload_s3_format", "TEXT")
+        .load
+        .where("""name != "Unicode's樂趣"""") // makes spark run BuildScan
+      // scalastyle:on
+      checkAnswer(
+        df,
+        Seq(Row("", ""))
+      )
+      assert(df.schema match {
+        case StructType(Array(StructField(_, StringType, false, _),
+        StructField(_, StringType, true, _))) => true
+        case _ => false
+      })
     }
   }
 }

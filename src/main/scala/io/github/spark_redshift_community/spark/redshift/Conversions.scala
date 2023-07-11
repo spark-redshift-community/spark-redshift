@@ -103,7 +103,9 @@ private[redshift] object Conversions {
    *
    * Note that instances of this function are NOT thread-safe.
    */
-  def createRowConverter(schema: StructType, nullString: String): Array[String] => InternalRow = {
+  def createRowConverter(schema: StructType,
+                         nullString: String,
+                         overrideNullable: Boolean): Array[String] => InternalRow = {
     val dateFormat = createRedshiftDateFormat()
     val decimalFormat = createRedshiftDecimalFormat()
     val conversionFunctions: Array[String => Any] = schema.fields.map { field =>
@@ -141,24 +143,33 @@ private[redshift] object Conversions {
       var i = 0
       while (i < schema.length) {
         val data = inputRow(i)
-        converted(i) = if ((data == null || data == nullString) ||
-          (data.isEmpty && schema.fields(i).dataType != StringType)) {
-          null
+        if (overrideNullable) {
+          converted(i) = if (data == null || data.isEmpty) null else conversionFunctions(i)(data)
+        } else {
+          converted(i) = if ((data == null || data == nullString) ||
+            (data.isEmpty && schema.fields(i).dataType != StringType)) {
+            null
+          }
+          else if (data.isEmpty) {
+            ""
+          }
+          else {
+            conversionFunctions(i)(data)
+          }
         }
-        else if (data.isEmpty) {
-          ""
-        }
-        else {
-          conversionFunctions(i)(data)
-        }
+
         i += 1
       }
       toRow.apply(externalRow)
     }
   }
 
-  def parquetDataTypeConvert(from: Any, dataType: DataType, redshiftType: String): Any = {
+  def parquetDataTypeConvert(from: Any,
+                             dataType: DataType,
+                             redshiftType: String,
+                             overrideNullable: Boolean): Any = {
     dataType match {
+      case _ if overrideNullable && from!= null && from.toString.isEmpty => null
       case DoubleType if from!= null => from.asInstanceOf[Number].doubleValue
       case FloatType if from!= null => from.asInstanceOf[Number].floatValue
       case IntegerType if from!=null => from.asInstanceOf[Number].intValue

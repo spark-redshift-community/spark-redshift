@@ -20,7 +20,7 @@ import java.net.URI
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_OVERRIDE_NULLABLE}
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.Mockito.{verify, when}
@@ -159,7 +159,8 @@ class UtilsSuite extends FunSuite with Matchers {
 
   val fakeCredentials: Map[String, String] = Map[String, String](
     "forward_spark_s3_credentials" -> "true",
-    "legacy_jdbc_real_type_mapping" -> "false"
+    "legacy_jdbc_real_type_mapping" -> "false",
+    PARAM_OVERRIDE_NULLABLE -> "false"
   )
 
   test("collectMetrics logs buildinfo to INFO") {

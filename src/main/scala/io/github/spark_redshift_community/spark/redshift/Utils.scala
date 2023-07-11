@@ -23,7 +23,6 @@ import com.amazonaws.regions.Regions
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3URI}
-import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.slf4j.{Logger, LoggerFactory}
@@ -301,6 +300,10 @@ private[redshift] object Utils {
     if (params.legacyJdbcRealTypeMapping) {
       metricLogger.info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
     }
+    if (params.overrideNullable) {
+      log.info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
+    }
+
   }
 
   /**

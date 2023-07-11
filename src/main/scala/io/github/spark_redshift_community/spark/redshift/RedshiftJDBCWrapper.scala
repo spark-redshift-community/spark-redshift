@@ -189,7 +189,9 @@ private[redshift] class JDBCWrapper {
         val fieldSize = rsmd.getPrecision(i + 1)
         val fieldScale = rsmd.getScale(i + 1)
         val isSigned = rsmd.isSigned(i + 1)
-        val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
+        val nullable = if (params.exists(_.overrideNullable)) {
+          true
+        } else rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
         val columnType = getCatalystType(dataType, fieldSize, fieldScale, isSigned, params)
         val meta = new MetadataBuilder().putString("redshift_type", rsType).build()
 
