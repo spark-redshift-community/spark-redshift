@@ -25,12 +25,12 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( UPPER ( "SUBQUERY_1"."TESTSTRING" ) )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( UPPER ( "SUBQUERY_1"."TESTSTRING" ) )
+      |AS "SUBQUERY_2_COL_0"
+      |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+      |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+      |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
+      |AS "SUBQUERY_1"""".stripMargin
     )
   }
 
@@ -41,13 +41,13 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( LOWER ( "SUBQUERY_1"."TESTSTRING" ) )
+      s"""SELECT ( LOWER ( "SUBQUERY_1"."TESTSTRING" ) )
       |AS "SUBQUERY_2_COL_0"
       |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
       |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
       |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
       |""".stripMargin,
-    expectedAnswerSpark3_3 = s"""SELECT ( LOWER ( "SUBQUERY_1"."TESTSTRING" ) )
+      s"""SELECT ( LOWER ( "SUBQUERY_1"."TESTSTRING" ) )
       |AS "SUBQUERY_2_COL_0"
       |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
       |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
@@ -65,7 +65,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTSTRING" , 1 , 2  ) )
+      s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTSTRING" , 1 , 2  ) )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -83,7 +83,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTSTRING" , 1 , 2  ) )
+      s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTSTRING" , 1 , 2  ) )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -101,7 +101,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( LENGTH ( "SUBQUERY_1"."TESTSTRING" ) )
+      s"""SELECT ( LENGTH ( "SUBQUERY_1"."TESTSTRING" ) )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -119,7 +119,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( CONCAT ( "SUBQUERY_1"."TESTSTRING" , \\'Test\\' ) )
+      s"""SELECT ( CONCAT ( "SUBQUERY_1"."TESTSTRING" , \\'Test\\' ) )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -137,7 +137,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( ASCII ( "SUBQUERY_1"."TESTSTRING" ) )
+      s"""SELECT ( ASCII ( "SUBQUERY_1"."TESTSTRING" ) )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -155,7 +155,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT (
+      s"""SELECT (
          |TRANSLATE ( "SUBQUERY_1"."TESTSTRING" , \\'ad\\' , \\'ce\\' ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -173,7 +173,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( LPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' )  )
+      s"""SELECT ( LPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' )  )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -191,7 +191,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' )  )
+      s"""SELECT ( RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' )  )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -209,7 +209,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( TRIM (
+      s"""SELECT ( TRIM (
          |RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -227,7 +227,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( TRIM (
+      s"""SELECT ( TRIM (
          |RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -245,7 +245,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( TRIM ( LPAD (
+      s"""SELECT ( TRIM ( LPAD (
          |RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\' \\' ) , 8 , \\' \\' ) , \\' \\') )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
@@ -264,7 +264,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( LTRIM ( LPAD (
+      s"""SELECT ( LTRIM ( LPAD (
          |"SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -282,7 +282,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( RTRIM (
+      s"""SELECT ( RTRIM (
          |RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) ,\\'_\\' ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -300,7 +300,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( LTRIM (
+      s"""SELECT ( LTRIM (
          |LPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
@@ -318,7 +318,7 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( RTRIM (
+      s"""SELECT ( RTRIM (
          |RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )

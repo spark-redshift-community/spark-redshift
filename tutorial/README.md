@@ -39,12 +39,12 @@ object SparkRedshiftTutorial {
 
     val sc = new SparkContext(new SparkConf().setAppName("SparkSQL").setMaster("local"))
 
-	// Configure SparkContext to communicate with AWS
-	val tempS3Dir = "s3n://redshift-spark/temp/"
+  // Configure SparkContext to communicate with AWS
+  val tempS3Dir = "s3n://redshift-spark/temp/"
     sc.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", awsAccessKeyId)
     sc.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", awsSecretAccessKey)
 
-	// Create the SQL Context
+  // Create the SQL Context
     val sqlContext = new SQLContext(sc)
   }
 }
@@ -95,11 +95,11 @@ Let's fetch data from the Redshift `event` table. Add the following lines of cod
 ```scala
 import sqlContext.implicits._
 val eventsDF = sqlContext.read
-	.format("io.github.spark_redshift_community.spark.redshift")
-	.option("url",jdbcURL )
-	.option("tempdir", tempS3Dir)
-	.option("dbtable", "event")
-	.load()
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("url",jdbcURL )
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "event")
+  .load()
 eventsDF.show()
 ```
 
@@ -351,12 +351,12 @@ The `salesAGGDF2` `DataFrame` is created by joining `eventsDF` and `salesAGGDF2`
 salesAGGDF2.registerTempTable("redshift_sales_agg")
 
 sqlContext.sql("SELECT * FROM redshift_sales_agg")
-	.write.format("io.github.spark_redshift_community.spark.redshift")
-	.option("url", jdbcURL)
-	.option("tempdir", tempS3Dir)
-	.option("dbtable", "redshift_sales_agg")
-	.mode(SaveMode.Overwrite)
-	.save()
+  .write.format("io.github.spark_redshift_community.spark.redshift")
+  .option("url", jdbcURL)
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "redshift_sales_agg")
+  .mode(SaveMode.Overwrite)
+  .save()
 ```
 
 

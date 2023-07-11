@@ -22,7 +22,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import sbtrelease.ReleasePlugin.autoImport._
 import scoverage.ScoverageKeys
 
-val sparkVersion = "3.3.1"
+val sparkVersion = "3.3.2"
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.

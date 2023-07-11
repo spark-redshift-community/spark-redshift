@@ -864,12 +864,12 @@ Auto pushdown is enabled by default. To disable it, set the "autopushdown" to fa
 ```scala
 import sqlContext.implicits._
 val eventsDF = sqlContext.read
-	.format("io.github.spark_redshift_community.spark.redshift")
-	.option("url",jdbcURL )
-	.option("tempdir", tempS3Dir)
-	.option("dbtable", "event")
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("url",jdbcURL )
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "event")
     .option("autopushdown", "false")
-	.load()
+  .load()
 eventsDF.show()
 ```
 

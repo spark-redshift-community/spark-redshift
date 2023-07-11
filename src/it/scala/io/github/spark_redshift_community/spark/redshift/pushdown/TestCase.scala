@@ -22,7 +22,5 @@ import org.apache.spark.sql.Row
 case class TestCase(
                      sparkStatement: String, // the spark statement executed
                      expectedResult: Seq[Row], // the expected result
-                     // Redshift query pushdown, used as default value when 3.3 answer is the same
-                     expectedAnswerSpark3_2: String = "",
-                     expectedAnswerSpark3_3: String = ""
+                     expectedAnswers: String * // the expected pushdown sql (one or more)
                    )

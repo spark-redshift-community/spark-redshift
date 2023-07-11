@@ -27,7 +27,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" )
+      s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" )
          | AS "SUBQUERY_1_COL_0"
          | FROM ( SELECT * FROM $test_table
          | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
@@ -50,7 +50,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_1_COL_0" ,
+      s"""SELECT ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_1_COL_0" ,
          |( "SUBQUERY_0"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_1_COL_1"
          |FROM ( ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
          |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
@@ -82,7 +82,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
+      s"""( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
          |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
          |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" )
@@ -102,7 +102,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" )
+      s"""SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
@@ -121,7 +121,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" )
+      s"""SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" )
          |AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
@@ -144,7 +144,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" ,
+      s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" ,
          |( "SUBQUERY_6"."SUBQUERY_6_COL_2" ) AS "SUBQUERY_7_COL_1"
          |FROM (
          |SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" ,
@@ -183,7 +183,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" ,
+      s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" ,
          |( "SUBQUERY_6"."SUBQUERY_6_COL_2" ) AS "SUBQUERY_7_COL_1"
          |FROM (
          |SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" ,
@@ -218,7 +218,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_2" ) AS "SUBQUERY_7_COL_0" ,
+      s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_2" ) AS "SUBQUERY_7_COL_0" ,
          |( "SUBQUERY_6"."SUBQUERY_6_COL_1" ) AS "SUBQUERY_7_COL_1"
          |FROM (
          |SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" ,
@@ -252,7 +252,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" ,
+      s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" ,
          |( "SUBQUERY_6"."SUBQUERY_6_COL_1" ) AS "SUBQUERY_7_COL_1"
          |FROM (
          |SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" ,
@@ -300,7 +300,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
 
     // ORDER BY is not pushed down
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" FROM
+      s"""SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" FROM
          |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1"
          |""".stripMargin
@@ -319,7 +319,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT (
+      s"""SELECT * FROM ( SELECT (
          |CAST ( "SUBQUERY_1"."TESTLONG" AS DECIMAL(20, 2) ) )
          |AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
          |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
@@ -339,7 +339,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_0"
+      s"""SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_0"
          |FROM ( SELECT ( "SUBQUERY_1"."TESTLONG" ) AS "SUBQUERY_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
          |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTLONG" IS NOT NULL )
@@ -363,7 +363,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT avg(testlong) FROM
+      s"""SELECT * FROM ( SELECT avg(testlong) FROM
          |$test_table WHERE testlong > 0 GROUP BY testlong
          |ORDER BY testlong limit 1 ) AS "RS_CONNECTOR_QUERY_ALIAS"
          |""".stripMargin
@@ -404,7 +404,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
 
     // ORDER BY is not pushed down
     checkSqlStatement(
-		expectedAnswerSpark3_2 = s"""SELECT * FROM ( SELECT * FROM ( SELECT teststring FROM
+      s"""SELECT * FROM ( SELECT * FROM ( SELECT teststring FROM
          |$test_table WHERE testlong > 0 AND teststring = \\'asdf\\'
          |Limit 1)
          |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
