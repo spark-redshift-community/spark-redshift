@@ -47,9 +47,14 @@ private[redshift] class JDBCWrapper extends Serializable {
 
   protected val log = LoggerFactory.getLogger(getClass)
 
+  // Note: Marking fields `implicit transient lazy` allows spark to recreate them upon
+  // de-serialization
 
-  // Note: marking field `implicit transient lazy` this allows spark to
-  //  recreate upon de-serialization
+  /**
+   * This iterator automatically increments every time it is used.
+   */
+  @transient implicit private lazy val JDBCCallNumberGenerator = Iterator.from(1)
+
   @transient implicit private lazy val ec: ExecutionContext = {
     val threadFactory = new ThreadFactory {
       private[this] val count = new AtomicInteger()
@@ -136,7 +141,9 @@ private[redshift] class JDBCWrapper extends Serializable {
   private def executeInterruptibly[T](
       statement: PreparedStatement,
       op: PreparedStatement => T): T = {
+    val JDBCCallNumber = JDBCCallNumberGenerator.next
     try {
+      log.info("Begin JDBC call {}", JDBCCallNumber)
       val future = Future[T](op(statement))(ec)
       try {
         Await.result(future, Duration.Inf)
@@ -158,6 +165,9 @@ private[redshift] class JDBCWrapper extends Serializable {
             log.error("Exception occurred while cancelling query", s)
             throw e
         }
+    }
+    finally {
+      log.info("End JDBC call {}", JDBCCallNumber)
     }
   }
 
@@ -183,6 +193,7 @@ private[redshift] class JDBCWrapper extends Serializable {
     // this but we leave the LIMIT condition here as a safety-net to guard against perf regressions.
     val ps = conn.prepareStatement(s"SELECT * FROM $table LIMIT 1")
     try {
+      log.info("Getting schema from Redshift for table: {}", table)
       val rsmd = executeInterruptibly(ps, _.getMetaData)
       val ncols = rsmd.getColumnCount
       val fields = {
@@ -394,6 +405,7 @@ private[redshift] class JDBCWrapper extends Serializable {
     // SQL database systems, considering "table" could also include the database name.
     Try {
       val stmt = conn.prepareStatement(s"SELECT 1 FROM $table LIMIT 1")
+      log.info("Checking if table exists: {}", table)
       executeInterruptibly(stmt, _.getMetaData).getColumnCount
     }.isSuccess
   }

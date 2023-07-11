@@ -145,8 +145,8 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
     */
   private def generateQueries(plan: LogicalPlan): Option[RedshiftQuery] = {
     plan match {
-      case l @ LogicalRelation(sfRelation: RedshiftRelation, _, _, _) =>
-        Some(SourceQuery(sfRelation, l.output, alias.next))
+      case l @ LogicalRelation(rsRelation: RedshiftRelation, _, _, _) =>
+        Some(SourceQuery(rsRelation, l.output, alias.next))
 
       case UnaryOp(child) =>
         generateQueries(child) map { subQuery =>
