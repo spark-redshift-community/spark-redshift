@@ -402,8 +402,7 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("GetStructField on float in where") {
-    // uses a.float < 2.3f instead of equal because of
-    // [Redshift-9668]
+    // uses a.float < 2.3f instead of equal because of [Redshift-9668]
     withTempRedshiftTable("superStructWithFloat") { tableName =>
       val expectedRow = Seq(Row(2.2f))
 
