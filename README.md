@@ -24,8 +24,7 @@ Welcome to the community edition of spark-redshift!
  The community's feedback and contributions are vitally important. 
  Pull requests are very welcome.
 
-This is a fork from Databricks's spark-redshift repository. 
-The main upgrade is spark 2.4 compatibility.
+This repository is a fork of [databricks/spark-redshift](https://github.com/databricks/spark-redshift) which aims to provide a performant, secure, and user-friendly Apache Spark connector for Amazon Redshift. Our project maintainers closely monitors Apache Spark releases to ensure compatibility with the latest versions of Spark.
 
 
 ## Disclaimer

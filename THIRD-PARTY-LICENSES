@@ -353,6 +353,7 @@ al/datatables/**/*
 ** Apache Software License, Version 2.0; version 2.0 -- https://mvnrepository.com/artifact/org.apache.commons/commons-compress/1.20
 ** Apache Spark; version 3.3.2 -- https://spark.apache.org/
 ** spark-snowflake; version 2.9.1 -- https://github.com/snowflakedb/spark-snowflake
+** Databricks spark-redshift connector; version 3.0.0 -- https://github.com/databricks/spark-redshift
  
 Apache License
 Version 2.0, January 2004
@@ -798,3 +799,5 @@ the network between
 
 * For spark-snowflake see also this required NOTICE:
     Copyright 2015-2021 Snowflake Computing
+* For Databricks spark-redshift connector see also this required NOTICE:
+    Copyright 2016 Databricks
