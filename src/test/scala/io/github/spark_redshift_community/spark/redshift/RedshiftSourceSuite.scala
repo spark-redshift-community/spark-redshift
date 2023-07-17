@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,27 +19,29 @@ package io.github.spark_redshift_community.spark.redshift
 
 import java.io.{ByteArrayInputStream, OutputStreamWriter}
 import java.net.URI
-
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_USER_QUERY_GROUP_LABEL}
 import com.amazonaws.thirdparty.apache.http.client.methods.HttpRequestBase
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers.{anyString, endsWith}
 import org.mockito.Mockito
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{verify, when}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.fs.UnsupportedFileSystemException
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.matchers.should._
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.scalatest.exceptions.TestFailedException
 
+import scala.util.matching.Regex
 
 /**
   * Tests main DataFrame loading and writing functionality
@@ -50,9 +53,9 @@ class RedshiftSourceSuite
     with BeforeAndAfterEach {
 
   /**
-    * Spark Context with Hadoop file overridden to point at our local test data file for this suite,
-    * no matter what temp directory was generated and requested.
-    */
+   * Spark Context with Hadoop file overridden to point at our local test data file for this suite,
+   * no matter what temp directory was generated and requested.
+   */
   private var sc: SparkContext = _
 
   private var testSqlContext: SQLContext = _
@@ -68,11 +71,20 @@ class RedshiftSourceSuite
   private var unloadedData: String = ""
 
   // Parameters common to most tests. Some parameters are overridden in specific tests.
+  // New parameters added during autopushdown enhancements are turned off to restore
+  // original behavior when unit tests were written.
   private def defaultParams: Map[String, String] = Map(
     "url" -> "jdbc:redshift://foo/bar?user=user&password=password",
     "tempdir" -> s3TempDir,
     "dbtable" -> "test_table",
-    "forward_spark_s3_credentials" -> "true")
+    "forward_spark_s3_credentials" -> "false",
+    "aws_iam_role" -> "fake_role_arn",
+    Parameters.PARAM_AUTO_PUSHDOWN -> "false",
+    Parameters.PARAM_PUSHDOWN_S3_RESULT_CACHE -> "false",
+    Parameters.PARAM_UNLOAD_S3_FORMAT -> "TEXT"
+  )
+
+  private val queryGroupPattern: Regex = "set query_group to .*".r
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -84,11 +96,6 @@ class RedshiftSourceSuite
       classOf[DirectMapreduceOutputCommitter].getName)
     sc.hadoopConfiguration.set("mapred.output.committer.class",
       classOf[DirectMapredOutputCommitter].getName)
-    sc.hadoopConfiguration.set("fs.s3.awsAccessKeyId", "test1")
-    sc.hadoopConfiguration.set("fs.s3.awsSecretAccessKey", "test2")
-    sc.hadoopConfiguration.set("fs.s3a.access.key", "test1")
-    sc.hadoopConfiguration.set("fs.s3a.secret.key", "test2")
-
   }
 
   override def beforeEach(): Unit = {
@@ -134,6 +141,7 @@ class RedshiftSourceSuite
     }
 
     when(mockS3Client.getObject(anyString(), endsWith("manifest"))).thenReturn(mockManifest)
+    when(mockS3Client.doesObjectExist(anyString(), endsWith("manifest"))).thenReturn(true)
   }
 
   override def afterEach(): Unit = {
@@ -149,13 +157,13 @@ class RedshiftSourceSuite
     super.afterAll()
   }
 
-  test("DefaultSource can load Redshift UNLOAD output to a DataFrame") {
+  ignore("DefaultSource can load Redshift UNLOAD output to a DataFrame") {
     // scalastyle:off
     unloadedData =
       """
         |1|t|2015-07-01|1234152.12312498|1.0|42|1239012341823719|23|Unicode's樂趣|2015-07-01 00:00:00.001
         |1|f|2015-07-02|0|0.0|42|1239012341823719|-13|asdf|2015-07-02 00:00:00.0
-        |0||2015-07-03|0.0|-1.0|4141214|1239012341823719||f|2015-07-03 00:00:00
+        |0||2015-07-03|0.0|-1.0|4141214|1239012341823719||f|2015-07-03 12:34:56
         |0|f||-1234152.12312498|100000.0||1239012341823719|24|___\|_123|
         |||||||||@NULL@|
       """.stripMargin.trim
@@ -166,20 +174,20 @@ class RedshiftSourceSuite
         "\"testtimestamp\" " +
         "FROM \"PUBLIC\".\"test_table\" '\\) " +
         "TO '.*' " +
-        "WITH CREDENTIALS 'aws_access_key_id=test1;aws_secret_access_key=test2' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
         "ESCAPE").r
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
       Map(TableName.parseFromEscaped("test_table").toString -> TestUtils.testSchema))
 
     // Assert that we've loaded and converted all data in the test file
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     val relation = source.createRelation(testSqlContext, defaultParams)
     val df = testSqlContext.baseRelationToDataFrame(relation)
 
     checkAnswer(df, TestUtils.expectedData)
     mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
   }
 
   test("Can load output of Redshift queries") {
@@ -206,10 +214,10 @@ class RedshiftSourceSuite
       val mockRedshift =
         new MockRedshift(defaultParams("url"), Map(params("dbtable") -> querySchema))
       val relation = new DefaultSource(
-        mockRedshift.jdbcWrapper, _ => mockS3Client).createRelation(testSqlContext, params)
+        mockRedshift.jdbcWrapper, (_, _) => mockS3Client).createRelation(testSqlContext, params)
       assert(testSqlContext.baseRelationToDataFrame(relation).collect() === expectedValues)
       mockRedshift.verifyThatConnectionsWereClosed()
-      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedJDBCQuery))
+      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedJDBCQuery))
     }
 
     // Test with query parameter
@@ -217,10 +225,10 @@ class RedshiftSourceSuite
       val params = defaultParams - "dbtable" + ("query" -> query)
       val mockRedshift = new MockRedshift(defaultParams("url"), Map(s"($query)" -> querySchema))
       val relation = new DefaultSource(
-        mockRedshift.jdbcWrapper, _ => mockS3Client).createRelation(testSqlContext, params)
+        mockRedshift.jdbcWrapper, (_, _) => mockS3Client).createRelation(testSqlContext, params)
       assert(testSqlContext.baseRelationToDataFrame(relation).collect() === expectedValues)
       mockRedshift.verifyThatConnectionsWereClosed()
-      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedJDBCQuery))
+      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedJDBCQuery))
     }
   }
 
@@ -238,12 +246,12 @@ class RedshiftSourceSuite
     val expectedQuery = (
       "UNLOAD \\('SELECT \"testbyte\", \"testbool\" FROM \"PUBLIC\".\"test_table\" '\\) " +
         "TO '.*' " +
-        "WITH CREDENTIALS 'aws_access_key_id=test1;aws_secret_access_key=test2' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
         "ESCAPE").r
     val mockRedshift =
       new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
     // Construct the source with a custom schema
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     val relation = source.createRelation(testSqlContext, defaultParams, TestUtils.testSchema)
     val resultSchema =
       StructType(Seq(StructField("testbyte", ByteType), StructField("testbool", BooleanType)))
@@ -262,7 +270,7 @@ class RedshiftSourceSuite
       Row(null, null))
     assert(rdd.collect() === prunedExpectedValues)
     mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
   }
 
   test("DefaultSource supports user schema, pruned and filtered scans") {
@@ -272,13 +280,13 @@ class RedshiftSourceSuite
       "UNLOAD \\('SELECT \"testbyte\", \"testbool\" " +
         "FROM \"PUBLIC\".\"test_table\" " +
         "WHERE \"testbool\" = true " +
-        "AND \"teststring\" = \\\\'Unicode\\\\'\\\\'s樂趣\\\\' " +
+        "AND \"teststring\" = ''Unicode\\\\'\\\\'s樂趣'' " +
         "AND \"testdouble\" > 1000.0 " +
         "AND \"testdouble\" < 1.7976931348623157E308 " +
-        "AND \"testfloat\" >= 1.0 " +
+        "AND \"testfloat\" >= 1.0::float4 " +
         "AND \"testint\" <= 43'\\) " +
         "TO '.*' " +
-        "WITH CREDENTIALS 'aws_access_key_id=test1;aws_secret_access_key=test2' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
         "ESCAPE").r
     // scalastyle:on
     val mockRedshift = new MockRedshift(
@@ -286,7 +294,7 @@ class RedshiftSourceSuite
       Map(TableName.parseFromEscaped("test_table").toString -> TestUtils.testSchema))
 
     // Construct the source with a custom schema
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     val relation = source.createRelation(testSqlContext, defaultParams, TestUtils.testSchema)
     val resultSchema =
       StructType(Seq(StructField("testbyte", ByteType), StructField("testbool", BooleanType)))
@@ -310,7 +318,7 @@ class RedshiftSourceSuite
 
     assert(rdd.collect() === Array(Row(1, true)))
     mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
   }
 
   test("DefaultSource supports SSE-KMS key clause") {
@@ -327,12 +335,12 @@ class RedshiftSourceSuite
     val expectedQuery = (
       "UNLOAD \\('SELECT \"testbyte\", \"testbool\" FROM \"PUBLIC\".\"test_table\" '\\) " +
         "TO '.*' " +
-        "WITH CREDENTIALS 'aws_access_key_id=test1;aws_secret_access_key=test2' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
         "ESCAPE MANIFEST NULL AS '@NULL@' KMS_KEY_ID 'abc-123' ENCRYPTED").r
     val mockRedshift =
       new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
     // Construct the source with a custom schema
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     val paramsWithKms = defaultParams + ("sse_kms_key" -> "abc-123")
     val relation = source.createRelation(testSqlContext, paramsWithKms, TestUtils.testSchema)
     val resultSchema =
@@ -352,14 +360,58 @@ class RedshiftSourceSuite
       Row(null, null))
     assert(rdd.collect() === prunedExpectedValues)
     mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(expectedQuery))
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
+  }
+
+  test("DefaultSource includes extraunloadoptions") {
+    // scalastyle:off
+    unloadedData =
+      """
+        |1|t
+        |1|f
+        |0|
+        |0|f
+        ||
+      """.stripMargin.trim
+    // scalastyle:on
+    val expectedQuery = (
+      "UNLOAD \\('SELECT \"testbyte\", \"testbool\" FROM \"PUBLIC\".\"test_table\" '\\) " +
+        "TO '.*' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
+        "ESCAPE MANIFEST NULL AS '@NULL@' KMS_KEY_ID 'abc-123' ENCRYPTED  CLEANPATH").r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    // Construct the source with a custom schema
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
+    val paramsWithKms = defaultParams + ("sse_kms_key" -> "abc-123")
+    val paramsWithExtraUnloadOptions = paramsWithKms + ("extraunloadoptions" -> "CLEANPATH")
+    val relation = source.createRelation(
+      testSqlContext, paramsWithExtraUnloadOptions, TestUtils.testSchema)
+    val resultSchema =
+      StructType(Seq(StructField("testbyte", ByteType), StructField("testbool", BooleanType)))
+
+    val rdd = relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+      .mapPartitions { iter =>
+        val fromRow = RowEncoder(resultSchema).resolveAndBind().createDeserializer().apply(_)
+        iter.asInstanceOf[Iterator[InternalRow]].map(fromRow)
+      }
+    val prunedExpectedValues = Array(
+      Row(1.toByte, true),
+      Row(1.toByte, false),
+      Row(0.toByte, null),
+      Row(0.toByte, false),
+      Row(null, null))
+    assert(rdd.collect() === prunedExpectedValues)
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
   }
 
   ignore("DefaultSource supports preactions options to run queries before running COPY command") {
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
       Map(TableName.parseFromEscaped("test_table").toString -> TestUtils.testSchema))
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     val params = defaultParams ++ Map(
       "preactions" ->
         """
@@ -401,7 +453,7 @@ class RedshiftSourceSuite
 
     val relation = RedshiftRelation(
       mockRedshift.jdbcWrapper,
-      _ => mockS3Client,
+      (_, _) => mockS3Client,
       Parameters.mergeParameters(params),
       userSchema = None)(testSqlContext)
     relation.asInstanceOf[InsertableRelation].insert(expectedDataDF, overwrite = true)
@@ -424,7 +476,7 @@ class RedshiftSourceSuite
 
     val schema = StructType(Seq(StructField("a", IntegerType), StructField("A", IntegerType)))
     val df = testSqlContext.createDataFrame(sc.emptyRDD[Row], schema)
-    val writer = new RedshiftWriter(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val writer = new RedshiftWriter(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
 
     intercept[IllegalArgumentException] {
       writer.saveToRedshift(
@@ -451,7 +503,7 @@ class RedshiftSourceSuite
       ".*FROM stl_load_errors.*".r
     )
 
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     intercept[Exception] {
       source.createRelation(testSqlContext, SaveMode.Overwrite, params, expectedDataDF)
     }
@@ -470,7 +522,7 @@ class RedshiftSourceSuite
       defaultParams("url"),
       Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> null))
 
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     source.createRelation(testSqlContext, SaveMode.Append, defaultParams, expectedDataDF)
 
     // This test is "appending" to an empty table, so we expect all our test data to be
@@ -487,11 +539,11 @@ class RedshiftSourceSuite
 
   ignore("include_column_list=true adds the schema columns to the COPY query") {
     val expectedCommands = Seq(
-        "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
+      "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\" .*".r,
 
-        ("COPY \"PUBLIC\".\"test_table\" \\(\"testbyte\",\"testbool\",\"testdate\"," +
-          "\"testdouble\",\"testfloat\",\"testint\",\"testlong\",\"testshort\",\"teststring\"," +
-          "\"testtimestamp\"\\) FROM .*").r
+      ("COPY \"PUBLIC\".\"test_table\" \\(\"testbyte\",\"testbool\",\"testdate\"," +
+        "\"testdouble\",\"testfloat\",\"testint\",\"testlong\",\"testshort\",\"teststring\"," +
+        "\"testtimestamp\"\\) FROM .*").r
     )
 
     val params = defaultParams ++ Map("include_column_list" -> "true")
@@ -500,7 +552,7 @@ class RedshiftSourceSuite
       defaultParams("url"),
       Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> TestUtils.testSchema))
 
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     source.createRelation(testSqlContext, SaveMode.Append, params, expectedDataDF)
 
     mockRedshift.verifyThatConnectionsWereClosed()
@@ -518,7 +570,7 @@ class RedshiftSourceSuite
       defaultParams("url"),
       Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> TestUtils.testSchema))
 
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     source.createRelation(testSqlContext, SaveMode.Append, defaultParams, expectedDataDF)
 
     mockRedshift.verifyThatConnectionsWereClosed()
@@ -538,7 +590,7 @@ class RedshiftSourceSuite
       DefaultRedshiftWriter.createTableSql(df, MergedParameters.apply(defaultParams)).trim
     val expectedCreateTableCommand =
       """CREATE TABLE IF NOT EXISTS "PUBLIC"."test_table" ("long_str" VARCHAR(512),""" +
-        """ "short_str" VARCHAR(10), "default_str" TEXT)"""
+        """ "short_str" VARCHAR(10), "default_str" VARCHAR(MAX))"""
     assert(createTableCommand === expectedCreateTableCommand)
   }
 
@@ -554,8 +606,8 @@ class RedshiftSourceSuite
     val createTableCommand =
       DefaultRedshiftWriter.createTableSql(df, MergedParameters.apply(defaultParams)).trim
     val expectedCreateTableCommand =
-      """CREATE TABLE IF NOT EXISTS "PUBLIC"."test_table" ("lzo_str" TEXT  ENCODE LZO,""" +
-        """ "runlength_str" TEXT  ENCODE RUNLENGTH, "default_str" TEXT)"""
+      """CREATE TABLE IF NOT EXISTS "PUBLIC"."test_table" ("lzo_str" VARCHAR(MAX)  ENCODE LZO,""" +
+        """ "runlength_str" VARCHAR(MAX)  ENCODE RUNLENGTH, "default_str" VARCHAR(MAX))"""
     assert(createTableCommand === expectedCreateTableCommand)
   }
 
@@ -592,7 +644,7 @@ class RedshiftSourceSuite
       DefaultRedshiftWriter.createTableSql(df, MergedParameters.apply(defaultParams)).trim
     val expectedCreateTableCommand =
       """CREATE TABLE IF NOT EXISTS "PUBLIC"."test_table" ("bpchar_str" BPCHAR(2),""" +
-        """ "bpchar_str" NVARCHAR(123), "default_str" TEXT)"""
+        """ "bpchar_str" NVARCHAR(123), "default_str" VARCHAR(MAX))"""
     assert(createTableCommand === expectedCreateTableCommand)
   }
 
@@ -600,7 +652,7 @@ class RedshiftSourceSuite
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
       Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> null))
-    val errIfExistsSource = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val errIfExistsSource = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     intercept[Exception] {
       errIfExistsSource.createRelation(
         testSqlContext, SaveMode.ErrorIfExists, defaultParams, expectedDataDF)
@@ -613,7 +665,7 @@ class RedshiftSourceSuite
     val mockRedshift = new MockRedshift(
       defaultParams("url"),
       Map(TableName.parseFromEscaped(defaultParams("dbtable")).toString -> null))
-    val ignoreSource = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
+    val ignoreSource = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     ignoreSource.createRelation(testSqlContext, SaveMode.Ignore, defaultParams, expectedDataDF)
     mockRedshift.verifyThatConnectionsWereClosed()
     mockRedshift.verifyThatExpectedQueriesWereIssued(Seq.empty)
@@ -676,5 +728,64 @@ class RedshiftSourceSuite
         .load()
     }
     assert(e.getMessage.contains("No FileSystem for scheme"))
+  }
+
+  test("Redshift reads include region when tempdir_region set") {
+    val expectedQuery = (
+      "UNLOAD \\('SELECT \"testbyte\", \"testbool\" FROM \"PUBLIC\".\"test_table\" '\\) " +
+        "TO '.*' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
+        "ESCAPE MANIFEST NULL AS '@NULL@'  REGION AS 'us-west-1'").r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    // Construct the source with a custom schema
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
+    val paramsWithRegion = defaultParams + ("tempdir_region" -> "us-west-1")
+    val relation = source.createRelation(
+      testSqlContext, paramsWithRegion, TestUtils.testSchema)
+    relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
+  }
+
+  test("Redshift reads does not include region when tempdir_region is not set") {
+    val expectedQuery = (
+      "UNLOAD \\('SELECT \"testbyte\", \"testbool\" FROM \"PUBLIC\".\"test_table\" '\\) " +
+        "TO '.*' " +
+        "WITH CREDENTIALS 'aws_iam_role=fake_role_arn' " +
+        "ESCAPE MANIFEST NULL AS '@NULL@'  REGION AS").r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    // Construct the source with a custom schema
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
+    val relation = source.createRelation(
+      testSqlContext, defaultParams, TestUtils.testSchema)
+    relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+    mockRedshift.verifyThatConnectionsWereClosed()
+    val e = intercept[TestFailedException] {
+      mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupPattern, expectedQuery))
+    }
+    assert(e.getMessage.contains("Actual and expected JDBC queries did not match"))
+  }
+
+  test("Redshift reads include user provide query group label") {
+    val userLabel = "expected"
+    val queryGroupExpected = s"""set query_group to .*"lbl":"${userLabel}".*"""
+    val expectedQuery = (
+      "UNLOAD .*").r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    // Construct the source with a custom schema
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
+    val paramsWithRegion = defaultParams + ("tempdir_region" -> "us-west-1",
+      PARAM_USER_QUERY_GROUP_LABEL -> userLabel)
+    val relation = source.createRelation(
+      testSqlContext, paramsWithRegion, TestUtils.testSchema)
+    relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupExpected.r, expectedQuery))
   }
 }

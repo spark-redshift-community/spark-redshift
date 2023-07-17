@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +18,7 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, MetadataBuilder, StructField, StructType}
 
 /**
  * This suite performs basic integration tests where the Redshift credentials have been
@@ -27,7 +28,8 @@ class RedshiftCredentialsInConfIntegrationSuite extends IntegrationSuiteBase {
 
   test("roundtrip save and load") {
     val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row(1)), 1),
-      StructType(StructField("foo", IntegerType) :: Nil))
+      StructType(StructField("foo", IntegerType, true,
+        new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
     val tableName = s"roundtrip_save_and_load_$randomSuffix"
     try {
       write(df)

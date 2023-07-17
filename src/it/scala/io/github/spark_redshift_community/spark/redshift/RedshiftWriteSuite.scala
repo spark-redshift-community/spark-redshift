@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +18,6 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import java.sql.SQLException
-
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
@@ -54,7 +54,8 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
       sqlContext.createDataFrame(
         sc.parallelize(Seq(Row(1))), StructType(StructField("SomeColumn", IntegerType) :: Nil)
       ),
-      expectedSchemaAfterLoad = Some(StructType(StructField("somecolumn", IntegerType) :: Nil))
+      expectedSchemaAfterLoad = Some(StructType(StructField("somecolumn", IntegerType, true,
+        new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
     )
   }
 
@@ -63,21 +64,24 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
       s"save_with_column_names_that_are_reserved_words_$randomSuffix",
       sqlContext.createDataFrame(
         sc.parallelize(Seq(Row(1))),
-        StructType(StructField("table", IntegerType) :: Nil)
+        StructType(StructField("table", IntegerType, true,
+          new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)
       )
     )
   }
 
   test("save with one empty partition (regression test for #96)") {
     val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row(1)), 2),
-      StructType(StructField("foo", IntegerType) :: Nil))
+      StructType(StructField("foo", IntegerType, true,
+        new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
     assert(df.rdd.glom.collect() === Array(Array.empty[Row], Array(Row(1))))
     testRoundtripSaveAndLoad(s"save_with_one_empty_partition_$randomSuffix", df)
   }
 
   test("save with all empty partitions (regression test for #96)") {
     val df = sqlContext.createDataFrame(sc.parallelize(Seq.empty[Row], 2),
-      StructType(StructField("foo", IntegerType) :: Nil))
+      StructType(StructField("foo", IntegerType, true,
+        new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
     assert(df.rdd.glom.collect() === Array(Array.empty[Row], Array.empty[Row]))
     testRoundtripSaveAndLoad(s"save_with_all_empty_partitions_$randomSuffix", df)
     // Now try overwriting that table. Although the new table is empty, it should still overwrite
@@ -90,7 +94,7 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
   test("informative error message when saving a table with string that is longer than max length") {
     val tableName = s"error_message_when_string_too_long_$randomSuffix"
     try {
-      val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row("a" * 512))),
+      val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row("a" * 65536))),
         StructType(StructField("A", StringType) :: Nil))
       val e = intercept[SQLException] {
         write(df)
@@ -109,11 +113,15 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
       TestUtils.toTimestamp(1970, 0, 1, 0, 0, 0, millis = 1),
       TestUtils.toTimestamp(1970, 0, 1, 0, 0, 0, millis = 10),
       TestUtils.toTimestamp(1970, 0, 1, 0, 0, 0, millis = 100),
-      TestUtils.toTimestamp(1970, 0, 1, 0, 0, 0, millis = 1000))
+      TestUtils.toTimestamp(1970, 0, 1, 0, 0, 0, millis = 1000),
+      TestUtils.toNanosTimestamp(1970, 0, 1, 0, 0, 0, 100000),
+      TestUtils.toNanosTimestamp(1970, 0, 1, 0, 0, 0, 10000),
+      TestUtils.toNanosTimestamp(1970, 0, 1, 0, 0, 0, 1000))
     testRoundtripSaveAndLoad(
       s"full_timestamp_precision_is_preserved$randomSuffix",
       sqlContext.createDataFrame(sc.parallelize(timestamps.map(Row(_))),
-        StructType(StructField("ts", TimestampType) :: Nil))
+        StructType(StructField("ts", TimestampType, true,
+          new MetadataBuilder().putString("redshift_type", "timestamp").build()) :: Nil))
     )
   }
 }
@@ -126,19 +134,23 @@ class AvroRedshiftWriteSuite extends BaseRedshiftWriteSuite {
       testRoundtripSaveAndLoad(
         s"error_when_saving_column_name_with_spaces_$randomSuffix",
         sqlContext.createDataFrame(sc.parallelize(Seq(Row(1))),
-          StructType(StructField("column name with spaces", IntegerType) :: Nil)))
+          StructType(StructField("column name with spaces", IntegerType, true,
+            new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)))
     }
   }
 }
 
-class CSVRedshiftWriteSuite extends BaseRedshiftWriteSuite {
+
+
+class CSVRedshiftWriteSuite extends BaseRedshiftWriteSuite with ComplexWriteSuite {
   override protected val tempformat: String = "CSV"
 
   test("save with column names that contain spaces (#84)") {
     testRoundtripSaveAndLoad(
       s"save_with_column_names_that_contain_spaces_$randomSuffix",
       sqlContext.createDataFrame(sc.parallelize(Seq(Row(1))),
-        StructType(StructField("column name with spaces", IntegerType) :: Nil)))
+        StructType(StructField("column name with spaces", IntegerType, true,
+          new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)))
   }
 }
 
@@ -165,5 +177,27 @@ class CSVGZIPRedshiftWriteSuite extends IntegrationSuiteBase {
     } finally {
       conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
     }
+  }
+}
+
+class ParquetRedshiftWriteSuite extends BaseRedshiftWriteSuite with ComplexWriteSuite {
+  override val tempformat: String = "PARQUET"
+
+  protected val AWS_S3_CROSS_REGION_SCRATCH_SPACE: String =
+    loadConfigFromEnv("AWS_S3_CROSS_REGION_SCRATCH_SPACE")
+
+  test("save fails on cross-region copy") {
+    val tableName = s"cross_region_copy_parquet_$randomSuffix"
+    val caught = intercept[Exception]({
+      write(
+        sqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testSchema))
+        .option("dbtable", tableName)
+        .option("tempdir", AWS_S3_CROSS_REGION_SCRATCH_SPACE)
+        .mode(SaveMode.ErrorIfExists)
+        .save()
+    })
+    assert(caught.getMessage == "Redshift cluster and S3 bucket are in different regions " +
+      "when tempformat is set to parquet")
+
   }
 }

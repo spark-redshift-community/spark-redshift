@@ -1,5 +1,6 @@
 /*
  * Copyright 2014 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +24,11 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SQLContext}
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
-
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.funsuite.AnyFunSuite
 import scala.language.implicitConversions
 
-class RedshiftInputFormatSuite extends FunSuite with BeforeAndAfterAll {
+class RedshiftInputFormatSuite extends AnyFunSuite with BeforeAndAfterAll {
 
   import RedshiftInputFormatSuite._
 

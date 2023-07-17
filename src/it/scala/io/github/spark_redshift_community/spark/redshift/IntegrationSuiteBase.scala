@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +17,17 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
+import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_TEMPDIR_REGION}
+
 import java.net.URI
 import java.sql.Connection
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.StructType
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
-
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.matchers.should._
 import scala.util.Random
 
 
@@ -38,9 +40,12 @@ trait IntegrationSuiteBase
   with BeforeAndAfterAll
   with BeforeAndAfterEach {
 
-  protected def loadConfigFromEnv(envVarName: String): String = {
+  protected def loadConfigFromEnv(envVarName: String, isRequired:Boolean = true): String = {
     Option(System.getenv(envVarName)).getOrElse {
-      fail(s"Must set $envVarName environment variable")
+      if (isRequired)
+        fail(s"Must set $envVarName environment variable")
+      else
+        null
     }
   }
 
@@ -54,9 +59,15 @@ trait IntegrationSuiteBase
   protected val AWS_REDSHIFT_PASSWORD: String = loadConfigFromEnv("AWS_REDSHIFT_PASSWORD")
   protected val AWS_ACCESS_KEY_ID: String = loadConfigFromEnv("AWS_ACCESS_KEY_ID")
   protected val AWS_SECRET_ACCESS_KEY: String = loadConfigFromEnv("AWS_SECRET_ACCESS_KEY")
-  // Path to a directory in S3 (e.g. 's3n://bucket-name/path/to/scratch/space').
+  protected val AWS_SESSION_TOKEN: String = loadConfigFromEnv("AWS_SESSION_TOKEN", isRequired= false)
+  // Path to a directory in S3 (e.g. 's3a://bucket-name/path/to/scratch/space').
   protected val AWS_S3_SCRATCH_SPACE: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE")
+  protected val AWS_S3_SCRATCH_SPACE_REGION: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE_REGION")
+//  protected val AWS_SECRET_ID: String = loadConfigFromEnv("AWS_SECRET_ID")
+//  protected val AWS_SECRET_REGION: String = loadConfigFromEnv("AWS_SECRET_REGION")
   require(AWS_S3_SCRATCH_SPACE.contains("s3a"), "must use s3a:// URL")
+
+  protected val auto_pushdown: String = "false"
 
   protected def jdbcUrl: String = {
     s"$AWS_REDSHIFT_JDBC_URL?user=$AWS_REDSHIFT_USER&password=$AWS_REDSHIFT_PASSWORD&ssl=true"
@@ -87,20 +98,27 @@ trait IntegrationSuiteBase
     // Bypass Hadoop's FileSystem caching mechanism so that we don't cache the credentials:
     sc.hadoopConfiguration.setBoolean("fs.s3.impl.disable.cache", true)
     sc.hadoopConfiguration.setBoolean("fs.s3n.impl.disable.cache", true)
-    sc.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", AWS_ACCESS_KEY_ID)
-    sc.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", AWS_SECRET_ACCESS_KEY)
     sc.hadoopConfiguration.set("fs.s3a.access.key", AWS_ACCESS_KEY_ID)
     sc.hadoopConfiguration.set("fs.s3a.secret.key", AWS_SECRET_ACCESS_KEY)
+    if (AWS_SESSION_TOKEN != null) {
+      sc.hadoopConfiguration.set("fs.s3a.session.token", AWS_SESSION_TOKEN)
+      sc.hadoopConfiguration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
+    } else {
+      sc.hadoopConfiguration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
+    }
+    sc.hadoopConfiguration.set("fs.s3a.bucket.probe", "2")
+    sc.hadoopConfiguration.setBoolean("fs.s3a.bucket.all.committer.magic.enabled", true)
     conn = DefaultJDBCWrapper.getConnector(None, jdbcUrl, None)
   }
 
   override def afterAll(): Unit = {
     try {
       val conf = new Configuration(false)
-      conf.set("fs.s3n.awsAccessKeyId", AWS_ACCESS_KEY_ID)
-      conf.set("fs.s3n.awsSecretAccessKey", AWS_SECRET_ACCESS_KEY)
       conf.set("fs.s3a.access.key", AWS_ACCESS_KEY_ID)
       conf.set("fs.s3a.secret.key", AWS_SECRET_ACCESS_KEY)
+      if (AWS_SESSION_TOKEN != null) {
+        conf.set("fs.s3a.session.token", AWS_SESSION_TOKEN)
+      }
       // Bypass Hadoop's FileSystem caching mechanism so that we don't cache the credentials:
       conf.setBoolean("fs.s3.impl.disable.cache", true)
       conf.setBoolean("fs.s3n.impl.disable.cache", true)
@@ -137,7 +155,10 @@ trait IntegrationSuiteBase
       .option("url", jdbcUrl)
       .option("tempdir", tempDir)
       .option("forward_spark_s3_credentials", "true")
+      .option(PARAM_TEMPDIR_REGION, AWS_S3_SCRATCH_SPACE_REGION)
+      .option(PARAM_AUTO_PUSHDOWN, auto_pushdown)
   }
+
   /**
    * Create a new DataFrameWriter using common options for writing to Redshift.
    */
@@ -147,6 +168,7 @@ trait IntegrationSuiteBase
       .option("url", jdbcUrl)
       .option("tempdir", tempDir)
       .option("forward_spark_s3_credentials", "true")
+      .option(PARAM_TEMPDIR_REGION, AWS_S3_SCRATCH_SPACE_REGION)
   }
 
   protected def createTestDataInRedshift(tableName: String): Unit = {
@@ -171,7 +193,7 @@ trait IntegrationSuiteBase
       s"""
          |insert into $tableName values
          |(null, null, null, null, null, null, null, null, null, null),
-         |(0, null, '2015-07-03', 0.0, -1.0, 4141214, 1239012341823719, null, 'f', '2015-07-03 00:00:00.000'),
+         |(0, null, '2015-07-03', 0.0, -1.0, 4141214, 1239012341823719, null, 'f', '2015-07-03 12:34:56.000'),
          |(0, false, null, -1234152.12312498, 100000.0, null, 1239012341823719, 24, '___|_123', null),
          |(1, false, '2015-07-02', 0.0, 0.0, 42, 1239012341823719, -13, 'asdf', '2015-07-02 00:00:00.000'),
          |(1, true, '2015-07-01', 1234152.12312498, 1.0, 42, 1239012341823719, 23, 'Unicode''s樂趣', '2015-07-01 00:00:00.001')

@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +58,7 @@ object TestUtils {
     Row(1.toByte, false, TestUtils.toDate(2015, 6, 2), 0.0, 0.0f, 42,
       1239012341823719L, -13.toShort, "asdf", TestUtils.toTimestamp(2015, 6, 2, 0, 0, 0, 0)),
     Row(0.toByte, null, TestUtils.toDate(2015, 6, 3), 0.0, -1.0f, 4141214,
-      1239012341823719L, null, "f", TestUtils.toTimestamp(2015, 6, 3, 0, 0, 0)),
+      1239012341823719L, null, "f", TestUtils.toTimestamp(2015, 6, 3, 12, 34, 56)),
     Row(0.toByte, false, null, -1234152.12312498, 100000.0f, null, 1239012341823719L, 24.toShort,
       "___|_123", null),
     Row(List.fill(10)(null): _*))
@@ -69,7 +70,7 @@ object TestUtils {
    */
   val expectedDataWithConvertedTimesAndDates: Seq[Row] = expectedData.map { row =>
     Row.fromSeq(row.toSeq.map {
-      case t: Timestamp => Conversions.createRedshiftTimestampFormat().format(t)
+      case t: Timestamp => Conversions.createRedshiftTimestampFormat().format(t.toLocalDateTime)
       case d: Date => Conversions.createRedshiftDateFormat().format(d)
       case other => other
     })

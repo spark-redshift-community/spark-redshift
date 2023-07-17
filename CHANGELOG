@@ -1,4 +1,40 @@
+#
+# Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 # spark-redshift Changelog
+
+## 6.0.0 (2023-07-17)
+
+This major release brings forward several performance, security, and usability improvements contributed by AWS:
+
+- Automatic translation and pushdown of Spark expressions down to Redshift for local execution (via new 'autopushdown' parameter)
+- Upgrade JDBC driver from 1.x to 2.x for improved security and compatibility with Redshift
+- IAM-based authentication
+- AWS Secret Manager based authentication
+- Parquet support for reading and writing
+- S3 result caching (when autopushdown is enabled)
+- Spark 3.4.0 support
+- Improved cross-region support between Spark cluster and S3 bucket (via new 'tempdir_region' parameter)
+- Automatic retry during Redshift COPY operations (via new 'copydelay' and 'copyretrycount' parameters)
+- Ability to pass additional options during Redshift UNLOAD operations (via new 'extraunloadoptions' parameter)
+- Microsecond precision when reading or writing time-based columns to/from Redshift.
+- Complex type support for using Spark ArrayType, MapType, and StructType with Redshift SUPER data type.
+- Support for parallel Redshift SQL execution during autopushdown.
+- Support for passing JDBC parameters through the connector to the underlying JDBC driver (via new 'jdbc.*' parameter)
+- Query group support for annotating Redshift queries from connector (via new 'label' parameter)
 
 ## 5.1.0 (2022-09-22)
 

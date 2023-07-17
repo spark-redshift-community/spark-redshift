@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +17,7 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.net.URI
-
+import io.github.spark_redshift_community.spark.redshift.Parameters.{DEFAULT_PARAMETERS, PARAM_OVERRIDE_NULLABLE}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
 import org.apache.hadoop.mapreduce._
@@ -28,7 +28,9 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources.Filter
-import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.sql.types._
+
+import java.net.URI
 
 /**
  * Internal data source used for reading Redshift UNLOAD files.
@@ -81,7 +83,7 @@ private[redshift] class RedshiftFileFormat extends FileFormat {
       val conf = broadcastedConf.value.value
 
       val fileSplit = new FileSplit(
-        new Path(new URI(file.filePath)),
+        new Path(RedshiftFileFormatUtils.uriFromPartitionedFile(file)),
         file.start,
         file.length,
         // TODO: Implement Locality
@@ -91,13 +93,25 @@ private[redshift] class RedshiftFileFormat extends FileFormat {
       val reader = new RedshiftRecordReader
       reader.initialize(fileSplit, hadoopAttemptContext)
       val iter = new RecordReaderIterator[Array[String]](reader)
+
       // Ensure that the record reader is closed upon task completion. It will ordinarily
       // be closed once it is completely iterated, but this is necessary to guard against
       // resource leaks in case the task fails or is interrupted.
       Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => iter.close()))
       val converter = Conversions.createRowConverter(requiredSchema,
-        options.getOrElse("nullString", Parameters.DEFAULT_PARAMETERS("csvnullstring")))
+        options.getOrElse("nullString", DEFAULT_PARAMETERS("csvnullstring")),
+        options.getOrElse(PARAM_OVERRIDE_NULLABLE,
+          DEFAULT_PARAMETERS(PARAM_OVERRIDE_NULLABLE)).toBoolean)
       iter.map(converter)
+    }
+  }
+
+  override def supportDataType(dataType: DataType): Boolean = {
+    dataType match {
+      case ByteType | BooleanType | DateType | DoubleType | FloatType | IntegerType => true
+      case LongType | ShortType | StringType | TimestampType => true
+      case _ : DecimalType => true
+      case _ => false
     }
   }
 }

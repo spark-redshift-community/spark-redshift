@@ -1,4 +1,7 @@
 /*
+ *
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,18 +22,18 @@ package io.github.spark_redshift_community.spark.redshift
 
 import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.{DataFrame, Row}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
  * Copy of Spark SQL's `QueryTest` trait.
  */
-trait QueryTest extends FunSuite {
+trait QueryTest extends AnyFunSuite {
   /**
    * Runs the plan and makes sure the answer matches the expected result.
    * @param df the [[DataFrame]] to be executed
    * @param expectedAnswer the expected result in a [[Seq]] of [[Row]]s.
    */
-  def checkAnswer(df: DataFrame, expectedAnswer: Seq[Row]): Unit = {
+  def checkAnswer(df: DataFrame, expectedAnswer: Seq[Row], trim: Boolean = false): Unit = {
     val isSorted = df.queryExecution.logical.collect { case s: logical.Sort => s }.nonEmpty
     def prepareAnswer(answer: Seq[Row]): Seq[Row] = {
       // Converts data to types that we can do equality comparison using Scala collections.
@@ -42,6 +45,7 @@ trait QueryTest extends FunSuite {
         Row.fromSeq(s.toSeq.map {
           case d: java.math.BigDecimal => BigDecimal(d)
           case b: Array[Byte] => b.toSeq
+          case s: String if trim => s.trim()
           case o => o
         })
       }

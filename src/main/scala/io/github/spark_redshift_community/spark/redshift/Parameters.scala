@@ -1,5 +1,8 @@
 /*
+ *
+ * Copyright 2015-2018 Snowflake Computing
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +20,26 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.{AWSCredentialsProvider, BasicSessionCredentials}
+import com.amazonaws.regions.Regions
 
 /**
  * All user-specifiable parameters for spark-redshift, along with their validation rules and
  * defaults.
  */
 private[redshift] object Parameters {
+
+  val PARAM_AUTO_PUSHDOWN: String = "autopushdown"
+  val PARAM_PUSHDOWN_S3_RESULT_CACHE: String = "autopushdown.s3_result_cache"
+  val PARAM_UNLOAD_S3_FORMAT: String = "unload_s3_format"
+  val PARAM_COPY_RETRY_COUNT: String = "copyretrycount"
+  val PARAM_COPY_DELAY: String = "copydelay"
+  val PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING: String = "legacy_jdbc_real_type_mapping"
+  val PARAM_OVERRIDE_NULLABLE: String = "overridenullable"
+  val PARAM_TEMPDIR_REGION: String = "tempdir_region"
+  val PARAM_SECRET_ID: String = "secret.id"
+  val PARAM_SECRET_REGION: String = "secret.region"
+  val PARAM_USER_QUERY_GROUP_LABEL: String = "label"
+
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
@@ -40,10 +57,20 @@ private[redshift] object Parameters {
     "usestagingtable" -> "true",
     "preactions" -> ";",
     "postactions" -> ";",
-    "include_column_list" -> "false"
+    "include_column_list" -> "false",
+    PARAM_AUTO_PUSHDOWN -> "true",
+    PARAM_PUSHDOWN_S3_RESULT_CACHE -> "false",
+    PARAM_UNLOAD_S3_FORMAT -> "PARQUET", // values: PARQUET, TEXT
+    PARAM_OVERRIDE_NULLABLE -> "false",
+    PARAM_COPY_RETRY_COUNT -> "2",
+    PARAM_COPY_DELAY -> "0",
+    PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
+    PARAM_TEMPDIR_REGION -> "",
+    PARAM_USER_QUERY_GROUP_LABEL -> ""
   )
 
-  val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
+  val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP", "PARQUET")
+  val DEFAULT_RETRY_DELAY: Long = 30000
 
   /**
    * Merge user parameters with the defaults, preferring user parameters if specified
@@ -71,17 +98,33 @@ private[redshift] object Parameters {
         "You cannot specify both the 'dbtable' and 'query' parameters at the same time.")
     }
     val credsInURL = userParameters.get("url")
-      .filter(url => url.contains("user=") || url.contains("password="))
+      .filter(url => url.contains("user=") || url.contains("password=") || url.contains("DbUser="))
     if (userParameters.contains("user") || userParameters.contains("password")) {
       if (credsInURL.isDefined) {
         throw new IllegalArgumentException(
           "You cannot specify credentials in both the URL and as user/password options")
         }
-    } else if (credsInURL.isEmpty) {
-      throw new IllegalArgumentException(
-        "You must specify credentials in either the URL or as user/password options")
     }
-
+    if (credsInURL.isDefined && userParameters.contains(PARAM_SECRET_ID)) {
+        throw new IllegalArgumentException(
+          "You cannot give a secret and specify credentials in URL"
+        )
+    }
+    if ((userParameters.contains("user") || userParameters.contains("password")) &&
+      userParameters.contains(PARAM_SECRET_ID)) {
+      throw new IllegalArgumentException(
+        "You cannot give a secret and specify user/password options"
+      )
+    }
+    if (userParameters.get(PARAM_USER_QUERY_GROUP_LABEL).
+      exists(_.exists(!_.isUnicodeIdentifierPart))) {
+      val invalid = userParameters(PARAM_USER_QUERY_GROUP_LABEL).
+        find(!_.isUnicodeIdentifierPart).get
+      throw new IllegalArgumentException(
+        "All characters in label option must be valid unicode identifier parts " +
+        s"(char.isUnicodeIdentifierPart == true), '${invalid}' character not allowed"
+      )
+    }
     MergedParameters(DEFAULT_PARAMETERS ++ userParameters)
   }
 
@@ -108,6 +151,28 @@ private[redshift] object Parameters {
      * are available for S3.
      */
     def rootTempDir: String = parameters("tempdir")
+
+    /**
+     * AWS region where the 'tempdir' is located. Setting this option will improve connector
+     * performance for interactions with 'tempdir' as well as automatically supply this region
+     * as part of COPY and UNLOAD operations during connector writes and reads to Redshift.
+     *
+     * If the region is not specified, the connector will attempt to use the default S3 provider
+     * chain for resolving where the 'tempdir' region is located. In some cases, such as when the
+     * connector is being used outside of an AWS environment, this resolution will fail. Therefore,
+     * this setting is highly recommended in the following situations:
+     *  1) When the connector is running outside of AWS as automatic region discovery using the
+     *     aws java sdk will fail and negatively affect connector performance.
+     *  2) When 'tempdir' is in a different region than the Redshift cluster as using this
+     *     setting alleviates the need to supply the region manually using the 'extracopyoptions'
+     *     and 'extraunloadoptions' parameters.
+     *  3) When the connector is running in a different region than 'tempdir' as it improves
+     *     the connector's access performance of 'tempdir'.
+     */
+    def tempDirRegion: Option[String] = {
+      val regionName = parameters.getOrElse(PARAM_TEMPDIR_REGION, "")
+      if (regionName.isEmpty) None else Some(Regions.fromName(regionName).getName)
+    }
 
     /**
      * The format in which to save temporary files in S3. Defaults to "AVRO"; the other allowed
@@ -161,6 +226,15 @@ private[redshift] object Parameters {
       ) yield (user, password)
     }
 
+    /**
+    * Secret Id to be used to authenticate to Redshift.
+    */
+    def secretId: Option[String] = parameters.get(PARAM_SECRET_ID)
+
+    /**
+    * Secret Region is the region value where your secret resides.
+    */
+    def secretRegion: Option[String] = parameters.get(PARAM_SECRET_REGION)
     /**
      * A JDBC URL, of the format:
      *
@@ -234,9 +308,19 @@ private[redshift] object Parameters {
     def extraCopyOptions: String = parameters.getOrElse("extracopyoptions", "")
 
     /**
+     * Extra options to append to the Redshift UNLOAD command (e.g. ENCRYPTED).
+     */
+    def extraUnloadOptions: String = parameters.getOrElse("extraunloadoptions", "")
+
+    /**
       * Description of the table, set using the SQL COMMENT command.
       */
     def description: Option[String] = parameters.get("description")
+
+    /**
+     * A user provided label to add to query group as value for key lbl
+     */
+    def user_query_group_label: String = parameters(PARAM_USER_QUERY_GROUP_LABEL)
 
     /**
       * List of semi-colon separated SQL statements to run before write operations.
@@ -299,5 +383,37 @@ private[redshift] object Parameters {
      * instead of AWS's default encryption
      */
     def sseKmsKey: Option[String] = parameters.get("sse_kms_key")
+
+    def autoPushdown: Boolean = parameters(PARAM_AUTO_PUSHDOWN).toBoolean
+    def pushdownS3ResultCache: Boolean = parameters(PARAM_PUSHDOWN_S3_RESULT_CACHE).toBoolean
+    def unloadS3Format: String = parameters(PARAM_UNLOAD_S3_FORMAT).toUpperCase
+
+    /**
+     * Number of times to retry redshift copy
+     * @return Int
+     */
+    def copyRetryCount : Int = parameters(PARAM_COPY_RETRY_COUNT).toInt
+
+    /**
+     * Milliseconds to sleep between copy retry attempts.
+     * Negative and zero values are treated as 30s.
+     * @return Long
+     */
+    def copyDelay : Long = {
+      val configuredValue = parameters(PARAM_COPY_DELAY).toLong
+      if (configuredValue > 0) configuredValue else DEFAULT_RETRY_DELAY
+    }
+
+    /**
+     * Enables the use of doubles for real to support legacy applications
+     */
+    def legacyJdbcRealTypeMapping: Boolean =
+      parameters(PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING).toBoolean
+
+    /**
+     * Turns empty strings into nulls
+     */
+    def overrideNullable: Boolean =
+      parameters(PARAM_OVERRIDE_NULLABLE).toBoolean
   }
 }

@@ -1,5 +1,7 @@
 /*
+ * Copyright 2015-2018 Snowflake Computing
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +18,42 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.net.URI
-import java.util.UUID
-
-import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
-import com.amazonaws.services.s3.{AmazonS3Client, AmazonS3URI}
+import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.regions.Regions
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3URI}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
+import java.net.URI
+import java.sql.Timestamp
+import java.util.{Properties, UUID}
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
+
+
+object RedshiftFailMessage {
+  // Note: don't change the message context except necessary
+  final val FAIL_PUSHDOWN_STATEMENT = "pushdown failed"
+  final val FAIL_PUSHDOWN_GENERATE_QUERY = "pushdown failed in generateQueries"
+  final val FAIL_PUSHDOWN_SET_TO_EXPR = "pushdown failed in setToExpr"
+  final val FAIL_PUSHDOWN_AGGREGATE_EXPRESSION = "pushdown failed for aggregate expression"
+  final val FAIL_PUSHDOWN_UNSUPPORTED_CONVERSION = "pushdown failed for unsupported conversion"
+  final val FAIL_PUSHDOWN_UNSUPPORTED_JOIN = "pushdown failed for unsupported join"
+  final val FAIL_PUSHDOWN_UNSUPPORTED_UNION = "pushdown failed for Spark feature: UNION by name"
+}
+
+class RedshiftPushdownException(message: String)
+  extends Exception(message)
+
+class RedshiftPushdownUnsupportedException(message: String,
+                                            val unsupportedOperation: String,
+                                            val details: String,
+                                            val isKnownUnsupportedOperation: Boolean)
+  extends Exception(message)
 
 /**
  * Various arbitrary helper functions
@@ -34,6 +61,8 @@ import scala.util.control.NonFatal
 private[redshift] object Utils {
 
   private val log = LoggerFactory.getLogger(getClass)
+
+  var lastBuildStmt: String = _
 
   def classForName(className: String): Class[_] = {
     val classLoader =
@@ -126,7 +155,7 @@ private[redshift] object Utils {
    */
   def checkThatBucketHasObjectLifecycleConfiguration(
       tempDir: String,
-      s3Client: AmazonS3Client): Boolean = {
+      s3Client: AmazonS3): Boolean = {
     try {
       val s3URI = createS3URI(Utils.fixS3Url(tempDir))
       val bucket = s3URI.getBucket
@@ -180,12 +209,12 @@ private[redshift] object Utils {
   /**
    * Attempts to retrieve the region of the S3 bucket.
    */
-  def getRegionForS3Bucket(tempDir: String, s3Client: AmazonS3Client): Option[String] = {
+  def getRegionForS3Bucket(tempDir: String, s3Client: AmazonS3): Option[String] = {
     try {
       val s3URI = createS3URI(Utils.fixS3Url(tempDir))
       val bucket = s3URI.getBucket
       assert(bucket != null, "Could not get bucket from S3 URI")
-      val region = s3Client.getBucketLocation(bucket) match {
+      val region = s3Client.headBucket(new HeadBucketRequest(bucket)).getBucketRegion match {
         // Map "US Standard" to us-east-1
         case null | "US" => "us-east-1"
         case other => other
@@ -208,6 +237,220 @@ private[redshift] object Utils {
     url match {
       case regionRegex(region) => Some(region)
       case _ => None
+    }
+  }
+
+  def checkRedshiftAndS3OnSameRegion(params: MergedParameters, s3Client: AmazonS3): Unit = {
+    for (
+      redshiftRegion <- Utils.getRegionForRedshiftCluster(params.jdbcUrl);
+      s3Region <- Utils.getRegionForS3Bucket(params.rootTempDir, s3Client)
+    ) {
+      if ((redshiftRegion != s3Region) && params.tempDirRegion.isEmpty) {
+        log.error("The Redshift cluster and S3 bucket are in different regions " +
+          s"($redshiftRegion and $s3Region, respectively). In order to perform this cross-region " +
+          s"""operation, you should set the tempdir_region parameter to '$s3Region'. """ +
+          "For more details on cross-region usage, see the README.")
+      }
+    }
+  }
+
+  /**
+   * Performs the same check as checkRedshiftAndS3OnSameRegion but ignores the tempdir_region
+   * since when parquet is used as the copy format, the region copy option is not available.
+   * In addition if the check is failed throw an exception to prevent execution. This stricter
+   * check is only applicable when using the connector to write.
+   * @param params parameters configured on the connector
+   * @param s3Client S3 client to use when getting the s3 bucket region
+   */
+  def checkRedshiftAndS3OnSameRegionParquetWrite
+  (params: MergedParameters, s3Client: AmazonS3): Unit = {
+    val redshiftRegion = Utils.getRegionForRedshiftCluster(params.jdbcUrl)
+    if (redshiftRegion.isEmpty) {
+      log.warn("Unable to determine region for redshift cluster, copy may fail if " +
+        "S3 bucket region does not match redshift cluster region.")
+      return
+    }
+    val s3Region = Utils.getRegionForS3Bucket(params.rootTempDir, s3Client)
+    if (s3Region.isEmpty) {
+      log.warn("Unable to determine region for S3 bucket, copy may fail if redshift cluster" +
+        " region does not match S3 bucket region.")
+      return
+    }
+    if (redshiftRegion.get != s3Region.get) {
+      log.error("The Redshift cluster and S3 bucket are in different regions " +
+        s"($redshiftRegion and $s3Region, respectively). Cross-region copy operation is not " +
+        "available when tempformat is set to parquet")
+      throw new IllegalArgumentException("Redshift cluster and S3 bucket are in different " +
+        "regions when tempformat is set to parquet")
+    }
+  }
+
+  def getDefaultTempDirRegion(tempDirRegion: Option[String]): Regions = {
+    // If the user provided a region, use it above everything else.
+    if (tempDirRegion.isDefined) return Regions.fromName(tempDirRegion.get)
+
+    // Either the user didn't provide a region or its malformed. Try to use the
+    // connector's region as the tempdir region since they are usually collocated.
+    // If they aren't, S3's default provider chain will help resolve the difference.
+    val currRegion = Regions.getCurrentRegion()
+
+    // If the user didn't provide a valid tempdir region and we cannot determine
+    // the connector's region, the connector is likely running outside of AWS.
+    // In this case, warn the user about the performance penalty of not specifying
+    // the tempdir region.
+    if (currRegion == null) {
+      log.warn(
+        s"The connector cannot automatically determine a region for 'tempdir'. It " +
+          "is highly recommended that the 'tempdir_region' parameter is set to " +
+          "avoid a performance penalty while trying to automatically determine " +
+          "a region, especially when operating outside of AWS.")
+    }
+
+    // If all else fails, pick a default region.
+    if (currRegion != null) Regions.fromName(currRegion.getName()) else Regions.US_EAST_1
+  }
+
+  def s3ClientBuilder: (AWSCredentialsProvider, MergedParameters) => AmazonS3 =
+    (awsCredentials, mergedParameters) => {
+      AmazonS3Client.builder()
+        .withRegion(Utils.getDefaultTempDirRegion(mergedParameters.tempDirRegion))
+        .withForceGlobalBucketAccessEnabled(true)
+        .withCredentials(awsCredentials)
+        .build()
+  }
+
+  def collectMetrics(params: MergedParameters, logger: Option[Logger] = None): Unit = {
+    val metricLogger = logger.getOrElse(log)
+
+    // Emit the build and connector information.
+    metricLogger.info(BuildInfo.toString)
+    if (BuildInfo.version.contains("-amzn-")) {
+      metricLogger.info("amazon-spark-redshift-connector")
+    }
+
+    // Track legacy parameters for deprecation
+    if (params.legacyJdbcRealTypeMapping) {
+      metricLogger.info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
+    }
+    if (params.overrideNullable) {
+      metricLogger.info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
+    }
+
+  }
+
+  val DEFAULT_APP_NAME = "spark-redshift-connector"
+  private val CONNECTOR_SERVICE_NAME_ENV_VAR = "AWS_SPARK_REDSHIFT_CONNECTOR_SERVICE_NAME"
+
+  /**
+   * Retrieve the name of the service using the connector.
+   * Is none if environment variable is unset or empty.
+   * @return trimmed service name
+   */
+  def connectorServiceName: Option[String] = System.getenv().asScala.
+    get(CONNECTOR_SERVICE_NAME_ENV_VAR).filter(_.trim.nonEmpty).map(_.trim)
+
+  sealed trait MetricOperation
+  case object Read extends MetricOperation
+  case object Write extends MetricOperation
+
+  /**
+   * Provides a string of json to be used for gathering metrics to be
+   * sent to redshift as the query group for all queries associated
+   * with a particular spark query. Limits the svc and lbl fields to
+   * ensure the overall length does not exceed the redshift allowed
+   * 320 characters for a query group.
+   * @param operation the type of operation performed
+   * @param label A user provided identifier to associate with a query
+   *              should be sanitized before use with this function
+   * @return a string to be used as a query group
+   */
+  def queryGroupInfo(operation: MetricOperation, label: String): String = {
+    val MAX_SVC_LENGTH = 30
+    val MAX_LBL_LENGTH = 100
+    val svcName = connectorServiceName.getOrElse("")
+    val trimmedSvcName = svcName.substring(0, math.min(svcName.length, MAX_SVC_LENGTH))
+    val trimmedLabel = label.substring(0, math.min(label.length, MAX_LBL_LENGTH))
+    s"""{"${DEFAULT_APP_NAME}":{"svc":"${trimmedSvcName}",""" +
+      s""""ver":"${BuildInfo.version}","op":"${operation}","lbl":"$trimmedLabel"}}"""
+  }
+
+  /**
+   * Perform a block until it succeeds or retry count reaches zero.
+   * Success is determined by whether the passed block throws
+   * an exception or not. If the block is not successful and retry count
+   * is zero this function will throw the last exception thrown while attempting the passed block.
+   * @param count Number of times to attempt the block
+   * @param delay Milliseconds to wait between attempts
+   * @param retryBlock Block to execute
+   * @tparam T Return type of the passed block
+   * @return Result of the blocks successful execution
+   */
+  @tailrec
+  def retry[T](count: Int, delay: Long)(retryBlock: => T): T = {
+    try {
+     retryBlock
+    } catch {
+      case e: Throwable => {
+        if (count <= 0) {
+          throw e
+        }
+        log.warn(s"Sleeping $delay milliseconds before proceeding to retry redshift operation;" +
+          s" $count retries remain")
+        Thread.sleep(delay)
+        retry(count - 1, delay)(retryBlock)
+      }
+    }
+  }
+
+  /**
+   * Copies a property (if it exists) from one set of properties to another.
+   *
+   * @param name        The name of the property.
+   * @param sourceProps The set of source properties.
+   * @param destProps   The set of destination properties.
+   */
+  def copyProperty(name: String,
+                   sourceProps: Map[String, String],
+                   destProps: Properties): Unit = {
+    copyProperty(name, name, sourceProps, destProps)
+  }
+
+  /**
+   * Copies a property (if it exists) from one set of properties to another while also
+   * renaming the property.
+   *
+   * @param searchName  The name of the property to search within sourceProps.
+   * @param replaceName The replacement name to write into destProps.
+   * @param sourceProps The set of source properties.
+   * @param destProps   The set of destination properties.
+   */
+  def copyProperty(searchName: String,
+                   replaceName: String,
+                   sourceProps: Map[String, String],
+                   destProps: Properties): Unit = {
+    sourceProps.get(searchName).foreach(destProps.setProperty(replaceName, _))
+  }
+
+  /**
+   * Copy a set of properties from one collection to another with string replacement using
+   * regular expressions.
+   *
+   * @param matchRegex   The regex used to match a property name.
+   * @param searchRegex  The search regex used for replacing a property name.
+   * @param replaceName  The name to use when replacing the property name.
+   * @param sourceProps  The set of source properties.
+   * @param destProps    The set of destination properties.
+   */
+  def copyProperties(matchRegex: String,
+                     searchRegex: String,
+                     replaceName: String,
+                     sourceProps: Map[String, String],
+                     destProps: Properties): Unit = {
+    sourceProps.foreach {
+      case (key, value) =>
+        if (key.matches(matchRegex)) {
+          destProps.setProperty(key.replaceFirst(searchRegex, replaceName), value)
+        }
     }
   }
 }

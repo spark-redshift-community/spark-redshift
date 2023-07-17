@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,44 +22,121 @@ import sbt._
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import sbtrelease.ReleasePlugin.autoImport._
 import scoverage.ScoverageKeys
+import java.util.Properties
+import java.io.FileInputStream
 
-val sparkVersion = "3.2.0"
+val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
+val sparkVersion = "3.4.0"
+val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.
 lazy val IntegrationTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
-val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.2.1")
+val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.3")
+val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.16")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
 val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.1033")
+// access tokens for aws/shared and our own internal CodeArtifacts repo
+// these are retrieved during CodeBuild steps
+val awsSharedRepoPass = sys.props.get("ci.internalCentralMvnPassword").getOrElse("")
+val internalReleaseRepoPass = sys.props.get("ci.internalTeamMvnPassword").getOrElse("")
+// remove the PATCH portion of the spark version number for use in release binary
+// e.g. MAJOR.MINOR.PATCH => MAJOR.MINOR
+val releaseSparkVersion = testSparkVersion.substring(0, testSparkVersion.lastIndexOf("."))
 
+def incompatibleSparkVersions(): FileFilter = {
+  val versionArray = testSparkVersion.split("""\.""").map(Integer.parseInt)
+  val major = versionArray(0)
+  val minor = versionArray(1)
+  ("*_spark_*_*_*" -- s"*_spark_${major}_${minor}_*")
+}
+
+def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
+  if (condition) {
+    val (fetchRealm, publishRealm, fetchUrl, publishUrl, fetchRepo, publishRepo, userName) =
+      try {
+        val prop = new Properties()
+        prop.load(new FileInputStream("ci/internal_ci.properties"))
+        (
+          prop.getProperty("fetchRealm"),
+          prop.getProperty("publishRealm"),
+          prop.getProperty("fetchUrl"),
+          prop.getProperty("publishUrl"),
+          prop.getProperty("fetchRepo"),
+          prop.getProperty("publishRepo"),
+          prop.getProperty("userName")
+        )
+      } catch {
+        case e: Exception =>
+          e.printStackTrace()
+          sys.exit(1)
+      }
+    Seq(
+      credentials := Seq(
+        Credentials(fetchRealm, fetchUrl, userName, awsSharedRepoPass),
+        Credentials(publishRealm, publishUrl, userName, internalReleaseRepoPass)
+      ),
+      resolvers := Seq(fetchRealm at fetchRepo),
+      externalResolvers := Seq(fetchRealm at fetchRepo),
+      publishTo := Some (publishRealm at publishRepo),
+      pomIncludeRepository := { (_: MavenRepository) => false },
+      releaseProcess := Seq[ReleaseStep](publishArtifacts)
+    )
+  }
+  else Seq(
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    },
+    // Add publishing to spark packages as another step.
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      publishArtifacts,
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
+    )
+  )
+}
 
 lazy val root = Project("spark-redshift", file("."))
+  .enablePlugins(BuildInfoPlugin)
   .configs(IntegrationTest)
   .settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
   .settings(Project.inConfig(IntegrationTest)(rawScalastyleSettings()): _*)
   .settings(Defaults.coreDefaultSettings: _*)
   .settings(Defaults.itSettings: _*)
+  .settings(ciPipelineSettings(isCI))
   .settings(
+    excludeFilter in unmanagedSources := HiddenFileFilter || incompatibleSparkVersions(),
     name := "spark-redshift",
+    version += s"-spark_${releaseSparkVersion}",
     organization := "io.github.spark-redshift-community",
-    scalaVersion := "2.12.15",
+    scalaVersion := buildScalaVersion,
     licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0"),
     credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
     scalacOptions ++= Seq("-target:jvm-1.8"),
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api" % "1.7.32",
-      "com.eclipsesource.minimal-json" % "minimal-json" % "0.9.4",
+      "org.slf4j" % "slf4j-api" % "2.0.7",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.1",
 
-      // A Redshift-compatible JDBC driver must be present on the classpath for spark-redshift to work.
-      // For testing, we use an Amazon driver, which is available from
-      // http://docs.aws.amazon.com/redshift/latest/mgmt/configure-jdbc-connection.html
-      "com.amazon.redshift" % "jdbc41" % "1.2.27.1051" % "test" from "https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.27.1051/RedshiftJDBC41-no-awssdk-1.2.27.1051.jar",
+      "com.google.guava" % "guava" % "31.1-jre" % "test",
+      "org.scalatest" %% "scalatest" % "3.2.16" % "test",
+      "org.scalatestplus" %% "mockito-4-6" % "3.2.15.0" % "test",
+      "com.amazon.redshift" % "redshift-jdbc42" % testJDBCVersion % "provided",
 
-      "com.google.guava" % "guava" % "27.0.1-jre" % "test",
-      "org.scalatest" %% "scalatest" % "3.0.5" % "test",
-      "org.mockito" % "mockito-core" % "1.10.19" % "test",
+      "com.amazonaws.secretsmanager" % "aws-secretsmanager-jdbc" % "1.0.12" % "provided" excludeAll
+      (ExclusionRule(organization = "com.fasterxml.jackson.core")),
 
       "com.amazonaws" % "aws-java-sdk" % testAWSJavaSDKVersion % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core")),
@@ -77,6 +155,7 @@ lazy val root = Project("spark-redshift", file("."))
       "org.apache.spark" %% "spark-hive" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-avro" % testSparkVersion % "provided" exclude("org.apache.avro", "avro-mapred") force()
     ),
+    retrieveManaged := true,
     ScoverageKeys.coverageHighlighting := true,
     logBuffered := false,
     // Display full-length stacktraces from ScalaTest:
@@ -87,14 +166,6 @@ lazy val root = Project("spark-redshift", file("."))
     /********************
      * Release settings *
      ********************/
-
-    publishTo := {
-      val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value)
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-    },
 
     publishMavenStyle := true,
     releaseCrossBuild := true,
@@ -130,19 +201,6 @@ lazy val root = Project("spark-redshift", file("."))
       </developer>
     </developers>,
 
-    bintrayReleaseOnPublish in ThisBuild := false,
-
-    // Add publishing to spark packages as another step.
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-      publishArtifacts,
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
-    )
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "io.github.spark_redshift_community.spark.redshift"
   )

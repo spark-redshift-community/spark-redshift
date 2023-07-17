@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +20,10 @@ package io.github.spark_redshift_community.spark.redshift
 import io.github.spark_redshift_community.spark.redshift.FilterPushdown._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 
-class FilterPushdownSuite extends FunSuite {
+class FilterPushdownSuite extends AnyFunSuite {
   test("buildWhereClause with empty list of filters") {
     assert(buildWhereClause(StructType(Nil), Seq.empty) === "")
   }
@@ -43,7 +44,7 @@ class FilterPushdownSuite extends FunSuite {
     // also need to escape those quotes with backslashes because this WHERE clause is going to
     // eventually be embedded inside of a single-quoted string that's embedded inside of a larger
     // Redshift query.
-    assert(whereClause === """WHERE "test_string" = \'Unicode\'\'s樂趣\'""")
+    assert(whereClause === """WHERE "test_string" = 'Unicode\'\'s樂趣'""")
     // scalastyle:on
   }
 
@@ -56,6 +57,7 @@ class FilterPushdownSuite extends FunSuite {
       GreaterThan("test_double", 1000.0),
       LessThan("test_double", Double.MaxValue),
       GreaterThanOrEqual("test_float", 1.0f),
+      GreaterThanOrEqual("test_float", 1.0d),
       LessThanOrEqual("test_int", 43),
       IsNotNull("test_int"),
       IsNull("test_int"))
@@ -64,9 +66,10 @@ class FilterPushdownSuite extends FunSuite {
     val expectedWhereClause =
       """
         |WHERE "test_bool" = true
-        |AND "test_string" = \'Unicode是樂趣\'
+        |AND "test_string" = 'Unicode是樂趣'
         |AND "test_double" > 1000.0
         |AND "test_double" < 1.7976931348623157E308
+        |AND "test_float" >= 1.0::float4
         |AND "test_float" >= 1.0
         |AND "test_int" <= 43
         |AND "test_int" IS NOT NULL

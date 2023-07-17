@@ -1,4 +1,6 @@
 /*
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -205,7 +207,7 @@ public class InMemoryS3AFileSystem extends FileSystem {
                 dataMap.tailMap(toS3Key(f)).size(), true, 1,
                 this.getDefaultBlockSize(), System.currentTimeMillis(), f
             );
-            return S3AFileStatus.fromFileStatus(fileStatus, state);
+            return S3AFileStatus.fromFileStatus(fileStatus, state, null, null);
         }
         else {
             return new S3AFileStatus(
@@ -213,7 +215,9 @@ public class InMemoryS3AFileSystem extends FileSystem {
                 System.currentTimeMillis(),
                 f,
                 this.getDefaultBlockSize(),
-                "owner" // required by the new constructor definition in hadoop 3.2.1
+                "owner", // required by the new constructor definition in hadoop 3.2.1
+                null,
+                null
             );
         }
     }
