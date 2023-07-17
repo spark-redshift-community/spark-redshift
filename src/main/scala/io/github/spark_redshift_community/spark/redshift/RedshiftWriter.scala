@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +17,21 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.net.URI
-import java.sql.{Connection, Date, SQLException, Timestamp}
-
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.services.s3.AmazonS3Client
-import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_COPY_DELAY}
+import com.amazonaws.services.s3.AmazonS3
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
+import org.apache.spark.sql.{Column, DataFrame, Row, SQLContext, SaveMode}
+import org.apache.spark.sql.functions.{col, to_json}
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
+import java.net.URI
+import java.sql.{Connection, Date, SQLException, Timestamp}
+import java.time.ZoneId
 import scala.util.control.NonFatal
 
 /**
@@ -57,7 +59,7 @@ import scala.util.control.NonFatal
  */
 private[redshift] class RedshiftWriter(
     jdbcWrapper: JDBCWrapper,
-    s3ClientFactory: AWSCredentialsProvider => AmazonS3Client) {
+    s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3) {
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -95,6 +97,7 @@ private[redshift] class RedshiftWriter(
     val fixedUrl = Utils.fixS3Url(manifestUrl)
     val format = params.tempFormat match {
       case "AVRO" => "AVRO 'auto'"
+      case "PARQUET" => "PARQUET"
       case csv if csv == "CSV" || csv == "CSV GZIP" => csv + s" NULL AS '${params.nullString}'"
     }
     val columns = if (params.includeColumnList) {
@@ -103,8 +106,20 @@ private[redshift] class RedshiftWriter(
       ""
     }
 
-    s"COPY ${params.table.get} ${columns}FROM '$fixedUrl' CREDENTIALS '$credsString' FORMAT AS " +
-      s"${format} manifest ${params.extraCopyOptions}"
+    // The region clause cannot be used if copy format is parquet
+    val regionClause = if (format == "PARQUET") { "" } else {
+      params.tempDirRegion.map(region => s"REGION '$region'").getOrElse("")
+    }
+
+    // Parquet needs this to handle complex data types
+    val serializeToJSON = if (format == "PARQUET") {"SERIALIZETOJSON"} else ""
+
+    val copySqlStatement = s"COPY ${params.table.get} ${columns}FROM '$fixedUrl'" +
+      s" FORMAT AS ${format} ${serializeToJSON} manifest" +
+      s" $regionClause" +
+      s" ${params.extraCopyOptions}"
+
+    s"$copySqlStatement CREDENTIALS '$credsString'"
   }
 
   /**
@@ -131,7 +146,7 @@ private[redshift] class RedshiftWriter(
 
     // If the table doesn't exist, we need to create it first, using JDBC to infer column types
     val createStatement = createTableSql(data, params)
-    log.info(createStatement)
+    log.info("Creating table within Redshift: {}", params.table.get)
     jdbcWrapper.executeInterruptibly(conn.prepareStatement(createStatement))
 
     val preActions = commentActions(params.description, data.schema) ++ params.preActions
@@ -139,14 +154,13 @@ private[redshift] class RedshiftWriter(
     // Execute preActions
     preActions.foreach { action =>
       val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
-      log.info("Executing preAction: " + actionSql)
       jdbcWrapper.executeInterruptibly(conn.prepareStatement(actionSql))
     }
 
     manifestUrl.foreach { manifestUrl =>
       // Load the temporary data into the new file
       val copyStatement = copySql(data.sqlContext, data.schema, params, creds, manifestUrl)
-      log.info(copyStatement)
+
       try {
         jdbcWrapper.executeInterruptibly(conn.prepareStatement(copyStatement))
       } catch {
@@ -199,9 +213,22 @@ private[redshift] class RedshiftWriter(
     // Execute postActions
     params.postActions.foreach { action =>
       val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
-      log.info("Executing postAction: " + actionSql)
       jdbcWrapper.executeInterruptibly(conn.prepareStatement(actionSql))
     }
+  }
+
+  /**
+   * Find any unsupported key type in the provided schema.
+   * @param dataType Schema to search for
+   * @return The datatype used as a map key which is unsupported
+   */
+  private def findUnsupportedMapKeyType(dataType: DataType) : Option[DataType] = dataType match {
+    case dt: StructType => dt.fields.map(field => findUnsupportedMapKeyType(field.dataType)).
+      find(_.nonEmpty).flatten
+    case dt: ArrayType => findUnsupportedMapKeyType(dt.elementType)
+    case MapType(StringType, other, _) => findUnsupportedMapKeyType(other)
+    case MapType(keyType, _, _) => Some(keyType)
+    case _ => None
   }
 
   /**
@@ -228,17 +255,23 @@ private[redshift] class RedshiftWriter(
     // However, each task gets its own deserialized copy, making this safe.
     val conversionFunctions: Array[Any => Any] = data.schema.fields.map { field =>
       field.dataType match {
-        case _: DecimalType => (v: Any) => if (v == null) null else v.toString
-        case DateType =>
+        case _: DecimalType if tempFormat != "PARQUET" =>
+          (v: Any) => if (v == null) null else v.toString
+        case DateType if tempFormat != "PARQUET" =>
           val dateFormat = Conversions.createRedshiftDateFormat()
           (v: Any) => {
             if (v == null) null else dateFormat.format(v.asInstanceOf[Date])
           }
-        case TimestampType =>
-          val timestampFormat = Conversions.createRedshiftTimestampFormat()
+        case TimestampType if tempFormat != "PARQUET" =>
           (v: Any) => {
-            if (v == null) null else timestampFormat.format(v.asInstanceOf[Timestamp])
+            if (v == null) null else Conversions.createRedshiftTimestampFormat().format(v.asInstanceOf[Timestamp].toLocalDateTime)
           }
+        case TimestampType => (v: Any) => if (v == null) null else {
+          DateTimeUtils.toJavaTimestamp(DateTimeUtils.fromUTCTime(
+            DateTimeUtils.fromJavaTimestamp(v.asInstanceOf[Timestamp]),
+            ZoneId.systemDefault.getId
+          ))
+        }
         case _ => (v: Any) => v
       }
     }
@@ -247,7 +280,38 @@ private[redshift] class RedshiftWriter(
     val nonEmptyPartitions = new SetAccumulator[Int]
     sqlContext.sparkContext.register(nonEmptyPartitions)
 
-    val convertedRows: RDD[Row] = data.rdd.mapPartitions { iter: Iterator[Row] =>
+    // find any columns of complex type and map them to_json
+    val complexFields = data.schema.fields.filter(_.dataType match {
+      case _ : MapType | _ : StructType | _ : ArrayType => true
+      case _ => false
+    })
+
+    if (tempFormat == "AVRO" && complexFields.nonEmpty) {
+      throw new IllegalArgumentException(
+        s"Cannot write complex type fields ${complexFields.mkString(", ")}" +
+          " with tempformat AVRO; use CSV or CSV GZIP instead."
+      )
+    }
+
+    // Before writing ensure all map key types are supported
+    findUnsupportedMapKeyType(data.schema).foreach(
+      dt => throw new IllegalArgumentException(
+        s"Cannot write map with key type $dt; Only maps with StringType keys are supported."
+      )
+    )
+
+    // Produce this mapping if using csv
+    val mapping = if (tempFormat.startsWith("CSV")) {
+      complexFields.map({field => (field.name, to_json(col(field.name)))}).toMap
+    } else {
+      Map[String, Column]()
+    }
+
+    // replace any columns in above mapping
+    val complexTypesReplaced = data.withColumns(mapping)
+
+
+    val convertedRows: RDD[Row] = complexTypesReplaced.rdd.mapPartitions { iter: Iterator[Row] =>
       if (iter.hasNext) {
         nonEmptyPartitions.add(TaskContext.get.partitionId())
       }
@@ -265,18 +329,19 @@ private[redshift] class RedshiftWriter(
     // Convert all column names to lowercase, which is necessary for Redshift to be able to load
     // those columns (see #51).
     val schemaWithLowercaseColumnNames: StructType =
-      StructType(data.schema.map(f => f.copy(name = f.name.toLowerCase)))
+      StructType(complexTypesReplaced.schema.map(f => f.copy(name = f.name.toLowerCase)))
 
-    if (schemaWithLowercaseColumnNames.map(_.name).toSet.size != data.schema.size) {
+    if (schemaWithLowercaseColumnNames.map(_.name).toSet.size != complexTypesReplaced.schema.size) {
       throw new IllegalArgumentException(
         "Cannot save table to Redshift because two or more column names would be identical" +
-        " after conversion to lowercase: " + data.schema.map(_.name).mkString(", "))
+        " after conversion to lowercase: " + complexTypesReplaced.schema.map(_.name).mkString(", "))
     }
 
     // Update the schema so that Avro writes date and timestamp columns as formatted timestamp
     // strings. This is necessary for Redshift to be able to load these columns (see #39).
     val convertedSchema: StructType = StructType(
       schemaWithLowercaseColumnNames.map {
+        case parquetType if tempFormat == "PARQUET" => parquetType
         case StructField(name, _: DecimalType, nullable, meta) =>
           StructField(name, StringType, nullable, meta)
         case StructField(name, DateType, nullable, meta) =>
@@ -300,6 +365,8 @@ private[redshift] class RedshiftWriter(
           .option("escape", "\"")
           .option("nullValue", nullString)
           .option("compression", "gzip")
+      case "PARQUET" =>
+        writer.format("parquet")
     }).save(tempDir)
 
     if (nonEmptyPartitions.value.isEmpty) {
@@ -312,25 +379,32 @@ private[redshift] class RedshiftWriter(
       // The partition filenames are of the form part-r-XXXXX-UUID.fileExtension.
       val fs = FileSystem.get(URI.create(tempDir), sqlContext.sparkContext.hadoopConfiguration)
       val partitionIdRegex = "^part-(?:r-)?(\\d+)[^\\d+].*$".r
-      val filesToLoad: Seq[String] = {
+      // retrieve all files to copy and their length
+      // length is necessary for parquet format
+      val filesToLoad: Seq[(String, Long)] = {
         val nonEmptyPartitionIds = nonEmptyPartitions.value.toSet
-        fs.listStatus(new Path(tempDir)).map(_.getPath.getName).collect {
-          case file @ partitionIdRegex(id) if nonEmptyPartitionIds.contains(id.toInt) => file
+        fs.listStatus(new Path(tempDir)).map(status => (status.getPath.getName, status.getLen))
+          .collect {
+          case file @ (partitionIdRegex(id), _) if nonEmptyPartitionIds.contains(id.toInt)
+          => file
         }
       }
       // It's possible that tempDir contains AWS access keys. We shouldn't save those credentials to
       // S3, so let's first sanitize `tempdir`
-      val sanitizedTempDir = Utils.removeCredentialsFromURI(URI.create(tempDir)).toString.stripSuffix("/")
+      val sameFileSystemDir = Utils.removeCredentialsFromURI(URI.create(tempDir)).toString.stripSuffix("/")
       // For file paths inside the manifest file, they are required to have s3:// scheme, so make sure
       // that it is the case
-      val schemeFixedTempDir = Utils.fixS3Url(sanitizedTempDir).stripSuffix("/")
-      val manifestEntries = filesToLoad.map { file =>
-        s"""{"url":"$schemeFixedTempDir/$file", "mandatory":true}"""
+      val sanitizedTempDir = Utils.fixS3Url(sameFileSystemDir)
+
+      val manifestEntries = filesToLoad.map { case (file, length) =>
+        s"""{"url":"$sanitizedTempDir/$file",
+           | "mandatory":true,
+           | "meta": {"content_length":$length}}""".stripMargin
       }
       val manifest = s"""{"entries": [${manifestEntries.mkString(",\n")}]}"""
       // For the path to the manifest file itself it is required to have the original s3a/s3n scheme
       // so don't used the fixed URL here
-      val manifestPath = sanitizedTempDir + "/manifest.json"
+      val manifestPath = sameFileSystemDir + "/manifest.json"
       val fsDataOut = fs.create(new Path(manifestPath))
       try {
         fsDataOut.write(manifest.getBytes("utf-8"))
@@ -363,18 +437,11 @@ private[redshift] class RedshiftWriter(
     val creds: AWSCredentialsProvider =
       AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
 
-    for (
-      redshiftRegion <- Utils.getRegionForRedshiftCluster(params.jdbcUrl);
-      s3Region <- Utils.getRegionForS3Bucket(params.rootTempDir, s3ClientFactory(creds))
-    ) {
-     val regionIsSetInExtraCopyOptions =
-       params.extraCopyOptions.contains(s3Region) && params.extraCopyOptions.contains("region")
-     if (redshiftRegion != s3Region && !regionIsSetInExtraCopyOptions) {
-       log.error("The Redshift cluster and S3 bucket are in different regions " +
-         s"($redshiftRegion and $s3Region, respectively). In order to perform this cross-region " +
-         s"""write, you must add "region '$s3Region'" to the extracopyoptions parameter. """ +
-         "For more details on cross-region usage, see the README.")
-     }
+    // Make sure a cross-region write has the necessary connector parameters set.
+    if (params.tempFormat == "PARQUET") {
+      Utils.checkRedshiftAndS3OnSameRegionParquetWrite(params, s3ClientFactory(creds, params))
+    } else {
+      Utils.checkRedshiftAndS3OnSameRegion(params, s3ClientFactory(creds, params))
     }
 
     // When using the Avro tempformat, log an informative error message in case any column names
@@ -398,7 +465,9 @@ private[redshift] class RedshiftWriter(
     Utils.assertThatFileSystemIsNotS3BlockFileSystem(
       new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
 
-    Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
+    Utils.checkThatBucketHasObjectLifecycleConfiguration(
+      params.rootTempDir, s3ClientFactory(creds, params))
+    Utils.collectMetrics(params)
 
     // Save the table's rows to S3:
     val manifestUrl = unloadData(
@@ -407,39 +476,50 @@ private[redshift] class RedshiftWriter(
       tempDir = params.createPerQueryTempDir(),
       tempFormat = params.tempFormat,
       nullString = params.nullString)
-    val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
-    conn.setAutoCommit(false)
-    try {
-      val table: TableName = params.table.get
-      if (saveMode == SaveMode.Overwrite) {
-        // Overwrites must drop the table in case there has been a schema update
-        jdbcWrapper.executeInterruptibly(conn.prepareStatement(s"DROP TABLE IF EXISTS $table;"))
-        if (!params.useStagingTable) {
-          // If we're not using a staging table, commit now so that Redshift doesn't have to
-          // maintain a snapshot of the old table during the COPY; this sacrifices atomicity for
-          // performance.
-          conn.commit()
+
+    // Uncertain if this is necessary as s3 is now strongly consistent
+    // https://aws.amazon.com/s3/consistency/
+    if (params.parameters(PARAM_COPY_DELAY).toLong > 0) {
+      log.info("Sleeping {} milliseconds before proceeding to redshift copy", params.copyDelay)
+      Thread.sleep(params.copyDelay)
+    }
+    val queryGroup = Utils.queryGroupInfo(Utils.Write, params.user_query_group_label)
+
+    Utils.retry(params.copyRetryCount, params.copyDelay) {
+      val conn = jdbcWrapper.getConnectorWithQueryGroup(
+        params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
+      conn.setAutoCommit(false)
+      try {
+        val table: TableName = params.table.get
+        if (saveMode == SaveMode.Overwrite) {
+          // Overwrites must drop the table in case there has been a schema update
+          log.info("Dropping table within Redshift: {}", table)
+          jdbcWrapper.executeInterruptibly(conn.prepareStatement(s"DROP TABLE IF EXISTS $table;"))
+          if (!params.useStagingTable) {
+            // If we're not using a staging table, commit now so that Redshift doesn't have to
+            // maintain a snapshot of the old table during the COPY; this sacrifices atomicity for
+            // performance.
+            conn.commit()
+          }
         }
+        log.info("Loading new Redshift data to: {}", table)
+        doRedshiftLoad(conn, data, params, creds, manifestUrl)
+        conn.commit()
+      } catch {
+        case NonFatal(e) =>
+          try {
+            log.error("Exception thrown during Redshift load; will roll back transaction", e)
+            conn.rollback()
+          } catch {
+            case NonFatal(e2) =>
+              log.error("Exception while rolling back transaction", e2)
+          }
+          throw e
+      } finally {
+        conn.close()
       }
-      log.info(s"Loading new Redshift data to: $table")
-      doRedshiftLoad(conn, data, params, creds, manifestUrl)
-      conn.commit()
-    } catch {
-      case NonFatal(e) =>
-        try {
-          log.error("Exception thrown during Redshift load; will roll back transaction", e)
-          conn.rollback()
-        } catch {
-          case NonFatal(e2) =>
-            log.error("Exception while rolling back transaction", e2)
-        }
-        throw e
-    } finally {
-      conn.close()
     }
   }
 }
 
-object DefaultRedshiftWriter extends RedshiftWriter(
-  DefaultJDBCWrapper,
-  awsCredentials => new AmazonS3Client(awsCredentials))
+object DefaultRedshiftWriter extends RedshiftWriter(DefaultJDBCWrapper, Utils.s3ClientBuilder)

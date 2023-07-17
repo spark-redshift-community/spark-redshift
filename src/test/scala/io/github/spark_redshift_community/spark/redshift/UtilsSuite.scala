@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +18,25 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import java.net.URI
-
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import org.mockito.Matchers.anyString
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, PARAM_OVERRIDE_NULLABLE}
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
-import org.scalatest.{FunSuite, Matchers}
-import org.mockito.Mockito._
+import org.mockito.Mockito.{never, verify, when}
+import org.scalatestplus.mockito.MockitoSugar.mock
+import org.scalatest.matchers.should._
+import org.scalatest.funsuite.AnyFunSuite
+import org.slf4j.Logger
+
+import java.sql.Timestamp
+import java.util.Properties
 
 /**
  * Unit tests for helper functions
  */
-class UtilsSuite extends FunSuite with Matchers {
+class UtilsSuite extends AnyFunSuite with Matchers {
 
   test("joinUrls preserves protocol information") {
     Utils.joinUrls("s3n://foo/bar/", "/baz") shouldBe "s3n://foo/bar/baz/"
@@ -82,7 +89,7 @@ class UtilsSuite extends FunSuite with Matchers {
 
   test("checkThatBucketHasObjectLifecycleConfiguration when no rule") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
       new BucketLifecycleConfiguration().withRules(
@@ -94,7 +101,7 @@ class UtilsSuite extends FunSuite with Matchers {
 
   test("checkThatBucketHasObjectLifecycleConfiguration when rule with prefix") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
       new BucketLifecycleConfiguration().withRules(
@@ -106,7 +113,7 @@ class UtilsSuite extends FunSuite with Matchers {
 
   test("checkThatBucketHasObjectLifecycleConfiguration when rule without prefix") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
       new BucketLifecycleConfiguration().withRules(
@@ -118,11 +125,123 @@ class UtilsSuite extends FunSuite with Matchers {
 
   test("checkThatBucketHasObjectLifecycleConfiguration when error in checking") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
 
     when(mockS3Client.getBucketLifecycleConfiguration(anyString()))
       .thenThrow(new NullPointerException())
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
       "s3a://bucket/path/to/temp/dir", mockS3Client) === false)
+  }
+
+  test("retry calls block correct number of times with correct delay") {
+    val timeToSleep = 100
+    var timesCalled = 0
+    val startTime = System.currentTimeMillis()
+
+    try {
+      Utils.retry(1, timeToSleep) {
+        timesCalled += 1
+        throw new Exception("Failure")
+      }
+    } catch {
+      case exception: Exception => assert(exception.getMessage == "Failure")
+    }
+    val timeTaken = System.currentTimeMillis() - startTime
+
+    assert(timesCalled == 2)
+    // check that at least timeToSleep passed but allow for slightly longer
+    assert(timeTaken >= timeToSleep && timeTaken <= timeToSleep + 50)
+  }
+ val fakeCredentials: Map[String, String] =
+   Map[String, String]("forward_spark_s3_credentials" -> "true",
+     Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
+     Parameters.PARAM_OVERRIDE_NULLABLE -> "false")
+
+  test("collectMetrics logs buildinfo to INFO") {
+    val mockLogger = mock[Logger]
+    Utils.collectMetrics(MergedParameters(fakeCredentials), Some(mockLogger))
+
+    verify(mockLogger).info(BuildInfo.toString)
+  }
+
+  test("collectMetrics outputs unique log to INFO when version includes -amzn- INFO") {
+    val mockLogger = mock[Logger]
+    Utils.collectMetrics(MergedParameters(fakeCredentials), Some(mockLogger))
+    if (BuildInfo.version.contains("-amzn-")) {
+      verify(mockLogger).info("amazon-spark-redshift-connector")
+    }
+  }
+
+  test("collectMetrics logs to INFO level when ParamLegacyJDBCRealTypeMapping is enabled") {
+    val mockLogger = mock[Logger]
+    val fakeCredentialsOverride = fakeCredentials +
+      (Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "true")
+    val params = MergedParameters(fakeCredentialsOverride)
+
+    Utils.collectMetrics(params, Some(mockLogger))
+      verify(mockLogger).info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
+  }
+
+  test("collectMetrics logs to INFO level when param OverrideNullable is enabled") {
+    val mockLogger = mock[Logger]
+    val fakeCredentialsOverride = fakeCredentials +
+      (Parameters.PARAM_OVERRIDE_NULLABLE -> "true")
+    val params = MergedParameters(fakeCredentialsOverride)
+
+    Utils.collectMetrics(params, Some(mockLogger))
+      verify(mockLogger).info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
+  }
+
+  test("collectMetrics does not log when param LegacyJdbcRealTypeMapping is disabled") {
+    val mockLogger = mock[Logger]
+    val params = MergedParameters(fakeCredentials)
+
+    Utils.collectMetrics(params, Some(mockLogger))
+    verify(mockLogger, never()).info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
+  }
+
+  test("collectMetrics does not log when param OverrideNullable is disabled") {
+    val mockLogger = mock[Logger]
+    val params = MergedParameters(fakeCredentials)
+
+    Utils.collectMetrics(params, Some(mockLogger))
+    verify(mockLogger, never()).info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
+  }
+
+  test("copyProperty and copyProperties map and convert matching parameter names") {
+    val sourceProps = Map[String, String](
+      "param1" -> "value1", // Ignore
+      "param2" -> "value2", // Copy
+      "param3" -> "value3", // Copy
+      "jdbc.param4" -> "value4", // Copy
+      "jdbc.param5" -> "value5", // Copy
+      "secret.param6" -> "value6", // Copy
+      "secret.param7" -> "value7", // Copy
+      "jdbc." -> "jdbcValue", // Ignore
+      "secret." -> "secretValue" // Ignore
+    )
+
+    val destProps = new Properties()
+    Utils.copyProperty("param2", sourceProps, destProps)
+    Utils.copyProperty("param3", "param33", sourceProps, destProps)
+    Utils.copyProperties("^jdbc\\..+", "^jdbc\\.", "", sourceProps, destProps)
+    Utils.copyProperties("^secret\\..+", "^secret\\.", "drivers\\.", sourceProps, destProps)
+
+    assert(destProps.size() == 6)
+    assert(destProps.getProperty("param2") == "value2")
+    assert(destProps.getProperty("param33") == "value3")
+    assert(destProps.getProperty("param4") == "value4")
+    assert(destProps.getProperty("param5") == "value5")
+    assert(destProps.getProperty("drivers.param6") == "value6")
+    assert(destProps.getProperty("drivers.param7") == "value7")
+  }
+
+  test("User provided label is trimmed in queryGroupInfo") {
+    val longString = "a" * 1000
+    val expectedLabel = "a" * 100
+    val expectedString = s""""lbl":"$expectedLabel""""
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, longString)
+
+    actualQueryGroup.contains(expectedString)
   }
 }

@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +18,13 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import java.sql.Timestamp
-
-import org.apache.spark.sql.types.LongType
-import org.apache.spark.sql.{Row, execution}
+import org.apache.spark.sql.types.{CalendarIntervalType, DoubleType, FloatType, LongType, StructField, StructType}
+import org.apache.spark.sql.{AnalysisException, Row, execution}
 
 /**
  * End-to-end tests of functionality which only impacts the read path (e.g. filter pushdown).
  */
-class RedshiftReadSuite extends IntegrationSuiteBase {
+class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite {
 
   private val test_table: String = s"read_suite_test_table_$randomSuffix"
 
@@ -45,6 +45,22 @@ class RedshiftReadSuite extends IntegrationSuiteBase {
   override def beforeEach(): Unit = {
     super.beforeEach()
     read.option("dbtable", test_table).load().createOrReplaceTempView("test_table")
+  }
+
+  protected def createTestRealDataInRedshift(tableName: String): Unit = {
+    conn.createStatement().executeUpdate(
+      s"""
+         | create table $tableName (
+         | testreal real
+         | )
+         |""".stripMargin
+    )
+
+    conn.createStatement().executeUpdate(
+      s"""insert into $tableName values
+         | (1.0), (null), (-1.0)
+         |""".stripMargin
+    )
   }
 
   test("DefaultSource can load Redshift UNLOAD output to a DataFrame") {
@@ -269,5 +285,61 @@ class RedshiftReadSuite extends IntegrationSuiteBase {
       .option("query", s"select approximate count(distinct testbool) as c from $test_table")
       .load()
     assert(df.schema.fields(0).dataType === LongType)
+  }
+
+  test("read reals as floats by default") {
+    withTempRedshiftTable("readRealsDefault") { tableName =>
+      createTestRealDataInRedshift(tableName)
+      val df = read
+        .option("dbtable", tableName).load()
+      assert(df.schema match {
+        case StructType(Array(StructField(_, FloatType, _, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("read reals as floats when legacy_jdbc_real_type_mapping option is false") {
+    withTempRedshiftTable("readRealsLegacyFalse") { tableName =>
+      createTestRealDataInRedshift(tableName)
+      val df = read
+        .option("dbtable", tableName)
+        .option(Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, value = false)
+        .load()
+      assert(df.schema match {
+        case StructType(Array(StructField(_, FloatType, _, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("read reals as doubles when legacy_jdbc_real_type_mapping option is true") {
+    withTempRedshiftTable("readRealsLegacyTrue") { tableName =>
+      createTestRealDataInRedshift(tableName)
+      val df = read
+        .option("dbtable", tableName)
+        .option(Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, value = true)
+        .load()
+      assert(df.schema match {
+        case StructType(Array(StructField(_, DoubleType, _, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("reads with unsupported type in schema throws") {
+    // Tests with text unload format as parquet implements its own check for supported data types
+    assertThrows[AnalysisException] {
+      withTempRedshiftTable("testTable") { name =>
+        conn.createStatement().executeUpdate(s"create table $name (id integer)")
+        val invalidSchema = StructType(StructField("id", CalendarIntervalType) :: Nil)
+        read
+          .schema(invalidSchema)
+          .option("unload_s3_format", "TEXT")
+          .option("dbtable", name)
+          .load
+          .collect
+      }
+    }
   }
 }

@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +17,9 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class TableNameSuite extends FunSuite {
+class TableNameSuite extends AnyFunSuite {
   test("TableName.parseFromEscaped") {
     assert(TableName.parseFromEscaped("foo.bar") === TableName("foo", "bar"))
     assert(TableName.parseFromEscaped("foo") === TableName("PUBLIC", "foo"))

@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +20,9 @@ package io.github.spark_redshift_community.spark.redshift
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.{JavaSerializer, KryoSerializer, SerializerInstance}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class SerializableConfigurationSuite extends FunSuite {
+class SerializableConfigurationSuite extends AnyFunSuite {
 
   private def testSerialization(serializer: SerializerInstance): Unit = {
     val conf = new SerializableConfiguration(new Configuration())

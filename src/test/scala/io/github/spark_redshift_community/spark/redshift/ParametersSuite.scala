@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +17,13 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.matchers.should._
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
   * Check validation of parameter config
   */
-class ParametersSuite extends FunSuite with Matchers {
+class ParametersSuite extends AnyFunSuite with Matchers {
 
   test("Minimal valid parameter map is accepted") {
     val params = Map(
@@ -39,6 +41,7 @@ class ParametersSuite extends FunSuite with Matchers {
     mergedParams.table shouldBe Some(TableName("test_schema", "test_table"))
     assert(mergedParams.forwardSparkS3Credentials)
     assert(mergedParams.includeColumnList)
+    assert(!mergedParams.legacyJdbcRealTypeMapping)
 
     // Check that the defaults have been added
     (
@@ -102,15 +105,7 @@ class ParametersSuite extends FunSuite with Matchers {
       "url" -> "jdbc:redshift://foo/bar?user=user&password=password"))
   }
 
-  test("Must specify credentials in either URL or 'user' and 'password' parameters, but not both") {
-    intercept[IllegalArgumentException] {
-      Parameters.mergeParameters(Map(
-        "forward_spark_s3_credentials" -> "true",
-        "tempdir" -> "s3://foo/bar",
-        "query" -> "select * from test_table",
-        "url" -> "jdbc:redshift://foo/bar"))
-    }.getMessage should (include("credentials"))
-
+  test("Cannot specify credentials in both URL and ('user' or 'password') parameters") {
     intercept[IllegalArgumentException] {
       Parameters.mergeParameters(Map(
         "forward_spark_s3_credentials" -> "true",
@@ -126,6 +121,47 @@ class ParametersSuite extends FunSuite with Matchers {
       "tempdir" -> "s3://foo/bar",
       "query" -> "select * from test_table",
       "url" -> "jdbc:redshift://foo/bar?user=user&password=password"))
+  }
+
+  test("Cannot specify a secret and credentials in URL") {
+    val err = intercept[IllegalArgumentException] {
+      Parameters.mergeParameters(Map(
+        "forward_spark_s3_credentials" -> "true",
+        "tempdir" -> "s3://foo/bar",
+        "query" -> "select * from test_table",
+        "secret.id" -> Parameters.PARAM_SECRET_ID,
+        "secret.region" -> Parameters.PARAM_SECRET_REGION,
+        "url" -> "jdbc:redshift://foo/bar?user=user&password=password"))
+    }
+    err.getMessage.contains("You cannot specify a secret and give credentials in URL")
+  }
+
+  test("Ensuring secret.id and secret.region values of MergedParameters are set") {
+    val params = Parameters.mergeParameters(Map(
+      "forward_spark_s3_credentials" -> "true",
+      "tempdir" -> "s3://foo/bar",
+      "query" -> "select * from test_table",
+      "secret.id" -> Parameters.PARAM_SECRET_ID,
+      "secret.region" -> Parameters.PARAM_SECRET_REGION,
+      "url" -> "jdbc:redshift://foo/bar"))
+
+    params.secretId.get shouldEqual Parameters.PARAM_SECRET_ID
+    params.secretRegion.get shouldEqual Parameters.PARAM_SECRET_REGION
+  }
+
+  test("Cannot specify a secret and user/password parameters") {
+    val err = intercept[IllegalArgumentException] {
+      Parameters.mergeParameters(Map(
+        "forward_spark_s3_credentials" -> "true",
+        "tempdir" -> "s3://foo/bar",
+        "query" -> "select * from test_table",
+        "user" -> "user",
+        "password" -> "password",
+        "secret.id" -> Parameters.PARAM_SECRET_ID,
+        "secret.region" -> Parameters.PARAM_SECRET_REGION,
+        "url" -> "jdbc:redshift://foo/bar"))
+    }
+    err.getMessage.contains("You cannot give a secret and specify user/password options")
   }
 
   test("tempformat option is case-insensitive") {
@@ -173,4 +209,22 @@ class ParametersSuite extends FunSuite with Matchers {
     assert(params.postActions.last == "update table2 set col2 = val2")
   }
 
+  test("Non identifier characters in user provided query group label are rejected") {
+    val params = Map(
+      "tempdir" -> "s3://foo/bar",
+      "dbtable" -> "test_schema.test_table",
+      "url" -> "jdbc:redshift://foo/bar?user=user&password=password",
+      "forward_spark_s3_credentials" -> "true",
+      "include_column_list" -> "true",
+      Parameters.PARAM_USER_QUERY_GROUP_LABEL -> "hello!"
+    )
+
+    val exception = intercept[IllegalArgumentException] {
+      Parameters.mergeParameters(params)
+    }
+
+    assert(exception.getMessage == "All characters in label option must " +
+      "be valid unicode identifier parts (char.isUnicodeIdentifierPart == true), " +
+      "'!' character not allowed")
+  }
 }

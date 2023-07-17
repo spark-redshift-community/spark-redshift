@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 Databricks
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +17,11 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 
+import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import org.apache.spark.sql.types.StructType
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers.{any, anyString, same}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -69,7 +71,7 @@ class MockRedshift(
   doAnswer(new Answer[Connection] {
       override def answer(invocation: InvocationOnMock): Connection = createMockConnection()
     }).when(jdbcWrapper)
-      .getConnector(any[Option[String]](), same(jdbcUrl), any[Option[(String, String)]]())
+      .getConnector(any[Option[String]](), same(jdbcUrl), any[Option[MergedParameters]])
 
   doAnswer(new Answer[Boolean] {
     override def answer(invocation: InvocationOnMock): Boolean = {
@@ -81,7 +83,7 @@ class MockRedshift(
     override def answer(invocation: InvocationOnMock): StructType = {
       existingTablesAndSchemas(invocation.getArguments()(1).asInstanceOf[String])
     }
-  }).when(jdbcWrapper).resolveTable(any[Connection], anyString())
+  }).when(jdbcWrapper).resolveTable(any[Connection], anyString(), any[Option[MergedParameters]])
 
   def verifyThatConnectionsWereClosed(): Unit = {
     jdbcConnections.foreach { conn =>

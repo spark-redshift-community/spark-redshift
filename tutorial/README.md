@@ -1,3 +1,20 @@
+
+[//]: # (                                                                                  )
+[//]: # ( Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. )
+[//]: # (                                                                                  )
+[//]: # ( Licensed under the Apache License, Version 2.0 \(the "License"\);                )
+[//]: # ( you may not use this file except in compliance with the License.                 )
+[//]: # ( You may obtain a copy of the License at                                          )
+[//]: # (                                                                                  )
+[//]: # (    http://www.apache.org/licenses/LICENSE-2.0                                    )
+[//]: # (                                                                                  )
+[//]: # ( Unless required by applicable law or agreed to in writing, software              )
+[//]: # ( distributed under the License is distributed on an "AS IS" BASIS,                )
+[//]: # ( WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.         )
+[//]: # ( See the License for the specific language governing permissions and              )
+[//]: # ( limitations under the License.                                                   )
+[//]: # (                                                                                  )
+
 # Tutorial #
 
 The [Spark Data Sources API](https://databricks.com/blog/2015/01/09/spark-sql-data-sources-api-unified-data-access-for-the-spark-platform.html) introduced in Spark 1.2 supports a pluggable mechanism for integration with structured data-sources. It is a unified API designed to support two major operations:
@@ -39,12 +56,12 @@ object SparkRedshiftTutorial {
 
     val sc = new SparkContext(new SparkConf().setAppName("SparkSQL").setMaster("local"))
 
-	// Configure SparkContext to communicate with AWS
-	val tempS3Dir = "s3n://redshift-spark/temp/"
+  // Configure SparkContext to communicate with AWS
+  val tempS3Dir = "s3n://redshift-spark/temp/"
     sc.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", awsAccessKeyId)
     sc.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", awsSecretAccessKey)
 
-	// Create the SQL Context
+  // Create the SQL Context
     val sqlContext = new SQLContext(sc)
   }
 }
@@ -95,11 +112,11 @@ Let's fetch data from the Redshift `event` table. Add the following lines of cod
 ```scala
 import sqlContext.implicits._
 val eventsDF = sqlContext.read
-	.format("io.github.spark_redshift_community.spark.redshift")
-	.option("url",jdbcURL )
-	.option("tempdir", tempS3Dir)
-	.option("dbtable", "event")
-	.load()
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("url",jdbcURL )
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "event")
+  .load()
 eventsDF.show()
 ```
 
@@ -351,12 +368,12 @@ The `salesAGGDF2` `DataFrame` is created by joining `eventsDF` and `salesAGGDF2`
 salesAGGDF2.registerTempTable("redshift_sales_agg")
 
 sqlContext.sql("SELECT * FROM redshift_sales_agg")
-	.write.format("io.github.spark_redshift_community.spark.redshift")
-	.option("url", jdbcURL)
-	.option("tempdir", tempS3Dir)
-	.option("dbtable", "redshift_sales_agg")
-	.mode(SaveMode.Overwrite)
-	.save()
+  .write.format("io.github.spark_redshift_community.spark.redshift")
+  .option("url", jdbcURL)
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "redshift_sales_agg")
+  .mode(SaveMode.Overwrite)
+  .save()
 ```
 
 

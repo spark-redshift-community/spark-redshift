@@ -1,4 +1,7 @@
 /*
+ * Copyright 2015-2018 Snowflake Computing
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,31 +20,42 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import java.sql.{ResultSet, PreparedStatement, Connection, Driver, DriverManager, ResultSetMetaData, SQLException}
-import java.util.Properties
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ThreadFactory, Executors}
-
-import scala.collection.JavaConverters._
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration.Duration
-import scala.util.Try
-import scala.util.control.NonFatal
-
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, Identifier, RedshiftSQLStatement}
 import org.apache.spark.SPARK_VERSION
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.types._
 import org.slf4j.LoggerFactory
 
+import java.sql.{Connection, Driver, DriverManager, PreparedStatement, ResultSet, ResultSetMetaData, SQLException}
+import java.util.Properties
+import java.util.concurrent.{Executors, ThreadFactory}
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.ExecutionContext
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+import scala.util.Try
+import scala.util.control.NonFatal
+
 /**
  * Shim which exposes some JDBC helper functions. Most of this code is copied from Spark SQL, with
  * minor modifications for Redshift-specific features and limitations.
  */
-private[redshift] class JDBCWrapper {
+private[redshift] class JDBCWrapper extends Serializable {
 
-  private val log = LoggerFactory.getLogger(getClass)
+  protected val log = LoggerFactory.getLogger(getClass)
 
-  private val ec: ExecutionContext = {
+  // Note: Marking fields `implicit transient lazy` allows spark to recreate them upon
+  // de-serialization
+
+  /**
+   * This iterator automatically increments every time it is used.
+   */
+  @transient implicit private lazy val JDBCCallNumberGenerator = Iterator.from(1)
+
+  @transient implicit private lazy val ec: ExecutionContext = {
     val threadFactory = new ThreadFactory {
       private[this] val count = new AtomicInteger()
       override def newThread(r: Runnable) = {
@@ -91,7 +105,11 @@ private[redshift] class JDBCWrapper {
                   }
               }
           }
-        case "postgresql" => "org.postgresql.Driver"
+        case "postgresql" =>
+          "org.postgresql.Driver"
+        case "jdbc-secretsmanager" =>
+          "com.amazonaws.secretsmanager.sql.AWSSecretsManagerRedshiftDriver"
+
         case other => throw new IllegalArgumentException(s"Unsupported JDBC protocol: '$other'")
       }
     }
@@ -123,7 +141,9 @@ private[redshift] class JDBCWrapper {
   private def executeInterruptibly[T](
       statement: PreparedStatement,
       op: PreparedStatement => T): T = {
+    val JDBCCallNumber = JDBCCallNumberGenerator.next
     try {
+      log.info("Begin JDBC call {}", JDBCCallNumber)
       val future = Future[T](op(statement))(ec)
       try {
         Await.result(future, Duration.Inf)
@@ -146,6 +166,9 @@ private[redshift] class JDBCWrapper {
             throw e
         }
     }
+    finally {
+      log.info("End JDBC call {}", JDBCCallNumber)
+    }
   }
 
   /**
@@ -160,31 +183,103 @@ private[redshift] class JDBCWrapper {
    * @throws SQLException if the table specification is garbage.
    * @throws SQLException if the table contains an unsupported type.
    */
-  def resolveTable(conn: Connection, table: String): StructType = {
+  def resolveTable(
+                    conn: Connection,
+                    table: String,
+                    params: Option[MergedParameters] = None): StructType = {
     // It's important to leave the `LIMIT 1` clause in order to limit the work of the query in case
     // the underlying JDBC driver implementation implements PreparedStatement.getMetaData() by
     // executing the query. It looks like the standard Redshift and Postgres JDBC drivers don't do
     // this but we leave the LIMIT condition here as a safety-net to guard against perf regressions.
     val ps = conn.prepareStatement(s"SELECT * FROM $table LIMIT 1")
     try {
+      log.info("Getting schema from Redshift for table: {}", table)
       val rsmd = executeInterruptibly(ps, _.getMetaData)
       val ncols = rsmd.getColumnCount
-      val fields = new Array[StructField](ncols)
+      val fields = {
+        new Array[StructField](ncols)
+      }
       var i = 0
       while (i < ncols) {
         val columnName = rsmd.getColumnLabel(i + 1)
+        val rsType = rsmd.getColumnTypeName(i + 1)
         val dataType = rsmd.getColumnType(i + 1)
         val fieldSize = rsmd.getPrecision(i + 1)
         val fieldScale = rsmd.getScale(i + 1)
         val isSigned = rsmd.isSigned(i + 1)
-        val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
-        val columnType = getCatalystType(dataType, fieldSize, fieldScale, isSigned)
-        fields(i) = StructField(columnName, columnType, nullable)
+        val nullable = if (params.exists(_.overrideNullable)) {
+          true
+        } else rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
+        val columnType = getCatalystType(dataType, fieldSize, fieldScale, isSigned, params)
+        val meta = new MetadataBuilder().putString("redshift_type", rsType).build()
+
+        fields(i) = StructField(columnName, columnType, nullable, meta)
         i = i + 1
       }
       new StructType(fields)
     } finally {
       ps.close()
+    }
+  }
+
+  def resolveTableFromMeta(conn: Connection,
+                           rsmd: ResultSetMetaData,
+                           params: MergedParameters): StructType = {
+    val ncols = rsmd.getColumnCount
+    val fields = new Array[StructField](ncols)
+    var i = 0
+    while (i < ncols) {
+      val columnName = rsmd.getColumnLabel(i + 1)
+      val rsType = rsmd.getColumnTypeName(i + 1)
+      val dataType = rsmd.getColumnType(i + 1)
+      val fieldSize = rsmd.getPrecision(i + 1)
+      val fieldScale = rsmd.getScale(i + 1)
+      val isSigned = rsmd.isSigned(i + 1)
+      val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
+      val columnType =
+        getCatalystType(dataType, fieldSize, fieldScale, isSigned, Some(params))
+      val meta = new MetadataBuilder().putString("redshift_type", rsType).build()
+      fields(i) = StructField(
+        // Add quotes around column names if Redshift would usually require them.
+        if (columnName.matches("[_A-Z]([_0-9A-Z])*")) columnName
+        else s""""$columnName"""",
+        columnType,
+        nullable, meta)
+      i = i + 1
+    }
+    new StructType(fields)
+  }
+
+  /**
+   * Returns the default application name.
+   */
+  def defaultAppName: String = Utils.connectorServiceName.
+    map(name => s"${Utils.DEFAULT_APP_NAME}_$name").getOrElse(Utils.DEFAULT_APP_NAME)
+
+  /**
+   * The same as get connector but after connection attempt to set the query group.
+   * If setting the query group fails for any reason return a new connection with
+   * the query group unset.
+   * @param userProvidedDriverClass the class name of the JDBC driver for the given url
+   * @param url the JDBC url to connect to
+   * @param params parameters set by the user
+   * @param queryGroup query group to set for the connection
+   * @return a connection
+   */
+  def getConnectorWithQueryGroup(userProvidedDriverClass: Option[String],
+                                 url: String,
+                                 params: Option[MergedParameters],
+                                 queryGroup: String): Connection = {
+    val conn = getConnector(userProvidedDriverClass, url, params)
+    try {
+      executeInterruptibly(conn.prepareStatement(s"""set query_group to '${queryGroup}'"""))
+      conn
+    } catch {
+      case e: Throwable => {
+        log.debug(s"Unable to set query group: $e")
+        conn.close()
+        getConnector(userProvidedDriverClass, url, params)
+      }
     }
   }
 
@@ -196,11 +291,39 @@ private[redshift] class JDBCWrapper {
    *                                discover the appropriate driver class.
    * @param url the JDBC url to connect to.
    */
-  def getConnector(
-      userProvidedDriverClass: Option[String],
-      url: String,
-      credentials: Option[(String, String)]) : Connection = {
-    val subprotocol = url.stripPrefix("jdbc:").split(":")(0)
+  def getConnector(userProvidedDriverClass: Option[String],
+                   url: String,
+                   params: Option[MergedParameters]): Connection = {
+    // Update the url if we are using secrets manager.
+    val updatedURL = if (params.isDefined && params.get.secretId.isDefined) {
+      url.replaceFirst("jdbc", "jdbc-secretsmanager")
+    } else {
+      url
+    }
+
+    // Map any embedded driver properties for both JDBC and Secrets Manager. For some properties
+    // we designate a particular prefix to allow passing these properties through to their related
+    // driver. Note that AWS Secrets Manager uses System properties for "drivers.region" property
+    // and that this property must be set before registering the secret manager driver class.
+    // Otherwise, EC2 metadata server requests will occur for determining the secret's region which
+    // can fail when running outside of AWS environments.
+    val driverProperties = new Properties()
+    params.foreach { case MergedParameters(sourceParams) =>
+      Utils.copyProperty("user", sourceParams, driverProperties)
+      Utils.copyProperty("password", sourceParams, driverProperties)
+      Utils.copyProperty("secret.id", "user", sourceParams, driverProperties)
+      Utils.copyProperties("^jdbc\\..+", "^jdbc\\.", "", sourceParams, driverProperties)
+      Utils.copyProperties("^secret\\..+", "^secret\\.", "drivers\\.",
+        sourceParams - "secret.id", System.getProperties)
+    }
+
+    // Set the application name property if not already specified by the client.
+    if (!updatedURL.toLowerCase().contains("applicationname=") &&
+        !driverProperties.containsKey("applicationname")) {
+      driverProperties.setProperty("applicationname", defaultAppName)
+    }
+
+    val subprotocol = updatedURL.stripPrefix("jdbc:").split(":")(0)
     val driverClass: String = getDriverClass(subprotocol, userProvidedDriverClass)
     DriverRegistry.register(driverClass)
     val driverWrapperClass: Class[_] = if (SPARK_VERSION.startsWith("1.4")) {
@@ -208,10 +331,12 @@ private[redshift] class JDBCWrapper {
     } else { // Spark 1.5.0+
       Utils.classForName("org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper")
     }
+
     def getWrapped(d: Driver): Driver = {
       require(driverWrapperClass.isAssignableFrom(d.getClass))
       driverWrapperClass.getDeclaredMethod("wrapped").invoke(d).asInstanceOf[Driver]
     }
+
     // Note that we purposely don't call DriverManager.getConnection() here: we want to ensure
     // that an explicitly-specified user-provided driver class can take precedence over the default
     // class, but DriverManager.getConnection() might return a according to a different precedence.
@@ -224,12 +349,9 @@ private[redshift] class JDBCWrapper {
     }.getOrElse {
       throw new IllegalArgumentException(s"Did not find registered driver with class $driverClass")
     }
-    val properties = new Properties()
-    credentials.foreach { case(user, password) =>
-      properties.setProperty("user", user)
-      properties.setProperty("password", password)
-    }
-    driver.connect(url, properties)
+
+    // Make the connection.
+    driver.connect(updatedURL, driverProperties)
   }
 
   /**
@@ -254,11 +376,12 @@ private[redshift] class JDBCWrapper {
             if (field.metadata.contains("maxlength")) {
               s"VARCHAR(${field.metadata.getLong("maxlength")})"
             } else {
-              "TEXT"
+              s"VARCHAR(MAX)"
             }
           case TimestampType => "TIMESTAMP"
           case DateType => "DATE"
           case t: DecimalType => s"DECIMAL(${t.precision},${t.scale})"
+          case _ : ArrayType | _ : MapType | _ : StructType => "SUPER"
           case _ => throw new IllegalArgumentException(s"Don't know how to save $field to JDBC")
         }
       }
@@ -282,6 +405,7 @@ private[redshift] class JDBCWrapper {
     // SQL database systems, considering "table" could also include the database name.
     Try {
       val stmt = conn.prepareStatement(s"SELECT 1 FROM $table LIMIT 1")
+      log.info("Checking if table exists: {}", table)
       executeInterruptibly(stmt, _.getMetaData).getColumnCount
     }.isSuccess
   }
@@ -296,8 +420,9 @@ private[redshift] class JDBCWrapper {
       sqlType: Int,
       precision: Int,
       scale: Int,
-      signed: Boolean): DataType = {
-    // TODO: cleanup types which are irrelevant for Redshift.
+      signed: Boolean,
+      params: Option[MergedParameters] = None): DataType = {
+
     val answer = sqlType match {
       // scalastyle:off
       // Null Type
@@ -331,7 +456,7 @@ private[redshift] class JDBCWrapper {
         if precision != 0 || scale != 0 => DecimalType(precision, scale)
       case java.sql.Types.NUMERIC       => DecimalType(38, 18) // Spark 1.5.0 default
       // Redshift Real is represented in 4 bytes IEEE Float. https://docs.aws.amazon.com/redshift/latest/dg/r_Numeric_types201.html
-      case java.sql.Types.REAL          => FloatType
+      case java.sql.Types.REAL          => if (params.exists(_.legacyJdbcRealTypeMapping)) { DoubleType } else { FloatType }
       case java.sql.Types.SMALLINT      => IntegerType
       case java.sql.Types.TINYINT       => IntegerType
       case _                            => null
@@ -343,4 +468,113 @@ private[redshift] class JDBCWrapper {
   }
 }
 
-private[redshift] object DefaultJDBCWrapper extends JDBCWrapper
+private[redshift] object DefaultJDBCWrapper
+  extends JDBCWrapper
+  with Serializable {
+
+  private val LOGGER = LoggerFactory.getLogger(getClass.getName)
+
+  implicit class DataBaseOperations(connection: Connection) {
+
+    /**
+     * @return telemetry connector
+     */
+//    def getTelemetry: Telemetry = TelemetryClient.createTelemetry(connection)
+
+    /**
+     * Create a table
+     *
+     * @param name      table name
+     * @param schema    table schema
+     * @param overwrite use "create or replace" if true,
+     *                  otherwise, use "create if not exists"
+     */
+    def createTable(name: String,
+                    schema: StructType,
+                    params: MergedParameters,
+                    overwrite: Boolean,
+                    temporary: Boolean,
+                    bindVariableEnabled: Boolean = true): Unit =
+      (ConstantString("create") +
+        (if (overwrite) "or replace" else "") +
+        (if (temporary) "temporary" else "") + "table" +
+        (if (!overwrite) "if not exists" else "") + Identifier(name) +
+        s"(${schemaString(schema)})")
+        .execute(bindVariableEnabled)(connection)
+
+    def createTableLike(newTable: String,
+                        originalTable: String,
+                        bindVariableEnabled: Boolean = true): Unit = {
+      (ConstantString("create or replace table") + Identifier(newTable) +
+        "like" + Identifier(originalTable))
+        .execute(bindVariableEnabled)(connection)
+    }
+
+    def truncateTable(table: String,
+                      bindVariableEnabled: Boolean = true): Unit =
+      (ConstantString("truncate") + table)
+        .execute(bindVariableEnabled)(connection)
+
+    def swapTable(newTable: String,
+                  originalTable: String,
+                  bindVariableEnabled: Boolean = true): Unit =
+      (ConstantString("alter table") + Identifier(newTable) + "swap with" +
+        Identifier(originalTable)).execute(bindVariableEnabled)(connection)
+
+    def renameTable(newName: String,
+                    oldName: String,
+                    bindVariableEnabled: Boolean = true): Unit =
+      (ConstantString("alter table") + Identifier(oldName) + "rename to" +
+        Identifier(newName)).execute(bindVariableEnabled)(connection)
+
+    /**
+     * @param name table name
+     * @return true if table exists, otherwise false
+     */
+    def tableExists(name: String,
+                    bindVariableEnabled: Boolean = true): Boolean =
+      Try {
+        (EmptyRedshiftSQLStatement() + "desc table" + Identifier(name))
+          .execute(bindVariableEnabled)(connection)
+      }.isSuccess
+
+    /**
+     * Drop a table
+     *
+     * @param name table name
+     * @return true if table dropped, false if the given table not exists
+     */
+    def dropTable(name: String, bindVariableEnabled: Boolean = true): Boolean =
+      Try {
+        (EmptyRedshiftSQLStatement() + "drop table" + Identifier(name))
+          .execute(bindVariableEnabled)(connection)
+      }.isSuccess
+
+    def tableMetaData(name: String): ResultSetMetaData =
+      tableMetaDataFromStatement(ConstantString(name) !)
+
+    def tableMetaDataFromStatement(
+                                    statement: RedshiftSQLStatement,
+                                    bindVariableEnabled: Boolean = true
+                                  ): ResultSetMetaData =
+      (ConstantString("select * from") + statement + "where 1 = 0")
+        .prepareStatement(bindVariableEnabled)(connection)
+        .getMetaData
+
+    def tableSchema(name: String, params: Option[MergedParameters]): StructType =
+      resolveTable(connection, name, params)
+
+    def tableSchema(statement: RedshiftSQLStatement,
+                    params: MergedParameters): StructType =
+      resolveTableFromMeta(
+        connection,
+        tableMetaDataFromStatement(statement),
+        params
+      )
+
+    def execute(statement: RedshiftSQLStatement,
+                bindVariableEnabled: Boolean = true): Unit =
+      statement.execute(bindVariableEnabled)(connection)
+  }
+
+}

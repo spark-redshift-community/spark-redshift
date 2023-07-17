@@ -1,3 +1,20 @@
+
+[//]: # (                                                                                  )
+[//]: # ( Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. )
+[//]: # (                                                                                  )
+[//]: # ( Licensed under the Apache License, Version 2.0 \(the "License"\);                )
+[//]: # ( you may not use this file except in compliance with the License.                 )
+[//]: # ( You may obtain a copy of the License at                                          )
+[//]: # (                                                                                  )
+[//]: # (    http://www.apache.org/licenses/LICENSE-2.0                                    )
+[//]: # (                                                                                  )
+[//]: # ( Unless required by applicable law or agreed to in writing, software              )
+[//]: # ( distributed under the License is distributed on an "AS IS" BASIS,                )
+[//]: # ( WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.         )
+[//]: # ( See the License for the specific language governing permissions and              )
+[//]: # ( limitations under the License.                                                   )
+[//]: # (                                                                                  )
+
 # Performant Redshift Data Source for Apache Spark - Community Edition
 
 [![Build Status](https://travis-ci.org/spark-redshift-community/spark-redshift.svg?branch=master)](https://travis-ci.com/spark-redshift-community/spark-redshift)
@@ -7,8 +24,7 @@ Welcome to the community edition of spark-redshift!
  The community's feedback and contributions are vitally important. 
  Pull requests are very welcome.
 
-This is a fork from Databricks's spark-redshift repository. 
-The main upgrade is spark 2.4 compatibility.
+This repository is a fork of [databricks/spark-redshift](https://github.com/databricks/spark-redshift) which aims to provide a performant, secure, and user-friendly Apache Spark connector for Amazon Redshift. Our project maintainers closely monitors Apache Spark releases to ensure compatibility with the latest versions of Spark.
 
 
 ## Disclaimer
@@ -16,15 +32,17 @@ The main upgrade is spark 2.4 compatibility.
 Our intent is to do the best job possible supporting the minimal set of features
  that the community needs. 
 
-This is currently not tested on EMR. Some tests have been temporarily disabled and some features removed.
+This is tested using open source Spark. Some tests have been temporarily disabled, and some features removed.
 
 ## How to help
 
 Community's contributions are very welcome! Feel free to:
 
 * Open an issue on github.
-* Open a PR on github. To ensure a smooth code review process, plese follow these steps:
+* Open a PR on github. To ensure a smooth code review process, please follow these steps:
+  * Install the project pre-commit hooks: `pre-commit install`
   * Run unit tests: `./build/sbt test` 
+  * [Install integration test data](#install-integration-test-data)
   * Run integration tests:
     * Export the following environment variables with your values:
       ```
@@ -33,11 +51,15 @@ Community's contributions are very welcome! Feel free to:
       export AWS_REDSHIFT_JDBC_URL=<your AWS_REDSHIFT_JDBC_URL>
       export AWS_ACCESS_KEY_ID=<your AWS_ACCESS_KEY_ID>
       export AWS_SECRET_ACCESS_KEY=<your AWS_SECRET_ACCESS_KEY>
+      export AWS_SESSION_TOKEN=<your AWS_SESSION_TOKEN>
       export AWS_S3_CROSS_REGION_SCRATCH_SPACE=<your AWS_S3_CROSS_REGION_SCRATCH_SPACE>
+      export AWS_S3_CROSS_REGION_SCRATCH_SPACE_REGION=<AWS region of AWS_S3_CROSS_REGION_SCRATCH_SPACE>
       export STS_ROLE_ARN=<your STS_ROLE_ARN>
       export AWS_S3_SCRATCH_SPACE=<your AWS_S3_SCRATCH_SPACE>
+      export AWS_S3_SCRATCH_SPACE_REGION=<AWS region of AWS_S3_SCRATCH_SPACE>
       ```
      * run `./build/sbt it:test`
+   * Ensure commit messages are concise and descriptive.
    * Get a team member to review your code on github (if possible). This speeds up the PR approval for the admins.
 
 ## About
@@ -67,20 +89,22 @@ This library is more suited to ETL than interactive queries, since large amounts
     - [Setting a custom column type](#setting-a-custom-column-type)
     - [Configuring column encoding](#configuring-column-encoding)
     - [Setting descriptions on columns](#setting-descriptions-on-columns)
+- [Auto Pushdown](#autopushdown)
 - [Transactional Guarantees](#transactional-guarantees)
 - [Common problems and solutions](#common-problems-and-solutions)
- - [S3 bucket and Redshift cluster are in different AWS regions](#s3-bucket-and-redshift-cluster-are-in-different-aws-regions)
+    - [S3 bucket and Redshift cluster are in different AWS regions](#s3-bucket-and-redshift-cluster-are-in-different-aws-regions)
+    - [Warnings Associated with EC2MetadataUtils](#warnings-associated-with-ec2metadatautils)
 - [Migration Guide](#migration-guide)
 
 ## Installation
 
 This library requires Apache Spark 2.0+ and Amazon Redshift 1.0.963+.
 
-For version that works with Spark 1.x, please check for the [1.x branch](https://github.com/databricks/spark-redshift/tree/branch-1.x).
+For library versions that work with Spark 1.x, please check the [1.x branch](https://github.com/databricks/spark-redshift/tree/branch-1.x).
 
 Currently, only master-SNAPSHOT is supported.
 
-NOTE: In the examples below, `2.11` is the Scala version. If you are using a different version, be sure to update these values accordingly.
+NOTE: In the examples below, `2.12` is the Scala version. If you are using a different version, be sure to update these values accordingly.
 
 ### Release builds
 You may use this library in your applications with the following dependency information:
@@ -90,8 +114,7 @@ You may use this library in your applications with the following dependency info
     spark-submit \
       --deploy-mode cluster \
       --master yarn \
-      --jars https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.36.1060/RedshiftJDBC42-no-awssdk-1.2.36.1060.jar\
-      --packages org.apache.spark:spark-avro_2.11:2.4.2,io.github.spark-redshift-community:spark-redshift_2.11:4.0.1 \
+      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.16,org.apache.spark:spark-avro_2.12:3.4.0,io.github.spark-redshift-community:spark-redshift_2.12:5.1.0-SNAPSHOT \
       my_script.py
     ```
 
@@ -101,15 +124,15 @@ You may use this library in your applications with the following dependency info
     ```XML
     <dependency>
         <groupId>io.github.spark-redshift-community</groupId>
-        <artifactId>spark-redshift_2.11</artifactId>
-        <version>4.0.1</version>
+        <artifactId>spark-redshift_2.12</artifactId>
+        <version>5.1.0</version>
     </dependency>
     ```
 
 - **In SBT**:
 
     ```SBT
-    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift" % "4.0.1"
+    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "5.1.0"
     ```
 
 ### Snapshot builds
@@ -119,8 +142,7 @@ You may use this library in your applications with the following dependency info
     spark-submit \
       --deploy-mode cluster \
       --master yarn \
-      --jars https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.36.1060/RedshiftJDBC42-no-awssdk-1.2.36.1060.jar \
-      --packages org.apache.spark:spark-avro_2.11:2.4.2,io.github.spark-redshift-community:spark-redshift_2.11:4.0.0-SNAPSHOT \
+      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.16,org.apache.spark:spark-avro_2.12:3.4.0,io.github.spark-redshift-community:spark-redshift_2.12:5.1.0 \
       my_script.py
     ```
 
@@ -128,22 +150,31 @@ You may use this library in your applications with the following dependency info
    ```XML
    <dependency>
      <groupId>io.github.spark-redshift-community</groupId>
-     <artifactId>spark-redshift_2.11</artifactId>
-     <version>4.0.0-SNAPSHOT</version>
+     <artifactId>spark-redshift_2.12</artifactId>
+     <version>5.1.0-SNAPSHOT</version>
    </dependency>
    ```
 
 - **In SBT**:
 
    ```SBT
-   libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.11" % "4.0.0-SNAPSHOT"
+   libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "5.1.0-SNAPSHOT"
    ```
 
-You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommend that you use [their driver](http://docs.aws.amazon.com/redshift/latest/mgmt/configure-jdbc-connection.html), which is distributed as a JAR that is hosted on Amazon's website. This library has also been successfully tested using the Postgres JDBC driver.
+You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommends that you use [the official Amazon Redshift JDBC driver](https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42/2.1.0.16), which is available on Maven Central. Additionally, is hosted in S3 and can be found in the [official AWS documentation for the Redshift JDBC Driver](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-install.html).
 
 **Note on Hadoop versions**: This library depends on [`spark-avro`](https://github.com/databricks/spark-avro), which should automatically be downloaded because it is declared as a dependency. However, you may need to provide the corresponding `avro-mapred` dependency which matches your Hadoop distribution. In most deployments, however, this dependency will be automatically provided by your cluster's Spark assemblies and no additional action will be required.
 
-**Note on Amazon SDK dependency**: This library declares a `provided` dependency on components of the AWS Java SDK. In most cases, these libraries will be provided by your deployment environment. However, if you get ClassNotFoundExceptions for Amazon SDK classes then you will need to add explicit dependencies on `com.amazonaws.aws-java-sdk-core` and `com.amazonaws.aws-java-sdk-s3` as part of your build / runtime configuration. See the comments in `project/SparkRedshiftBuild.scala` for more details.
+**Note on dependencies**: This library declares a `provided` dependency on multiple libraries, such as the AWS SDK. This means they must be provided in your development environment. In many cases, these libraries will be provided by your deployment environment. However, if you encounter a `ClassNotFoundException` then you will need to add explicit dependencies for these libraries. For a complete list of provided dependencies please see the project's `build.sbt` file.
+
+### Install Integration Test Data
+The integration tests tagged with `PreloadTest` require prerequisite data loaded into Redshift prior to running. The following procedure can be used to prepopulate this test data.
+1. Locate the folder `src/it/resources/PreloadTestData` for the below operations.
+2. Copy all the files with the prefix `all_shapes_data...csv` to a temporary S3 bucket.
+3. Within the file `setup_all_shapes_default_null.sql`, modify the four `copy` instructions on lines 160, 322, 484, and 646 to point to the temporary S3 bucket folder, S3 bucket region, and IAM role associated with the Redshift cluster that has the necessary permissions to read from the S3 bucket. 
+4. Execute the file `setup_all_shapes_default_null.sql` using a SQL command tool (e.g., Redshift query editor or PSQL).
+5. Remove the temporary S3 bucket.
+
 
 ## Usage
 
@@ -308,24 +339,26 @@ which are illustrated in the following diagram:
 
 ```
                             ┌───────┐
+                            │Amazon │
        ┌───────────────────▶│  S3   │◀─────────────────┐
-       │    IAM or keys     └───────┘    IAM or keys   │
+       │  IAM role or keys  └───────┘ IAM role or keys │
        │                        ▲                      │
-       │                        │ IAM or keys          │
+       │                        │ IAM role or keys     │
        ▼                        ▼               ┌──────▼────┐
 ┌────────────┐            ┌───────────┐         │┌──────────┴┐
-│  Redshift  │            │   Spark   │         ││   Spark   │
-│            │◀──────────▶│  Driver   │◀────────▶┤ Executors │
+│   Amazon   │            │   Spark   │         ││   Spark   │
+│  Redshift  │◀──────────▶│   Driver  │◀────────▶┤ Executors │
 └────────────┘            └───────────┘          └───────────┘
                JDBC with                  Configured
-               username /                     in
-                password                    Spark
-            (can enable SSL)
+              Database or                     in
+              IAM Credentials                Spark
+          (SSL enabled by default)
 ```
 
 This library reads and writes data to S3 when transferring data to/from Redshift. As a result, it
-requires AWS credentials with read and write access to a S3 bucket (specified using the `tempdir`
-configuration parameter).
+requires AWS IAM role or keys granting read and write access to a S3 bucket (specified using the `tempdir`
+configuration parameter). Please refer to the official AWS documentation for instructions on 
+[Using IAM to retrieve credentials and connect to Amazon Redshift](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-redshift-auth.html).
 
 > **:warning: Note**: This library does not clean up the temporary files that it creates in S3.
 > As a result, we recommend that you use a dedicated temporary S3 bucket with an
@@ -336,9 +369,11 @@ configuration parameter).
 
 The following describes how each connection can be authenticated:
 
-- **Spark driver to Redshift**: The Spark driver connects to Redshift via JDBC using a username and password.
-    Redshift does not support the use of IAM roles to authenticate this connection.
-    This connection can be secured using SSL; for more details, see the Encryption section below.
+- **Spark driver to Redshift**: The Spark driver connects to Redshift via the official Amazon Redshift JDBC driver
+    using IAM, Identity Provider, AWS Secrets Manager or database username and password.
+    Using IAM authentication or AWS Secrets Manager is recommended; for more details, see the official AWS documentation for 
+    [Configuring JDBC authentication and SSL](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-configure-authentication-ssl.html). 
+    Securing the connection by enabling SSL is recommended; for more details, see the Encryption section below.
 
 - **Spark to S3**: S3 acts as a middleman to store bulk data when reading from or writing to Redshift.
     Spark connects to S3 using both the Hadoop FileSystem interfaces and directly using the Amazon
@@ -390,14 +425,6 @@ The following describes how each connection can be authenticated:
         sc._jsc.hadoopConfiguration().set("fs.s3n.awsSecretAccessKey", "YOUR_SECRET_ACCESS_KEY")
         ```
 
-    3. **Encode keys in `tempdir` URI**:
-     For example, the URI `s3n://ACCESSKEY:SECRETKEY@bucket/path/to/temp/dir` encodes the key pair
-      (`ACCESSKEY`, `SECRETKEY`).
-
-      Due to [Hadoop limitations](https://issues.apache.org/jira/browse/HADOOP-3733), this
-      approach will not work for secret keys which contain forward slash (`/`) characters, even if
-      those characters are urlencoded.
-
 - **Redshift to S3**: Redshift also connects to S3 during `COPY` and `UNLOAD` queries. There are
     three methods of authenticating this connection:
 
@@ -418,20 +445,20 @@ The following describes how each connection can be authenticated:
         using to connect to S3 and will forward those credentials to Redshift over JDBC. If Spark
         is authenticating to S3 using an IAM instance role then a set of temporary STS credentials
         will be passed to Redshift; otherwise, AWS keys will be passed. These credentials are
-        sent as part of the JDBC query, so therefore it is **strongly recommended** to enable SSL
+        sent as part of the JDBC query, therefore it is **strongly recommended** to enable SSL
         encryption of the JDBC connection when using this authentication method.
     3. **Use Security Token Service (STS) credentials**: You may configure the
         `temporary_aws_access_key_id`, `temporary_aws_secret_access_key`, and
         `temporary_aws_session_token` configuration properties to point to temporary keys created
         via the AWS
         [Security Token Service](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html).
-        These credentials are sent as part of the JDBC query, so therefore it is
+        These credentials are sent as part of the JDBC query, therefore it is
         **strongly recommended** to enable SSL encryption of the JDBC connection when using this
         authentication method.
         If you choose this option then please be aware of the risk that the credentials expire before
         the read / write operation succeeds.
 
-    These three options are mutually-exclusive and you must explicitly choose which one to use.
+    These three options are mutually-exclusive, and you must explicitly choose which one to use.
 
 
 ### Encryption
@@ -501,22 +528,31 @@ The parameter map or <tt>OPTIONS</tt> provided in Spark SQL supports the followi
     <td>No default</td>
     <td>The Redshift password.  Must be used in tandem with <tt>user</tt> option.  May only be used if the user and password are not passed in the URL; passing both will result in an error.</td>
  </tr>
+<tr> 
+    <td><tt>secret.id</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td> The Name or ARN of your secret. May only be used if the user, password and DbUser are not passed in the URL or as options.</td>
+</tr>
+<tr> 
+    <td><tt>secret.region</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>The AWS region (e.g., 'us-east-1') where your secret resides. Required when using a name instead of an ARN for <tt>secret.id</tt>. </td>
+</tr>
  <tr>
     <td><tt>url</tt></td>
     <td>Yes</td>
     <td>No default</td>
     <td>
-<p>A JDBC URL, of the format, <tt>jdbc:subprotocol://host:port/database?user=username&password=password</tt></p>
+<p>A JDBC URL, of the format, <tt>jdbc:redshift://host:port/database?user=username&password=password</tt></p>
 
 <ul>
- <li><tt>subprotocol</tt> can be <tt>postgresql</tt> or <tt>redshift</tt>, depending on which JDBC driver
-    you have loaded. Note however that one Redshift-compatible driver must be on the classpath and match
-    this URL.</li>
- <li><tt>host</tt> and <tt>port</tt> should point to the Redshift master node, so security groups and/or VPC will
+ <li>If <tt>host</tt> and <tt>port</tt> do not point to the Redshift master node, security groups and/or VPC will
 need to be configured to allow access from your driver application.
  <li><tt>database</tt> identifies a Redshift database name</li>
- <li><tt>user</tt> and <tt>password</tt> are credentials to access the database, which must be embedded
-    in this URL for JDBC, and your user account should have necessary privileges for the table being referenced. </li>
+ <li><tt>user</tt> and <tt>password</tt> are credentials to access the database, which can be embedded
+    in this URL for JDBC. Using IAM authentication is the recommended authentication mechanism. Your user account should have necessary privileges for the table being referenced. </li>
     </td>
  </tr>
  <tr>
@@ -562,6 +598,19 @@ need to be configured to allow access from your driver application.
 Redshift when writing. If you're using Redshift data source for Spark as part of a regular ETL pipeline, it can be useful to
 set a <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html">Lifecycle Policy</a> on a bucket
 and use that as a temp location for this data.
+    </td>
+ </tr>
+ <tr>
+    <td><tt>tempdir_region</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+       <p>AWS region where <tt>tempdir</tt> is located. Setting this option will improve connector performance for interactions with <tt>tempdir</tt> as well as automatically supply this value as part of COPY and UNLOAD operations during connector writes and reads. If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>tempdir</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
+       <ol>
+          <li>When the connector is running outside of AWS as automatic region discovery will fail and negatively affect connector performance.</li>
+          <li>When <tt>tempdir</tt> is in a different region than the Redshift cluster as using this setting alleviates the need to supply the region manually using the <tt>extracopyoptions</tt> and <tt>extraunloadoptions</tt> parameters.</li>
+          <li>When the connector is running in a different region than <tt>tempdir</tt> as it improves the connector's access performance of <tt>tempdir</tt>.</li>
+       </ol>
     </td>
  </tr>
  <tr>
@@ -683,24 +732,42 @@ for more information.</p>
     </td>
  </tr>
  <tr>
-    <td><tt>tempformat</tt>  (Experimental)</td>
+    <td><tt>unload_s3_format</tt></td>
+    <td>No</td>
+    <td>PARQUET</td>
+    <td>
+        <p>
+        PARQUET - unload the query result to parquet file format.
+        </p>
+        <p>
+        TEXT - unload the query result to pipe-delimited text file format.
+        </p>
+    </td>
+ </tr> 
+ <tr>
+    <td><tt>tempformat</tt></td>
     <td>No</td>
     <td><tt>AVRO</tt></td>
     <td>
     <p>
         The format in which to save temporary files in S3 when writing to Redshift.
-        Defaults to "AVRO"; the other allowed values are "CSV" and "CSV GZIP" for CSV
-        and gzipped CSV, respectively.
+        Defaults to "AVRO"; the other allowed values are "CSV", "CSV GZIP", and "PARQUET" for CSV,
+        gzipped CSV, and parquet, respectively.
     </p>
     <p>
         Redshift is significantly faster when loading CSV than when loading Avro files, so
         using that <tt>tempformat</tt> may provide a large performance boost when writing
         to Redshift.
     </p>
+    <p>
+        Parquet should not be used as the tempformat when using an S3 bucket (tempdir) in a region that is different
+        from the region where the redshift cluster you are writing to resides. This is because cross-region copies are
+        not supported in redshift when using parquet as the format.
+    </p>
     </td>
  </tr>
  <tr>
-    <td><tt>csvnullstring</tt>  (Experimental)</td>
+    <td><tt>csvnullstring</tt></td>
     <td>No</td>
     <td><tt>@NULL@</tt></td>
     <td>
@@ -710,15 +777,105 @@ for more information.</p>
     </p>
     </td>
  </tr>
-</table>
+ <tr>
+    <td><tt>autopushdown</tt></td>
+    <td>No</td>
+    <td>True</td>
+    <td>
+        <p>
+                Apply predicate and query pushdown by capturing and analyzing the Spark logical plans for SQL operations. 
+                The operations are translated into a SQL query and then executed in Redshift to improve performance.
+        </p>
+        <p>
+                Once autopushdown is enabled, it is enabled for all the Redshift tables in the same Spark session.
+        </p>
+    </td>
+ </tr>
+ <tr>
+    <td><tt>autopushdown.s3_result_cache</tt></td>
+    <td>No</td>
+    <td>False</td>
+    <td>Cache the query SQL to unload data S3 path mapping in memory so that the same query don't need to execute again in the same Spark session.</td>
+ </tr>
+<tr>
+    <td><tt>extraunloadoptions</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+        Extra options to append to the Redshift UNLOAD command (e.g. ENCRYPTED).
+        A complete list of possible options may be seen in the <a href="https://docs.aws.amazon.com/redshift/latest/dg/r_UNLOAD.html">Redshift docs</a> though not all are guaranteed to work and may conflict with other options set in the connector resulting in exceptions.
+    </td>
+</tr>
+<tr>
+    <td><tt>copyretrycount</tt></td>
+    <td>No</td>
+    <td>2</td>
+    <td>Number of times to retry a copy operation including dropping and creating any required table before failing.</td>
+</tr>
+<tr>
+    <td><tt>copydelay</tt></td>
+    <td>No</td>
+    <td>30000</td>
+    <td>Number of milliseconds to wait between retrying copy operations. Non-positive values will be treated as 30 seconds.</td>
+</tr>
+<tr> 
+    <td><tt>secret.id</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td> The Name or ARN of your secret stored in AWS Secrets Manager. May be used to automatically supply Redshift credentials but only if the user, password and DbUser are not passed in the URL or as options.</td>
+</tr>
+<tr> 
+    <td><tt>secret.region</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+       <p>The primary AWS region (e.g., <tt>us-east-1</tt>) for searching for the <tt>secret.id</tt> value. </p>
+       <p>If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>secret.id</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
+       <ol>
+          <li>When the connector is running outside of AWS as automatic region discovery will fail and may prevent authenticating with Redshift.</li>
+          <li>When the connector is running in a different region than <tt>secret.id</tt> as it improves the connector's access performance of the secret.</li>
+       </ol>
+    </td>
+</tr>
+<tr> 
+    <td><tt>secret.vpcEndpointUrl</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>The PrivateLink DNS endpoint URL for AWS Secrets Manager when overriding the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> </td>
+</tr>
+<tr> 
+    <td><tt>secret.vpcEndpointRegion</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>The PrivateLink DNS endpoint Region for AWS Secrets Manager when overriding the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> </td>
+</tr>
+<tr>
+    <td><tt>jdbc.*</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+        Additional parameters to pass to the underlying JDBC driver where the wildcard is the name of the JDBC parameter (e.g., <tt>jdbc.ssl</tt>). Note that the <tt>jdbc</tt> prefix will be stripped off before passing to the JDBC driver.
+        A complete list of possible options for the Redshift JDBC driver may be seen in the <a href="https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-configuration-options.html">Redshift docs</a>.
+    </td>
+</tr>
+    <td><tt>label</tt></td>
+    <td>No</td>
+    <td>""</td>
+    <td>
+        An identifier to include in the query group set when running queries with the connector. Should be 100 or fewer characters and all characters must be valid unicodeIdentifierParts. Characters in excess of 100 will be trimmed.
+        When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"5.1.0-amzn-1-spark_3.3","op":"Read","lbl":""}}`). 
+        This option will be substituted for the value of the `lbl` key.
+    </td>
+<tr>
+</tr></table>
 
 ## Additional configuration options
 
 ### Configuring the maximum size of string columns
 
-When creating Redshift tables, this library's default behavior is to create `TEXT` columns for string columns. Redshift stores `TEXT` columns as `VARCHAR(256)`, so these columns have a maximum size of 256 characters ([source](http://docs.aws.amazon.com/redshift/latest/dg/r_Character_types.html)).
+When creating Redshift tables, this library's default behavior is to create `VARCHAR(MAX)` columns for string columns. These columns have a maximum size of 65535 characters ([source](http://docs.aws.amazon.com/redshift/latest/dg/r_Character_types.html)).
 
-To support larger columns, you can use the `maxlength` column metadata field to specify the maximum length of individual string columns. This can also be done as a space-savings performance optimization in order to declare columns with a smaller maximum length than the default.
+To support smaller columns, you can use the `maxlength` column metadata field to specify the maximum length of individual string columns. This can be done as a space-savings performance optimization in order to declare columns with a smaller maximum length than the default.
 
 > **:warning: Note**: Due to limitations in Spark, metadata modification is unsupported in the Python, SQL, and R language APIs.
 
@@ -782,6 +939,153 @@ When creating a table, this library can be configured to use a specific compress
 
 Redshift allows columns to have descriptions attached that should show up in most query tools (using the `COMMENT` command). You can set the `description` column metadata field to specify a description for individual columns.
 
+## Auto Pushdown
+
+The Spark Connector applies predicate and query pushdown by capturing and analyzing the Spark logical plans for SQL operations. When the data source is Redshift, the operations are translated into a SQL query and then executed in Redshift to improve performance.
+
+Not all of Spark SQL operators can be pushed down. When pushdown fails, the connector falls back to a less-optimized execution plan. The unsupported operations are instead performed in Spark.
+
+Auto pushdown is enabled by default. To disable it, set the "autopushdown" to false as below:
+
+```scala
+import sqlContext.implicits._
+val eventsDF = sqlContext.read
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("url",jdbcURL )
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "event")
+    .option("autopushdown", "false")
+  .load()
+eventsDF.show()
+```
+
+## Spark SQL Configuration
+
+The Spark Connector pushdown redshift query in lazy mode. This allows spark's adaptive query execution mode to further optimize the query. This behavior is enabled by default.
+To disable it, run following command:
+
+```sparksql
+SET spark.datasource.redshift.community.autopushdown.lazyMode=false
+```
+
+## Unload Format
+
+By default, query results are unloaded to S3 as Parquet files. There is an option as shown below to unload the result in pipe-delimited text format instead. However, according to Redshift database developer guide, Parquet format is up to 2x faster to unload and consumes up to 6x less storage in Amazon S3, compared with text formats.
+
+```scala
+    .option("unload_s3_format", "TEXT")
+```
+
+Refer to integration test cases for supported operations for pushdown.
+
+## Schema for redshift super columns of complex types (Struct, Map, Array)
+
+By default, query results which include a super column will provide the super column as a string.
+However, if the schema of the super column is known ahead of time it can be provided as part of the read
+and the column will be returned as the provided schema type. This will also enable the pushdown of operations
+such as getting a struct field, getting a map value by key, or getting the item at an array index.
+Retrieving maps which use key types other than StringType is not supported.
+Retrieving nested struct field names or map keys which contain upper case letters will return incorrect results, so the
+schema should not be provided to the connector unless all struct field names and map keys are lower case. In a case
+where upper case field names or map keys must be retrieved the schema can be used with the `from_json` function to
+convert the returned string data from a super into the correct struct, map, or array type.
+
+In the case of a table with a super containing a struct created like:
+
+```sql
+create table contains_super (a super);
+```
+
+The connector can be used to query a StringType field `hello` from the super column `a` in the table using a schema like:
+
+```scala
+import org.apache.spark.sql.types._
+
+val sc = // existing SparkContext
+val sqlContext = new SQLContext(sc)
+
+val schema = StructType(StructField("a", StructType(StructField("hello", StringType) ::Nil)) :: Nil)
+
+val helloDF = sqlContext.read
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("url", jdbcURL )
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "contains_super")
+  .schema(schema)
+  .load().selectExpr("a.hello")
+```
+
+If the column `a` might be better represented as a map
+(it only has keys corresponding to values where all the values are of the same type such as String -> Int)
+then a MapType can be provided as the schema, and the value of a map's key `'hello'` can be queried like:
+
+```scala
+import org.apache.spark.sql.types._
+
+val sc = // existing SparkContext
+val sqlContext = new SQLContext(sc)
+
+val schema = StructType(StructField("a", MapType(StringType, IntegerType))::Nil)
+
+val helloDF = sqlContext.read
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("url", jdbcURL )
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "contains_super")
+  .schema(schema)
+  .load().selectExpr("a['hello']")
+```
+
+If the column `a` contained an array instead of a struct, the connector could be used to query for the first element in that array like:
+
+```scala
+import org.apache.spark.sql.types._
+
+val sc = // existing SparkContext
+val sqlContext = new SQLContext(sc)
+
+val schema = StructType(StructField("a", ArrayType(IntegerType)):: Nil)
+
+val helloDF = sqlContext.read
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("url", jdbcURL )
+  .option("tempdir", tempS3Dir)
+  .option("dbtable", "contains_super")
+  .schema(schema)
+  .load().selectExpr("a[0]")
+```
+
+### Writing complex types
+
+If a schema is provided for a dataframe that includes a complex type like StructType, ArrayType, or MapType
+then the connector can be used to write the field to redshift. There are few important limitations:
+
+1. No nested fields may have names containing upper case letters
+2. Any map keys must be StringType
+3. No map keys may contain upper case letters
+4. tempformat must be one of `CSV`, `CSV GZIP`, or `PARQUET`
+
+Using the connector, writing a struct to a column `a` looks like:
+
+```scala
+import org.apache.spark.sql.types._
+import org.apache.spark.sql._
+
+val sc = // existing SparkContext
+val sqlContext = new SQLContext(sc)
+
+val schema = StructType(StructField("a", StructType(StructField("hello", StringType) ::Nil)) :: Nil)
+val data = sc.parallelize(Seq(Row(Row("world"))))
+val mydf = sqlContext.createDataFrame(data, schema)
+
+mydf.write.format("io.github.spark_redshift_community.spark.redshift").
+  option("url", jdbcUrl).
+  option("dbtable", tableName).
+  option("tempdir", tempS3Dir).
+  option("tempformat", "CSV").
+  mode(SaveMode.Append).save
+```
+
 ## Transactional Guarantees
 
 This section describes the transactional guarantees of the Redshift data source for Spark
@@ -790,7 +1094,7 @@ This section describes the transactional guarantees of the Redshift data source 
 
 For general information on Redshift's transactional guarantees, see the [Managing Concurrent Write Operations](https://docs.aws.amazon.com/redshift/latest/dg/c_Concurrent_writes.html) chapter in the Redshift documentation. In a nutshell, Redshift provides [serializable isolation](https://docs.aws.amazon.com/redshift/latest/dg/c_serial_isolation.html) (according to the documentation for Redshift's [`BEGIN`](https://docs.aws.amazon.com/redshift/latest/dg/r_BEGIN.html) command, "[although] you can use any of the four transaction isolation levels, Amazon Redshift processes all isolation levels as serializable"). According to its [documentation](https://docs.aws.amazon.com/redshift/latest/dg/c_serial_isolation.html), "Amazon Redshift supports a default _automatic commit_ behavior in which each separately-executed SQL command commits individually." Thus, individual commands like `COPY` and `UNLOAD` are atomic and transactional, while explicit `BEGIN` and `END` should only be necessary to enforce the atomicity of multiple commands / queries.
 
-When reading from / writing to Redshift, this library reads and writes data in S3. Both Spark and Redshift produce partitioned output which is stored in multiple files in S3. According to the [Amazon S3 Data Consistency Model](https://docs.aws.amazon.com/AmazonS3/latest/dev/Introduction.html#ConsistencyModel) documentation, S3 bucket listing operations are eventually-consistent, so the files must to go to special lengths to avoid missing / incomplete data due to this source of eventual-consistency.
+When reading from / writing to Redshift, this library reads and writes data in S3. Both Spark and Redshift produce partitioned output which is stored in multiple files in S3. According to the [Amazon S3 Data Consistency Model](https://docs.aws.amazon.com/AmazonS3/latest/dev/Introduction.html#ConsistencyModel) documentation, S3 bucket listing operations are eventually-consistent, so the files must go to special lengths to avoid missing / incomplete data due to this source of eventual-consistency.
 
 ### Guarantees of the Redshift data source for Spark
 
@@ -814,7 +1118,7 @@ If the deprecated `usestagingtable` setting is set to `false` then this library 
 
 By default, S3 <-> Redshift copies will not work if the S3 bucket and Redshift cluster are in different AWS regions.
 
-If you attempt to perform a read of a Redshift table and the regions are mismatched then you may see a confusing error, such as
+If you attempt to perform a read of a Redshift table, and the regions are mismatched then you may see a confusing error, such as
 
 ```
 java.sql.SQLException: [Amazon](500310) Invalid operation: S3ServiceException:The bucket you are attempting to access must be addressed using the specified endpoint. Please send all future requests to this endpoint.
@@ -826,25 +1130,29 @@ Similarly, attempting to write to Redshift using a S3 bucket in a different regi
 error:  Problem reading manifest file - S3ServiceException:The bucket you are attempting to access must be addressed using the specified endpoint. Please send all future requests to this endpoint.,Status 301,Error PermanentRedirect
 ```
 
-**For writes:** Redshift's `COPY` command allows the S3 bucket's region to be explicitly specified, so you can make writes to Redshift work properly in these cases by adding
-
+To support an S3 bucket in a different region than the Redshift cluster for either **reads** or **writes**, set the `tempdir_region` parameter to the region of the S3 bucket. Doing so will automatically supply the region name to Redshift for UNLOAD and COPY commands. For example:
 ```
-region 'the-region-name'
-```
-
-to the `extracopyoptions` setting. For example, with a bucket in the US East (Virginia) region and the Scala API, use
-
-```
-.option("extracopyoptions", "region 'us-east-1'")
+.option("tempdir_region", "us-east-1")
 ```
 
-**For reads:** According to [its documentation](http://docs.aws.amazon.com/redshift/latest/dg/r_UNLOAD.html), the Redshift `UNLOAD` command does not support writing to a bucket in a different region:
+### Warnings Associated with EC2MetadataUtils 
+The connector will attempt to automatically determine the cluster's region when the <tt>tempdir_region</tt> parameter is not set. This can cause performance problems and metadata exceptions to be thrown such as the following:
 
-> **Important**
->
-> The Amazon S3 bucket where Amazon Redshift will write the output files must reside in the same region as your cluster.
+```
+WARN EC2MetadataUtils: Unable to retrieve the requested metadata (/latest/dynamic/instance-identity/document). Failed to connect to service endpoint: 
+com.amazonaws.SdkClientException: Failed to connect to service endpoint:
+```
 
-As a result, this use-case is not supported by this library. The only workaround is to use a new bucket in the same region as your Redshift cluster.
+To resolve this, set the <tt>tempdir_region</tt> parameter to the AWS region of the S3 bucket specified in <tt>tempdir</tt> whenever the connector is used outside an AWS environment (e.g., local Spark cluster) like so:
+```
+.option("tempdir_region", "us-east-1")
+```
+
+This same problem can also occur when using <tt>secret.id</tt> as the connector will try to determine what AWS region stores the secret. To resolve this, set the <tt>secret.region</tt> parameter like so:
+
+```
+.option("secret.region", "us-east-1")
+```
 
 ## Migration Guide
 
@@ -855,3 +1163,8 @@ As a result, this use-case is not supported by this library. The only workaround
   using their previous Redshift to S3 authentication mechanism. For a discussion of the three
   authentication mechanisms and their security trade-offs, see the [_Authenticating to S3 and
   Redshift_](#authenticating-to-s3-and-redshift) section of this README.
+
+## Acknowledgments ##
+This project was originally forked from the [Databricks Spark-Redshift project](https://github.com/databricks/spark-redshift).
+The pushdown improvements were inspired by the work done by Snowflake in their [Spark-Snowflake project](https://github.com/snowflakedb/spark-snowflake).
+We would like to acknowledge and thank the developers of these projects for their significant contributions to the open source community.

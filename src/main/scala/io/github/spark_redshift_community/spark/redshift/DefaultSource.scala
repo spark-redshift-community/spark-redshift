@@ -1,5 +1,6 @@
 /*
  * Copyright 2015 TouchType Ltd
+ * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +18,21 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.AmazonS3
 import io.github.spark_redshift_community.spark.redshift
+import io.github.spark_redshift_community.spark.redshift.pushdown.RedshiftStrategy
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider, RelationProvider, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
+import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, SparkSession}
 import org.slf4j.LoggerFactory
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 
 /**
  * Redshift Source implementation for Spark SQL
  */
 class DefaultSource(
     jdbcWrapper: JDBCWrapper,
-    s3ClientFactory: AWSCredentialsProvider => AmazonS3Client)
+    s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3)
   extends RelationProvider
   with SchemaRelationProvider
   with CreatableRelationProvider {
@@ -39,7 +42,7 @@ class DefaultSource(
   /**
    * Default constructor required by Data Source API
    */
-  def this() = this(DefaultJDBCWrapper, awsCredentials => new AmazonS3Client(awsCredentials))
+  def this() = this(DefaultJDBCWrapper, Utils.s3ClientBuilder)
 
   /**
    * Create a new RedshiftRelation instance using parameters from Spark SQL DDL. Resolves the schema
@@ -48,8 +51,7 @@ class DefaultSource(
   override def createRelation(
       sqlContext: SQLContext,
       parameters: Map[String, String]): BaseRelation = {
-    val params = Parameters.mergeParameters(parameters)
-    redshift.RedshiftRelation(jdbcWrapper, s3ClientFactory, params, None)(sqlContext)
+    createRelation(sqlContext, parameters, null)
   }
 
   /**
@@ -60,7 +62,11 @@ class DefaultSource(
       parameters: Map[String, String],
       schema: StructType): BaseRelation = {
     val params = Parameters.mergeParameters(parameters)
-    redshift.RedshiftRelation(jdbcWrapper, s3ClientFactory, params, Some(schema))(sqlContext)
+    if (params.autoPushdown) {
+      enablePushdownSession(sqlContext.sparkSession)
+    }
+
+    redshift.RedshiftRelation(jdbcWrapper, s3ClientFactory, params, Option(schema) )(sqlContext)
   }
 
   /**
@@ -78,7 +84,7 @@ class DefaultSource(
     }
 
     def tableExists: Boolean = {
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
+      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
       try {
         jdbcWrapper.tableExists(conn, table.toString)
       } finally {
@@ -111,5 +117,19 @@ class DefaultSource(
     }
 
     createRelation(sqlContext, parameters)
+  }
+
+  /** Enable more advanced query pushdowns to redshift.
+   *
+   * @param session The SparkSession for which pushdowns are to be enabled.
+   */
+  def enablePushdownSession(session: SparkSession): Unit = {
+
+    if (!session.experimental.extraStrategies.exists(
+      s => s.isInstanceOf[RedshiftStrategy]
+    )) {
+      log.info("Enable auto pushdown.")
+      session.experimental.extraStrategies ++= Seq(new RedshiftStrategy(session))
+    }
   }
 }
