@@ -114,7 +114,7 @@ You may use this library in your applications with the following dependency info
     spark-submit \
       --deploy-mode cluster \
       --master yarn \
-      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.16,org.apache.spark:spark-avro_2.12:3.4.0,io.github.spark-redshift-community:spark-redshift_2.12:5.1.0-SNAPSHOT \
+      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.16,org.apache.spark:spark-avro_2.12:3.4.0,io.github.spark-redshift-community:spark-redshift_2.12:6.0.0-spark_3.4 \
       my_script.py
     ```
 
@@ -125,41 +125,16 @@ You may use this library in your applications with the following dependency info
     <dependency>
         <groupId>io.github.spark-redshift-community</groupId>
         <artifactId>spark-redshift_2.12</artifactId>
-        <version>5.1.0</version>
+        <version>6.0.0-spark_3.4</version>
     </dependency>
     ```
 
 - **In SBT**:
 
     ```SBT
-    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "5.1.0"
+    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "6.0.0-spark_3.4"
     ```
 
-### Snapshot builds
-
-- **Without build tool**:
-    ```bash
-    spark-submit \
-      --deploy-mode cluster \
-      --master yarn \
-      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.16,org.apache.spark:spark-avro_2.12:3.4.0,io.github.spark-redshift-community:spark-redshift_2.12:5.1.0 \
-      my_script.py
-    ```
-
-- **In Maven**:
-   ```XML
-   <dependency>
-     <groupId>io.github.spark-redshift-community</groupId>
-     <artifactId>spark-redshift_2.12</artifactId>
-     <version>5.1.0-SNAPSHOT</version>
-   </dependency>
-   ```
-
-- **In SBT**:
-
-   ```SBT
-   libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "5.1.0-SNAPSHOT"
-   ```
 
 You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommends that you use [the official Amazon Redshift JDBC driver](https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42/2.1.0.16), which is available on Maven Central. Additionally, is hosted in S3 and can be found in the [official AWS documentation for the Redshift JDBC Driver](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-install.html).
 
