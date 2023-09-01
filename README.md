@@ -155,7 +155,7 @@ The integration tests tagged with `PreloadTest` require prerequisite data loaded
 
 ### Data Sources API
 
-Once you have [configured your AWS credentials](#aws-credentials), you can use this library via the Data Sources API in Scala, Python or SQL, as follows:
+Once you have [configured your AWS credentials](#authenticating-to-s3-and-redshift), you can use this library via the Data Sources API in Scala, Python or SQL, as follows:
 
 #### Scala
 
