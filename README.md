@@ -41,7 +41,7 @@ Community's contributions are very welcome! Feel free to:
 * Open an issue on github.
 * Open a PR on github. To ensure a smooth code review process, please follow these steps:
   * Install the project pre-commit hooks: `pre-commit install`
-  * Run unit tests: `./build/sbt test` 
+  * Run unit tests: `sbt test` 
   * [Install integration test data](#install-integration-test-data)
   * Run integration tests:
     * Export the following environment variables with your values:
@@ -58,7 +58,7 @@ Community's contributions are very welcome! Feel free to:
       export AWS_S3_SCRATCH_SPACE=<your AWS_S3_SCRATCH_SPACE>
       export AWS_S3_SCRATCH_SPACE_REGION=<AWS region of AWS_S3_SCRATCH_SPACE>
       ```
-     * run `./build/sbt it:test`
+     * run `sbt it:test`
    * Ensure commit messages are concise and descriptive.
    * Get a team member to review your code on github (if possible). This speeds up the PR approval for the admins.
 
