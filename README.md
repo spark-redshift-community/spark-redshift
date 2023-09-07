@@ -41,6 +41,7 @@ Community's contributions are very welcome! Feel free to:
 * Open an issue on github.
 * Open a PR on github. To ensure a smooth code review process, please follow these steps:
   * Install the project pre-commit hooks: `pre-commit install`
+  * If you don't already have .env configure at top levle directory, copy the example using `cp .env.example .env`
   * Run unit tests: `sbt test` 
   * [Install integration test data](#install-integration-test-data)
   * Run integration tests:
