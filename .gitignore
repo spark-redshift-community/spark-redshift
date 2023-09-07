@@ -28,3 +28,4 @@ lib_managed/
 .metals/
 .bloop/
 venv/
+.env

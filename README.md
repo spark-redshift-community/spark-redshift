@@ -41,24 +41,13 @@ Community's contributions are very welcome! Feel free to:
 * Open an issue on github.
 * Open a PR on github. To ensure a smooth code review process, please follow these steps:
   * Install the project pre-commit hooks: `pre-commit install`
+  * If you don't already have .env configure at top level directory, copy the example using `cp .env.example .env`
   * Run unit tests: `sbt test` 
   * [Install integration test data](#install-integration-test-data)
   * Run integration tests:
-    * Export the following environment variables with your values:
-      ```
-      export AWS_REDSHIFT_USER=<your AWS_REDSHIFT_USER>
-      export AWS_REDSHIFT_PASSWORD=<your AWS_REDSHIFT_PASSWORD>
-      export AWS_REDSHIFT_JDBC_URL=<your AWS_REDSHIFT_JDBC_URL>
-      export AWS_ACCESS_KEY_ID=<your AWS_ACCESS_KEY_ID>
-      export AWS_SECRET_ACCESS_KEY=<your AWS_SECRET_ACCESS_KEY>
-      export AWS_SESSION_TOKEN=<your AWS_SESSION_TOKEN>
-      export AWS_S3_CROSS_REGION_SCRATCH_SPACE=<your AWS_S3_CROSS_REGION_SCRATCH_SPACE>
-      export AWS_S3_CROSS_REGION_SCRATCH_SPACE_REGION=<AWS region of AWS_S3_CROSS_REGION_SCRATCH_SPACE>
-      export STS_ROLE_ARN=<your STS_ROLE_ARN>
-      export AWS_S3_SCRATCH_SPACE=<your AWS_S3_SCRATCH_SPACE>
-      export AWS_S3_SCRATCH_SPACE_REGION=<AWS region of AWS_S3_SCRATCH_SPACE>
-      ```
-     * run `sbt it:test`
+    * Update your local .env file with real values to use your own cloud resources. 
+    * (note about .env, we already git ignore, do not include it in your pull request)
+    * run `sbt it:test`
    * Ensure commit messages are concise and descriptive.
    * Get a team member to review your code on github (if possible). This speeds up the PR approval for the admins.
 
