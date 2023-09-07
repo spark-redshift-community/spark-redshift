@@ -46,7 +46,7 @@ Community's contributions are very welcome! Feel free to:
   * [Install integration test data](#install-integration-test-data)
   * Run integration tests:
     * Update your local .env file to your own cloud resources. 
-    * (note about .env, we already git ignore, do you include it in your pull request)
+    * (note about .env, we already git ignore, do not include it in your pull request)
     * run `sbt it:test`
    * Ensure commit messages are concise and descriptive.
    * Get a team member to review your code on github (if possible). This speeds up the PR approval for the admins.
