@@ -45,7 +45,7 @@ Community's contributions are very welcome! Feel free to:
   * Run unit tests: `sbt test` 
   * [Install integration test data](#install-integration-test-data)
   * Run integration tests:
-    * Update your local .env file to your own cloud resources. 
+    * Update your local .env file with real values to use your own cloud resources. 
     * (note about .env, we already git ignore, do not include it in your pull request)
     * run `sbt it:test`
    * Ensure commit messages are concise and descriptive.
