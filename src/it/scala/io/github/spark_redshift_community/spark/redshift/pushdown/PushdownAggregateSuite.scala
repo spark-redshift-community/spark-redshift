@@ -188,12 +188,12 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class TextAggregatePushdownSuite extends PushdownAggregateSuite {
+class TextPushdownAggregateSuite extends PushdownAggregateSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetAggregatePushdownSuite extends PushdownAggregateSuite {
+class ParquetPushdownAggregateSuite extends PushdownAggregateSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -208,12 +208,12 @@ class ParquetNoPushdownAggregateSuite extends PushdownAggregateSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheAggregateSuite
-  extends TextAggregatePushdownSuite {
+class TextNoCachePushdownAggregateSuite
+  extends TextPushdownAggregateSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheAggregateSuite
-  extends ParquetAggregatePushdownSuite {
+class ParquetNoCachePushdownAggregateSuite
+  extends ParquetPushdownAggregateSuite {
   override protected val s3_result_cache = "false"
 }

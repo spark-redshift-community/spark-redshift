@@ -144,12 +144,12 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
   }
 }
 
-class TextStringConcatPushdownSuite extends PushdownStringConcatSuite {
+class TextPushdownStringConcatSuite extends PushdownStringConcatSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetStringConcatPushdownSuite extends PushdownStringConcatSuite {
+class ParquetPushdownStringConcatSuite extends PushdownStringConcatSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -164,12 +164,12 @@ class ParquetNoPushdownStringConcatSuite extends PushdownStringConcatSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheStringConcatSuite
-  extends TextStringConcatPushdownSuite {
+class TextNoCachePushdownStringConcatSuite
+  extends TextPushdownStringConcatSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheStringConcatSuite
-  extends ParquetStringConcatPushdownSuite {
+class ParquetNoCachePushdownStringConcatSuite
+  extends ParquetPushdownStringConcatSuite {
   override protected val s3_result_cache = "false"
 }

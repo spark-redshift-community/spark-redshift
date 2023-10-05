@@ -786,30 +786,30 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
   }
 }
 
-class TextSimpleBooleanPushdownSuite extends BooleanSimpleCorrectnessSuite {
+class TextBooleanSimpleCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
   override protected val s3format: String = "TEXT"
 }
 
-class ParquetSimpleBooleanPushdownSuite extends BooleanSimpleCorrectnessSuite {
+class ParquetBooleanSimpleCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
-class TextNoPushdownSimpleBooleanSuite extends BooleanSimpleCorrectnessSuite {
+class TextNoPushdownBooleanSimpleCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
   override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "TEXT"
 }
 
-class ParquetNoPushdownSimpleBooleanSuite extends BooleanSimpleCorrectnessSuite {
+class ParquetNoPushdownBooleanSimpleCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
 
 class TextPushdownNoCacheBooleanSimpleCorrectnessSuite
-  extends TextSimpleBooleanPushdownSuite {
+  extends TextBooleanSimpleCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }
 
 class ParquetPushdownNoCacheBooleanSimpleCorrectnessSuite
-extends ParquetSimpleBooleanPushdownSuite {
+extends ParquetBooleanSimpleCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }

@@ -1514,11 +1514,11 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
   }
 }
 
-class TextLogicalPlanOperatorPushdownSuite extends PushdownLogicalPlanOperatorSuite {
+class TextPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOperatorSuite {
   override protected val s3format: String = "TEXT"
 }
 
-class ParquetLogicalPlanOperatorPushdownSuite extends PushdownLogicalPlanOperatorSuite {
+class ParquetPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOperatorSuite {
   override protected val s3format: String = "PARQUET"
 }
 
@@ -1532,12 +1532,12 @@ class ParquetNoPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOpera
   override protected val s3format: String = "PARQUET"
 }
 
-class TextPushdownNoCacheLogicalPlanOperatorSuite
-  extends TextLogicalPlanOperatorPushdownSuite {
+class TextNoCachePushdownLogicalPlanOperatorSuite
+  extends TextPushdownLogicalPlanOperatorSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheLogicalPlanOperatorSuite
-  extends ParquetLogicalPlanOperatorPushdownSuite {
+class ParquetNoCachePushdownLogicalPlanOperatorSuite
+  extends ParquetPushdownLogicalPlanOperatorSuite {
   override protected val s3_result_cache = "false"
 }

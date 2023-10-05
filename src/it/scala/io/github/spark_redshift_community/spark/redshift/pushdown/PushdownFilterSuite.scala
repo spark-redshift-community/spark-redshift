@@ -2052,12 +2052,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class TextFilterPushdownSuite extends PushdownFilterSuite {
+class TextPushdownFilterSuite extends PushdownFilterSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetFilterPushdownSuite extends PushdownFilterSuite {
+class ParquetPushdownFilterSuite extends PushdownFilterSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -2072,12 +2072,12 @@ class ParquetNoPushdownFilterSuite extends PushdownFilterSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheFilterSuite
-  extends TextFilterPushdownSuite {
+class TextNoCachePushdownFilterSuite
+  extends TextPushdownFilterSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheFilterSuite
-  extends ParquetFilterPushdownSuite {
+class ParquetNoCachePushdownFilterSuite
+  extends ParquetPushdownFilterSuite {
   override protected val s3_result_cache = "false"
 }

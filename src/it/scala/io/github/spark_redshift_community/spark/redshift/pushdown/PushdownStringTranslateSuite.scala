@@ -98,12 +98,12 @@ abstract class PushdownStringTranslateSuite extends StringIntegrationPushdownSui
   }
 }
 
-class TextStringTranslatePushdownSuite extends PushdownStringTranslateSuite {
+class TextPushdownStringTranslateSuite extends PushdownStringTranslateSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetStringTranslatePushdownSuite extends PushdownStringTranslateSuite {
+class ParquetPushdownStringTranslateSuite extends PushdownStringTranslateSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -118,12 +118,12 @@ class ParquetNoPushdownStringTranslateSuite extends PushdownStringTranslateSuite
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheStringTranslateSuite
-  extends TextStringTranslatePushdownSuite {
+class TextNoCachePushdownStringTranslateSuite
+  extends TextPushdownStringTranslateSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheStringTranslateSuite
-  extends ParquetStringTranslatePushdownSuite {
+class ParquetNoCachePushdownStringTranslateSuite
+  extends ParquetPushdownStringTranslateSuite {
   override protected val s3_result_cache = "false"
 }

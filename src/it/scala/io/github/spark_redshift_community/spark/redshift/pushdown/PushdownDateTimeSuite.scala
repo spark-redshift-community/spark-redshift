@@ -448,12 +448,12 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class TextDateTimePushdownSuite extends PushdownDateTimeSuite {
+class TextPushdownDateTimeSuite extends PushdownDateTimeSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetDateTimePushdownSuite extends PushdownDateTimeSuite {
+class ParquetPushdownDateTimeSuite extends PushdownDateTimeSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -468,12 +468,12 @@ class ParquetNoPushdownDateTimeSuite extends PushdownDateTimeSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheDateTimeSuite
-  extends TextDateTimePushdownSuite {
+class TextNoCachePushdownDateTimeSuite
+  extends TextPushdownDateTimeSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheDateTimeSuite
-  extends ParquetDateTimePushdownSuite {
+class ParquetNoCachePushdownDateTimeSuite
+  extends ParquetPushdownDateTimeSuite {
   override protected val s3_result_cache = "false"
 }

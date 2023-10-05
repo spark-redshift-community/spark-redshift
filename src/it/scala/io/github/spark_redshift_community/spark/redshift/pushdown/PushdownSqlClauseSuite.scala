@@ -414,12 +414,12 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class TextSqlClausePushdownSuite extends PushdownSqlClauseSuite {
+class TextPushdownSqlClauseSuite extends PushdownSqlClauseSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetSqlClausePushdownSuite extends PushdownSqlClauseSuite {
+class ParquetPushdownSqlClauseSuite extends PushdownSqlClauseSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -429,17 +429,17 @@ class TextNoPushdownSqlClauseSuite extends PushdownSqlClauseSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class ParquetNoPushdownSqlFuncSuite extends PushdownSqlClauseSuite {
+class ParquetNoPushdownSqlClauseSuite extends PushdownSqlClauseSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheSqlClauseSuite
-  extends TextSqlClausePushdownSuite {
+class TextNoCachePushdownSqlClauseSuite
+  extends TextPushdownSqlClauseSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheSqlClauseSuite
-  extends ParquetSqlClausePushdownSuite {
+class ParquetNoCachePushdownSqlClauseSuite
+  extends ParquetPushdownSqlClauseSuite {
   override protected val s3_result_cache = "false"
 }

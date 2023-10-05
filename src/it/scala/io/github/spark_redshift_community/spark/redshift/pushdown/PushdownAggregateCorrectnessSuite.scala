@@ -853,17 +853,17 @@ class TextNoPushdownAggregateCorrectnessSuite extends TextPushdownAggregateCorre
   override protected val auto_pushdown: String = "false"
 }
 
-class ParquetNoPushdownDAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
+class ParquetNoPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheAggregateCorrectnessSuite
+class TextNoCachePushdownAggregateCorrectnessSuite
   extends TextPushdownAggregateCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheAggregateCorrectnessSuite
+class ParquetNoCachePushdownAggregateCorrectnessSuite
   extends ParquetPushdownAggregateCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }

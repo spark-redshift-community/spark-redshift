@@ -165,12 +165,12 @@ class ParquetNoPushdownStringLikeSuite extends PushdownStringLikeSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheStringLikeSuite
+class TextNoCachePushdownStringLikeSuite
   extends TextPushdownStringLikeSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheStringLikeSuite
+class ParquetNoCachePushdownStringLikeSuite
   extends ParquetPushdownStringLikeSuite {
   override protected val s3_result_cache = "false"
 }

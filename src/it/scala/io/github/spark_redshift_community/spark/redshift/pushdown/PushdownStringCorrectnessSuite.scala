@@ -216,12 +216,12 @@ class ParquetNoPushdownStringCorrectnessSuite extends PushdownStringCorrectnessS
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheStringCorrectnessSuite
+class TextNoCachePushdownStringCorrectnessSuite
   extends TextPushdownStringCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheStringCorrectnessSuite
+class ParquetNoCachePushdownStringCorrectnessSuite
   extends ParquetPushdownStringCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }

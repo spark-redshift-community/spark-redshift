@@ -329,7 +329,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class TextMathFuncPushdownSuite extends PushdownMathFuncSuite {
+class TextPushdownMathFuncSuite extends PushdownMathFuncSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 
@@ -365,7 +365,7 @@ class TextMathFuncPushdownSuite extends PushdownMathFuncSuite {
   }
 }
 
-class ParquetMathFuncPushdownSuite extends TextMathFuncPushdownSuite {
+class ParquetPushdownMathFuncSuite extends TextPushdownMathFuncSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -411,12 +411,12 @@ class ParquetNoPushdownMathFuncSuite extends TextNoPushdownMathFuncSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheMathFuncSuite
-  extends TextMathFuncPushdownSuite {
+class TextNoCachePushdownMathFuncSuite
+  extends TextPushdownMathFuncSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheMathFuncSuite
-  extends ParquetMathFuncPushdownSuite {
+class ParquetNoCachePushdownMathFuncSuite
+  extends ParquetPushdownMathFuncSuite {
   override protected val s3_result_cache = "false"
 }
