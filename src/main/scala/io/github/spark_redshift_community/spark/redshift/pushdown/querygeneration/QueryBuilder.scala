@@ -157,6 +157,18 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
               ProjectQuery(fields, subQuery, alias.next)
             case Aggregate(groups, fields, _) =>
               AggregateQuery(fields, groups, subQuery, alias.next)
+            // when a limit is applied to a projection of a sort query, the limit
+            // should be combined with the sort if the sort has no limit, combining
+            // the queries in this way can prevent a server error:
+            // `expression_tree_walker unrecognized node type: 407` when calling df.show
+            case Limit(limitExpr, Project(_, _: Sort))
+              if subQuery.asInstanceOf[ProjectQuery].child.asInstanceOf[SortLimitQuery].
+                limit.isEmpty =>
+              val originalProject = subQuery.asInstanceOf[ProjectQuery]
+              val originalSort = originalProject.child.asInstanceOf[SortLimitQuery]
+              val newSort = SortLimitQuery(
+                Some(limitExpr), originalSort.orderBy, originalSort.child, originalSort.alias)
+              ProjectQuery(originalProject.columns, newSort, originalProject.alias)
             case Limit(limitExpr, Sort(orderExpr, true, _)) =>
               SortLimitQuery(Some(limitExpr), orderExpr, subQuery, alias.next)
             case Limit(limitExpr, _) =>
