@@ -23,7 +23,7 @@ import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_USER_QUERY_GROUP_LABEL}
-import com.amazonaws.thirdparty.apache.http.client.methods.HttpRequestBase
+import org.apache.http.client.methods.HttpRequestBase
 import org.mockito.ArgumentMatchers.{anyString, endsWith}
 import org.mockito.Mockito
 import org.mockito.Mockito.{verify, when}

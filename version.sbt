@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-version in ThisBuild := "6.0.0"
+ThisBuild / version := "6.0.0-amzn-0"

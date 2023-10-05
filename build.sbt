@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import com.typesafe.sbt.pgp.PgpKeys
+import com.jsuereth.sbtpgp.PgpKeys
 import org.scalastyle.sbt.ScalastylePlugin.rawScalastyleSettings
 import sbt.Keys._
 import sbt._
@@ -49,7 +49,10 @@ def incompatibleSparkVersions(): FileFilter = {
   val versionArray = testSparkVersion.split("""\.""").map(Integer.parseInt)
   val major = versionArray(0)
   val minor = versionArray(1)
-  ("*_spark_*_*_*" -- s"*_spark_${major}_${minor}_*")
+
+  new FileFilter {
+    def accept(f: File) = f.getPath.containsSlice("_spark_") && !f.getPath.containsSlice(s"_spark_${major}_${minor}_")
+  }
 }
 
 def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
@@ -74,11 +77,11 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
       }
     Seq(
       credentials := Seq(
-        Credentials(fetchRealm, fetchUrl, userName, awsSharedRepoPass),
-        Credentials(publishRealm, publishUrl, userName, internalReleaseRepoPass)
+        Credentials(fetchRealm.replace("--", "/"), fetchUrl, userName, awsSharedRepoPass),
+        Credentials(publishRealm.replace("--", "/"), publishUrl, userName, internalReleaseRepoPass)
       ),
       resolvers := Seq(fetchRealm at fetchRepo),
-      externalResolvers := Seq(fetchRealm at fetchRepo),
+      externalResolvers := Resolver.combineDefaultResolvers(resolvers.value.toVector, mavenCentral = false),
       publishTo := Some (publishRealm at publishRepo),
       pomIncludeRepository := { (_: MavenRepository) => false },
       releaseProcess := Seq[ReleaseStep](publishArtifacts)
@@ -111,13 +114,12 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
 lazy val root = Project("spark-redshift", file("."))
   .enablePlugins(BuildInfoPlugin)
   .configs(IntegrationTest)
-  .settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
   .settings(Project.inConfig(IntegrationTest)(rawScalastyleSettings()): _*)
   .settings(Defaults.coreDefaultSettings: _*)
   .settings(Defaults.itSettings: _*)
   .settings(ciPipelineSettings(isCI))
   .settings(
-    excludeFilter in unmanagedSources := HiddenFileFilter || incompatibleSparkVersions(),
+    unmanagedSources / excludeFilter ~= { _ || HiddenFileFilter || incompatibleSparkVersions()},
     name := "spark-redshift",
     version += s"-spark_${releaseSparkVersion}",
     organization := "io.github.spark-redshift-community",
@@ -159,9 +161,9 @@ lazy val root = Project("spark-redshift", file("."))
     ScoverageKeys.coverageHighlighting := true,
     logBuffered := false,
     // Display full-length stacktraces from ScalaTest:
-    testOptions in Test += Tests.Argument("-oF"),
-    fork in Test := true,
-    javaOptions in Test ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M",
+    Test / testOptions += Tests.Argument("-oF"),
+    Test / fork := true,
+    Test / javaOptions ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M",
       "-Duser.timezone=GMT", "-Dscala.concurrent.context.maxThreads=10"),
 
     /********************
