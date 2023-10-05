@@ -26,7 +26,7 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
-val sparkVersion = "3.4.0"
+val sparkVersion = "3.4.1"
 val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
@@ -161,8 +161,8 @@ lazy val root = Project("spark-redshift", file("."))
     // Display full-length stacktraces from ScalaTest:
     testOptions in Test += Tests.Argument("-oF"),
     fork in Test := true,
-    javaOptions in Test ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M", "-Dscala.concurrent.context.maxThreads=10"),
-
+    javaOptions in Test ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M",
+      "-Duser.timezone=GMT", "-Dscala.concurrent.context.maxThreads=10"),
 
     /********************
      * Release settings *

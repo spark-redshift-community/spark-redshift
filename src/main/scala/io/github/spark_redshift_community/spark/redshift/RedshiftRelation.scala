@@ -30,7 +30,6 @@ import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftSQLSt
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 import org.apache.spark.sql.functions.{col, from_json}
 import org.apache.spark.sql.sources._
@@ -121,7 +120,8 @@ private[redshift] case class RedshiftRelation(
           val numRows = results.getLong(1)
           log.info("Number of rows is {}", numRows)
           val parallelism = sqlContext.getConf("spark.sql.shuffle.partitions", "200").toInt
-          val emptyRow = RowEncoder(StructType(Seq.empty)).createSerializer().apply(Row(Seq.empty))
+          val emptyRow = RowEncoderUtils.expressionEncoderForSchema(StructType(Seq.empty)).
+            createSerializer().apply(Row(Seq.empty))
           sqlContext.sparkContext
             .parallelize(1L to numRows, parallelism)
             .map(_ => emptyRow)

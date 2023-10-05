@@ -19,9 +19,8 @@ package io.github.spark_redshift_community.spark.redshift
 
 import java.sql.Timestamp
 import java.util.Locale
-
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types._
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -32,7 +31,8 @@ class ConversionsSuite extends AnyFunSuite {
 
   private def createRowConverter(schema: StructType) = {
     Conversions.createRowConverter(schema, Parameters.DEFAULT_PARAMETERS("csvnullstring"), false)
-      .andThen(RowEncoder(schema).resolveAndBind().createDeserializer())
+      .andThen(RowEncoderUtils.expressionEncoderForSchema(schema).
+        resolveAndBind().createDeserializer())
   }
 
   test("Data should be correctly converted") {

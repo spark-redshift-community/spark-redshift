@@ -38,7 +38,6 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.scalatest.exceptions.TestFailedException
 
 import java.util
@@ -261,7 +260,8 @@ class RedshiftSourceSuite
     val rdd = relation.asInstanceOf[PrunedFilteredScan]
       .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
       .mapPartitions { iter =>
-        val fromRow = RowEncoder(resultSchema).resolveAndBind().createDeserializer().apply(_)
+        val fromRow = RowEncoderUtils.expressionEncoderForSchema(resultSchema).resolveAndBind().
+          createDeserializer().apply(_)
         iter.asInstanceOf[Iterator[InternalRow]].map(fromRow)
       }
     val prunedExpectedValues = Array(
@@ -314,7 +314,8 @@ class RedshiftSourceSuite
     val rdd = relation.asInstanceOf[PrunedFilteredScan]
       .buildScan(Array("testbyte", "testbool"), filters)
       .mapPartitions { iter =>
-        val fromRow = RowEncoder(resultSchema).resolveAndBind().createDeserializer().apply(_)
+        val fromRow = RowEncoderUtils.expressionEncoderForSchema(resultSchema).resolveAndBind().
+          createDeserializer().apply(_)
         iter.asInstanceOf[Iterator[InternalRow]].map(fromRow)
       }
 
@@ -351,7 +352,8 @@ class RedshiftSourceSuite
     val rdd = relation.asInstanceOf[PrunedFilteredScan]
       .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
       .mapPartitions { iter =>
-        val fromRow = RowEncoder(resultSchema).resolveAndBind().createDeserializer().apply(_)
+        val fromRow = RowEncoderUtils.expressionEncoderForSchema(resultSchema).
+          resolveAndBind().createDeserializer().apply(_)
         iter.asInstanceOf[Iterator[InternalRow]].map(fromRow)
       }
     val prunedExpectedValues = Array(
@@ -395,7 +397,8 @@ class RedshiftSourceSuite
     val rdd = relation.asInstanceOf[PrunedFilteredScan]
       .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
       .mapPartitions { iter =>
-        val fromRow = RowEncoder(resultSchema).resolveAndBind().createDeserializer().apply(_)
+        val fromRow = RowEncoderUtils.expressionEncoderForSchema(resultSchema).
+          resolveAndBind().createDeserializer().apply(_)
         iter.asInstanceOf[Iterator[InternalRow]].map(fromRow)
       }
     val prunedExpectedValues = Array(
