@@ -17,10 +17,12 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
+import io.github.spark_redshift_community.spark.redshift.{RedshiftPushdownException, RedshiftRelation}
 import io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration.QueryBuilder
 import org.apache.spark.sql.{SparkSession, Strategy}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 
 /**
  * Clean up the plan, then try to generate a query from it for Redshift.
@@ -56,7 +58,18 @@ class RedshiftStrategy(session: SparkSession) extends Strategy {
     val useLazyMode = session.conf.get(LAZY_CONF_KEY, "true")
       .toBoolean
 
-    if (useLazyMode) {
+    val allRedshiftUrls = plan.map {
+      case LogicalRelation(relation: RedshiftRelation, _, _, _) =>
+        relation.params.jdbcUrl
+      case _ => ""
+    }.filter(_.nonEmpty)
+
+    // cannot produce a valid plan if multiple clusters are needed
+    if (!allRedshiftUrls.forall(_ == allRedshiftUrls.head)) {
+      logWarning("Unable to pushdown query across multiple clusters")
+      None
+    }
+    else if (useLazyMode) {
       logInfo("Using lazy mode for redshift query push down")
       QueryBuilder.getQueryFromPlan(plan).map {
         case (output, query, relation) =>
