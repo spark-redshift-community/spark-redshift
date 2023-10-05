@@ -215,7 +215,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
       (0.9999, "DECIMAL(15,4)", Seq(Row(1.0001000050001667))),
       (0.99999, "DECIMAL(16,5)", Seq(Row(1.00001000005)))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val add_on = test_case._1
       val cast_type = test_case._2
       val expected_res = test_case._3
@@ -345,7 +345,7 @@ class TextMathFuncPushdownSuite extends PushdownMathFuncSuite {
       (100, Seq(Row(7.307059979368067E43))),
       (1000, Seq(Row(Double.PositiveInfinity)))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val add_on = test_case._1
       val expected_res = test_case._2
       checkAnswer(
@@ -386,7 +386,7 @@ class TextNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
       (100, Seq(Row(7.307059979368068E43))),
       (1000, Seq(Row(Double.PositiveInfinity)))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val add_on = test_case._1
       val expected_res = test_case._2
       checkAnswer(

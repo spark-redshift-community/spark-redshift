@@ -64,7 +64,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", "(1239012341823719, 1)", 4, "(1239012341823719, 1)"),
       ("testshort", "(23, 24)", 2, "(23, 24)")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -149,7 +149,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("teststring", 1),
       ("testtimestamp", 2)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val result_size = test_case._2
       checkAnswer(
@@ -178,7 +178,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("teststring", 4),
       ("testtimestamp", 3)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val result_size = test_case._2
       checkAnswer(
@@ -204,7 +204,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 4, ""),
       ("testshort", 23, 1, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -227,7 +227,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
     val input = List(
       ("testbool", true, 1),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -353,7 +353,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 0, ""),
       ("testshort", 23, 2, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -376,7 +376,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
     val input = List(
       ("testbool", true, 2),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -450,7 +450,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 4, ""),
       ("testshort", 23, 2, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -505,7 +505,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 4, ""),
       ("testshort", 23, 2, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -561,7 +561,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 0, ""),
       ("testshort", 23, 1, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -616,7 +616,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 0, ""),
       ("testshort", 23, 1, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3

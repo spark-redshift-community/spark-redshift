@@ -32,6 +32,7 @@ import java.sql.Timestamp
 import java.util.{Properties, UUID}
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.util.control.NonFatal
 
 
@@ -62,7 +63,7 @@ private[redshift] object Utils {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  var lastBuildStmt: String = _
+  val lastBuildStmt: mutable.Map[String, String] = mutable.Map[String, String]()
 
   def classForName(className: String): Class[_] = {
     val classLoader =

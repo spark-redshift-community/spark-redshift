@@ -44,7 +44,7 @@ abstract class StringSelectCorrectnessSuite extends StringIntegrationPushdownSui
       (9, "testvarstring", "  樂Multi趣  ")
     )
 
-    paramTuples.foreach(paramTuple => {
+    paramTuples.par.foreach(paramTuple => {
       val id = paramTuple._1
       val column = paramTuple._2
       val result = paramTuple._3

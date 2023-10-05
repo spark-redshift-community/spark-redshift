@@ -30,492 +30,611 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
 
   // define a test for count(*)
   test("Test COUNT(*) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount00)
-    doTest(sqlContext, testCount01)
+    val cases = Seq(testCount00, testCount01)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for count(short)
   test("Test COUNT(short) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount10)
-    doTest(sqlContext, testCount10_2)
-    doTest(sqlContext, testCount11)
-    doTest(sqlContext, testCount12)
-    doTest(sqlContext, testCount13)
-    doTest(sqlContext, testCount14)
-    doTest(sqlContext, testCount15)
-    doTest(sqlContext, testCount16)
-    // group by
-    doTest(sqlContext, testCount17)
-    doTest(sqlContext, testCount17_2)
+    val cases = Seq(
+      testCount10,
+      testCount10_2,
+      testCount11,
+      testCount12,
+      testCount13,
+      testCount14,
+      testCount15,
+      testCount16,
+      // group by
+      testCount17,
+      testCount17_2
+    )
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for count(int)
   test("Test COUNT(int) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount20)
-    doTest(sqlContext, testCount20_2)
-    doTest(sqlContext, testCount21)
-    doTest(sqlContext, testCount21_2)
-    doTest(sqlContext, testCount22)
-    doTest(sqlContext, testCount22_2)
-    doTest(sqlContext, testCount23)
-    doTest(sqlContext, testCount23_2)
-    doTest(sqlContext, testCount24)
-    doTest(sqlContext, testCount25)
-    doTest(sqlContext, testCount26)
+    val cases = Seq(
+    testCount20,
+    testCount20_2,
+    testCount21,
+    testCount21_2,
+    testCount22,
+    testCount22_2,
+    testCount23,
+    testCount23_2,
+    testCount24,
+    testCount25,
+    testCount26,
     // group by
-    doTest(sqlContext, testCount27)
-    doTest(sqlContext, testCount27_2)
+    testCount27,
+    testCount27_2)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for count(long)
   test("Test COUNT(long) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount30)
-    doTest(sqlContext, testCount31)
-    doTest(sqlContext, testCount32)
-    doTest(sqlContext, testCount33)
-    doTest(sqlContext, testCount34)
-    doTest(sqlContext, testCount35)
-    doTest(sqlContext, testCount36)
+    val cases = Seq(
+    testCount30,
+    testCount31,
+    testCount32,
+    testCount33,
+    testCount34,
+    testCount35,
+    testCount36,
     // group by
-    doTest(sqlContext, testCount37)
-    doTest(sqlContext, testCount37_2)
+    testCount37,
+    testCount37_2)
+
+    cases.par.foreach {doTest(sqlContext, _)}
   }
 
   // define a test for count(decimal)
   test("Test COUNT(decimal) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount40)
-    doTest(sqlContext, testCount41)
-    doTest(sqlContext, testCount42)
-    doTest(sqlContext, testCount43)
-    doTest(sqlContext, testCount44)
-    doTest(sqlContext, testCount45)
-    doTest(sqlContext, testCount46)
-    doTest(sqlContext, testCount47)
-    doTest(sqlContext, testCount48)
+    val cases = Seq(
+    testCount40,
+    testCount41,
+    testCount42,
+    testCount43,
+    testCount44,
+    testCount45,
+    testCount46,
+    testCount47,
+    testCount48,
     // group by
-    doTest(sqlContext, testCount49)
+    testCount49)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for count(float)
   test("Test COUNT(float) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount50)
-    doTest(sqlContext, testCount51)
-    doTest(sqlContext, testCount52)
-    doTest(sqlContext, testCount53)
-    doTest(sqlContext, testCount54)
-    doTest(sqlContext, testCount55)
-    doTest(sqlContext, testCount56)
-    doTest(sqlContext, testCount57)
+    val cases = Seq(
+    testCount50,
+    testCount51,
+    testCount52,
+    testCount53,
+    testCount54,
+    testCount55,
+    testCount56,
+    testCount57,
     // group by
-    doTest(sqlContext, testCount58)
-    doTest(sqlContext, testCount59)
+    testCount58,
+    testCount59)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for count(boolean)
   test("Test COUNT(boolean) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount60)
-    doTest(sqlContext, testCount61)
-    doTest(sqlContext, testCount62)
+    val cases = Seq(
+     testCount60,
+     testCount61,
+     testCount62,
     // group by
-    doTest(sqlContext, testCount63)
-    doTest(sqlContext, testCount63_2)
-    doTest(sqlContext, testCount64)
-    doTest(sqlContext, testCount64_2)
+    testCount63,
+    testCount63_2,
+    testCount64,
+    testCount64_2)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for count(char)
   test("Test COUNT(char) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount70)
-    doTest(sqlContext, testCount71)
-    doTest(sqlContext, testCount72)
-    doTest(sqlContext, testCount73)
+    val cases = Seq(
+    testCount70,
+    testCount71,
+    testCount72,
+    testCount73)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for count(varchar)
   test("Test COUNT(varchar) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount80)
-    doTest(sqlContext, testCount81)
-    doTest(sqlContext, testCount82)
-    doTest(sqlContext, testCount83)
+    val cases = Seq(
+    testCount80,
+    testCount81,
+    testCount82,
+    testCount83,
     // group by
-    doTest(sqlContext, testCount84)
+    testCount84)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for count(date)
   test("Test COUNT(date) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount90)
-    doTest(sqlContext, testCount91)
-    doTest(sqlContext, testCount92)
-    doTest(sqlContext, testCount93)
-    doTest(sqlContext, testCount94)
-    doTest(sqlContext, testCount95)
-    doTest(sqlContext, testCount96)
+    val cases = Seq(
+    testCount90,
+    testCount91,
+    testCount92,
+    testCount93,
+    testCount94,
+    testCount95,
+    testCount96,
     // group by
-    doTest(sqlContext, testCount97)
+    testCount97)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for count(timestamp)
   test("Test COUNT(timestamp) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount100)
-    doTest(sqlContext, testCount101)
-    doTest(sqlContext, testCount102)
-    doTest(sqlContext, testCount103)
-    doTest(sqlContext, testCount104)
-    doTest(sqlContext, testCount105)
-    doTest(sqlContext, testCount106)
+    val cases = Seq(
+    testCount100,
+    testCount101,
+    testCount102,
+    testCount103,
+    testCount104,
+    testCount105,
+    testCount106,
     // group by
-    doTest(sqlContext, testCount107)
+     testCount107)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for count(timestamptz)
   test("Test COUNT(timestamptz) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testCount110)
-    doTest(sqlContext, testCount111)
-    doTest(sqlContext, testCount112)
-    doTest(sqlContext, testCount113)
-    doTest(sqlContext, testCount114)
-    doTest(sqlContext, testCount115)
-    doTest(sqlContext, testCount116)
+    val cases = Seq(
+    testCount110,
+    testCount111,
+    testCount112,
+    testCount113,
+    testCount114,
+    testCount115,
+    testCount116)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for max(short)
   test("Test MAX(short) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMax00)
-    doTest(sqlContext, testMax01)
-    doTest(sqlContext, testMax02)
-    doTest(sqlContext, testMax03)
-    doTest(sqlContext, testMax04)
-    doTest(sqlContext, testMax05)
-    doTest(sqlContext, testMax06)
+    val cases = Seq(
+    testMax00,
+    testMax01,
+    testMax02,
+    testMax03,
+    testMax04,
+    testMax05,
+    testMax06,
     // group by
-    doTest(sqlContext, testMax07)
+    testMax07)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for max(int)
   test("Test MAX(int) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMax10)
-    doTest(sqlContext, testMax11)
-    doTest(sqlContext, testMax12)
-    doTest(sqlContext, testMax13)
-    doTest(sqlContext, testMax14)
-    doTest(sqlContext, testMax15)
-    doTest(sqlContext, testMax16)
+    val cases = Seq(
+    testMax10,
+    testMax11,
+    testMax12,
+    testMax13,
+    testMax14,
+    testMax15,
+    testMax16,
     // group by
-    doTest(sqlContext, testMax17)
+    testMax17)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for max(long)
   test("Test MAX(long) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMax20)
-    doTest(sqlContext, testMax21)
-    doTest(sqlContext, testMax22)
-    doTest(sqlContext, testMax23)
-    doTest(sqlContext, testMax24)
-    doTest(sqlContext, testMax25)
-    doTest(sqlContext, testMax26)
+    val cases = Seq(
+    testMax20,
+    testMax21,
+    testMax22,
+    testMax23,
+    testMax24,
+    testMax25,
+    testMax26,
     // group by
-    doTest(sqlContext, testMax27)
+    testMax27)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for max(decimal)
   test("Test MAX(decimal) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMax30)
-    doTest(sqlContext, testMax31)
-    doTest(sqlContext, testMax32)
-    doTest(sqlContext, testMax33)
-    doTest(sqlContext, testMax34)
-    doTest(sqlContext, testMax35)
-    doTest(sqlContext, testMax36)
-    doTest(sqlContext, testMax37)
-    doTest(sqlContext, testMax38)
+    val cases = Seq(
+    testMax30,
+    testMax31,
+    testMax32,
+    testMax33,
+    testMax34,
+    testMax35,
+    testMax36,
+    testMax37,
+    testMax38,
     // group by
-    doTest(sqlContext, testMax39)
+    testMax39)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for max(float)
   test("Test MAX(float) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMax40)
-    doTest(sqlContext, testMax41)
-    doTest(sqlContext, testMax42)
-    doTest(sqlContext, testMax43)
-    doTest(sqlContext, testMax44)
-    doTest(sqlContext, testMax45)
-    doTest(sqlContext, testMax46)
-    doTest(sqlContext, testMax47)
+    val cases = Seq(
+    testMax40,
+    testMax41,
+    testMax42,
+    testMax43,
+    testMax44,
+    testMax45,
+    testMax46,
+    testMax47,
     // group by
-    doTest(sqlContext, testMax48)
-    doTest(sqlContext, testMax49)
+    testMax48,
+    testMax49)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for max(boolean)
   // function max(boolean) does not exist in redshift
   test("Test MAX(boolean) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMax50_unsupported)
-    doTest(sqlContext, testMax51_unsupported)
-    doTest(sqlContext, testMax52_unsupported)
+    val cases = Seq(
+    testMax50_unsupported,
+    testMax51_unsupported,
+    testMax52_unsupported,
     // group by
-    doTest(sqlContext, testMax53)
+    testMax53)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for max(varchar)
   test("Test MAX(varchar) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMax70)
-    doTest(sqlContext, testMax71)
-    doTest(sqlContext, testMax72)
-    doTest(sqlContext, testMax73)
+    val cases = Seq(
+    testMax70,
+    testMax71,
+    testMax72,
+    testMax73,
     // group by
-    doTest(sqlContext, testMax74)
+    testMax74)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for max(date)
   test("Test MAX(date) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMax80)
-    doTest(sqlContext, testMax81)
-    doTest(sqlContext, testMax82)
-    doTest(sqlContext, testMax83)
-    doTest(sqlContext, testMax84)
-    doTest(sqlContext, testMax85)
-    doTest(sqlContext, testMax86)
+    val cases = Seq(
+    testMax80,
+    testMax81,
+    testMax82,
+    testMax83,
+    testMax84,
+    testMax85,
+    testMax86,
     // group by
-    doTest(sqlContext, testMax87)
+    testMax87)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for max(timestamp)
   test("Test MAX(timestamp) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMax90)
-    doTest(sqlContext, testMax91)
-    doTest(sqlContext, testMax92)
-    doTest(sqlContext, testMax93)
-    doTest(sqlContext, testMax94)
-    doTest(sqlContext, testMax95)
-    doTest(sqlContext, testMax96)
+    val cases = Seq(
+    testMax90,
+    testMax91,
+    testMax92,
+    testMax93,
+    testMax94,
+    testMax95,
+    testMax96,
     // group by
-    doTest(sqlContext, testMax97)
+    testMax97)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for min(short)
   test("Test MIN(short) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMin00)
-    doTest(sqlContext, testMin01)
-    doTest(sqlContext, testMin02)
-    doTest(sqlContext, testMin03)
-    doTest(sqlContext, testMin04)
-    doTest(sqlContext, testMin05)
-    doTest(sqlContext, testMin06)
+    val cases = Seq(
+    testMin00,
+    testMin01,
+    testMin02,
+    testMin03,
+    testMin04,
+    testMin05,
+    testMin06,
     // group by
-    doTest(sqlContext, testMin07)
+    testMin07)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for min(int)
   test("Test MIN(int) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMin10)
-    doTest(sqlContext, testMin11)
-    doTest(sqlContext, testMin12)
-    doTest(sqlContext, testMin13)
-    doTest(sqlContext, testMin14)
-    doTest(sqlContext, testMin15)
-    doTest(sqlContext, testMin16)
+    val cases = Seq(
+    testMin10,
+    testMin11,
+    testMin12,
+    testMin13,
+    testMin14,
+    testMin15,
+    testMin16,
     // group by
-    doTest(sqlContext, testMin17)
+    testMin17)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for min(long)
   test("Test MIN(long) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMin20)
-    doTest(sqlContext, testMin21)
-    doTest(sqlContext, testMin22)
-    doTest(sqlContext, testMin23)
-    doTest(sqlContext, testMin24)
-    doTest(sqlContext, testMin25)
-    doTest(sqlContext, testMin26)
+    val cases = Seq(
+    testMin20,
+    testMin21,
+    testMin22,
+    testMin23,
+    testMin24,
+    testMin25,
+    testMin26,
     // group by
-    doTest(sqlContext, testMin27)
+    testMin27)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for min(decimal)
   test("Test MIN(decimal) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMin30)
-    doTest(sqlContext, testMin31)
-    doTest(sqlContext, testMin32)
-    doTest(sqlContext, testMin33)
-    doTest(sqlContext, testMin34)
-    doTest(sqlContext, testMin35)
-    doTest(sqlContext, testMin36)
-    doTest(sqlContext, testMin37)
-    doTest(sqlContext, testMin38)
+    val cases = Seq(
+    testMin30,
+    testMin31,
+    testMin32,
+    testMin33,
+    testMin34,
+    testMin35,
+    testMin36,
+    testMin37,
+    testMin38,
     // group by
-    doTest(sqlContext, testMin39)
+    testMin39)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for min(float)
   test("Test MIN(float) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMin40)
-    doTest(sqlContext, testMin41)
-    doTest(sqlContext, testMin42)
-    doTest(sqlContext, testMin43)
-    doTest(sqlContext, testMin44)
-    doTest(sqlContext, testMin45)
-    doTest(sqlContext, testMin46)
-    doTest(sqlContext, testMin47)
+    val cases = Seq(
+    testMin40,
+    testMin41,
+    testMin42,
+    testMin43,
+    testMin44,
+    testMin45,
+    testMin46,
+    testMin47,
     // group by
-    doTest(sqlContext, testMin48)
-    doTest(sqlContext, testMin49)
+    testMin48,
+    testMin49)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for min(boolean)
   // function min(boolean) does not exist in redshift
   test("Test MIN(boolean) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMin50_unsupported)
-    doTest(sqlContext, testMin51_unsupported)
-    doTest(sqlContext, testMin52_unsupported)
+    val cases = Seq(
+    testMin50_unsupported,
+    testMin51_unsupported,
+    testMin52_unsupported,
     // group by
-    doTest(sqlContext, testMin53)
+    testMin53)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for min(varchar)
   test("Test MIN(varchar) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMin70)
-    doTest(sqlContext, testMin71)
-    doTest(sqlContext, testMin72)
-    doTest(sqlContext, testMin73)
+    val cases = Seq(
+    testMin70,
+    testMin71,
+    testMin72,
+    testMin73,
     // group by
-    doTest(sqlContext, testMin74)
+    testMin74)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for min(date)
   test("Test MIN(date) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMin80)
-    doTest(sqlContext, testMin81)
-    doTest(sqlContext, testMin82)
-    doTest(sqlContext, testMin83)
-    doTest(sqlContext, testMin84)
-    doTest(sqlContext, testMin85)
-    doTest(sqlContext, testMin86)
+    val cases = Seq(
+    testMin80,
+    testMin81,
+    testMin82,
+    testMin83,
+    testMin84,
+    testMin85,
+    testMin86,
     // group by
-    doTest(sqlContext, testMin87)
+    testMin87)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for min(timestamp)
   test("Test MIN(timestamp) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMin90)
-    doTest(sqlContext, testMin91)
-    doTest(sqlContext, testMin92)
-    doTest(sqlContext, testMin93)
-    doTest(sqlContext, testMin94)
-    doTest(sqlContext, testMin95)
-    doTest(sqlContext, testMin96)
+    val cases = Seq(
+    testMin90,
+    testMin91,
+    testMin92,
+    testMin93,
+    testMin94,
+    testMin95,
+    testMin96,
     // group by
-    doTest(sqlContext, testMin97)
+    testMin97)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for avg(short)
   test("Test AVG(short) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testAvg00)
-    doTest(sqlContext, testAvg01)
-    doTest(sqlContext, testAvg02)
-    doTest(sqlContext, testAvg03)
-    doTest(sqlContext, testAvg04)
-    doTest(sqlContext, testAvg05)
-    doTest(sqlContext, testAvg06)
+    val cases = Seq(
+    testAvg00,
+    testAvg01,
+    testAvg02,
+    testAvg03,
+    testAvg04,
+    testAvg05,
+    testAvg06,
     // group by
-    doTest(sqlContext, testAvg07)
+    testAvg07)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for avg(int)
   test("Test AVG(int) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testAvg10)
-    doTest(sqlContext, testAvg11)
-    doTest(sqlContext, testAvg12)
-    doTest(sqlContext, testAvg13)
-    doTest(sqlContext, testAvg14)
-    doTest(sqlContext, testAvg15)
-    doTest(sqlContext, testAvg16)
+    val cases = Seq(
+    testAvg10,
+    testAvg11,
+    testAvg12,
+    testAvg13,
+    testAvg14,
+    testAvg15,
+    testAvg16,
     // group by
-    doTest(sqlContext, testAvg17)
-    doTest(sqlContext, testAvg18)
+    testAvg17,
+    testAvg18)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for avg(long)
   test("Test AVG(long) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testAvg20)
-    doTest(sqlContext, testAvg21)
-    doTest(sqlContext, testAvg22)
-    doTest(sqlContext, testAvg23)
-    doTest(sqlContext, testAvg24)
-    doTest(sqlContext, testAvg25)
-    doTest(sqlContext, testAvg26)
+    val cases = Seq(
+    testAvg20,
+    testAvg21,
+    testAvg22,
+    testAvg23,
+    testAvg24,
+    testAvg25,
+    testAvg26,
     // group by
-    doTest(sqlContext, testAvg27)
+    testAvg27)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for avg(decimal)
   test("Test AVG(decimal) aggregation statements against correctness dataset", PreloadTest) {
-    // doTest(sqlContext, testAvg30)
-    doTest(sqlContext, testAvg31)
-    doTest(sqlContext, testAvg32)
-    doTest(sqlContext, testAvg33)
-    doTest(sqlContext, testAvg34)
+    val cases = Seq(
+    // testAvg30,
+    testAvg31,
+    testAvg32,
+    testAvg33,
+    testAvg34,
     // group by
-    doTest(sqlContext, testAvg35)
+    testAvg35)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for avg(float)
   test("Test AVG(float) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testAvg40)
-    doTest(sqlContext, testAvg41)
-    doTest(sqlContext, testAvg42)
-    doTest(sqlContext, testAvg43)
-    doTest(sqlContext, testAvg44)
-    doTest(sqlContext, testAvg45)
-    doTest(sqlContext, testAvg46)
-    doTest(sqlContext, testAvg47)
+    val cases = Seq(
+    testAvg40,
+    testAvg41,
+    testAvg42,
+    testAvg43,
+    testAvg44,
+    testAvg45,
+    testAvg46,
+    testAvg47,
     // group by
-    doTest(sqlContext, testAvg48)
-    doTest(sqlContext, testAvg49)
+    testAvg48,
+    testAvg49)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for sum(short)
   test("Test SUM(short) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testSum00)
-    doTest(sqlContext, testSum01)
-    doTest(sqlContext, testSum02)
-    doTest(sqlContext, testSum03)
+    val cases = Seq(
+    testSum00,
+    testSum01,
+    testSum02,
+    testSum03)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for sum(int)
   test("Test SUM(int) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testSum10)
-    doTest(sqlContext, testSum11)
-    doTest(sqlContext, testSum12)
-    doTest(sqlContext, testSum13)
+    val cases = Seq(
+    testSum10,
+    testSum11,
+    testSum12,
+    testSum13)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for sum(long)
   test("Test SUM(long) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testSum20)
-    doTest(sqlContext, testSum21)
-    doTest(sqlContext, testSum22)
-    doTest(sqlContext, testSum23)
+    val cases = Seq(
+    testSum20,
+    testSum21,
+    testSum22,
+    testSum23)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for sum(decimal)
   test("Test SUM(decimal) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testSum30)
-    doTest(sqlContext, testSum31)
-    doTest(sqlContext, testSum32)
-    doTest(sqlContext, testSum33)
+    val cases = Seq(
+    testSum30,
+    testSum31,
+    testSum32,
+    testSum33)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for sum(float)
   test("Test SUM(float) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testSum40)
-    doTest(sqlContext, testSum41)
-    doTest(sqlContext, testSum42)
-    doTest(sqlContext, testSum43)
-    doTest(sqlContext, testSum44)
-    doTest(sqlContext, testSum45)
-    doTest(sqlContext, testSum46)
-    doTest(sqlContext, testSum47)
+    val cases = Seq(
+    testSum40,
+    testSum41,
+    testSum42,
+    testSum43,
+    testSum44,
+    testSum45,
+    testSum46,
+    testSum47)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // Timestamptz column is not handled correctly in parquet format as time zone information is not
@@ -570,7 +689,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
       ("col_timestamptz_zstd", Seq(Row(Timestamp.from(
         ZonedDateTime.parse("2018-10-15 19:50:18 UTC", formatter).toInstant))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -637,7 +756,7 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
       ("col_timestamptz_zstd", Seq(Row(Timestamp.from(
         ZonedDateTime.parse("1970-01-01 07:08:06 UTC", formatter).toInstant))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -699,22 +818,28 @@ class TextPushdownAggregateCorrectnessSuite extends PushdownAggregateCorrectness
 
   // define a test for max(char)
   test("Test MAX(char) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMax60)
-    doTest(sqlContext, testMax61)
-    doTest(sqlContext, testMax62)
-    doTest(sqlContext, testMax63)
+    val cases = Seq(
+    testMax60,
+    testMax61,
+    testMax62,
+    testMax63,
     // group by
-    doTest(sqlContext, testMax64)
+    testMax64)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // define a test for min(char)
   test("Test MIN(char) aggregation statements against correctness dataset", PreloadTest) {
-    doTest(sqlContext, testMin60)
-    doTest(sqlContext, testMin61)
-    doTest(sqlContext, testMin62)
-    doTest(sqlContext, testMin63)
+    val cases = Seq(
+    testMin60,
+    testMin61,
+    testMin62,
+    testMin63,
     // group by
-    doTest(sqlContext, testMin64)
+    testMin64)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 }
 

@@ -74,7 +74,7 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       ("testtimestamp", "2015-07-01 00:00:00.001")
     )
 
-    paramTuples.foreach(paramTuple => {
+    paramTuples.par.foreach(paramTuple => {
       val column = paramTuple._1
       val result = paramTuple._2
 

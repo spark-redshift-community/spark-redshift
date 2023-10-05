@@ -38,7 +38,7 @@ abstract class PushdownStringTranslateSuite extends StringIntegrationPushdownSui
       (8, "/%o ", "_!\n", "_!F\n\n!_")
     )
 
-    columns.foreach(column => {
+    columns.par.foreach(column => {
       paramTuples.foreach(paramTuple => {
         val id = paramTuple._1
         val from = paramTuple._2
@@ -73,7 +73,7 @@ abstract class PushdownStringTranslateSuite extends StringIntegrationPushdownSui
       (9, "樂趣 ", "趣樂", "趣Multi樂")
     )
 
-    columns.foreach(column => {
+    columns.par.foreach(column => {
       paramTuples.foreach(paramTuple => {
         val id = paramTuple._1
         val from = paramTuple._2

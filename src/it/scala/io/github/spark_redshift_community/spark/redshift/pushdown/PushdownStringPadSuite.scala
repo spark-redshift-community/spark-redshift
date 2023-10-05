@@ -31,7 +31,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
       (1, -5, "")
     )
 
-    columns.foreach(column => {
+    columns.par.foreach(column => {
       paramTuples.foreach(paramTuple => {
         val id = paramTuple._1
         val length = paramTuple._2
@@ -68,7 +68,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
       (1, 19, "樂A趣", "樂A趣樂A趣樂AHello World"),
       (5, 9, "ABC", "ABCABCABC")
     )
-    columns.foreach(column => {
+    columns.par.foreach(column => {
       paramTuples.foreach(paramTuple => {
         val id = paramTuple._1
         val length = paramTuple._2
@@ -102,7 +102,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
       (1, -5, "")
     )
 
-    columns.foreach(column => {
+    columns.par.foreach(column => {
       paramTuples.foreach(paramTuple => {
         val id = paramTuple._1
         val length = paramTuple._2
@@ -139,7 +139,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
       (1, 19, "樂A趣", "Hello World樂A趣樂A趣樂A"),
       (5, 9, "ABC", "ABCABCABC")
     )
-    columns.foreach(column => {
+    columns.par.foreach(column => {
       paramTuples.foreach(paramTuple => {
         val id = paramTuple._1
         val length = paramTuple._2

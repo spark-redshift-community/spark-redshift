@@ -95,7 +95,8 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
     // validate executed statement in Redshift as it will be a simple select * statement.
     if (auto_pushdown.toBoolean) {
       // Make sure there is at least one match.
-      val lastBuildStmt = Utils.lastBuildStmt.replaceAll("\\s", "")
+      val threadName = Thread.currentThread.getName
+      val lastBuildStmt = Utils.lastBuildStmt(threadName).replaceAll("\\s", "")
       assert(expectedAnswers.exists(_.replaceAll("\\s", "") == lastBuildStmt),
         s"Actual sql: ${Utils.lastBuildStmt}")
     }

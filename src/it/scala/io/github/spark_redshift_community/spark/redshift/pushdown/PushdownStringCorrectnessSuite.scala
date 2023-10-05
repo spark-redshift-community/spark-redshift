@@ -23,158 +23,176 @@ abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectness
                                               with StringUpperCorrectnessSuite {
   // Define trim tests
   test("Test Trim statements against correctness dataset") {
-    doTest(sqlContext, testTrim00)
-    doTest(sqlContext, testTrim01)
-    doTest(sqlContext, testTrim02)
-    doTest(sqlContext, testTrim03)
-    doTest(sqlContext, testTrim04)
-    doTest(sqlContext, testTrim05)
-    doTest(sqlContext, testTrim06)
-    doTest(sqlContext, testTrim07)
-    doTest(sqlContext, testTrim08)
-    doTest(sqlContext, testTrim09)
-    doTest(sqlContext, testTrim10)
-    doTest(sqlContext, testTrim11)
-    doTest(sqlContext, testTrim12)
-    doTest(sqlContext, testTrim13)
-    doTest(sqlContext, testTrim14)
-    doTest(sqlContext, testTrim15)
-    doTest(sqlContext, testTrim16)
-    doTest(sqlContext, testTrim17)
-    doTest(sqlContext, testTrim18)
-    doTest(sqlContext, testTrim19)
-    doTest(sqlContext, testTrim20)
-    doTest(sqlContext, testTrim21)
-    doTest(sqlContext, testTrim22)
-    doTest(sqlContext, testTrim23)
-    doTest(sqlContext, testTrim24)
-    doTest(sqlContext, testTrim25)
-    doTest(sqlContext, testTrim26)
-    doTest(sqlContext, testTrim27)
-    doTest(sqlContext, testTrim28)
-    doTest(sqlContext, testTrim29)
-    doTest(sqlContext, testTrim30)
-    doTest(sqlContext, testTrim31)
-    doTest(sqlContext, testTrim32)
-    doTest(sqlContext, testTrim33)
-    doTest(sqlContext, testTrim34)
-    doTest(sqlContext, testTrim35)
-    doTest(sqlContext, testTrim36)
+    val cases = Seq(
+    testTrim00,
+    testTrim01,
+    testTrim02,
+    testTrim03,
+    testTrim04,
+    testTrim05,
+    testTrim06,
+    testTrim07,
+    testTrim08,
+    testTrim09,
+    testTrim10,
+    testTrim11,
+    testTrim12,
+    testTrim13,
+    testTrim14,
+    testTrim15,
+    testTrim16,
+    testTrim17,
+    testTrim18,
+    testTrim19,
+    testTrim20,
+    testTrim21,
+    testTrim22,
+    testTrim23,
+    testTrim24,
+    testTrim25,
+    testTrim26,
+    testTrim27,
+    testTrim28,
+    testTrim29,
+    testTrim30,
+    testTrim31,
+    testTrim32,
+    testTrim33,
+    testTrim34,
+    testTrim35,
+    testTrim36)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // Define length tests
   test("Test Length statements against correctness dataset") {
-    doTest(sqlContext, testLength00)
-    doTest(sqlContext, testLength01)
-    doTest(sqlContext, testLength02)
-    doTest(sqlContext, testLength03)
-    doTest(sqlContext, testLength04)
-    doTest(sqlContext, testLength05)
-    doTest(sqlContext, testLength06)
-    doTest(sqlContext, testLength07)
-    doTest(sqlContext, testLength08)
-    doTest(sqlContext, testLength09)
-    doTest(sqlContext, testLength10)
-    doTest(sqlContext, testLength11)
-    doTest(sqlContext, testLength12)
-    doTest(sqlContext, testLength13)
+    val cases = Seq(
+    testLength00,
+    testLength01,
+    testLength02,
+    testLength03,
+    testLength04,
+    testLength05,
+    testLength06,
+    testLength07,
+    testLength08,
+    testLength09,
+    testLength10,
+    testLength11,
+    testLength12,
+    testLength13)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // Define ascii tests
   test("Test Ascii statements against correctness dataset") {
-    doTest(sqlContext, testAscii00)
-    doTest(sqlContext, testAscii01)
-    doTest(sqlContext, testAscii02)
-    doTest(sqlContext, testAscii03)
-    doTest(sqlContext, testAscii04)
-    doTest(sqlContext, testAscii05)
-    doTest(sqlContext, testAscii06)
-    doTest(sqlContext, testAscii07)
-    doTest(sqlContext, testAscii08)
-    doTest(sqlContext, testAscii09)
+    val cases = Seq(
+    testAscii00,
+    testAscii01,
+    testAscii02,
+    testAscii03,
+    testAscii04,
+    testAscii05,
+    testAscii06,
+    testAscii07,
+    testAscii08,
+    testAscii09)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // Define upper tests
   test("Test Upper statements against correctness dataset") {
-    doTest(sqlContext, testUpper00)
-    doTest(sqlContext, testUpper01)
-    doTest(sqlContext, testUpper02)
-    doTest(sqlContext, testUpper03)
-    doTest(sqlContext, testUpper04)
-    doTest(sqlContext, testUpper05)
-    doTest(sqlContext, testUpper06)
-    doTest(sqlContext, testUpper07)
-    doTest(sqlContext, testUpper08)
-    doTest(sqlContext, testUpper09)
-    doTest(sqlContext, testUpper10)
-    doTest(sqlContext, testUpper11)
+    val cases = Seq(
+    testUpper00,
+    testUpper01,
+    testUpper02,
+    testUpper03,
+    testUpper04,
+    testUpper05,
+    testUpper06,
+    testUpper07,
+    testUpper08,
+    testUpper09,
+    testUpper10,
+    testUpper11)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // Define lower tests
   test("Test Lower statements against correctness dataset") {
-    doTest(sqlContext, testLower00)
-    doTest(sqlContext, testLower01)
-    doTest(sqlContext, testLower02)
-    doTest(sqlContext, testLower03)
-    doTest(sqlContext, testLower04)
-    doTest(sqlContext, testLower05)
-    doTest(sqlContext, testLower06)
-    doTest(sqlContext, testLower07)
-    doTest(sqlContext, testLower08)
-    doTest(sqlContext, testLower09)
-    doTest(sqlContext, testLower10)
-    doTest(sqlContext, testLower11)
+    val cases = Seq(
+    testLower00,
+    testLower01,
+    testLower02,
+    testLower03,
+    testLower04,
+    testLower05,
+    testLower06,
+    testLower07,
+    testLower08,
+    testLower09,
+    testLower10,
+    testLower11)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   // Define substring tests
   test("Test Substring statements against correctness dataset") {
-    doTest(sqlContext, testSubstr00)
-    doTest(sqlContext, testSubstr01)
-    doTest(sqlContext, testSubstr02)
-    doTest(sqlContext, testSubstr03)
-    doTest(sqlContext, testSubstr04)
-    doTest(sqlContext, testSubstr05)
-    doTest(sqlContext, testSubstr06)
-    doTest(sqlContext, testSubstr07)
-    doTest(sqlContext, testSubstr08)
-    doTest(sqlContext, testSubstr09)
-    doTest(sqlContext, testSubstr10)
-    doTest(sqlContext, testSubstr11)
-    doTest(sqlContext, testSubstr12)
-    doTest(sqlContext, testSubstr13)
-    doTest(sqlContext, testSubstr14)
-    doTest(sqlContext, testSubstr15)
-    doTest(sqlContext, testSubstr16)
-    doTest(sqlContext, testSubstr17)
-    doTest(sqlContext, testSubstr18)
-    doTest(sqlContext, testSubstr19)
-    doTest(sqlContext, testSubstr20)
-    doTest(sqlContext, testSubstr21)
-    doTest(sqlContext, testSubstr22)
-    doTest(sqlContext, testSubstr23)
-    doTest(sqlContext, testSubstr24)
-    doTest(sqlContext, testSubstr25)
-    doTest(sqlContext, testSubstr26)
-    doTest(sqlContext, testSubstr27)
-    doTest(sqlContext, testSubstr28)
-    doTest(sqlContext, testSubstr29)
-    doTest(sqlContext, testSubstr30)
-    doTest(sqlContext, testSubstr31)
-    doTest(sqlContext, testSubstr32)
-    doTest(sqlContext, testSubstr33)
-    doTest(sqlContext, testSubstr34)
-    doTest(sqlContext, testSubstr35)
-    doTest(sqlContext, testSubstr36)
-    doTest(sqlContext, testSubstr37)
-    doTest(sqlContext, testSubstr38)
-    doTest(sqlContext, testSubstr39)
-    doTest(sqlContext, testSubstr40)
-    doTest(sqlContext, testSubstr41)
-    doTest(sqlContext, testSubstr42)
-    doTest(sqlContext, testSubstr43)
-    doTest(sqlContext, testSubstr44)
-    doTest(sqlContext, testSubstr45)
-    doTest(sqlContext, testSubstr46)
+    val cases = Seq(
+    testSubstr00,
+    testSubstr01,
+    testSubstr02,
+    testSubstr03,
+    testSubstr04,
+    testSubstr05,
+    testSubstr06,
+    testSubstr07,
+    testSubstr08,
+    testSubstr09,
+    testSubstr10,
+    testSubstr11,
+    testSubstr12,
+    testSubstr13,
+    testSubstr14,
+    testSubstr15,
+    testSubstr16,
+    testSubstr17,
+    testSubstr18,
+    testSubstr19,
+    testSubstr20,
+    testSubstr21,
+    testSubstr22,
+    testSubstr23,
+    testSubstr24,
+    testSubstr25,
+    testSubstr26,
+    testSubstr27,
+    testSubstr28,
+    testSubstr29,
+    testSubstr30,
+    testSubstr31,
+    testSubstr32,
+    testSubstr33,
+    testSubstr34,
+    testSubstr35,
+    testSubstr36,
+    testSubstr37,
+    testSubstr38,
+    testSubstr39,
+    testSubstr40,
+    testSubstr41,
+    testSubstr42,
+    testSubstr43,
+    testSubstr44,
+    testSubstr45,
+    testSubstr46)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 }
 

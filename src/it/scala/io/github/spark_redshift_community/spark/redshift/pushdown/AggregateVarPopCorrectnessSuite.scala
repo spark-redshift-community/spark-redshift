@@ -104,7 +104,7 @@ trait AggregateVarPopCorrectnessSuite extends IntegrationPushdownSuiteBase {
       (1E-6, "col_decimal_1_0_bytedict", 28.358366040000057)
     )
 
-    inputList.foreach(test_case => {
+    inputList.par.foreach(test_case => {
       val epsilon = test_case._1
       val column_name = test_case._2.toUpperCase
       val expected_res = test_case._3
@@ -216,7 +216,7 @@ trait AggregateVarPopCorrectnessSuite extends IntegrationPushdownSuiteBase {
       (1E-6, "col_decimal_1_0_zstd", 30D)
     )
 
-    inputList.foreach(test_case => {
+    inputList.par.foreach(test_case => {
       val epsilon = test_case._1
       val column_name = test_case._2.toUpperCase
       val expected_res = test_case._3
@@ -252,7 +252,7 @@ trait AggregateVarPopCorrectnessSuite extends IntegrationPushdownSuiteBase {
       ("col_float8_zstd", 1199.4662280589275)
     )
 
-    inputList.foreach(test_case => {
+    inputList.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -280,7 +280,7 @@ trait AggregateVarPopCorrectnessSuite extends IntegrationPushdownSuiteBase {
       ("col_float8_zstd", 1199.4662280589228)
     )
 
-    inputList.foreach(test_case => {
+    inputList.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 

@@ -41,13 +41,14 @@ case class RedshiftScanExec(output: Seq[Attribute],
   @transient implicit private val service: ExecutorService = Executors.newCachedThreadPool()
 
   override protected def doPrepare(): Unit = {
+    val threadName = Thread.currentThread.getName
     logInfo("Preparing query to push down to redshift")
 
     val work = new Callable[RedshiftPushdownResult]() {
       override def call(): RedshiftPushdownResult = {
         val result = {
           try {
-            val data = relation.buildScanFromSQL[InternalRow](query, Some(schema))
+            val data = relation.buildScanFromSQL[InternalRow](query, Some(schema), threadName)
             RedshiftPushdownResult(data = Some(data))
           } catch {
             case e: Exception =>

@@ -106,7 +106,7 @@ trait AggregateStddevSampCorrectnessSuite extends IntegrationPushdownSuiteBase {
       ("col_decimal_1_0_zstd", 5.31013709344592)
     )
 
-    inputList.foreach(test_case => {
+    inputList.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -218,7 +218,7 @@ trait AggregateStddevSampCorrectnessSuite extends IntegrationPushdownSuiteBase {
       ("col_decimal_1_0_zstd", 5.627314338711376)
     )
 
-    inputList.foreach(test_case => {
+    inputList.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -253,7 +253,7 @@ trait AggregateStddevSampCorrectnessSuite extends IntegrationPushdownSuiteBase {
       ("col_float8_zstd", 34.636774810781475)
     )
 
-    inputList.foreach(test_case => {
+    inputList.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -282,7 +282,7 @@ trait AggregateStddevSampCorrectnessSuite extends IntegrationPushdownSuiteBase {
       ("col_float8_zstd", 34.63677481078141)
     )
 
-    inputList.foreach(test_case => {
+    inputList.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
