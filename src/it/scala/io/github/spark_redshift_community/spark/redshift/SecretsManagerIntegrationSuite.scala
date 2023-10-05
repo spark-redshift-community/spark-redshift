@@ -24,9 +24,10 @@ import org.apache.spark.sql.types.{IntegerType, MetadataBuilder, StructField, St
 import org.apache.spark.sql.{Row, SaveMode}
 import scala.util.Random
 
-/** Secrets manager integration suite performs basic integration test where authentication with
+/**
+ * Secrets manager integration suite performs basic integration test where authentication with
  * Redshift is done via passing a secret (containing Redshift credentials) instead of mentioning
- * them in JDBC URl or in User/Password option.
+ * them in JDBC URL or in User/Password option.
  */
 
 class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
@@ -50,12 +51,13 @@ class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
     super.afterAll()
   }
 
+  val config = new AwsClientBuilder.EndpointConfiguration(endpoint, secretRegion)
+  val clientBuilder = AWSSecretsManagerClientBuilder.standard()
+    .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
+  clientBuilder.setEndpointConfiguration(config)
+  val client = clientBuilder.build()
+
   def createNewSecret: String = {
-    val config = new AwsClientBuilder.EndpointConfiguration(endpoint, secretRegion)
-    val clientBuilder = AWSSecretsManagerClientBuilder.standard()
-      .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
-    clientBuilder.setEndpointConfiguration(config)
-    val client = clientBuilder.build()
     val secretRequest = new CreateSecretRequest().withName(secretName)
       .withSecretString(secretValue)
     val secretResponse = client.createSecret(secretRequest)
@@ -63,11 +65,6 @@ class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
   }
 
   def deleteSecret(): String = {
-    val config = new AwsClientBuilder.EndpointConfiguration(endpoint, secretRegion)
-    val clientBuilder = AWSSecretsManagerClientBuilder.standard()
-      .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
-    clientBuilder.setEndpointConfiguration(config)
-    val client = clientBuilder.build()
     val secretRequest = new DeleteSecretRequest().withSecretId(secretName)
       .withForceDeleteWithoutRecovery(true)
     val secretResponse = client.deleteSecret(secretRequest)
