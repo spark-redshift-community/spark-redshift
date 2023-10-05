@@ -17,7 +17,7 @@ package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.client.builder.AwsClientBuilder
-import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder
+import com.amazonaws.services.secretsmanager._
 import com.amazonaws.services.secretsmanager.model.{CreateSecretRequest, DeleteSecretRequest}
 import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_SECRET_ID, PARAM_SECRET_REGION}
 import org.apache.spark.sql.types.{IntegerType, MetadataBuilder, StructField, StructType}
@@ -51,13 +51,16 @@ class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
     super.afterAll()
   }
 
-  val config = new AwsClientBuilder.EndpointConfiguration(endpoint, secretRegion)
-  val clientBuilder = AWSSecretsManagerClientBuilder.standard()
-    .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
-  clientBuilder.setEndpointConfiguration(config)
-  val client = clientBuilder.build()
+  private def createSecretsManagerClient(): AWSSecretsManager = {
+    val config = new AwsClientBuilder.EndpointConfiguration(endpoint, secretRegion)
+    val clientBuilder = AWSSecretsManagerClientBuilder.standard()
+      .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
+      .withEndpointConfiguration(config)
+    clientBuilder.build()
+  }
 
   def createNewSecret: String = {
+    val client = createSecretsManagerClient()
     val secretRequest = new CreateSecretRequest().withName(secretName)
       .withSecretString(secretValue)
     val secretResponse = client.createSecret(secretRequest)
@@ -65,6 +68,7 @@ class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
   }
 
   def deleteSecret(): String = {
+    val client = createSecretsManagerClient()
     val secretRequest = new DeleteSecretRequest().withSecretId(secretName)
       .withForceDeleteWithoutRecovery(true)
     val secretResponse = client.deleteSecret(secretRequest)
