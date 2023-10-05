@@ -26,7 +26,7 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
-val sparkVersion = "3.4.1"
+val sparkVersion = "3.5.0"
 val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
@@ -150,7 +150,8 @@ lazy val root = Project("spark-redshift", file("."))
       "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core"))
         exclude("org.apache.hadoop", "hadoop-common")
-        exclude("com.amazonaws", "aws-java-sdk-s3")  force(),
+        exclude("com.amazonaws", "aws-java-sdk-s3")  force()
+        exclude("com.amazonaws", "aws-java-sdk-bundle"),
 
       "org.apache.spark" %% "spark-core" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-sql" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
