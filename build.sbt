@@ -132,7 +132,7 @@ lazy val root = Project("spark-redshift", file("."))
       "org.slf4j" % "slf4j-api" % "2.0.7",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.1",
 
-      "com.google.guava" % "guava" % "31.1-jre" % "test",
+      "com.google.guava" % "guava" % "32.1.2-jre" % "test",
       "org.scalatest" %% "scalatest" % "3.2.16" % "test",
       "org.scalatestplus" %% "mockito-4-6" % "3.2.15.0" % "test",
       "com.amazon.redshift" % "redshift-jdbc42" % testJDBCVersion % "provided",
