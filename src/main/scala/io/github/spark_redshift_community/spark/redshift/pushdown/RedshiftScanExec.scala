@@ -40,8 +40,10 @@ case class RedshiftScanExec(output: Seq[Attribute],
   @transient implicit private var data: Future[RedshiftPushdownResult] = _
   @transient implicit private val service: ExecutorService = Executors.newCachedThreadPool()
 
+  // this is the thread which constructed this not necessarily the executing thread
+  private val threadName = Thread.currentThread.getName
+
   override protected def doPrepare(): Unit = {
-    val threadName = Thread.currentThread.getName
     logInfo("Preparing query to push down to redshift")
 
     val work = new Callable[RedshiftPushdownResult]() {
