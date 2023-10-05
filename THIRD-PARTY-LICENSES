@@ -1,5 +1,5 @@
 ** Apache Accumulo; version 2.1.0 -- https://accumulo.apache.org/
- 
+
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -351,10 +351,10 @@ al/datatables/**/*
 ------
 
 ** Apache Software License, Version 2.0; version 2.0 -- https://mvnrepository.com/artifact/org.apache.commons/commons-compress/1.20
-** Apache Spark; version 3.3.2 -- https://spark.apache.org/
 ** spark-snowflake; version 2.9.1 -- https://github.com/snowflakedb/spark-snowflake
 ** Databricks spark-redshift connector; version 3.0.0 -- https://github.com/databricks/spark-redshift
- 
+** Apache Spark; version 3.5.0 -- https://spark.apache.org/
+
 Apache License
 Version 2.0, January 2004
 http://www.apache.org/licenses/
@@ -742,6 +742,10 @@ systems,
        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
        See the License for the specific language governing permissions and
        limitations under the License.
+* For spark-snowflake see also this required NOTICE:
+    Copyright 2015-2021 Snowflake Computing
+* For Databricks spark-redshift connector see also this required NOTICE:
+    Copyright 2016 Databricks
 * For Apache Spark see also this required NOTICE:
     Apache Spark
     Copyright 2014 and onwards The Apache Software Foundation.
@@ -797,7 +801,3 @@ the network between
         Expert Group and released to the public domain, as explained at
         http://creativecommons.org/publicdomain/zero/1.0/
 
-* For spark-snowflake see also this required NOTICE:
-    Copyright 2015-2021 Snowflake Computing
-* For Databricks spark-redshift connector see also this required NOTICE:
-    Copyright 2016 Databricks
