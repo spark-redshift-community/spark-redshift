@@ -24,7 +24,7 @@ addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.2.1")
 
 addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.11.0")
 
-addSbtPlugin("au.com.onegeek" % "sbt-dotenv" % "2.1.227")
+addSbtPlugin("au.com.onegeek" % "sbt-dotenv" % "2.1.233")
 
 libraryDependencies += "org.apache.maven" % "maven-artifact" % "3.3.9"
 
