@@ -41,6 +41,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.scalatest.exceptions.TestFailedException
 
+import java.util
 import scala.util.matching.Regex
 
 /**
@@ -102,6 +103,7 @@ class RedshiftSourceSuite
     super.beforeEach()
     s3FileSystem = FileSystem.get(new URI(s3TempDir), sc.hadoopConfiguration)
     testSqlContext = new SQLContext(sc)
+    testSqlContext.sql("RESET spark.datasource.redshift.community.trace_id")
     expectedDataDF =
       testSqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testSchema)
 
@@ -770,7 +772,7 @@ class RedshiftSourceSuite
     assert(e.getMessage.contains("Actual and expected JDBC queries did not match"))
   }
 
-  test("Redshift reads include user provide query group label") {
+  test("Redshift reads include user provided query group label") {
     val userLabel = "expected"
     val queryGroupExpected = s"""set query_group to .*"lbl":"${userLabel}".*"""
     val expectedQuery = (
@@ -781,6 +783,115 @@ class RedshiftSourceSuite
     val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
     val paramsWithRegion = defaultParams + ("tempdir_region" -> "us-west-1",
       PARAM_USER_QUERY_GROUP_LABEL -> userLabel)
+    val relation = source.createRelation(
+      testSqlContext, paramsWithRegion, TestUtils.testSchema)
+    relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupExpected.r, expectedQuery))
+  }
+
+  test("Redshift reads include spark configuration trace id in query group") {
+    val traceId = "expected"
+    val queryGroupExpected = s"""set query_group to .*"tid":"${traceId}".*"""
+    val expectedQuery = "UNLOAD .*".r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
+    val paramsWithRegion = defaultParams + ("tempdir_region" -> "us-west-1")
+    val relation = source.createRelation(
+      testSqlContext, paramsWithRegion, TestUtils.testSchema)
+    testSqlContext.sql(s"SET ${Utils.CONNECTOR_TRACE_ID_SPARK_CONF}=${traceId}")
+    relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupExpected.r, expectedQuery))
+  }
+
+  def getEditableEnv: util.Map[String, String] = {
+    val field = System.getenv().getClass.getDeclaredField("m")
+    field.setAccessible(true)
+    field.get(System.getenv()).asInstanceOf[util.Map[String, String]]
+  }
+
+  def setEnv(key: String, value: String): Unit = {
+    getEditableEnv.put(key, value)
+  }
+
+  def unsetEnv(key: String): Unit = {
+    getEditableEnv.remove(key)
+  }
+
+  test("Redshift reads include environment variable trace id in query group" +
+    "when not provided in spark configuration") {
+    val traceId = "expected"
+    // Ensure environment variable for trace id is set
+    setEnv(Utils.CONNECTOR_TRACE_ID_ENV_VAR, traceId)
+
+    val queryGroupExpected = s"""set query_group to .*"tid":"${traceId}".*"""
+    val expectedQuery = "UNLOAD .*".r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
+    val paramsWithRegion = defaultParams + ("tempdir_region" -> "us-west-1")
+    val relation = source.createRelation(
+      testSqlContext, paramsWithRegion, TestUtils.testSchema)
+    relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupExpected.r, expectedQuery))
+  }
+
+  test("Redshift reads include application id as trace id in query group when none is provided") {
+    // ensure that no environment variable is set for trace id
+    unsetEnv(Utils.CONNECTOR_TRACE_ID_ENV_VAR)
+    val traceId = testSqlContext.sparkContext.applicationId
+    val queryGroupExpected = s"""set query_group to .*"tid":"${traceId}".*"""
+    val expectedQuery = "UNLOAD .*".r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
+    val paramsWithRegion = defaultParams + ("tempdir_region" -> "us-west-1")
+    val relation = source.createRelation(
+      testSqlContext, paramsWithRegion, TestUtils.testSchema)
+    relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupExpected.r, expectedQuery))
+  }
+
+  test("Redshift reads include application id as trace id in query" +
+    " group when spark configuration is invalid") {
+    val expectedTraceId = testSqlContext.sparkContext.applicationId
+    val queryGroupExpected = s"""set query_group to .*"tid":"${expectedTraceId}".*"""
+    val traceId = """invalidTrace"Id"""
+    val expectedQuery = "UNLOAD .*".r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
+    val paramsWithRegion = defaultParams + ("tempdir_region" -> "us-west-1")
+    val relation = source.createRelation(
+      testSqlContext, paramsWithRegion, TestUtils.testSchema)
+    testSqlContext.sql(s"SET ${Utils.CONNECTOR_TRACE_ID_SPARK_CONF}=${traceId}")
+    relation.asInstanceOf[PrunedFilteredScan]
+      .buildScan(Array("testbyte", "testbool"), Array.empty[Filter])
+    mockRedshift.verifyThatConnectionsWereClosed()
+    mockRedshift.verifyThatExpectedQueriesWereIssued(Seq(queryGroupExpected.r, expectedQuery))
+  }
+
+  test("Redshift reads include application id as trace id in query" +
+    " group when environment variable is invalid") {
+    val expectedTraceId = testSqlContext.sparkContext.applicationId
+    val queryGroupExpected = s"""set query_group to .*"tid":"${expectedTraceId}".*"""
+    val traceId = """invalidTrace"Id"""
+    // Ensure environment variable for trace id is set
+    setEnv(Utils.CONNECTOR_TRACE_ID_ENV_VAR, traceId)
+
+    val expectedQuery = "UNLOAD .*".r
+    val mockRedshift =
+      new MockRedshift(defaultParams("url"), Map("test_table" -> TestUtils.testSchema))
+    val source = new DefaultSource(mockRedshift.jdbcWrapper, (_, _) => mockS3Client)
+    val paramsWithRegion = defaultParams + ("tempdir_region" -> "us-west-1")
     val relation = source.createRelation(
       testSqlContext, paramsWithRegion, TestUtils.testSchema)
     relation.asInstanceOf[PrunedFilteredScan]

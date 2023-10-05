@@ -105,7 +105,7 @@ private[redshift] case class RedshiftRelation(
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
     checkS3BucketUsage(params, s3ClientFactory(creds, params))
     Utils.collectMetrics(params)
-    val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label)
+    val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
 
     if (requiredColumns.isEmpty) {
       // In the special case where no columns were requested, issue a `count(*)` against Redshift
@@ -252,7 +252,7 @@ private[redshift] case class RedshiftRelation(
   def buildScanFromSQL[Row](statement: RedshiftSQLStatement,
                             schema: Option[StructType],
                             threadName: String = Thread.currentThread.getName): RDD[Row] = {
-    val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label)
+    val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
     val conn = jdbcWrapper.getConnectorWithQueryGroup(
       params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)

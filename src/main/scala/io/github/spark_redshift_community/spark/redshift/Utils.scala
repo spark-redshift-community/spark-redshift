@@ -25,6 +25,7 @@ import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucket
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3URI}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
+import org.apache.spark.sql.SQLContext
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
@@ -347,8 +348,34 @@ private[redshift] object Utils {
    * Is none if environment variable is unset or empty.
    * @return trimmed service name
    */
-  def connectorServiceName: Option[String] = System.getenv().asScala.
+  def connectorServiceName: Option[String] = sys.env.
     get(CONNECTOR_SERVICE_NAME_ENV_VAR).filter(_.trim.nonEmpty).map(_.trim)
+
+
+  val CONNECTOR_TRACE_ID_ENV_VAR = "AWS_SPARK_REDSHIFT_CONNECTOR_TRACE_ID"
+  val CONNECTOR_TRACE_ID_SPARK_CONF = "spark.datasource.redshift.community.trace_id"
+  /**
+   * Retrieve the spark configuration for traceId.
+   * If not provided in spark configuration check environment variable.
+   * If neither are provided then use applicationId.
+   * @param sqlContext Context to check for
+   * @return
+   */
+  def traceId(sqlContext: SQLContext): String = {
+    val configuredValue = sqlContext.
+      getConf(CONNECTOR_TRACE_ID_SPARK_CONF, sys.env.getOrElse(CONNECTOR_TRACE_ID_ENV_VAR, "")).trim
+    val valueIsNotValid = configuredValue.
+      exists(char => !(char.isUnicodeIdentifierPart || char == '-'))
+    if (valueIsNotValid) {
+      log.warn("Configured trace id is not valid. " +
+        "It must only contain characters that are valid unicode identifier parts or '-'.")
+    }
+    if (valueIsNotValid || configuredValue.isEmpty) {
+      sqlContext.sparkContext.applicationId
+    } else {
+      configuredValue
+    }
+  }
 
   sealed trait MetricOperation
   case object Read extends MetricOperation
@@ -363,16 +390,21 @@ private[redshift] object Utils {
    * @param operation the type of operation performed
    * @param label A user provided identifier to associate with a query
    *              should be sanitized before use with this function
+   * @param sqlContext the sqlContext to check for a trace id
    * @return a string to be used as a query group
    */
-  def queryGroupInfo(operation: MetricOperation, label: String): String = {
+  def queryGroupInfo(operation: MetricOperation, label: String, sqlContext: SQLContext): String = {
     val MAX_SVC_LENGTH = 30
     val MAX_LBL_LENGTH = 100
+    val MAX_TID_LENGTH = 75
     val svcName = connectorServiceName.getOrElse("")
+    val tid = traceId(sqlContext)
     val trimmedSvcName = svcName.substring(0, math.min(svcName.length, MAX_SVC_LENGTH))
     val trimmedLabel = label.substring(0, math.min(label.length, MAX_LBL_LENGTH))
+    val trimmedTID = tid.substring(0, math.min(tid.length, MAX_TID_LENGTH))
     s"""{"${DEFAULT_APP_NAME}":{"svc":"${trimmedSvcName}",""" +
-      s""""ver":"${BuildInfo.version}","op":"${operation}","lbl":"$trimmedLabel"}}"""
+      s""""ver":"${BuildInfo.version}","op":"${operation}","lbl":"$trimmedLabel",""" +
+      s""""tid":"${trimmedTID}"}}""".stripMargin
   }
 
   /**
