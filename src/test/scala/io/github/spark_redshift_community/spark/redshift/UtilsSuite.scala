@@ -180,14 +180,6 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
     verify(mockLogger).info(BuildInfo.toString)
   }
 
-  test("collectMetrics outputs unique log to INFO when version includes -amzn- INFO") {
-    val mockLogger = mock[Logger]
-    Utils.collectMetrics(MergedParameters(fakeCredentials), Some(mockLogger))
-    if (BuildInfo.version.contains("-amzn-")) {
-      verify(mockLogger).info("amazon-spark-redshift-connector")
-    }
-  }
-
   test("collectMetrics logs to INFO level when ParamLegacyJDBCRealTypeMapping is enabled") {
     val mockLogger = mock[Logger]
     val fakeCredentialsOverride = fakeCredentials +

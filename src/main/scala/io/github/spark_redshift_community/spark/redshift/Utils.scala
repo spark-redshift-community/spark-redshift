@@ -324,11 +324,8 @@ private[redshift] object Utils {
   def collectMetrics(params: MergedParameters, logger: Option[Logger] = None): Unit = {
     val metricLogger = logger.getOrElse(log)
 
-    // Emit the build and connector information.
+    // Emit the build information.
     metricLogger.info(BuildInfo.toString)
-    if (BuildInfo.version.contains("-amzn-")) {
-      metricLogger.info("amazon-spark-redshift-connector")
-    }
 
     // Track legacy parameters for deprecation
     if (params.legacyJdbcRealTypeMapping) {

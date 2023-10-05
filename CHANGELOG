@@ -16,6 +16,18 @@
 
 # spark-redshift Changelog
 
+## 6.1.0 (2023-10-06)
+
+- Support Spark 3.4.1 and 3.5.0
+- Upgrade sbt to version 1.9
+- Upgrade Redshift JDBC driver to version 2.1.0.18
+- Resolve CVE-2023-2976 and CVE-2020-8908
+- Cancel any running queries upon shutdown.
+- Improve traceability between Spark and Redshift with introduction of 'trace_id' Spark configuration.
+- Improve performance of integration tests by parallelizing their execution.
+- Resolve 'expression_tree_walker' query exceptions for sort-limit-project queries.
+- Fix issues with cross-cluster queries not working correctly with pushdown.
+
 ## 6.0.0 (2023-07-17)
 
 This major release brings forward several performance, security, and usability improvements contributed by AWS:
@@ -27,7 +39,7 @@ This major release brings forward several performance, security, and usability i
 - Parquet support for reading and writing
 - S3 result caching (when autopushdown is enabled)
 - Spark 3.4.0 support
-- Improved cross-region support between Spark cluster and S3 bucket (via new 'tempdir_region' parameter)
+- Improve cross-region support between Spark cluster and S3 bucket (via new 'tempdir_region' parameter)
 - Automatic retry during Redshift COPY operations (via new 'copydelay' and 'copyretrycount' parameters)
 - Ability to pass additional options during Redshift UNLOAD operations (via new 'extraunloadoptions' parameter)
 - Microsecond precision when reading or writing time-based columns to/from Redshift.
