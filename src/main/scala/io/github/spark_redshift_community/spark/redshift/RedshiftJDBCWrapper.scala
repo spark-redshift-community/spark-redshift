@@ -117,7 +117,7 @@ private[redshift] class JDBCWrapper extends Serializable {
     }
   }
 
-  private val cancellationMap =
+  @transient private lazy val cancellationMap =
     new ConcurrentHashMap[PreparedStatement, Int]()
 
   // Adding ShutdownHook
