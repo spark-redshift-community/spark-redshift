@@ -923,13 +923,24 @@ val eventsDF = sqlContext.read
 eventsDF.show()
 ```
 
-## Spark SQL Configuration
+## Spark SQL Configurations
 
+### lazyMode
 The Spark Connector pushdown redshift query in lazy mode. This allows spark's adaptive query execution mode to further optimize the query. This behavior is enabled by default.
 To disable it, run following command:
 
 ```sparksql
 SET spark.datasource.redshift.community.autopushdown.lazyMode=false
+```
+
+### trace_id
+A new tracing identifier field that is added to the existing `label` parameter. When set, the provided string value will be used as part of label. Otherwise, it will default to the Spark application identifier. For example:
+
+`{"spark-redshift-connector":{"svc":"","ver":"6.1.0-spark_3.5","op":"Read","lbl":"","tid":"..."}}`)
+
+To set the value, run the following command:
+```sparksql
+SET spark.datasource.redshift.community.trace_id="String up to 75 characters in length."
 ```
 
 ## Unload Format
