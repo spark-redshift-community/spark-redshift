@@ -1118,6 +1118,12 @@ This same problem can also occur when using <tt>secret.id</tt> as the connector 
 .option("secret.region", "us-east-1")
 ```
 
+### Out of memory error from Redshift Server while running integration tests
+
+The integration tests can run multiple queries at once to accelerate the testing process. The exact number that will be run at once though is determined by the number of cpu cores available to the JVM when the tests are run. If there are too many cpu cores, it is possible to cause an out of memory error in the redshift server.
+
+If this occurs it can be avoided by setting the available number of cpu cores to a lower number using the JVM option `-Dscala.concurrent.context.maxThreads=10`. Set this in the `javaOptions` for testing in the build.sbt file. A setting of 10 has been found to work well.
+
 ## Migration Guide
 
 - Version 3.0 now requires `forward_spark_s3_credentials` to be explicitly set before Spark S3

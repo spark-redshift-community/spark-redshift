@@ -161,7 +161,8 @@ lazy val root = Project("spark-redshift", file("."))
     // Display full-length stacktraces from ScalaTest:
     testOptions in Test += Tests.Argument("-oF"),
     fork in Test := true,
-    javaOptions in Test ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M"),
+    javaOptions in Test ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M", "-Dscala.concurrent.context.maxThreads=10"),
+
 
     /********************
      * Release settings *
