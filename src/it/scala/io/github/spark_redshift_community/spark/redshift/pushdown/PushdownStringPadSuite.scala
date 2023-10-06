@@ -31,7 +31,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
       (1, -5, "")
     )
 
-    columns.foreach(column => {
+    columns.par.foreach(column => {
       paramTuples.foreach(paramTuple => {
         val id = paramTuple._1
         val length = paramTuple._2
@@ -68,7 +68,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
       (1, 19, "樂A趣", "樂A趣樂A趣樂AHello World"),
       (5, 9, "ABC", "ABCABCABC")
     )
-    columns.foreach(column => {
+    columns.par.foreach(column => {
       paramTuples.foreach(paramTuple => {
         val id = paramTuple._1
         val length = paramTuple._2
@@ -102,7 +102,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
       (1, -5, "")
     )
 
-    columns.foreach(column => {
+    columns.par.foreach(column => {
       paramTuples.foreach(paramTuple => {
         val id = paramTuple._1
         val length = paramTuple._2
@@ -139,7 +139,7 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
       (1, 19, "樂A趣", "Hello World樂A趣樂A趣樂A"),
       (5, 9, "ABC", "ABCABCABC")
     )
-    columns.foreach(column => {
+    columns.par.foreach(column => {
       paramTuples.foreach(paramTuple => {
         val id = paramTuple._1
         val length = paramTuple._2
@@ -162,12 +162,12 @@ abstract class PushdownStringPadSuite extends StringIntegrationPushdownSuiteBase
   }
 }
 
-class TextStringPadPushdownSuite extends PushdownStringPadSuite {
+class TextPushdownStringPadSuite extends PushdownStringPadSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetStringPadPushdownSuite extends PushdownStringPadSuite {
+class ParquetPushdownStringPadSuite extends PushdownStringPadSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -182,12 +182,12 @@ class ParquetNoPushdownStringPadSuite extends PushdownStringPadSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheStringPadSuite
-  extends TextStringPadPushdownSuite {
+class TextNoCachePushdownStringPadSuite
+  extends TextPushdownStringPadSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheStringPadSuite
-  extends ParquetStringPadPushdownSuite {
+class ParquetNoCachePushdownStringPadSuite
+  extends ParquetPushdownStringPadSuite {
   override protected val s3_result_cache = "false"
 }

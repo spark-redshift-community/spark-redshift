@@ -29,3 +29,4 @@ lib_managed/
 .bloop/
 venv/
 .env
+.bsp/

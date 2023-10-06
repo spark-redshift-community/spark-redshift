@@ -59,7 +59,7 @@ abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuit
       (5, "[10001,10002,3333]"),
       (6, "{\"foo\":\"bar\",\"foobar\":{\"abc\":\"def\"}}")
     )
-    testCases.foreach(testCase => {
+    testCases.par.foreach(testCase => {
       val id = testCase._1
       val result = testCase._2
 
@@ -85,7 +85,7 @@ abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuit
       ("varbinary", java.sql.Types.LONGVARBINARY)
     )
 
-    testCases.foreach(testCase => {
+    testCases.par.foreach(testCase => {
       val columnType = testCase._1
       val sqlType = testCase._2
 

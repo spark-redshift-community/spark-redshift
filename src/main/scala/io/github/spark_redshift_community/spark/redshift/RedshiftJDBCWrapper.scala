@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory
 
 import java.sql.{Connection, Driver, DriverManager, PreparedStatement, ResultSet, ResultSetMetaData, SQLException}
 import java.util.Properties
-import java.util.concurrent.{Executors, ThreadFactory}
+import java.util.concurrent.{ConcurrentHashMap, Executors, ThreadFactory}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.ExecutionContext
 import scala.collection.JavaConverters._
@@ -38,6 +38,8 @@ import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.util.Try
 import scala.util.control.NonFatal
+
+
 
 /**
  * Shim which exposes some JDBC helper functions. Most of this code is copied from Spark SQL, with
@@ -115,6 +117,22 @@ private[redshift] class JDBCWrapper extends Serializable {
     }
   }
 
+  @transient private lazy val cancellationMap =
+    new ConcurrentHashMap[PreparedStatement, Int]()
+
+  // Adding ShutdownHook
+  sys.addShutdownHook {
+    cancellationMap.forEach { (statement, jdbcSmtNum) =>
+      try {
+        log.info(s"Cancelling pending JDBC call {}", jdbcSmtNum)
+        statement.cancel()
+      } catch {
+        case e: Throwable =>
+          log.error("Exception occurred while cancelling statement", e)
+      }
+    }
+  }
+
   /**
    * Execute the given SQL statement while supporting interruption.
    * If InterruptedException is caught, then the statement will be cancelled if it is running.
@@ -144,6 +162,7 @@ private[redshift] class JDBCWrapper extends Serializable {
     val JDBCCallNumber = JDBCCallNumberGenerator.next
     try {
       log.info("Begin JDBC call {}", JDBCCallNumber)
+      cancellationMap.put(statement, JDBCCallNumber)
       val future = Future[T](op(statement))(ec)
       try {
         Await.result(future, Duration.Inf)
@@ -167,6 +186,7 @@ private[redshift] class JDBCWrapper extends Serializable {
         }
     }
     finally {
+      cancellationMap.remove(statement)
       log.info("End JDBC call {}", JDBCCallNumber)
     }
   }

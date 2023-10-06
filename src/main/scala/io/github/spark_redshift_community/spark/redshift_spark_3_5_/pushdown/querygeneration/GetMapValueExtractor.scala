@@ -1,6 +1,5 @@
 /*
- * Copyright 2015-2018 Snowflake Computing
- * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +15,14 @@
  */
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
-import org.apache.spark.sql.catalyst.expressions.{ExprId, Expression, ScalarSubquery}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.expressions.{Expression, GetMapValue}
 
-private[querygeneration] object ScalarSubqueryExtractor {
-  def unapply(expr: Expression): Option[(LogicalPlan, Seq[Expression], ExprId, Seq[Expression])] =
-    expr match {
-      case ScalarSubquery(plan, outerAttrs, exprId, joinCond) =>
-        Some(plan, outerAttrs, exprId, joinCond)
-      case _ => None
+private[querygeneration] object GetMapValueExtractor {
+  def unapply(expr: Expression): Option[(Expression, Expression, Boolean)] = expr match {
+    // set third tuple value representing failOnError to false
+    // this is how GetMapValue in spark 3.4 works. Since the
+    // parameter has been removed
+    case GetMapValue(child, key) => Some(child, key, false)
+    case _ => None
   }
 }

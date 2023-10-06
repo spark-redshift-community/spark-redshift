@@ -180,7 +180,7 @@ abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSu
   )
   test("child IS NULL pushdown", PreloadTest) {
     // "Column name" and result size
-    allColumnNames.foreach( c_name => {
+    allColumnNames.par.foreach( c_name => {
       val column_name = c_name.toUpperCase()
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name is NULL"""),
@@ -195,7 +195,7 @@ abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSu
   }
 
   test("child IS NOT NULL pushdown", PreloadTest) {
-    allColumnNames.foreach( c_name => {
+    allColumnNames.par.foreach( c_name => {
       val column_name = c_name.toUpperCase()
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name is NOT NULL"""),
@@ -210,11 +210,11 @@ abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSu
   }
 }
 
-class TextNullOperatorBooleanCorrectnessSuite extends BooleanNullOperatorCorrectnessSuite {
+class TextBooleanNullOperatorCorrectnessSuite extends BooleanNullOperatorCorrectnessSuite {
   override protected val s3format: String = "TEXT"
 }
 
-class ParquetNullOperatorBooleanCorrectnessSuite extends BooleanNullOperatorCorrectnessSuite {
+class ParquetBooleanNullOperatorCorrectnessSuite extends BooleanNullOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
@@ -230,12 +230,12 @@ class ParquetNoPushdownBooleanNullOperatorCorrectnessSuite
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheBooleanNullOperatorCorrectnessSuite
-  extends TextNullOperatorBooleanCorrectnessSuite {
+class TextNoCacheBooleanNullOperatorCorrectnessSuite
+  extends TextBooleanNullOperatorCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheBooleanNullOperatorCorrectnessSuite
-  extends ParquetNullOperatorBooleanCorrectnessSuite {
+class ParquetNoCacheBooleanNullOperatorCorrectnessSuite
+  extends ParquetBooleanNullOperatorCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }

@@ -99,7 +99,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-03 12:34:56")),
         Row(Timestamp.valueOf("2015-07-03 12:34:56"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -142,7 +142,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-02 00:00:00")),
         Row(Timestamp.valueOf("2015-07-03 12:34:56"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -188,7 +188,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-03 12:34:56")),
         Row(Timestamp.valueOf("2015-07-03 12:34:56"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -263,7 +263,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       ("TESTTIMESTAMP", testTimestampSeq)
     )
 
-    input.foreach { case (column_name, expected_res) =>
+    input.par.foreach { case (column_name, expected_res) =>
       val df = sqlContext.sql(
         s"""select test_table_2.${column_name}, test_table.${column_name}
            |FROM test_table_2 cross JOIN test_table""".stripMargin)
@@ -328,7 +328,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-03 12:34:56")),
         Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -373,7 +373,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-03 12:34:56")),
         Row(Timestamp.valueOf("2015-07-03 12:34:56"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -426,7 +426,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-03 12:34:56")),
         Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -662,7 +662,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-03 12:34:56")),
         Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -710,7 +710,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-03 12:34:56")),
         Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -772,7 +772,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-03 12:34:56")),
         Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -906,7 +906,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       ("teststring", Seq(Row("_____"), Row("acbdef"))),
       ("testtimestamp", Seq(Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -941,7 +941,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       ("teststring", Seq(Row("_____"), Row("acbdef"))),
       ("testtimestamp", Seq(Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -976,7 +976,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       ("testtimestamp", Seq(Row(Timestamp.valueOf("2015-07-03 12:34:56")),
         Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -1107,7 +1107,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       ("teststring", Seq(Row("_____"), Row("acbdef"))),
       ("testtimestamp", Seq(Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -1142,7 +1142,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       ("teststring", Seq(Row("_____"), Row("acbdef"))),
       ("testtimestamp", Seq(Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -1177,7 +1177,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       ("testtimestamp", Seq(Row(Timestamp.valueOf("2015-07-03 12:34:56")),
         Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -1311,7 +1311,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-02 00:00:00")),
         Row(Timestamp.valueOf("2015-07-03 12:34:56"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -1349,7 +1349,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-02 00:00:00")),
         Row(Timestamp.valueOf("2015-07-03 12:34:56"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -1387,7 +1387,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         Row(Timestamp.valueOf("2015-07-02 00:00:00")),
         Row(Timestamp.valueOf("2015-07-03 12:34:56"))))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
 
@@ -1514,11 +1514,11 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
   }
 }
 
-class TextLogicalPlanOperatorPushdownSuite extends PushdownLogicalPlanOperatorSuite {
+class TextPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOperatorSuite {
   override protected val s3format: String = "TEXT"
 }
 
-class ParquetLogicalPlanOperatorPushdownSuite extends PushdownLogicalPlanOperatorSuite {
+class ParquetPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOperatorSuite {
   override protected val s3format: String = "PARQUET"
 }
 
@@ -1532,12 +1532,12 @@ class ParquetNoPushdownLogicalPlanOperatorSuite extends PushdownLogicalPlanOpera
   override protected val s3format: String = "PARQUET"
 }
 
-class TextPushdownNoCacheLogicalPlanOperatorSuite
-  extends TextLogicalPlanOperatorPushdownSuite {
+class TextNoCachePushdownLogicalPlanOperatorSuite
+  extends TextPushdownLogicalPlanOperatorSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheLogicalPlanOperatorSuite
-  extends ParquetLogicalPlanOperatorPushdownSuite {
+class ParquetNoCachePushdownLogicalPlanOperatorSuite
+  extends ParquetPushdownLogicalPlanOperatorSuite {
   override protected val s3_result_cache = "false"
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import com.typesafe.sbt.pgp.PgpKeys
+import com.jsuereth.sbtpgp.PgpKeys
 import org.scalastyle.sbt.ScalastylePlugin.rawScalastyleSettings
 import sbt.Keys._
 import sbt._
@@ -26,7 +26,7 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
-val sparkVersion = "3.4.0"
+val sparkVersion = "3.5.0"
 val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
@@ -34,7 +34,7 @@ val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 lazy val IntegrationTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.3")
-val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.16")
+val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.18")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
 val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.1033")
 // access tokens for aws/shared and our own internal CodeArtifacts repo
@@ -49,7 +49,10 @@ def incompatibleSparkVersions(): FileFilter = {
   val versionArray = testSparkVersion.split("""\.""").map(Integer.parseInt)
   val major = versionArray(0)
   val minor = versionArray(1)
-  ("*_spark_*_*_*" -- s"*_spark_${major}_${minor}_*")
+
+  new FileFilter {
+    def accept(f: File) = f.getPath.containsSlice("_spark_") && !f.getPath.containsSlice(s"_spark_${major}_${minor}_")
+  }
 }
 
 def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
@@ -74,11 +77,11 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
       }
     Seq(
       credentials := Seq(
-        Credentials(fetchRealm, fetchUrl, userName, awsSharedRepoPass),
-        Credentials(publishRealm, publishUrl, userName, internalReleaseRepoPass)
+        Credentials(fetchRealm.replace("--", "/"), fetchUrl, userName, awsSharedRepoPass),
+        Credentials(publishRealm.replace("--", "/"), publishUrl, userName, internalReleaseRepoPass)
       ),
       resolvers := Seq(fetchRealm at fetchRepo),
-      externalResolvers := Seq(fetchRealm at fetchRepo),
+      externalResolvers := Resolver.combineDefaultResolvers(resolvers.value.toVector, mavenCentral = false),
       publishTo := Some (publishRealm at publishRepo),
       pomIncludeRepository := { (_: MavenRepository) => false },
       releaseProcess := Seq[ReleaseStep](publishArtifacts)
@@ -111,13 +114,12 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
 lazy val root = Project("spark-redshift", file("."))
   .enablePlugins(BuildInfoPlugin)
   .configs(IntegrationTest)
-  .settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
   .settings(Project.inConfig(IntegrationTest)(rawScalastyleSettings()): _*)
   .settings(Defaults.coreDefaultSettings: _*)
   .settings(Defaults.itSettings: _*)
   .settings(ciPipelineSettings(isCI))
   .settings(
-    excludeFilter in unmanagedSources := HiddenFileFilter || incompatibleSparkVersions(),
+    unmanagedSources / excludeFilter ~= { _ || HiddenFileFilter || incompatibleSparkVersions()},
     name := "spark-redshift",
     version += s"-spark_${releaseSparkVersion}",
     organization := "io.github.spark-redshift-community",
@@ -130,7 +132,7 @@ lazy val root = Project("spark-redshift", file("."))
       "org.slf4j" % "slf4j-api" % "2.0.7",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.1",
 
-      "com.google.guava" % "guava" % "31.1-jre" % "test",
+      "com.google.guava" % "guava" % "32.1.2-jre" % "test",
       "org.scalatest" %% "scalatest" % "3.2.16" % "test",
       "org.scalatestplus" %% "mockito-4-6" % "3.2.15.0" % "test",
       "com.amazon.redshift" % "redshift-jdbc42" % testJDBCVersion % "provided",
@@ -148,7 +150,8 @@ lazy val root = Project("spark-redshift", file("."))
       "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core"))
         exclude("org.apache.hadoop", "hadoop-common")
-        exclude("com.amazonaws", "aws-java-sdk-s3")  force(),
+        exclude("com.amazonaws", "aws-java-sdk-s3")  force()
+        exclude("com.amazonaws", "aws-java-sdk-bundle"),
 
       "org.apache.spark" %% "spark-core" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-sql" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
@@ -159,9 +162,10 @@ lazy val root = Project("spark-redshift", file("."))
     ScoverageKeys.coverageHighlighting := true,
     logBuffered := false,
     // Display full-length stacktraces from ScalaTest:
-    testOptions in Test += Tests.Argument("-oF"),
-    fork in Test := true,
-    javaOptions in Test ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M"),
+    Test / testOptions += Tests.Argument("-oF"),
+    Test / fork := true,
+    Test / javaOptions ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M",
+      "-Duser.timezone=GMT", "-Dscala.concurrent.context.maxThreads=10"),
 
     /********************
      * Release settings *

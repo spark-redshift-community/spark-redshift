@@ -1,4 +1,5 @@
 /*
+ * Copyright 2015-2018 Snowflake Computing
  * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,5 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
-ThisBuild / version := "6.1.0"
+import org.apache.spark.sql.catalyst.expressions.{Expression, Round}
+
+private[querygeneration] object RoundExtractor {
+  def unapply(expr: Expression): Option[(Expression, Expression, Boolean)] = expr match {
+    case Round(child, scale, ansiEnabled) => Some(child, scale, ansiEnabled)
+    case _ => None
+  }
+}

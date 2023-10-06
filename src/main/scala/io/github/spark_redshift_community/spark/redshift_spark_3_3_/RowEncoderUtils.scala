@@ -1,6 +1,5 @@
 /*
- * Copyright 2015-2018 Snowflake Computing
- * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
+package io.github.spark_redshift_community.spark.redshift
 
-import org.apache.spark.sql.catalyst.expressions.{Cast, Expression}
-import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
+import org.apache.spark.sql.types.StructType
 
-private[querygeneration] object CastExtractor {
-  def unapply(expr: Expression): Option[(Expression, DataType, Boolean)] = expr match {
-    case c @ Cast(child, dataType, _, _) => Some(child, dataType, c.ansiEnabled)
-    case _ => None
+private[redshift] object RowEncoderUtils {
+  def expressionEncoderForSchema(schema: StructType): ExpressionEncoder[Row] = {
+    RowEncoder(schema)
   }
 }

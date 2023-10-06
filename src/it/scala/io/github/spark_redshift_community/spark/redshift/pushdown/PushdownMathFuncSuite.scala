@@ -215,7 +215,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
       (0.9999, "DECIMAL(15,4)", Seq(Row(1.0001000050001667))),
       (0.99999, "DECIMAL(16,5)", Seq(Row(1.00001000005)))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val add_on = test_case._1
       val cast_type = test_case._2
       val expected_res = test_case._3
@@ -329,7 +329,7 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class TextMathFuncPushdownSuite extends PushdownMathFuncSuite {
+class TextPushdownMathFuncSuite extends PushdownMathFuncSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 
@@ -345,7 +345,7 @@ class TextMathFuncPushdownSuite extends PushdownMathFuncSuite {
       (100, Seq(Row(7.307059979368067E43))),
       (1000, Seq(Row(Double.PositiveInfinity)))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val add_on = test_case._1
       val expected_res = test_case._2
       checkAnswer(
@@ -365,7 +365,7 @@ class TextMathFuncPushdownSuite extends PushdownMathFuncSuite {
   }
 }
 
-class ParquetMathFuncPushdownSuite extends TextMathFuncPushdownSuite {
+class ParquetPushdownMathFuncSuite extends TextPushdownMathFuncSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -386,7 +386,7 @@ class TextNoPushdownMathFuncSuite extends PushdownMathFuncSuite {
       (100, Seq(Row(7.307059979368068E43))),
       (1000, Seq(Row(Double.PositiveInfinity)))
     )
-    input.foreach(test_case => {
+    input.par.foreach(test_case => {
       val add_on = test_case._1
       val expected_res = test_case._2
       checkAnswer(
@@ -411,12 +411,12 @@ class ParquetNoPushdownMathFuncSuite extends TextNoPushdownMathFuncSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheMathFuncSuite
-  extends TextMathFuncPushdownSuite {
+class TextNoCachePushdownMathFuncSuite
+  extends TextPushdownMathFuncSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheMathFuncSuite
-  extends ParquetMathFuncPushdownSuite {
+class ParquetNoCachePushdownMathFuncSuite
+  extends ParquetPushdownMathFuncSuite {
   override protected val s3_result_cache = "false"
 }

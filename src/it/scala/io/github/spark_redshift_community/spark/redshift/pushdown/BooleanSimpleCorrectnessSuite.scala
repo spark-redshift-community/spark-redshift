@@ -64,7 +64,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", "(1239012341823719, 1)", 4, "(1239012341823719, 1)"),
       ("testshort", "(23, 24)", 2, "(23, 24)")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -149,7 +149,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("teststring", 1),
       ("testtimestamp", 2)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val result_size = test_case._2
       checkAnswer(
@@ -178,7 +178,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("teststring", 4),
       ("testtimestamp", 3)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val result_size = test_case._2
       checkAnswer(
@@ -204,7 +204,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 4, ""),
       ("testshort", 23, 1, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -227,7 +227,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
     val input = List(
       ("testbool", true, 1),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -353,7 +353,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 0, ""),
       ("testshort", 23, 2, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -376,7 +376,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
     val input = List(
       ("testbool", true, 2),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -450,7 +450,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 4, ""),
       ("testshort", 23, 2, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -505,7 +505,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 4, ""),
       ("testshort", 23, 2, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -561,7 +561,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 0, ""),
       ("testshort", 23, 1, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -616,7 +616,7 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
       ("testlong", 1239012341823719L, 0, ""),
       ("testshort", 23, 1, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val match_value = test_case._2
       val result_size = test_case._3
@@ -786,30 +786,30 @@ abstract class BooleanSimpleCorrectnessSuite extends IntegrationPushdownSuiteBas
   }
 }
 
-class TextSimpleBooleanPushdownSuite extends BooleanSimpleCorrectnessSuite {
+class TextBooleanSimpleCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
   override protected val s3format: String = "TEXT"
 }
 
-class ParquetSimpleBooleanPushdownSuite extends BooleanSimpleCorrectnessSuite {
+class ParquetBooleanSimpleCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
-class TextNoPushdownSimpleBooleanSuite extends BooleanSimpleCorrectnessSuite {
+class TextNoPushdownBooleanSimpleCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
   override protected val auto_pushdown: String = "false"
   override protected val s3format: String = "TEXT"
 }
 
-class ParquetNoPushdownSimpleBooleanSuite extends BooleanSimpleCorrectnessSuite {
+class ParquetNoPushdownBooleanSimpleCorrectnessSuite extends BooleanSimpleCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "false"
 }
 
 class TextPushdownNoCacheBooleanSimpleCorrectnessSuite
-  extends TextSimpleBooleanPushdownSuite {
+  extends TextBooleanSimpleCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }
 
 class ParquetPushdownNoCacheBooleanSimpleCorrectnessSuite
-extends ParquetSimpleBooleanPushdownSuite {
+extends ParquetBooleanSimpleCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }

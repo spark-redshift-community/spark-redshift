@@ -89,7 +89,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_bigint_runlength", 100, 2490),
       ("col_bigint_zstd", 100, 2488),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -149,7 +149,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_bigint_runlength", 100.0001, 2490),
       ("col_bigint_zstd", 100.0001, 2488),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -209,7 +209,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_bigint_runlength", 100, 2510),
       ("col_bigint_zstd", 100, 2512),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -269,7 +269,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_bigint_runlength", 100.0001, 2510),
       ("col_bigint_zstd", 100.0001, 2512),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -313,7 +313,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_decimal_18_18_runlength", "-1.230000000000000000", 5000),
       ("col_decimal_18_18_zstd", "-1.230000000000000000", 5000)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -357,7 +357,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_decimal_18_18_runlength", "-1.230000000000000000", 0),
       ("col_decimal_18_18_zstd", "-1.230000000000000000", 0)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -401,7 +401,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_decimal_18_18_runlength", "-1", 0),
       ("col_decimal_18_18_zstd", "-1", 0)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -443,7 +443,8 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_decimal_38_37_runlength", "0.7664120400000000000000000000000000001", 1318),
       ("col_decimal_38_37_zstd", "0.7664120400000000000000000000000000001", 1347)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
+
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -487,7 +488,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_decimal_38_37_runlength", "0.7664120400000000000000000000000000001", 3682),
       ("col_decimal_38_37_zstd", "0.7664120400000000000000000000000000001", 3653),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -567,7 +568,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_varchar_2000_zstd", s"'$string255Char'", s"\\'$string255Char\\'", 0),
       ("col_varchar_max_zstd", s"'$string255Char'", s"\\'$string255Char\\'", 0)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val query_in = test_case._2
       val expected_res = test_case._3
@@ -646,7 +647,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_varchar_2000_zstd", s"'$string255Char'", s"\\'$string255Char\\'", 5000),
       ("col_varchar_max_zstd", s"'$string255Char'", s"\\'$string255Char\\'", 5000)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val query_in = test_case._2
       val expected_res = test_case._3
@@ -686,7 +687,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_date_runlength", "'2010-05-11'", 870),
       ("col_date_zstd", "'2010-05-11'", 871)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val query_in = test_case._2
       val result_size = test_case._3
@@ -727,7 +728,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_date_runlength", "'2010-05-11'", 4133),
       ("col_date_zstd", "'2010-05-11'", 4129)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val query_in = test_case._2
       val result_size = test_case._3
@@ -775,7 +776,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_timestamptz_runlength", "'1994-05-19 01:03:02'", 2465),
       ("col_timestamptz_zstd", "'1994-05-19 01:03:02'", 2514),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val query_in = test_case._2
       val result_size = test_case._3
@@ -823,7 +824,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_timestamptz_runlength", "'1994-05-19 01:03:02'", 2535),
       ("col_timestamptz_zstd", "'1994-05-19 01:03:02'", 2486),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val query_in = test_case._2
       val result_size = test_case._3
@@ -865,7 +866,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_float8_runlength", -6.5868966897085, 2747, ""),
       ("col_float8_zstd", -6.5868966897085, 2792, "")
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -904,7 +905,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_float4_runlength", 23.1635, 3956),
       ("col_float4_zstd", 6.57506, 2921)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -942,7 +943,7 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
       ("col_float8_runlength", -6.5868966897085, 2253),
       ("col_float8_zstd", -6.5868966897085, 2208)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -974,11 +975,11 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
 
 }
 
-class TextCompareOperatorBooleanCorrectnessSuite extends BooleanCompareOperatorCorrectnessSuite {
+class TextBooleanCompareOperatorCorrectnessSuite extends BooleanCompareOperatorCorrectnessSuite {
   override protected val s3format: String = "TEXT"
 }
 
-class ParquetCompareOperatorBooleanCorrectnessSuite extends BooleanCompareOperatorCorrectnessSuite {
+class ParquetBooleanCompareOperatorCorrectnessSuite extends BooleanCompareOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
@@ -994,12 +995,12 @@ class ParquetNoPushdownBooleanCompareOperatorCorrectnessSuite
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheBooleanCompareOperatorCorrectnessSuite
-  extends TextCompareOperatorBooleanCorrectnessSuite {
+class TextNoCacheBooleanCompareOperatorCorrectnessSuite
+  extends TextBooleanCompareOperatorCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheBooleanCompareOperatorCorrectnessSuite
-  extends ParquetCompareOperatorBooleanCorrectnessSuite {
+class ParquetNoCacheBooleanCompareOperatorCorrectnessSuite
+  extends ParquetBooleanCompareOperatorCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }

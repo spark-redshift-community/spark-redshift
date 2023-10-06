@@ -1,5 +1,5 @@
 /*
- * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,5 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.github.spark_redshift_community.spark.redshift
 
-ThisBuild / version := "6.1.0"
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
+import org.apache.spark.sql.types.StructType
+
+private[redshift] object RowEncoderUtils {
+  def expressionEncoderForSchema(schema: StructType): ExpressionEncoder[Row] = {
+    ExpressionEncoder(RowEncoder.encoderFor(schema))
+  }
+}

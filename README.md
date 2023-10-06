@@ -103,7 +103,7 @@ You may use this library in your applications with the following dependency info
     spark-submit \
       --deploy-mode cluster \
       --master yarn \
-      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.16,org.apache.spark:spark-avro_2.12:3.4.0,io.github.spark-redshift-community:spark-redshift_2.12:6.0.0-spark_3.4 \
+      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.18,org.apache.spark:spark-avro_2.12:3.5.0,io.github.spark-redshift-community:spark-redshift_2.12:6.1.0-spark_3.5 \
       my_script.py
     ```
 
@@ -114,18 +114,18 @@ You may use this library in your applications with the following dependency info
     <dependency>
         <groupId>io.github.spark-redshift-community</groupId>
         <artifactId>spark-redshift_2.12</artifactId>
-        <version>6.0.0-spark_3.4</version>
+        <version>6.1.0-spark_3.5</version>
     </dependency>
     ```
 
 - **In SBT**:
 
     ```SBT
-    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "6.0.0-spark_3.4"
+    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "6.1.0-spark_3.5"
     ```
 
 
-You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommends that you use [the official Amazon Redshift JDBC driver](https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42/2.1.0.16), which is available on Maven Central. Additionally, is hosted in S3 and can be found in the [official AWS documentation for the Redshift JDBC Driver](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-install.html).
+You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommends that you use [the official Amazon Redshift JDBC driver](https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42/2.1.0.18), which is available on Maven Central. Additionally, is hosted in S3 and can be found in the [official AWS documentation for the Redshift JDBC Driver](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-install.html).
 
 **Note on Hadoop versions**: This library depends on [`spark-avro`](https://github.com/databricks/spark-avro), which should automatically be downloaded because it is declared as a dependency. However, you may need to provide the corresponding `avro-mapred` dependency which matches your Hadoop distribution. In most deployments, however, this dependency will be automatically provided by your cluster's Spark assemblies and no additional action will be required.
 
@@ -827,7 +827,7 @@ for more information.</p>
     <td>""</td>
     <td>
         An identifier to include in the query group set when running queries with the connector. Should be 100 or fewer characters and all characters must be valid unicodeIdentifierParts. Characters in excess of 100 will be trimmed.
-        When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"5.1.0-amzn-1-spark_3.3","op":"Read","lbl":""}}`). 
+        When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"6.1.0-spark_3.5","op":"Read","lbl":"","tid":""}}`). 
         This option will be substituted for the value of the `lbl` key.
     </td>
 <tr>
@@ -923,13 +923,24 @@ val eventsDF = sqlContext.read
 eventsDF.show()
 ```
 
-## Spark SQL Configuration
+## Spark SQL Configurations
 
+### lazyMode
 The Spark Connector pushdown redshift query in lazy mode. This allows spark's adaptive query execution mode to further optimize the query. This behavior is enabled by default.
 To disable it, run following command:
 
 ```sparksql
 SET spark.datasource.redshift.community.autopushdown.lazyMode=false
+```
+
+### trace_id
+A new tracing identifier field that is added to the existing `label` parameter. When set, the provided string value will be used as part of label. Otherwise, it will default to the Spark application identifier. For example:
+
+`{"spark-redshift-connector":{"svc":"","ver":"6.1.0-spark_3.5","op":"Read","lbl":"","tid":"..."}}`)
+
+To set the value, run the following command:
+```sparksql
+SET spark.datasource.redshift.community.trace_id="String up to 75 characters in length."
 ```
 
 ## Unload Format
@@ -1117,6 +1128,12 @@ This same problem can also occur when using <tt>secret.id</tt> as the connector 
 ```
 .option("secret.region", "us-east-1")
 ```
+
+### Out of memory error from Redshift Server while running integration tests
+
+The integration tests can run multiple queries at once to accelerate the testing process. The exact number that will be run at once though is determined by the number of cpu cores available to the JVM when the tests are run. If there are too many cpu cores, it is possible to cause an out of memory error in the redshift server.
+
+If this occurs it can be avoided by setting the available number of cpu cores to a lower number using the JVM option `-Dscala.concurrent.context.maxThreads=10`. Set this in the `javaOptions` for testing in the build.sbt file. A setting of 10 has been found to work well.
 
 ## Migration Guide
 

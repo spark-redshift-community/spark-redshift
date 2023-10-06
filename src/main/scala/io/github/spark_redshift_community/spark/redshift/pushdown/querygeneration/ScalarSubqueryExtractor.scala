@@ -22,9 +22,9 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 object ScalarSubqueryExtractor {
   def unapply(expr: Expression): Option[(LogicalPlan, Seq[Expression], ExprId, Seq[Expression])] =
     expr match {
-      // ignoring hintinfo
-      case ScalarSubquery(plan, outerAttrs, exprId, joinCond, hintInfo) =>
-        Some(plan, outerAttrs, exprId, joinCond)
+      // ignoring hintinfo and mayHaveCountBug
+      case sq : ScalarSubquery =>
+        Some(sq.plan, sq.outerAttrs, sq.exprId, sq.joinCond)
       case _ => None
   }
 }

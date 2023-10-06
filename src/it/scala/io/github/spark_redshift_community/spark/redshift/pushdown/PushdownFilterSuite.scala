@@ -1887,138 +1887,158 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
   test("Test AND statements", P1Test) {
-    doTest(sqlContext, testAnd0)
-    doTest(sqlContext, testAnd1)
-    doTest(sqlContext, testAnd2)
-    doTest(sqlContext, testAnd3)
-    doTest(sqlContext, testAnd4)
-    doTest(sqlContext, testAnd5)
-    doTest(sqlContext, testAnd6)
-    doTest(sqlContext, testAnd7)
-    doTest(sqlContext, testAnd8)
+    val cases = Seq(
+    testAnd0,
+    testAnd1,
+    testAnd2,
+    testAnd3,
+    testAnd4,
+    testAnd5,
+    testAnd6,
+    testAnd7,
+    testAnd8)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   test("Test OR statements", P1Test) {
-    doTest(sqlContext, testOr0)
-    doTest(sqlContext, testOr1)
-    doTest(sqlContext, testOr2)
-    doTest(sqlContext, testOr3)
-    doTest(sqlContext, testOr4)
+    val cases = Seq(
+    testOr0,
+    testOr1,
+    testOr2,
+    testOr3,
+    testOr4)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   test("Test Binary + operator", P1Test) {
-    doTest(sqlContext, testBinaryPlus0)
-    doTest(sqlContext, testBinaryPlus1)
-    doTest(sqlContext, testBinaryPlus2)
-    doTest(sqlContext, testBinaryPlus3)
-    doTest(sqlContext, testBinaryPlus4)
-    doTest(sqlContext, testBinaryPlus5)
-    doTest(sqlContext, testBinaryPlus8)
-    doTest(sqlContext, testBinaryPlus9)
-    doTest(sqlContext, testBinaryPlus10)
-    doTest(sqlContext, testBinaryPlus11)
-    doTest(sqlContext, testBinaryPlus12)
-    doTest(sqlContext, testBinaryPlus13)
-    doTest(sqlContext, testBinaryPlus14)
-    doTest(sqlContext, testBinaryPlus15)
-    doTest(sqlContext, testBinaryPlus16)
-    doTest(sqlContext, testBinaryPlus17)
-    doTest(sqlContext, testBinaryPlus18)
-    doTest(sqlContext, testBinaryPlus19)
-    doTest(sqlContext, testBinaryPlus20)
-    doTest(sqlContext, testBinaryPlus21)
+    val cases = Seq(
+    testBinaryPlus0,
+    testBinaryPlus1,
+    testBinaryPlus2,
+    testBinaryPlus3,
+    testBinaryPlus4,
+    testBinaryPlus5,
+    testBinaryPlus8,
+    testBinaryPlus9,
+    testBinaryPlus10,
+    testBinaryPlus11,
+    testBinaryPlus12,
+    testBinaryPlus13,
+    testBinaryPlus14,
+    testBinaryPlus15,
+    testBinaryPlus16,
+    testBinaryPlus17,
+    testBinaryPlus18,
+    testBinaryPlus19,
+    testBinaryPlus20,
+    testBinaryPlus21)
 
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   test("Test Binary - operator") {
-    doTest(sqlContext, testBinarySubtract0)
-    doTest(sqlContext, testBinarySubtract1)
-    doTest(sqlContext, testBinarySubtract3)
-    doTest(sqlContext, testBinarySubtract4)
-    doTest(sqlContext, testBinarySubtract5)
-    doTest(sqlContext, testBinarySubtract6)
-    doTest(sqlContext, testBinarySubtract7)
-    doTest(sqlContext, testBinarySubtract8)
-    doTest(sqlContext, testBinarySubtract9)
-    doTest(sqlContext, testBinarySubtract10)
-    doTest(sqlContext, testBinarySubtract11)
-    doTest(sqlContext, testBinarySubtract12)
-    doTest(sqlContext, testBinarySubtract13)
-    doTest(sqlContext, testBinarySubtract14)
-    doTest(sqlContext, testBinarySubtract15)
-    doTest(sqlContext, testBinarySubtract16)
-    doTest(sqlContext, testBinarySubtract17)
-    doTest(sqlContext, testBinarySubtract18)
-    doTest(sqlContext, testBinarySubtract19)
-    doTest(sqlContext, testBinarySubtract20)
-    doTest(sqlContext, testBinarySubtract21)
+    val cases = Seq(
+    testBinarySubtract0,
+    testBinarySubtract1,
+    testBinarySubtract3,
+    testBinarySubtract4,
+    testBinarySubtract5,
+    testBinarySubtract6,
+    testBinarySubtract7,
+    testBinarySubtract8,
+    testBinarySubtract9,
+    testBinarySubtract10,
+    testBinarySubtract11,
+    testBinarySubtract12,
+    testBinarySubtract13,
+    testBinarySubtract14,
+    testBinarySubtract15,
+    testBinarySubtract16,
+    testBinarySubtract17,
+    testBinarySubtract18,
+    testBinarySubtract19,
+    testBinarySubtract20,
+    testBinarySubtract21)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   test("Test Binary * operator") {
-    doTest(sqlContext, testBinaryMultiply0)
-    doTest(sqlContext, testBinaryMultiply1)
-    doTest(sqlContext, testBinaryMultiply2)
-    doTest(sqlContext, testBinaryMultiply3)
-    doTest(sqlContext, testBinaryMultiply4)
-    doTest(sqlContext, testBinaryMultiply5)
-    doTest(sqlContext, testBinaryMultiply6)
-    doTest(sqlContext, testBinaryMultiply7)
-    doTest(sqlContext, testBinaryMultiply8)
-    doTest(sqlContext, testBinaryMultiply9)
-    doTest(sqlContext, testBinaryMultiply10)
-    doTest(sqlContext, testBinaryMultiply13)
-    doTest(sqlContext, testBinaryMultiply14)
-    doTest(sqlContext, testBinaryMultiply15)
-    doTest(sqlContext, testBinaryMultiply16)
-    doTest(sqlContext, testBinaryMultiply17)
-    doTest(sqlContext, testBinaryMultiply18)
-    doTest(sqlContext, testBinaryMultiply19)
-    doTest(sqlContext, testBinaryMultiply20)
-    doTest(sqlContext, testBinaryMultiply21)
-    doTest(sqlContext, testBinaryMultiply22)
-    doTest(sqlContext, testBinaryMultiply23)
-    doTest(sqlContext, testBinaryMultiply24)
+    val cases = Seq(
+    testBinaryMultiply0,
+    testBinaryMultiply1,
+    testBinaryMultiply2,
+    testBinaryMultiply3,
+    testBinaryMultiply4,
+    testBinaryMultiply5,
+    testBinaryMultiply6,
+    testBinaryMultiply7,
+    testBinaryMultiply8,
+    testBinaryMultiply9,
+    testBinaryMultiply10,
+    testBinaryMultiply13,
+    testBinaryMultiply14,
+    testBinaryMultiply15,
+    testBinaryMultiply16,
+    testBinaryMultiply17,
+    testBinaryMultiply18,
+    testBinaryMultiply19,
+    testBinaryMultiply20,
+    testBinaryMultiply21,
+    testBinaryMultiply22,
+    testBinaryMultiply23,
+    testBinaryMultiply24)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   test("Test Binary / operator") {
-    doTest(sqlContext, testBinaryDivide0)
-    doTest(sqlContext, testBinaryDivide1)
-    doTest(sqlContext, testBinaryDivide2)
-    doTest(sqlContext, testBinaryDivide3)
-    doTest(sqlContext, testBinaryDivide4)
-    doTest(sqlContext, testBinaryDivide5)
-    doTest(sqlContext, testBinaryDivide6)
-    doTest(sqlContext, testBinaryDivide7)
-    doTest(sqlContext, testBinaryDivide8)
-    doTest(sqlContext, testBinaryDivide9)
-    doTest(sqlContext, testBinaryDivide10)
-    doTest(sqlContext, testBinaryDivide11)
-    doTest(sqlContext, testBinaryDivide12)
-    doTest(sqlContext, testBinaryDivide13)
-    doTest(sqlContext, testBinaryDivide14)
-    doTest(sqlContext, testBinaryDivide15)
-    doTest(sqlContext, testBinaryDivide16)
-    doTest(sqlContext, testBinaryDivide17)
-    doTest(sqlContext, testBinaryDivide18)
-    doTest(sqlContext, testBinaryDivide19)
-    doTest(sqlContext, testBinaryDivide20)
-    doTest(sqlContext, testBinaryDivide21)
-    doTest(sqlContext, testBinaryDivide22)
-    doTest(sqlContext, testBinaryDivide23)
-    doTest(sqlContext, testBinaryDivide24)
-    doTest(sqlContext, testBinaryDivide25)
+    val cases = Seq(
+    testBinaryDivide0,
+    testBinaryDivide1,
+    testBinaryDivide2,
+    testBinaryDivide3,
+    testBinaryDivide4,
+    testBinaryDivide5,
+    testBinaryDivide6,
+    testBinaryDivide7,
+    testBinaryDivide8,
+    testBinaryDivide9,
+    testBinaryDivide10,
+    testBinaryDivide11,
+    testBinaryDivide12,
+    testBinaryDivide13,
+    testBinaryDivide14,
+    testBinaryDivide15,
+    testBinaryDivide16,
+    testBinaryDivide17,
+    testBinaryDivide18,
+    testBinaryDivide19,
+    testBinaryDivide20,
+    testBinaryDivide21,
+    testBinaryDivide22,
+    testBinaryDivide23,
+    testBinaryDivide24,
+    testBinaryDivide25)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   test("Test Literal", P1Test) {
-    doTest(sqlContext, testLiteral0)
-    doTest(sqlContext, testLiteral1)
-    doTest(sqlContext, testLiteral2)
-    doTest(sqlContext, testLiteral3)
-    doTest(sqlContext, testLiteral4)
-    doTest(sqlContext, testLiteral5)
-    doTest(sqlContext, testLiteral6)
-    doTest(sqlContext, testLiteral7)
-    doTest(sqlContext, testLiteral8)
+    val cases = Seq(
+    testLiteral0,
+    testLiteral1,
+    testLiteral2,
+    testLiteral3,
+    testLiteral4,
+    testLiteral5,
+    testLiteral6,
+    testLiteral7,
+    testLiteral8)
+
+    cases.par.foreach { doTest(sqlContext, _) }
   }
 
   ignore("Unsupported/Failing tests") {
@@ -2032,12 +2052,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   }
 }
 
-class TextFilterPushdownSuite extends PushdownFilterSuite {
+class TextPushdownFilterSuite extends PushdownFilterSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetFilterPushdownSuite extends PushdownFilterSuite {
+class ParquetPushdownFilterSuite extends PushdownFilterSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -2052,12 +2072,12 @@ class ParquetNoPushdownFilterSuite extends PushdownFilterSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheFilterSuite
-  extends TextFilterPushdownSuite {
+class TextNoCachePushdownFilterSuite
+  extends TextPushdownFilterSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheFilterSuite
-  extends ParquetFilterPushdownSuite {
+class ParquetNoCachePushdownFilterSuite
+  extends ParquetPushdownFilterSuite {
   override protected val s3_result_cache = "false"
 }

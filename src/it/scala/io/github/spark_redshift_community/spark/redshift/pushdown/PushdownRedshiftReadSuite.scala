@@ -16,7 +16,45 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import io.github.spark_redshift_community.spark.redshift.{IntegrationSuiteBase, OverrideNullableSuite}
+import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.adaptive.AdaptiveSparkPlanExec
 
 class PushdownRedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite {
   override val auto_pushdown: String = "true"
+
+  test("pushdowns across multiple clusters are executed separately") {
+    // A single pushdown operation cannot query data from multiple clusters
+    // this verifies that separate scans are generated for each cluster
+    val expectedUrl1 = jdbcUrl + "&ApplicationName=1"
+    val expectedUrl2 = jdbcUrl + "&ApplicationName=2"
+
+    withTempRedshiftTable("testTable") { name =>
+      conn.createStatement().executeUpdate(s"create table $name (id integer)")
+      read.
+        option("url", expectedUrl1).
+        option("dbtable", name).
+        load().createOrReplaceTempView("view1")
+      read.
+        option("url", expectedUrl2).
+        option("dbtable", name).
+        load().createOrReplaceTempView("view2")
+
+      val plan = sqlContext.sql("select count(*) from view1 union select count(*) from view2").
+        queryExecution.executedPlan
+
+      val traversablePlan = plan match {
+        case p: AdaptiveSparkPlanExec => p.executedPlan
+        case _ => plan
+      }
+
+      assert(traversablePlan.exists {
+        case RedshiftScanExec(_, _, relation) => relation.params.jdbcUrl == expectedUrl1
+        case _ => false
+      })
+      assert(traversablePlan.exists {
+        case RedshiftScanExec(_, _, relation) => relation.params.jdbcUrl == expectedUrl2
+        case _ => false
+      })
+    }
+  }
 }

@@ -22,9 +22,12 @@ import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, PARAM_OVERRIDE_NULLABLE}
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.SQLContext
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatestplus.mockito.MockitoSugar.mock
 import org.scalatest.matchers.should._
 import org.scalatest.funsuite.AnyFunSuite
@@ -36,7 +39,20 @@ import java.util.Properties
 /**
  * Unit tests for helper functions
  */
-class UtilsSuite extends AnyFunSuite with Matchers {
+class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
+
+  private var sc: SparkContext = _
+  private var sqlContext: SQLContext = _
+  override def beforeAll(): Unit = {
+    sc = new SparkContext("local", "UtilsSuite")
+    sqlContext = new SQLContext(sc)
+  }
+
+  override def afterAll(): Unit = {
+    sc.stop()
+    sc = null
+    sqlContext = null
+  }
 
   test("joinUrls preserves protocol information") {
     Utils.joinUrls("s3n://foo/bar/", "/baz") shouldBe "s3n://foo/bar/baz/"
@@ -164,14 +180,6 @@ class UtilsSuite extends AnyFunSuite with Matchers {
     verify(mockLogger).info(BuildInfo.toString)
   }
 
-  test("collectMetrics outputs unique log to INFO when version includes -amzn- INFO") {
-    val mockLogger = mock[Logger]
-    Utils.collectMetrics(MergedParameters(fakeCredentials), Some(mockLogger))
-    if (BuildInfo.version.contains("-amzn-")) {
-      verify(mockLogger).info("amazon-spark-redshift-connector")
-    }
-  }
-
   test("collectMetrics logs to INFO level when ParamLegacyJDBCRealTypeMapping is enabled") {
     val mockLogger = mock[Logger]
     val fakeCredentialsOverride = fakeCredentials +
@@ -240,7 +248,7 @@ class UtilsSuite extends AnyFunSuite with Matchers {
     val longString = "a" * 1000
     val expectedLabel = "a" * 100
     val expectedString = s""""lbl":"$expectedLabel""""
-    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, longString)
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, longString, sqlContext)
 
     actualQueryGroup.contains(expectedString)
   }

@@ -122,7 +122,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       ("col_boolean_runlength", (true, false), 5000),
       ("col_boolean_zstd", (true, false), 5000)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -152,7 +152,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       ("col_decimal_18_18_runlength", "(-1,0,1)", 1),
       ("col_decimal_18_18_zstd", "(-1,0,1)", 0),
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -198,7 +198,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       ("col_decimal_38_37_zstd",
         "(0.7664120400000000000000000000000000000,0.4022369500000000000000000000000000000)", 0)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -310,7 +310,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       ("col_varchar_max_zstd", s"('$string255Char', '$string2000Char')",
         s"(\\'$string255Char\\', \\'$string2000Char\\')", 0)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val query_in = test_case._2
       val expected_res = test_case._3
@@ -370,7 +370,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       ("col_timestamptz_zstd", "('1994-05-19 01:03:01', '1994-05-19 01:03:02')",
         "(\\'1994-05-19 01:03:01\\', \\'1994-05-19 01:03:02\\')", 0)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val query_in = test_case._2
       val expected_res = test_case._3
@@ -401,7 +401,7 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
       ("col_float8_runlength", "(-6.5868966897085, -1.3480701575018)", 0),
       ("col_float8_zstd", "(-6.5868966897085, -1.3480701575018)", 0)
     )
-    input.foreach( test_case => {
+    input.par.foreach( test_case => {
       val column_name = test_case._1.toUpperCase
       val expected_res = test_case._2
       val result_size = test_case._3
@@ -418,11 +418,11 @@ abstract class BooleanInOperatorCorrectnessSuite extends IntegrationPushdownSuit
   }
 }
 
-class TextInOperatorBooleanCorrectnessSuite extends BooleanInOperatorCorrectnessSuite {
+class TextBooleanInOperatorCorrectnessSuite extends BooleanInOperatorCorrectnessSuite {
   override protected val s3format: String = "TEXT"
 }
 
-class ParquetInOperatorBooleanCorrectnessSuite extends BooleanInOperatorCorrectnessSuite {
+class ParquetBooleanInOperatorCorrectnessSuite extends BooleanInOperatorCorrectnessSuite {
   override protected val s3format: String = "PARQUET"
 }
 
@@ -438,12 +438,12 @@ class ParquetNoPushdownBooleanInOperatorCorrectnessSuite
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheBooleanInOperatorCorrectnessSuite
-  extends TextInOperatorBooleanCorrectnessSuite {
+class TextNoCacheBooleanInOperatorCorrectnessSuite
+  extends TextBooleanInOperatorCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheBooleanInOperatorCorrectnessSuite
-  extends ParquetInOperatorBooleanCorrectnessSuite {
+class ParquetNoCacheBooleanInOperatorCorrectnessSuite
+  extends ParquetBooleanInOperatorCorrectnessSuite {
   override protected val s3_result_cache = "false"
 }

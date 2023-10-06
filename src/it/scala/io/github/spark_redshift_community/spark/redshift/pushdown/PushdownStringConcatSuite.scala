@@ -44,7 +44,7 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
       (9, "testvarstring", "  樂Multi趣    樂Multi趣  ")
     )
 
-    paramTuples.foreach(paramTuple => {
+    paramTuples.par.foreach(paramTuple => {
       val id = paramTuple._1
       val column = paramTuple._2
       val result = paramTuple._3
@@ -81,7 +81,7 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
       (9, "  _Single_  樂Multi趣  ")
     )
 
-    columnTuples.foreach(columnTuple => {
+    columnTuples.par.foreach(columnTuple => {
       val column1 = columnTuple._1
       val column2 = columnTuple._2
 
@@ -117,7 +117,7 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
       (1, "樂趣", "Hello WorldHello World樂趣")
     )
 
-    columnTuples.foreach(columnTuple => {
+    columnTuples.par.foreach(columnTuple => {
       val column1 = columnTuple._1
       val column2 = columnTuple._2
 
@@ -144,12 +144,12 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
   }
 }
 
-class TextStringConcatPushdownSuite extends PushdownStringConcatSuite {
+class TextPushdownStringConcatSuite extends PushdownStringConcatSuite {
   override protected val s3format: String = "TEXT"
   override protected val auto_pushdown: String = "true"
 }
 
-class ParquetStringConcatPushdownSuite extends PushdownStringConcatSuite {
+class ParquetPushdownStringConcatSuite extends PushdownStringConcatSuite {
   override protected val s3format: String = "PARQUET"
   override protected val auto_pushdown: String = "true"
 }
@@ -164,12 +164,12 @@ class ParquetNoPushdownStringConcatSuite extends PushdownStringConcatSuite {
   override protected val auto_pushdown: String = "false"
 }
 
-class TextPushdownNoCacheStringConcatSuite
-  extends TextStringConcatPushdownSuite {
+class TextNoCachePushdownStringConcatSuite
+  extends TextPushdownStringConcatSuite {
   override protected val s3_result_cache = "false"
 }
 
-class ParquetPushdownNoCacheStringConcatSuite
-  extends ParquetStringConcatPushdownSuite {
+class ParquetNoCachePushdownStringConcatSuite
+  extends ParquetPushdownStringConcatSuite {
   override protected val s3_result_cache = "false"
 }
