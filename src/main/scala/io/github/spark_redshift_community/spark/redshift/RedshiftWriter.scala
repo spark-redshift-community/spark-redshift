@@ -352,6 +352,7 @@ private[redshift] class RedshiftWriter(
       }
     )
 
+    log.info("Unloading data to S3")
     val writer = sqlContext.createDataFrame(convertedRows, convertedSchema).write
     (tempFormat match {
       case "AVRO" =>
