@@ -243,7 +243,8 @@ private[redshift] class RedshiftWriter(
       data: DataFrame,
       tempDir: String,
       tempFormat: String,
-      nullString: String): Option[String] = {
+      nullString: String,
+      trimCSV: Boolean): Option[String] = {
     // spark-avro does not support Date types. In addition, it converts Timestamps into longs
     // (milliseconds since the Unix epoch). Redshift is capable of loading timestamps in
     // 'epochmillisecs' format but there's no equivalent format for dates. To work around this, we
@@ -361,10 +362,14 @@ private[redshift] class RedshiftWriter(
         writer.format("csv")
           .option("escape", "\"")
           .option("nullValue", nullString)
+          .option("ignoreLeadingWhiteSpace", trimCSV)
+          .option("ignoreTrailingWhiteSpace", trimCSV)
       case "CSV GZIP" =>
         writer.format("csv")
           .option("escape", "\"")
           .option("nullValue", nullString)
+          .option("ignoreLeadingWhiteSpace", trimCSV)
+          .option("ignoreTrailingWhiteSpace", trimCSV)
           .option("compression", "gzip")
       case "PARQUET" =>
         writer.format("parquet")
@@ -476,7 +481,8 @@ private[redshift] class RedshiftWriter(
       data,
       tempDir = params.createPerQueryTempDir(),
       tempFormat = params.tempFormat,
-      nullString = params.nullString)
+      nullString = params.nullString,
+      trimCSV = params.legacyTrimCSVWrites)
 
     // Uncertain if this is necessary as s3 is now strongly consistent
     // https://aws.amazon.com/s3/consistency/

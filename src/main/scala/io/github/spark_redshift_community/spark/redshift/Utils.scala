@@ -331,10 +331,12 @@ private[redshift] object Utils {
     if (params.legacyJdbcRealTypeMapping) {
       metricLogger.info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
     }
+    if (params.legacyTrimCSVWrites) {
+      metricLogger.info(s"${Parameters.PARAM_LEGACY_TRIM_CSV_WRITES} is enabled")
+    }
     if (params.overrideNullable) {
       metricLogger.info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
     }
-
   }
 
   val DEFAULT_APP_NAME = "spark-redshift-connector"

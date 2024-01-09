@@ -34,6 +34,7 @@ private[redshift] object Parameters {
   val PARAM_COPY_RETRY_COUNT: String = "copyretrycount"
   val PARAM_COPY_DELAY: String = "copydelay"
   val PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING: String = "legacy_jdbc_real_type_mapping"
+  val PARAM_LEGACY_TRIM_CSV_WRITES: String = "legacy_trim_csv_writes"
   val PARAM_OVERRIDE_NULLABLE: String = "overridenullable"
   val PARAM_TEMPDIR_REGION: String = "tempdir_region"
   val PARAM_SECRET_ID: String = "secret.id"
@@ -65,6 +66,7 @@ private[redshift] object Parameters {
     PARAM_COPY_RETRY_COUNT -> "2",
     PARAM_COPY_DELAY -> "0",
     PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
+    PARAM_LEGACY_TRIM_CSV_WRITES -> "false",
     PARAM_TEMPDIR_REGION -> "",
     PARAM_USER_QUERY_GROUP_LABEL -> ""
   )
@@ -409,6 +411,13 @@ private[redshift] object Parameters {
      */
     def legacyJdbcRealTypeMapping: Boolean =
       parameters(PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING).toBoolean
+
+    /**
+     * Trims leading and trailing whitespace when using CSV-based formats (CSV and CSV GZIP) for
+     * tempformat during writes. Added for backwards support with legacy applications.
+     */
+    def legacyTrimCSVWrites: Boolean =
+      parameters(PARAM_LEGACY_TRIM_CSV_WRITES).toBoolean
 
     /**
      * Turns empty strings into nulls
