@@ -46,7 +46,7 @@ val internalReleaseRepoPass = sys.props.get("ci.internalTeamMvnPassword").getOrE
 val releaseSparkVersion = testSparkVersion.substring(0, testSparkVersion.lastIndexOf("."))
 
 def incompatibleSparkVersions(): FileFilter = {
-  val versionArray = testSparkVersion.split("""\.""").map(Integer.parseInt)
+  val versionArray = releaseSparkVersion.split("""\.""").map(Integer.parseInt)
   val major = versionArray(0)
   val minor = versionArray(1)
 
