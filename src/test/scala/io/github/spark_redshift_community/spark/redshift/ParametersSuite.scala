@@ -227,4 +227,17 @@ class ParametersSuite extends AnyFunSuite with Matchers {
       "be valid unicode identifier parts (char.isUnicodeIdentifierPart == true), " +
       "'!' character not allowed")
   }
+
+  test("tempdir_region allows pre-GA regions") {
+    val params = Map(
+      "tempdir" -> "s3://foo/bar",
+      "dbtable" -> "test_schema.test_table",
+      "url" -> "jdbc:redshift://foo/bar?user=user&password=password",
+      "forward_spark_s3_credentials" -> "true",
+      "tempdir_region" -> "pre-ga-region",
+    )
+    val mergedParams = Parameters.mergeParameters(params)
+
+    assert(mergedParams.tempDirRegion.get == "pre-ga-region")
+  }
 }

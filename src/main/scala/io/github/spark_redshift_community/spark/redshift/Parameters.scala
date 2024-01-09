@@ -171,7 +171,7 @@ private[redshift] object Parameters {
      */
     def tempDirRegion: Option[String] = {
       val regionName = parameters.getOrElse(PARAM_TEMPDIR_REGION, "")
-      if (regionName.isEmpty) None else Some(Regions.fromName(regionName).getName)
+      if (regionName.isEmpty) None else Some(regionName)
     }
 
     /**

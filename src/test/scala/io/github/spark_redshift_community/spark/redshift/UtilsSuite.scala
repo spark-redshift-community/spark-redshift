@@ -252,4 +252,12 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
     actualQueryGroup.contains(expectedString)
   }
+
+  test("pre-GA regions are permitted") {
+    val specifiedRegion = Utils.getDefaultTempDirRegion(Some("pre-ga-region"))
+    assert(specifiedRegion == "pre-ga-region")
+
+    val defaultRegion = Utils.getDefaultTempDirRegion(None)
+    assert(defaultRegion.isEmpty == false)
+  }
 }
