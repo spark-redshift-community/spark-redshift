@@ -287,9 +287,9 @@ private[redshift] object Utils {
     }
   }
 
-  def getDefaultTempDirRegion(tempDirRegion: Option[String]): Regions = {
+  def getDefaultTempDirRegion(tempDirRegion: Option[String]): String = {
     // If the user provided a region, use it above everything else.
-    if (tempDirRegion.isDefined) return Regions.fromName(tempDirRegion.get)
+    if (tempDirRegion.isDefined) return tempDirRegion.get
 
     // Either the user didn't provide a region or its malformed. Try to use the
     // connector's region as the tempdir region since they are usually collocated.
@@ -309,7 +309,7 @@ private[redshift] object Utils {
     }
 
     // If all else fails, pick a default region.
-    if (currRegion != null) Regions.fromName(currRegion.getName()) else Regions.US_EAST_1
+    if (currRegion != null) currRegion.getName else Regions.US_EAST_1.getName
   }
 
   def s3ClientBuilder: (AWSCredentialsProvider, MergedParameters) => AmazonS3 =
@@ -331,10 +331,12 @@ private[redshift] object Utils {
     if (params.legacyJdbcRealTypeMapping) {
       metricLogger.info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
     }
+    if (params.legacyTrimCSVWrites) {
+      metricLogger.info(s"${Parameters.PARAM_LEGACY_TRIM_CSV_WRITES} is enabled")
+    }
     if (params.overrideNullable) {
       metricLogger.info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
     }
-
   }
 
   val DEFAULT_APP_NAME = "spark-redshift-connector"

@@ -124,6 +124,26 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
           new MetadataBuilder().putString("redshift_type", "timestamp").build()) :: Nil))
     )
   }
+
+  test("save with column values that contain spaces are preserved by default") {
+    // This test can be simplified once #98 is fixed.
+    val tableName = s"save_with_column_values_with_spaces_$randomSuffix"
+    try {
+      val df = Seq(Row("  test    "))
+      write(
+        sqlContext.createDataFrame(
+          sc.parallelize(df),
+          StructType(Seq(StructField("teststring", StringType)))))
+        .option("dbtable", tableName)
+        .mode(SaveMode.ErrorIfExists)
+        .save()
+
+      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      checkAnswer(read.option("dbtable", tableName).load(), df)
+    } finally {
+      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+    }
+  }
 }
 
 class AvroRedshiftWriteSuite extends BaseRedshiftWriteSuite {
@@ -152,32 +172,52 @@ class CSVRedshiftWriteSuite extends BaseRedshiftWriteSuite with ComplexWriteSuit
         StructType(StructField("column name with spaces", IntegerType, true,
           new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)))
   }
-}
 
-class CSVGZIPRedshiftWriteSuite extends IntegrationSuiteBase {
-  // Note: we purposely don't inherit from BaseRedshiftWriteSuite because we're only interested in
-  // testing basic functionality of the GZIP code; the rest of the write path should be unaffected
-  // by compression here.
-
-  override protected def write(df: DataFrame): DataFrameWriter[Row] =
-    super.write(df).option("tempformat", "CSV GZIP")
-
-  test("roundtrip save and load") {
-    // This test can be simplified once #98 is fixed.
-    val tableName = s"roundtrip_save_and_load_$randomSuffix"
+  test("do not trim column values when legacy_trim_csv_writes option is false") {
+    val tableName = s"save_with_column_values_with_spaces_$randomSuffix"
     try {
+      val df = Seq(Row("  test    "))
       write(
-        sqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testSchema))
+        sqlContext.createDataFrame(
+          sc.parallelize(df),
+          StructType(Seq(StructField("teststring", StringType)))))
         .option("dbtable", tableName)
+        .option(Parameters.PARAM_LEGACY_TRIM_CSV_WRITES, value = false)
         .mode(SaveMode.ErrorIfExists)
         .save()
 
       assert(DefaultJDBCWrapper.tableExists(conn, tableName))
-      checkAnswer(read.option("dbtable", tableName).load(), TestUtils.expectedData)
+      checkAnswer(read.option("dbtable", tableName).load(), df)
     } finally {
       conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
     }
   }
+
+  test("trim column values when legacy_trim_csv_writes option is true") {
+    val tableName = s"save_with_column_values_with_spaces_$randomSuffix"
+    try {
+      val df = Seq(Row("  test    "))
+      val trimmed_df = Seq(Row("test"))
+      write(
+        sqlContext.createDataFrame(
+          sc.parallelize(df),
+          StructType(Seq(StructField("teststring", StringType)))))
+        .option("dbtable", tableName)
+        .option(Parameters.PARAM_LEGACY_TRIM_CSV_WRITES, value = true)
+        .mode(SaveMode.ErrorIfExists)
+        .save()
+
+      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      checkAnswer(read.option("dbtable", tableName).load(), trimmed_df)
+    } finally {
+      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+    }
+  }
+}
+
+class CSVGZIPRedshiftWriteSuite extends CSVRedshiftWriteSuite {
+  override protected def write(df: DataFrame): DataFrameWriter[Row] =
+    super.write(df).option("tempformat", "CSV GZIP")
 }
 
 class ParquetRedshiftWriteSuite extends BaseRedshiftWriteSuite with ComplexWriteSuite {
