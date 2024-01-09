@@ -16,6 +16,13 @@
 
 # spark-redshift Changelog
 
+## 6.2.0 (2024-01-12)
+- Validates support for Spark 3.3.4 and Spark 3.4.2
+- Upgrades Redshift JDBC driver to version 2.1.0.24
+- Fixes issue where CSV writes would trim leading and trailing whitespace on column values.
+- Improves logging during Redshift writes to differentiate time spent writing to S3 versus COPYing into Redshift (#148)
+- Supports pre-GA AWS regions.
+
 ## 6.1.0 (2023-10-06)
 
 - Support Spark 3.4.1 and 3.5.0
