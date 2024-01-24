@@ -389,7 +389,7 @@ private[redshift] class JDBCWrapper extends Serializable {
           case LongType => "BIGINT"
           case DoubleType => "DOUBLE PRECISION"
           case FloatType => "REAL"
-          case ShortType => "INTEGER"
+          case ShortType => "SMALLINT"
           case ByteType => "SMALLINT" // Redshift does not support the BYTE type.
           case BooleanType => "BOOLEAN"
           case StringType =>
