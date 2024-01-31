@@ -204,7 +204,8 @@ private[redshift] object Parameters {
       if (dbtable.startsWith("(") && dbtable.endsWith(")")) {
         None
       } else {
-        Some(TableName.parseFromEscaped(dbtable))
+        val addAutoMount = parameters.getOrElse("addautomount", "").equals("true")
+        Some(TableName.parseFromEscaped(dbtable, addAutoMount))
       }
     }
 

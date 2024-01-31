@@ -22,6 +22,8 @@ import org.scalatest.funsuite.AnyFunSuite
 class TableNameSuite extends AnyFunSuite {
   test("TableName.parseFromEscaped") {
     assert(TableName.parseFromEscaped("foo.bar") === TableName("foo", "bar"))
+    assert(TableName.parseFromEscaped("foo.bar", addAutomount = true)
+        === TableName("foo", "bar", addAutomount = true))
     assert(TableName.parseFromEscaped("foo") === TableName("PUBLIC", "foo"))
     assert(TableName.parseFromEscaped("\"foo\"") === TableName("PUBLIC", "foo"))
     assert(TableName.parseFromEscaped("\"\"\"foo\"\"\".bar") === TableName("\"foo\"", "bar"))
@@ -34,5 +36,8 @@ class TableNameSuite extends AnyFunSuite {
     assert(TableName("foo", "bar").toString === """"foo"."bar"""")
     assert(TableName("PUBLIC", "bar").toString === """"PUBLIC"."bar"""")
     assert(TableName("\"foo\"", "bar").toString === "\"\"\"foo\"\"\".\"bar\"")
+    assert(
+      TableName("foo", "bar", addAutomount = true).toString ===
+        """"awsdatacatalog"."foo"."bar"""")
   }
 }
