@@ -496,13 +496,20 @@ The parameter map or <tt>OPTIONS</tt> provided in Spark SQL supports the followi
     <td><tt>secret.id</tt></td>
     <td>No</td>
     <td>No default</td>
-    <td> The Name or ARN of your secret. May only be used if the user, password and DbUser are not passed in the URL or as options.</td>
+    <td> The Name or ARN of your secret stored in AWS Secrets Manager. May be used to automatically supply Redshift credentials but only if the user, password and DbUser are not passed in the URL or as options.</td>
 </tr>
 <tr> 
     <td><tt>secret.region</tt></td>
     <td>No</td>
     <td>No default</td>
-    <td>The AWS region (e.g., 'us-east-1') where your secret resides. Required when using a name instead of an ARN for <tt>secret.id</tt>. </td>
+    <td>
+       <p>The primary AWS region (e.g., <tt>us-east-1</tt>) for searching for the <tt>secret.id</tt> value. </p>
+       <p>If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>secret.id</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
+       <ol>
+          <li>When the connector is running outside of AWS as automatic region discovery will fail and may prevent authenticating with Redshift.</li>
+          <li>When the connector is running in a different region than <tt>secret.id</tt> as it improves the connector's access performance of the secret.</li>
+       </ol>
+    </td>
 </tr>
  <tr>
     <td><tt>url</tt></td>
@@ -783,25 +790,6 @@ for more information.</p>
     <td>Number of milliseconds to wait between retrying copy operations. Non-positive values will be treated as 30 seconds.</td>
 </tr>
 <tr> 
-    <td><tt>secret.id</tt></td>
-    <td>No</td>
-    <td>No default</td>
-    <td> The Name or ARN of your secret stored in AWS Secrets Manager. May be used to automatically supply Redshift credentials but only if the user, password and DbUser are not passed in the URL or as options.</td>
-</tr>
-<tr> 
-    <td><tt>secret.region</tt></td>
-    <td>No</td>
-    <td>No default</td>
-    <td>
-       <p>The primary AWS region (e.g., <tt>us-east-1</tt>) for searching for the <tt>secret.id</tt> value. </p>
-       <p>If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>secret.id</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
-       <ol>
-          <li>When the connector is running outside of AWS as automatic region discovery will fail and may prevent authenticating with Redshift.</li>
-          <li>When the connector is running in a different region than <tt>secret.id</tt> as it improves the connector's access performance of the secret.</li>
-       </ol>
-    </td>
-</tr>
-<tr> 
     <td><tt>secret.vpcEndpointUrl</tt></td>
     <td>No</td>
     <td>No default</td>
@@ -822,6 +810,7 @@ for more information.</p>
         A complete list of possible options for the Redshift JDBC driver may be seen in the <a href="https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-configuration-options.html">Redshift docs</a>.
     </td>
 </tr>
+<tr>
     <td><tt>label</tt></td>
     <td>No</td>
     <td>""</td>
@@ -830,7 +819,6 @@ for more information.</p>
         When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"6.2.0-spark_3.5","op":"Read","lbl":"","tid":""}}`). 
         This option will be substituted for the value of the `lbl` key.
     </td>
-<tr>
 </tr></table>
 
 ## Additional configuration options

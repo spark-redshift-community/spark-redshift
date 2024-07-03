@@ -70,7 +70,6 @@ trait ComplexWriteSuite extends IntegrationSuiteBase {
       checkAnswer(actualDf, Seq(expectedRow))
     }
   }
-
   test("roundtrip save and load array type") {
     withTempRedshiftTable("roundtrip_array_save_load") { tableName =>
       val superSchema = ArrayType(IntegerType)

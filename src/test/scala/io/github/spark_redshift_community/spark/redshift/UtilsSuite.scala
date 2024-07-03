@@ -21,7 +21,7 @@ import java.net.URI
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, PARAM_LEGACY_TRIM_CSV_WRITES, PARAM_OVERRIDE_NULLABLE}
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, PARAM_LEGACY_TRIM_CSV_WRITES, PARAM_OVERRIDE_NULLABLE, PARAM_LEGACY_MAPPING_SHORT_TO_INT}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SQLContext
 import org.mockito.ArgumentMatchers.anyString
@@ -172,6 +172,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
    Map[String, String]("forward_spark_s3_credentials" -> "true",
      Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
      Parameters.PARAM_LEGACY_TRIM_CSV_WRITES -> "false",
+     Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false",
      Parameters.PARAM_OVERRIDE_NULLABLE -> "false")
 
   test("collectMetrics logs buildinfo to INFO") {
@@ -201,6 +202,16 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
     verify(mockLogger).info(s"${Parameters.PARAM_LEGACY_TRIM_CSV_WRITES} is enabled")
   }
 
+  test("collectMetrics logs to INFO level when param legacyMappingShortToInt is enabled") {
+    val mockLogger = mock[Logger]
+    val fakeCredentialsOverride = fakeCredentials +
+      (Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "true")
+    val params = MergedParameters(fakeCredentialsOverride)
+
+    Utils.collectMetrics(params, Some(mockLogger))
+    verify(mockLogger).info(s"${Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT} is enabled")
+  }
+
   test("collectMetrics logs to INFO level when param OverrideNullable is enabled") {
     val mockLogger = mock[Logger]
     val fakeCredentialsOverride = fakeCredentials +
@@ -225,6 +236,14 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
     Utils.collectMetrics(params, Some(mockLogger))
     verify(mockLogger, never()).info(s"${Parameters.PARAM_LEGACY_TRIM_CSV_WRITES} is enabled")
+  }
+
+  test("collectMetrics does not log when param legacyMappingShortToInt is disabled") {
+    val mockLogger = mock[Logger]
+    val params = MergedParameters(fakeCredentials)
+
+    Utils.collectMetrics(params, Some(mockLogger))
+    verify(mockLogger, never()).info(s"${Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT} is enabled")
   }
 
   test("collectMetrics does not log when param OverrideNullable is disabled") {

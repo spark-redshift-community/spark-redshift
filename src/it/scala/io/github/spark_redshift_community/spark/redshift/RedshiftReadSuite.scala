@@ -18,7 +18,7 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import java.sql.Timestamp
-import org.apache.spark.sql.types.{CalendarIntervalType, DoubleType, FloatType, LongType, StructField, StructType}
+import org.apache.spark.sql.types.{CalendarIntervalType, ByteType, DoubleType, FloatType, IntegerType, LongType, ShortType, StructField, StructType}
 import org.apache.spark.sql.{AnalysisException, Row, execution}
 
 /**
@@ -62,6 +62,22 @@ class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite 
          |""".stripMargin
     )
   }
+  protected def createSmallintDataInRedshift(tableName: String): Unit = {
+    conn.createStatement().executeUpdate(
+      s"""
+         | create table $tableName (
+         | test_smallint smallint
+         | )
+         |""".stripMargin
+    )
+
+    conn.createStatement().executeUpdate(
+      s"""insert into $tableName values
+         | (1), (2), (32767), (-32768)
+         |""".stripMargin
+    )
+  }
+
 
   test("DefaultSource can load Redshift UNLOAD output to a DataFrame") {
     checkAnswer(
@@ -322,6 +338,46 @@ class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite 
         .load()
       assert(df.schema match {
         case StructType(Array(StructField(_, DoubleType, _, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("read smallint as ShortType by default") {
+    withTempRedshiftTable("readSmallintDefault") { tableName =>
+      createSmallintDataInRedshift(tableName)
+      val df = read
+        .option("dbtable", tableName).load()
+      assert(df.schema match {
+        case StructType(Array(StructField(_, ShortType, _, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("read smallint as ShortType when legacy_mapping_short_to_int option is false") {
+    withTempRedshiftTable("readSmallintFalse") { tableName =>
+      createSmallintDataInRedshift(tableName)
+      val df = read
+        .option("dbtable", tableName)
+        .option(Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT, value = false)
+        .load()
+      assert(df.schema match {
+        case StructType(Array(StructField(_, ShortType, _, _))) => true
+        case _ => false
+      })
+    }
+  }
+
+  test("read smallint as IntegerType when legacy_mapping_short_to_int option is true") {
+    withTempRedshiftTable("readSmallintTrue") { tableName =>
+      createSmallintDataInRedshift(tableName)
+      val df = read
+        .option("dbtable", tableName)
+        .option(Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT, value = true)
+        .load()
+      assert(df.schema match {
+        case StructType(Array(StructField(_, IntegerType, _, _))) => true
         case _ => false
       })
     }

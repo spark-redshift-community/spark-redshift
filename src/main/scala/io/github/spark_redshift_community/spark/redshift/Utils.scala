@@ -337,6 +337,9 @@ private[redshift] object Utils {
     if (params.overrideNullable) {
       metricLogger.info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
     }
+    if (params.legacyMappingShortToInt) {
+      metricLogger.info(s"${Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT} is enabled")
+    }
   }
 
   val DEFAULT_APP_NAME = "spark-redshift-connector"
