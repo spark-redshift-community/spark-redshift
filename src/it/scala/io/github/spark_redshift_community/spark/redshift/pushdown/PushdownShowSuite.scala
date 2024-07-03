@@ -21,18 +21,17 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
   test ("show()", P0Test, P1Test) {
     val baos = new ByteArrayOutputStream()
     Console.withOut(baos) {
-      sqlContext.sql("""SELECT * FROM test_table""").show()
+      sqlContext.sql("""SELECT * FROM test_table where teststring is null or teststring not like 'Unicode%'""").show()
     }
     var expectedResult =
-      """|+--------+--------+----------+-------------------+---------+-------+----------------+---------+-------------+--------------------+
-         ||testbyte|testbool|  testdate|         testdouble|testfloat|testint|        testlong|testshort|   teststring|       testtimestamp|
-         |+--------+--------+----------+-------------------+---------+-------+----------------+---------+-------------+--------------------+
-         ||    null|    null|      null|               null|     null|   null|            null|     null|         null|                null|
-         ||       0|    null|2015-07-03|                  0|       -1|4141214|1239012341823719|     null|            f| 2015-07-03 12:34:56|
-         ||       0|   false|      null|-1234152.1231249799|   100000|   null|1239012341823719|       24|     ___|_123|                null|
-         ||       1|   false|2015-07-02|                  0|        0|     42|1239012341823719|      -13|         asdf| 2015-07-02 00:00:00|
-         ||       1|    true|2015-07-01| 1234152.1231249799|        1|     42|1239012341823719|       23|Unicode's樂趣|2015-07-01 00:00:...|
-         |+--------+--------+----------+-------------------+---------+-------+----------------+---------+-------------+--------------------+""".stripMargin
+      """+--------+--------+----------+-------------------+---------+-------+----------------+---------+----------+-------------------+
+         ||testbyte|testbool|  testdate|         testdouble|testfloat|testint|        testlong|testshort|teststring|      testtimestamp|
+         |+--------+--------+----------+-------------------+---------+-------+----------------+---------+----------+-------------------+
+         ||    null|    null|      null|               null|     null|   null|            null|     null|      null|               null|
+         ||       0|    null|2015-07-03|                  0|       -1|4141214|1239012341823719|     null|         f|2015-07-03 12:34:56|
+         ||       0|   false|      null|-1234152.1231249799|   100000|   null|1239012341823719|       24|  ___|_123|               null|
+         ||       1|   false|2015-07-02|                  0|        0|     42|1239012341823719|      -13|      asdf|2015-07-02 00:00:00|
+         |+--------+--------+----------+-------------------+---------+-------+----------------+---------+----------+-------------------+""".stripMargin
     // Adjust for null values being upper-case for Spark 3.5 or newer.
     if (sc.version.replace(".", "").toInt >= 350) {
       expectedResult = expectedResult.replace("null", "NULL")
@@ -40,50 +39,50 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
     checkResult(expectedResult, baos.toString)
 
     checkSqlStatement(
+      s"""SELECT * FROM ( SELECT ( CAST ( "SUBQUERY_1"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_2_COL_0",
+         |( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_1",
+         |( CAST ( "SUBQUERY_1"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_2_COL_2",
+         |( CAST ( "SUBQUERY_1"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_2_COL_3",
+         |( CAST ( "SUBQUERY_1"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_2_COL_4",
+         |( CAST ( "SUBQUERY_1"."TESTINT" AS VARCHAR ) ) AS "SUBQUERY_2_COL_5",
+         |( CAST ( "SUBQUERY_1"."TESTLONG" AS VARCHAR ) ) AS "SUBQUERY_2_COL_6",
+         |( CAST ( "SUBQUERY_1"."TESTSHORT" AS VARCHAR ) ) AS "SUBQUERY_2_COL_7",
+         |( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_8",
+         |( CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS VARCHAR ) ) AS "SUBQUERY_2_COL_9"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+         | WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NULL ) OR NOT ( ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT ( \\'Unicode\\' , \\'%\\' ) ) ) ) )
+         | AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 21""".stripMargin,
       s"""SELECT * FROM ( SELECT
-         |( CAST( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_0",
-         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END ) AS "SUBQUERY_1_COL_1",
-         |( CAST( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_2",
-         |( CAST( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_3",
-         |( CAST( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_4",
-         |( CAST( "SUBQUERY_0"."TESTINT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_5",
-         |( CAST( "SUBQUERY_0"."TESTLONG" AS VARCHAR ) ) AS "SUBQUERY_1_COL_6",
-         |( CAST( "SUBQUERY_0"."TESTSHORT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_7",
-         |( "SUBQUERY_0"."TESTSTRING") AS "SUBQUERY_1_COL_8",
-         |( CAST( "SUBQUERY_0"."TESTTIMESTAMP" AS VARCHAR ) ) AS "SUBQUERY_1_COL_9"
-         | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS") AS "SUBQUERY_0" )
-         | AS "SUBQUERY_1" LIMIT 21""".stripMargin,
-      s"""SELECT * FROM ( SELECT
-         |( CASE WHEN "SUBQUERY_0"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_0",
-         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END END ) AS "SUBQUERY_1_COL_1",
-         |( CASE WHEN "SUBQUERY_0"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) END ) AS" SUBQUERY_1_COL_2",
-         |( CASE WHEN "SUBQUERY_0"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_3",
-         |( CASE WHEN "SUBQUERY_0"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_4",
-         |( CASE WHEN "SUBQUERY_0"."TESTINT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTINT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_5",
-         |( CASE WHEN "SUBQUERY_0"."TESTLONG" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTLONG" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_6",
-         |( CASE WHEN "SUBQUERY_0"."TESTSHORT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTSHORT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_7",
-         |( CASE WHEN "SUBQUERY_0"."TESTSTRING" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_8",
-         |( CASE WHEN "SUBQUERY_0"."TESTTIMESTAMP" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTTIMESTAMP" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_9"
-         | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-         | AS "SUBQUERY_1" LIMIT 21""".stripMargin
+         |( CASE WHEN "SUBQUERY_1"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_0",
+         |( CASE WHEN "SUBQUERY_1"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END END ) AS "SUBQUERY_2_COL_1",
+         |( CASE WHEN "SUBQUERY_1"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTDATE" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_2",
+         |( CASE WHEN "SUBQUERY_1"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_3",
+         |( CASE WHEN "SUBQUERY_1"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_4",
+         |( CASE WHEN "SUBQUERY_1"."TESTINT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTINT" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_5",
+         |( CASE WHEN "SUBQUERY_1"."TESTLONG" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTLONG" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_6",
+         |( CASE WHEN "SUBQUERY_1"."TESTSHORT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTSHORT" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_7",
+         |( CASE WHEN "SUBQUERY_1"."TESTSTRING" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTSTRING" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_8",
+         |( CASE WHEN "SUBQUERY_1"."TESTTIMESTAMP" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_9"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+         | WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NULL ) OR NOT ( ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT ( \\'Unicode\\', \\'%\\' ) ) ) ) )
+         | AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 21""".stripMargin
     )
   }
 
   test ("show(true)", P0Test, P1Test) {
     val baos = new ByteArrayOutputStream()
     Console.withOut(baos) {
-      sqlContext.sql("""SELECT * FROM test_table""").show(true)
+      sqlContext.sql("""SELECT * FROM test_table where teststring is null or teststring not like 'Unicode%'""").show(true)
     }
     var expectedResult =
-      """+--------+--------+----------+-------------------+---------+-------+----------------+---------+-------------+--------------------+
-        ||testbyte|testbool|  testdate|         testdouble|testfloat|testint|        testlong|testshort|   teststring|       testtimestamp|
-        |+--------+--------+----------+-------------------+---------+-------+----------------+---------+-------------+--------------------+
-        ||    null|    null|      null|               null|     null|   null|            null|     null|         null|                null|
-        ||       0|    null|2015-07-03|                  0|       -1|4141214|1239012341823719|     null|            f| 2015-07-03 12:34:56|
-        ||       0|   false|      null|-1234152.1231249799|   100000|   null|1239012341823719|       24|     ___|_123|                null|
-        ||       1|   false|2015-07-02|                  0|        0|     42|1239012341823719|      -13|         asdf| 2015-07-02 00:00:00|
-        ||       1|    true|2015-07-01| 1234152.1231249799|        1|     42|1239012341823719|       23|Unicode's樂趣|2015-07-01 00:00:...|
-        |+--------+--------+----------+-------------------+---------+-------+----------------+---------+-------------+--------------------+""".stripMargin
+      """+--------+--------+----------+-------------------+---------+-------+----------------+---------+----------+-------------------+
+        ||testbyte|testbool|  testdate|         testdouble|testfloat|testint|        testlong|testshort|teststring|      testtimestamp|
+        |+--------+--------+----------+-------------------+---------+-------+----------------+---------+----------+-------------------+
+        ||    null|    null|      null|               null|     null|   null|            null|     null|      null|               null|
+        ||       0|    null|2015-07-03|                  0|       -1|4141214|1239012341823719|     null|         f|2015-07-03 12:34:56|
+        ||       0|   false|      null|-1234152.1231249799|   100000|   null|1239012341823719|       24|  ___|_123|               null|
+        ||       1|   false|2015-07-02|                  0|        0|     42|1239012341823719|      -13|      asdf|2015-07-02 00:00:00|
+        |+--------+--------+----------+-------------------+---------+-------+----------------+---------+----------+-------------------+""".stripMargin
     // Adjust for null values being upper-case for Spark 3.5 or newer.
     if (sc.version.replace(".", "").toInt >= 350) {
       expectedResult = expectedResult.replace("null", "NULL")
@@ -91,50 +90,50 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
     checkResult(expectedResult, baos.toString)
 
     checkSqlStatement(
+      s"""SELECT * FROM ( SELECT ( CAST ( "SUBQUERY_1"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_2_COL_0",
+         |( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_1",
+         |( CAST ( "SUBQUERY_1"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_2_COL_2",
+         |( CAST ( "SUBQUERY_1"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_2_COL_3",
+         |( CAST ( "SUBQUERY_1"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_2_COL_4",
+         |( CAST ( "SUBQUERY_1"."TESTINT" AS VARCHAR ) ) AS "SUBQUERY_2_COL_5",
+         |( CAST ( "SUBQUERY_1"."TESTLONG" AS VARCHAR ) ) AS "SUBQUERY_2_COL_6",
+         |( CAST ( "SUBQUERY_1"."TESTSHORT" AS VARCHAR ) ) AS "SUBQUERY_2_COL_7",
+         |( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_8",
+         |( CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS VARCHAR ) ) AS "SUBQUERY_2_COL_9"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+         | WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NULL ) OR NOT ( ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT ( \\'Unicode\\' , \\'%\\' ) ) ) ) )
+         | AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 21""".stripMargin,
       s"""SELECT * FROM ( SELECT
-         |( CAST( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_0",
-         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END ) AS "SUBQUERY_1_COL_1",
-         |( CAST( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_2",
-         |( CAST( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_3",
-         |( CAST( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_4",
-         |( CAST( "SUBQUERY_0"."TESTINT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_5",
-         |( CAST( "SUBQUERY_0"."TESTLONG" AS VARCHAR ) ) AS "SUBQUERY_1_COL_6",
-         |( CAST( "SUBQUERY_0"."TESTSHORT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_7",
-         |( "SUBQUERY_0"."TESTSTRING") AS "SUBQUERY_1_COL_8",
-         |( CAST( "SUBQUERY_0"."TESTTIMESTAMP" AS VARCHAR ) ) AS "SUBQUERY_1_COL_9"
-         | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS") AS "SUBQUERY_0" )
-         | AS "SUBQUERY_1" LIMIT 21""".stripMargin,
-      s"""SELECT * FROM ( SELECT
-         |( CASE WHEN "SUBQUERY_0"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_0",
-         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END END ) AS "SUBQUERY_1_COL_1",
-         |( CASE WHEN "SUBQUERY_0"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) END ) AS" SUBQUERY_1_COL_2",
-         |( CASE WHEN "SUBQUERY_0"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_3",
-         |( CASE WHEN "SUBQUERY_0"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_4",
-         |( CASE WHEN "SUBQUERY_0"."TESTINT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTINT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_5",
-         |( CASE WHEN "SUBQUERY_0"."TESTLONG" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTLONG" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_6",
-         |( CASE WHEN "SUBQUERY_0"."TESTSHORT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTSHORT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_7",
-         |( CASE WHEN "SUBQUERY_0"."TESTSTRING" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_8",
-         |( CASE WHEN "SUBQUERY_0"."TESTTIMESTAMP" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTTIMESTAMP" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_9"
-         | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-         | AS "SUBQUERY_1" LIMIT 21""".stripMargin
+         |( CASE WHEN "SUBQUERY_1"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_0",
+         |( CASE WHEN "SUBQUERY_1"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END END ) AS "SUBQUERY_2_COL_1",
+         |( CASE WHEN "SUBQUERY_1"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTDATE" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_2",
+         |( CASE WHEN "SUBQUERY_1"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_3",
+         |( CASE WHEN "SUBQUERY_1"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_4",
+         |( CASE WHEN "SUBQUERY_1"."TESTINT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTINT" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_5",
+         |( CASE WHEN "SUBQUERY_1"."TESTLONG" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTLONG" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_6",
+         |( CASE WHEN "SUBQUERY_1"."TESTSHORT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTSHORT" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_7",
+         |( CASE WHEN "SUBQUERY_1"."TESTSTRING" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTSTRING" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_8",
+         |( CASE WHEN "SUBQUERY_1"."TESTTIMESTAMP" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_9"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+         | WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NULL ) OR NOT ( ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT ( \\'Unicode\\', \\'%\\' ) ) ) ) )
+         | AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 21""".stripMargin
     )
   }
 
   test ("show(false)", P0Test, P1Test) {
     val baos = new ByteArrayOutputStream()
     Console.withOut(baos) {
-      sqlContext.sql("""SELECT * FROM test_table""").show(false)
+      sqlContext.sql("""SELECT * FROM test_table where teststring is null or teststring not like 'Unicode%'""").show(false)
     }
     var expectedResult =
-      """+--------+--------+----------+-------------------+---------+-------+----------------+---------+-------------+-----------------------+
-        ||testbyte|testbool|testdate  |testdouble         |testfloat|testint|testlong        |testshort|teststring   |testtimestamp          |
-        |+--------+--------+----------+-------------------+---------+-------+----------------+---------+-------------+-----------------------+
-        ||null    |null    |null      |null               |null     |null   |null            |null     |null         |null                   |
-        ||0       |null    |2015-07-03|0                  |-1       |4141214|1239012341823719|null     |f            |2015-07-03 12:34:56    |
-        ||0       |false   |null      |-1234152.1231249799|100000   |null   |1239012341823719|24       |___|_123     |null                   |
-        ||1       |false   |2015-07-02|0                  |0        |42     |1239012341823719|-13      |asdf         |2015-07-02 00:00:00    |
-        ||1       |true    |2015-07-01|1234152.1231249799 |1        |42     |1239012341823719|23       |Unicode's樂趣|2015-07-01 00:00:00.001|
-        |+--------+--------+----------+-------------------+---------+-------+----------------+---------+-------------+-----------------------+""".stripMargin
+      """+--------+--------+----------+-------------------+---------+-------+----------------+---------+----------+-------------------+
+        ||testbyte|testbool|testdate  |testdouble         |testfloat|testint|testlong        |testshort|teststring|testtimestamp      |
+        |+--------+--------+----------+-------------------+---------+-------+----------------+---------+----------+-------------------+
+        ||null    |null    |null      |null               |null     |null   |null            |null     |null      |null               |
+        ||0       |null    |2015-07-03|0                  |-1       |4141214|1239012341823719|null     |f         |2015-07-03 12:34:56|
+        ||0       |false   |null      |-1234152.1231249799|100000   |null   |1239012341823719|24       |___|_123  |null               |
+        ||1       |false   |2015-07-02|0                  |0        |42     |1239012341823719|-13      |asdf      |2015-07-02 00:00:00|
+        |+--------+--------+----------+-------------------+---------+-------+----------------+---------+----------+-------------------+""".stripMargin
     // Adjust for null values being upper-case for Spark 3.5 or newer.
     if (sc.version.replace(".", "").toInt >= 350) {
       expectedResult = expectedResult.replace("null", "NULL")
@@ -142,32 +141,33 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
     checkResult(expectedResult, baos.toString)
 
     checkSqlStatement(
+      s"""SELECT * FROM ( SELECT ( CAST ( "SUBQUERY_1"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_2_COL_0",
+         |( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_1",
+         |( CAST ( "SUBQUERY_1"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_2_COL_2",
+         |( CAST ( "SUBQUERY_1"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_2_COL_3",
+         |( CAST ( "SUBQUERY_1"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_2_COL_4",
+         |( CAST ( "SUBQUERY_1"."TESTINT" AS VARCHAR ) ) AS "SUBQUERY_2_COL_5",
+         |( CAST ( "SUBQUERY_1"."TESTLONG" AS VARCHAR ) ) AS "SUBQUERY_2_COL_6",
+         |( CAST ( "SUBQUERY_1"."TESTSHORT" AS VARCHAR ) ) AS "SUBQUERY_2_COL_7",
+         |( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_8",
+         |( CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS VARCHAR ) ) AS "SUBQUERY_2_COL_9"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+         | WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NULL ) OR NOT ( ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT ( \\'Unicode\\' , \\'%\\' ) ) ) ) )
+         | AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 21""".stripMargin,
       s"""SELECT * FROM ( SELECT
-         |( CAST( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_0",
-         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END ) AS "SUBQUERY_1_COL_1",
-         |( CAST( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_2",
-         |( CAST( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_3",
-         |( CAST( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_4",
-         |( CAST( "SUBQUERY_0"."TESTINT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_5",
-         |( CAST( "SUBQUERY_0"."TESTLONG" AS VARCHAR ) ) AS "SUBQUERY_1_COL_6",
-         |( CAST( "SUBQUERY_0"."TESTSHORT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_7",
-         |( "SUBQUERY_0"."TESTSTRING") AS "SUBQUERY_1_COL_8",
-         |( CAST( "SUBQUERY_0"."TESTTIMESTAMP" AS VARCHAR ) ) AS "SUBQUERY_1_COL_9"
-         | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS") AS "SUBQUERY_0" )
-         | AS "SUBQUERY_1" LIMIT 21""".stripMargin,
-      s"""SELECT * FROM ( SELECT
-         |( CASE WHEN "SUBQUERY_0"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_0",
-         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END END ) AS "SUBQUERY_1_COL_1",
-         |( CASE WHEN "SUBQUERY_0"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) END ) AS" SUBQUERY_1_COL_2",
-         |( CASE WHEN "SUBQUERY_0"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_3",
-         |( CASE WHEN "SUBQUERY_0"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_4",
-         |( CASE WHEN "SUBQUERY_0"."TESTINT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTINT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_5",
-         |( CASE WHEN "SUBQUERY_0"."TESTLONG" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTLONG" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_6",
-         |( CASE WHEN "SUBQUERY_0"."TESTSHORT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTSHORT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_7",
-         |( CASE WHEN "SUBQUERY_0"."TESTSTRING" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_8",
-         |( CASE WHEN "SUBQUERY_0"."TESTTIMESTAMP" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTTIMESTAMP" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_9"
-         | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-         | AS "SUBQUERY_1" LIMIT 21""".stripMargin
+         |( CASE WHEN "SUBQUERY_1"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_0",
+         |( CASE WHEN "SUBQUERY_1"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END END ) AS "SUBQUERY_2_COL_1",
+         |( CASE WHEN "SUBQUERY_1"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTDATE" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_2",
+         |( CASE WHEN "SUBQUERY_1"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_3",
+         |( CASE WHEN "SUBQUERY_1"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_4",
+         |( CASE WHEN "SUBQUERY_1"."TESTINT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTINT" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_5",
+         |( CASE WHEN "SUBQUERY_1"."TESTLONG" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTLONG" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_6",
+         |( CASE WHEN "SUBQUERY_1"."TESTSHORT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTSHORT" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_7",
+         |( CASE WHEN "SUBQUERY_1"."TESTSTRING" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTSTRING" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_8",
+         |( CASE WHEN "SUBQUERY_1"."TESTTIMESTAMP" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS VARCHAR ) END ) AS "SUBQUERY_2_COL_9"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+         | WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NULL ) OR NOT ( ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT ( \\'Unicode\\', \\'%\\' ) ) ) ) )
+         | AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 21""".stripMargin
     )
   }
 
@@ -194,7 +194,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT
          |( CAST( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_0",
-         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END ) AS "SUBQUERY_1_COL_1",
+         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_1_COL_1",
          |( CAST( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_2",
          |( CAST( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_3",
          |( CAST( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_4",
@@ -207,7 +207,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
          | AS "SUBQUERY_1" LIMIT 4""".stripMargin,
       s"""SELECT * FROM ( SELECT
          |( CASE WHEN "SUBQUERY_0"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_0",
-         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END END ) AS "SUBQUERY_1_COL_1",
+         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END END ) AS "SUBQUERY_1_COL_1",
          |( CASE WHEN "SUBQUERY_0"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) END ) AS" SUBQUERY_1_COL_2",
          |( CASE WHEN "SUBQUERY_0"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_3",
          |( CASE WHEN "SUBQUERY_0"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_4",
@@ -244,7 +244,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT
          |( CAST( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_0",
-         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END ) AS "SUBQUERY_1_COL_1",
+         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_1_COL_1",
          |( CAST( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_2",
          |( CAST( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_3",
          |( CAST( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_4",
@@ -257,7 +257,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
          | AS "SUBQUERY_1" LIMIT 4""".stripMargin,
       s"""SELECT * FROM ( SELECT
          |( CASE WHEN "SUBQUERY_0"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_0",
-         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END END ) AS "SUBQUERY_1_COL_1",
+         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END END ) AS "SUBQUERY_1_COL_1",
          |( CASE WHEN "SUBQUERY_0"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) END ) AS" SUBQUERY_1_COL_2",
          |( CASE WHEN "SUBQUERY_0"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_3",
          |( CASE WHEN "SUBQUERY_0"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_4",
@@ -294,7 +294,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT
          |( CAST( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_0",
-         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END ) AS "SUBQUERY_1_COL_1",
+         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_1_COL_1",
          |( CAST( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_2",
          |( CAST( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_3",
          |( CAST( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_4",
@@ -307,7 +307,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
          | AS "SUBQUERY_1" LIMIT 4""".stripMargin,
       s"""SELECT * FROM ( SELECT
          |( CASE WHEN "SUBQUERY_0"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_0",
-         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END END ) AS "SUBQUERY_1_COL_1",
+         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END END ) AS "SUBQUERY_1_COL_1",
          |( CASE WHEN "SUBQUERY_0"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) END ) AS" SUBQUERY_1_COL_2",
          |( CASE WHEN "SUBQUERY_0"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_3",
          |( CASE WHEN "SUBQUERY_0"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_4",
@@ -347,7 +347,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT
          |( CAST( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_0",
-         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END ) AS "SUBQUERY_1_COL_1",
+         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_1_COL_1",
          |( CAST( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_2",
          |( CAST( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_3",
          |( CAST( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_4",
@@ -360,7 +360,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
          | AS "SUBQUERY_1" LIMIT 21""".stripMargin,
       s"""SELECT * FROM ( SELECT
          |( CASE WHEN "SUBQUERY_0"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_0",
-         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END END ) AS "SUBQUERY_1_COL_1",
+         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END END ) AS "SUBQUERY_1_COL_1",
          |( CASE WHEN "SUBQUERY_0"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) END ) AS" SUBQUERY_1_COL_2",
          |( CASE WHEN "SUBQUERY_0"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_3",
          |( CASE WHEN "SUBQUERY_0"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_4",
@@ -444,7 +444,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT
          |( CAST( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_0",
-         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END ) AS "SUBQUERY_1_COL_1",
+         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_1_COL_1",
          |( CAST( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_2",
          |( CAST( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_3",
          |( CAST( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_4",
@@ -457,7 +457,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
          | AS "SUBQUERY_1" LIMIT 21""".stripMargin,
       s"""SELECT * FROM ( SELECT
          |( CASE WHEN "SUBQUERY_0"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_0",
-         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END END ) AS "SUBQUERY_1_COL_1",
+         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END END ) AS "SUBQUERY_1_COL_1",
          |( CASE WHEN "SUBQUERY_0"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) END ) AS" SUBQUERY_1_COL_2",
          |( CASE WHEN "SUBQUERY_0"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_3",
          |( CASE WHEN "SUBQUERY_0"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_4",
@@ -495,7 +495,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT
          |( CAST( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_0",
-         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END ) AS "SUBQUERY_1_COL_1",
+         |( CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_1_COL_1",
          |( CAST( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_2",
          |( CAST( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) ) AS "SUBQUERY_1_COL_3",
          |( CAST( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) ) AS "SUBQUERY_1_COL_4",
@@ -508,7 +508,7 @@ abstract class PushdownOnlyShowSuite extends IntegrationPushdownSuiteBase {
          | AS "SUBQUERY_1" LIMIT 21""".stripMargin,
       s"""SELECT * FROM ( SELECT
          |( CASE WHEN "SUBQUERY_0"."TESTBYTE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTBYTE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_0",
-         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END END ) AS "SUBQUERY_1_COL_1",
+         |( CASE WHEN "SUBQUERY_0"."TESTBOOL" IS NULL THEN \\'NULL\\' ELSE CASE "SUBQUERY_0"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END END ) AS "SUBQUERY_1_COL_1",
          |( CASE WHEN "SUBQUERY_0"."TESTDATE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDATE" AS VARCHAR ) END ) AS" SUBQUERY_1_COL_2",
          |( CASE WHEN "SUBQUERY_0"."TESTDOUBLE" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTDOUBLE" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_3",
          |( CASE WHEN "SUBQUERY_0"."TESTFLOAT" IS NULL THEN \\'NULL\\' ELSE CAST ( "SUBQUERY_0"."TESTFLOAT" AS VARCHAR ) END ) AS "SUBQUERY_1_COL_4",

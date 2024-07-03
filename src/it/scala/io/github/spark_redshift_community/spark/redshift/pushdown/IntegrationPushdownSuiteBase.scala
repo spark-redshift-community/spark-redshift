@@ -98,7 +98,7 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
       val threadName = Thread.currentThread.getName
       val lastBuildStmt = Utils.lastBuildStmt(threadName).replaceAll("\\s", "")
       assert(expectedAnswers.exists(_.replaceAll("\\s", "") == lastBuildStmt),
-        s"Actual sql: ${Utils.lastBuildStmt}")
+        s"\n\nActual sql: ${Utils.lastBuildStmt}")
     }
   }
 
