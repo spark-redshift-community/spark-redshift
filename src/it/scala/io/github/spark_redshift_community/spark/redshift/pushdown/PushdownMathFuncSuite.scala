@@ -209,11 +209,11 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
   test("Exponential precision on float", P0Test, P1Test) {
     // "Column name" and result size
     val input = List(
-      (0.9, "DECIMAL(12,1)", Seq(Row(1.1051709180756477))),
-      (0.99, "DECIMAL(13,2)", Seq(Row(1.010050167084168))),
-      (0.999, "DECIMAL(14,3)", Seq(Row(1.0010005001667084))),
-      (0.9999, "DECIMAL(15,4)", Seq(Row(1.0001000050001667))),
-      (0.99999, "DECIMAL(16,5)", Seq(Row(1.00001000005)))
+      (0.9, "DECIMAL(7,1)", Seq(Row(1.1051709180756477))),
+      (0.99, "DECIMAL(8,2)", Seq(Row(1.010050167084168))),
+      (0.999, "DECIMAL(9,3)", Seq(Row(1.0010005001667084))),
+      (0.9999, "DECIMAL(10,4)", Seq(Row(1.0001000050001667))),
+      (0.99999, "DECIMAL(11,5)", Seq(Row(1.00001000005)))
     )
     input.par.foreach(test_case => {
       val add_on = test_case._1
@@ -232,12 +232,12 @@ abstract class PushdownMathFuncSuite extends IntegrationPushdownSuiteBase {
              |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
              |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
              |""".stripMargin,
-          s"""SELECT ( EXP ( CAST ( ( CAST ( "SUBQUERY_1"."TESTBYTE" AS DECIMAL(10, 0) )
+          s"""SELECT ( EXP ( CAST ( ( CAST ( "SUBQUERY_1"."TESTBYTE" AS DECIMAL(5, 0) )
               |- $add_on ) AS FLOAT8 ) ) ) AS "SUBQUERY_2_COL_0"
               |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
               |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
               |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
-              |""".stripMargin // spark 3.4 casts to Decimal(10, 0) in all of these cases
+              |""".stripMargin // spark 3.4 casts to Decimal(5, 0) in all of these cases
       )
     })
   }
@@ -355,7 +355,7 @@ class TextPushdownMathFuncSuite extends PushdownMathFuncSuite {
         expected_res)
 
       checkSqlStatement(
-          s"""SELECT ( EXP ( CAST ( ( "SUBQUERY_1"."TESTBYTE" + $add_on) AS FLOAT8 ) ) )
+          s"""SELECT ( EXP ( CAST ( ( CAST ( "SUBQUERY_1"."TESTBYTE" AS INTEGER ) + $add_on) AS FLOAT8 ) ) )
              |AS "SUBQUERY_2_COL_0"
              |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
              |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )

@@ -490,7 +490,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
        | AS "SUBQUERY_2" INNER JOIN ( SELECT ( "SUBQUERY_4"."TESTBYTE" ) AS "SUBQUERY_5_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_3" WHERE ( "SUBQUERY_3"."TESTBYTE" IS NOT NULL ) ) AS "SUBQUERY_4" )
-       | AS "SUBQUERY_5" ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_5"."SUBQUERY_5_COL_0" ) )
+       | AS "SUBQUERY_5" ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = CAST ( "SUBQUERY_5"."SUBQUERY_5_COL_0" AS INTEGER ) ) )
        | AS "SUBQUERY_6" ) AS "SUBQUERY_7" ORDER BY ( "SUBQUERY_7"."SUBQUERY_7_COL_0" ) ASC
        | NULLS FIRST""".stripMargin
   )
@@ -509,7 +509,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
        | INNER JOIN ( SELECT ( "SUBQUERY_4"."TESTBYTE" ) AS "SUBQUERY_5_COL_0" FROM (
        | SELECT * FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_3" WHERE ( "SUBQUERY_3"."TESTBYTE" IS NOT NULL ) ) AS "SUBQUERY_4" )
-       | AS "SUBQUERY_5" ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_5"."SUBQUERY_5_COL_0" ) )
+       | AS "SUBQUERY_5" ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = CAST ( "SUBQUERY_5"."SUBQUERY_5_COL_0" AS INTEGER ) ) )
        | AS "SUBQUERY_6" ) AS "SUBQUERY_7" GROUP BY "SUBQUERY_7"."SUBQUERY_7_COL_0" )
        | AS "SUBQUERY_8" ORDER BY ( "SUBQUERY_8"."SUBQUERY_8_COL_0" ) ASC
        | NULLS FIRST""".stripMargin
@@ -528,7 +528,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
        | AS "SUBQUERY_2" INNER JOIN ( SELECT ( "SUBQUERY_4"."TESTBYTE" ) AS "SUBQUERY_5_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_3" WHERE ( "SUBQUERY_3"."TESTBYTE" IS NOT NULL ) ) AS"SUBQUERY_4" )
-       | AS "SUBQUERY_5" ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_5"."SUBQUERY_5_COL_0" ) )
+       | AS "SUBQUERY_5" ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = CAST ( "SUBQUERY_5"."SUBQUERY_5_COL_0" AS INTEGER ) ) )
        | AS "SUBQUERY_6" ) AS "SUBQUERY_7" ORDER BY ( "SUBQUERY_7"."SUBQUERY_7_COL_0" )
        | ASC NULLS FIRST""".stripMargin
   )
@@ -545,7 +545,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
        | AS "SUBQUERY_1" FULL OUTER JOIN ( SELECT ( "SUBQUERY_2"."TESTBYTE" ) AS "SUBQUERY_3_COL_0"
        | FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" )
-       | AS "SUBQUERY_3" ON ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0" ) )
+       | AS "SUBQUERY_3" ON ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = CAST ( "SUBQUERY_3"."SUBQUERY_3_COL_0" AS INTEGER ) ) )
        | AS "SUBQUERY_4" ) AS "SUBQUERY_5" ORDER BY ( "SUBQUERY_5"."SUBQUERY_5_COL_0" )
        | ASC NULLS FIRST""".stripMargin
   )
@@ -562,7 +562,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
        | AS "SUBQUERY_1" LEFT OUTER JOIN ( SELECT ( "SUBQUERY_3"."TESTBYTE" ) AS "SUBQUERY_4_COL_0"
        | FROM ( SELECT * FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_2" WHERE ( "SUBQUERY_2"."TESTBYTE" IS NOT NULL ) ) AS "SUBQUERY_3" )
-       | AS "SUBQUERY_4" ON ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_4"."SUBQUERY_4_COL_0" ) )
+       | AS "SUBQUERY_4" ON ( "SUBQUERY_1"."SUBQUERY_1_COL_0" = CAST ( "SUBQUERY_4"."SUBQUERY_4_COL_0" AS INTEGER ) ) )
        | AS "SUBQUERY_5" ) AS "SUBQUERY_6" ORDER BY ( "SUBQUERY_6"."SUBQUERY_6_COL_0" )
        | ASC NULLS FIRST""".stripMargin
   )
@@ -580,7 +580,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
        | AS "SUBQUERY_2" RIGHT OUTER JOIN ( SELECT ( "SUBQUERY_3"."TESTBYTE" )
        | AS "SUBQUERY_4_COL_0" FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
        | AS "SUBQUERY_3" ) AS "SUBQUERY_4"
-       | ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_4"."SUBQUERY_4_COL_0" ) )
+       | ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = CAST ( "SUBQUERY_4"."SUBQUERY_4_COL_0" AS INTEGER ) ) )
        | AS "SUBQUERY_5" ) AS "SUBQUERY_6" ORDER BY ( "SUBQUERY_6"."SUBQUERY_6_COL_0" )
        | ASC NULLS FIRST""".stripMargin
   )
@@ -801,7 +801,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_1_COL_0"
        | FROM ( ( SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | UNION ALL ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
+       | UNION ALL ( SELECT ( CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER ) ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) )
        | AS "SUBQUERY_0" GROUP BY "SUBQUERY_0"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_1" ORDER BY
        | ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ASC NULLS FIRST""".stripMargin
@@ -815,7 +815,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_1_COL_0"
        | FROM ( ( SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | UNION ALL ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
+       | UNION ALL ( SELECT ( CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER ) ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) )
        | AS "SUBQUERY_0" GROUP BY "SUBQUERY_0"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_1" ORDER BY
        | ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ASC NULLS FIRST""".stripMargin
@@ -829,7 +829,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       Row(42), Row(42), Row(42), Row(4141214)),
     s"""SELECT * FROM ( ( SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | UNION ALL ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
+       | UNION ALL ( SELECT ( CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER ) ) AS "SUBQUERY_1_COL_0"
        | FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS"SUBQUERY_0" ) )
        | AS "SUBQUERY_0" ORDER BY ( "SUBQUERY_0"."SUBQUERY_1_COL_0" ) ASC NULLS FIRST""".stripMargin
   )
@@ -1030,7 +1030,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_1_COL_0",
        | ( SUM ( "SUBQUERY_0"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_1_COL_1"
        | FROM ( ( SELECT ( 1 ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_1" FROM (
+       | ( CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER ) ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
        | UNION ALL ( SELECT ( -1 ) AS "SUBQUERY_1_COL_0",
        | ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_1" FROM (
@@ -1231,7 +1231,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_1_COL_0",
        | ( SUM ( "SUBQUERY_0"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_1_COL_1"
        | FROM ( ( SELECT ( 1 ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_1" FROM (
+       | ( CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER ) ) AS "SUBQUERY_1_COL_1" FROM (
        | SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
        | UNION ALL ( SELECT ( -1 ) AS "SUBQUERY_1_COL_0",
        | ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_1" FROM (
@@ -1451,7 +1451,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
        | ( COUNT ( "SUBQUERY_0"."SUBQUERY_1_COL_1" ) ) AS "SUBQUERY_1_COL_1",
        | ( "SUBQUERY_0"."SUBQUERY_1_COL_2" ) AS "SUBQUERY_1_COL_2"
        | FROM ( ( SELECT ( true ) AS "SUBQUERY_1_COL_0", ( NULL ) AS "SUBQUERY_1_COL_1",
-       | ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_2"
+       | ( CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER ) ) AS "SUBQUERY_1_COL_2"
        | FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
        | UNION ALL ( SELECT ( NULL ) AS "SUBQUERY_1_COL_0", ( true ) AS "SUBQUERY_1_COL_1",
        | ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_2" FROM ( SELECT * FROM $test_table
