@@ -33,19 +33,47 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Boolean type cast to String") {
+  test("Casting true boolean value to string") {
     checkAnswer(
       sqlContext.sql(
-        s"""SELECT CAST(testbool AS STRING) FROM test_table WHERE testbool = true""".stripMargin),
+        s"""SELECT CAST(testbool AS STRING) FROM test_table WHERE testbool = true limit 1""".stripMargin),
       Seq(Row("true")))
 
     checkSqlStatement(
-      s"""SELECT ( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
-         | WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END )
-         |  AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT *
-         |  FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         | WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND "SUBQUERY_0"."TESTBOOL" ) )
-         | AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT * FROM ( SELECT ( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
+         | WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0" FROM
+         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND
+         | "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin
+    )
+  }
+
+  test("Casting false boolean value to string") {
+    checkAnswer(
+      sqlContext.sql(
+        s"""SELECT CAST(testbool AS STRING) FROM test_table WHERE testbool = false limit 1""".stripMargin),
+      Seq(Row("false")))
+
+    checkSqlStatement(
+      s"""SELECT * FROM ( SELECT ( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
+         | WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0" FROM
+         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND NOT
+         | ( "SUBQUERY_0"."TESTBOOL" ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin
+    )
+  }
+
+  test("Casting null boolean value to string") {
+    checkAnswer(
+      sqlContext.sql(
+        s"""SELECT CAST(testbool AS STRING) FROM test_table WHERE testbool is null limit 1""".stripMargin),
+      Seq(Row(null)))
+
+    checkSqlStatement(
+      s"""SELECT * FROM ( SELECT ( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE
+        | THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+        | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTBOOL"
+        | IS NULL ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin
     )
   }
 
@@ -57,7 +85,7 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( CASE ( CAST ( "SUBQUERY_1"."TESTINT" AS FLOAT4 ) > "SUBQUERY_1"."TESTFLOAT" )
-         | WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE \\'null\\' END ) AS "SUBQUERY_2_COL_0"
+         | WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0"
          | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
          | WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"""".stripMargin
     )
