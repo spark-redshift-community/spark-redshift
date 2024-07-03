@@ -709,16 +709,6 @@ for more information.</p>
     </td>
  </tr> 
  <tr>
-    <td><tt>addautomount</tt></td>
-    <td>No</td>
-    <td>false</td>
-    <td>
-        <p>
-        true - treat schema name as glue db name and append `awsdatacatalog` in rs dbtable name. more details : https://aws.amazon.com/blogs/big-data/simplify-external-object-access-in-amazon-redshift-using-automatic-mounting-of-the-aws-glue-data-catalog/
-        </p>
-    </td>
- </tr> 
- <tr>
     <td><tt>tempformat</tt></td>
     <td>No</td>
     <td><tt>AVRO</tt></td>
