@@ -103,7 +103,7 @@ You may use this library in your applications with the following dependency info
     spark-submit \
       --deploy-mode cluster \
       --master yarn \
-      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.24,org.apache.spark:spark-avro_2.12:3.5.0,io.github.spark-redshift-community:spark-redshift_2.12:6.2.0-spark_3.5 \
+      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.26,org.apache.spark:spark-avro_2.12:3.5.1,io.github.spark-redshift-community:spark-redshift_2.12:6.2.0-spark_3.5 \
       my_script.py
     ```
 
@@ -125,7 +125,7 @@ You may use this library in your applications with the following dependency info
     ```
 
 
-You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommends that you use [the official Amazon Redshift JDBC driver](https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42/2.1.0.24), which is available on Maven Central. Additionally, is hosted in S3 and can be found in the [official AWS documentation for the Redshift JDBC Driver](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-install.html).
+You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommends that you use [the latest official Amazon Redshift JDBC driver](https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42/), which is available on Maven Central. Additionally, is hosted in S3 and can be found in the [official AWS documentation for the Redshift JDBC Driver](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-install.html).
 
 **Note on Hadoop versions**: This library depends on [`spark-avro`](https://github.com/databricks/spark-avro), which should automatically be downloaded because it is declared as a dependency. However, you may need to provide the corresponding `avro-mapred` dependency which matches your Hadoop distribution. In most deployments, however, this dependency will be automatically provided by your cluster's Spark assemblies and no additional action will be required.
 
