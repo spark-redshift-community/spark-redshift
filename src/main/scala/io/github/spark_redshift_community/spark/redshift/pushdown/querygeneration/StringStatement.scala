@@ -42,7 +42,7 @@ private[querygeneration] object StringStatement {
     val expr = expAttr._1
     val fields = expAttr._2
 
-    Option(expr match {
+    val result = Option(expr match {
       case _: Ascii | _: Lower | _: StringLPad | _: StringRPad |
           _: StringTranslate | _: Upper | _: Length =>
         ConstantString(expr.prettyName.toUpperCase) +
@@ -97,5 +97,16 @@ private[querygeneration] object StringStatement {
 
       case _ => null
     })
+
+    // If there are no matches, check if there are any version-specific implementations
+    // that can push the query down.
+    result match {
+      case None =>
+        (expr, fields) match {
+          case StringStatementExtensions(stmt) => Option(stmt)
+          case _ => None
+        }
+      case _ => result
+    }
   }
 }

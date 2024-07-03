@@ -102,6 +102,20 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
     }
   }
 
+  def checkResult(expectedResult: String, actualResult: String): Unit = {
+    if (!expectedResult.trim().equals(actualResult.trim())) {
+      val errorMessage =
+        s"""
+           |Results do not match:
+           |== Found ==
+           |${actualResult}
+           |== Expected ==
+           |${expectedResult}
+            """.stripMargin
+      fail(errorMessage)
+    }
+  }
+
   // Method that performs validation of statement result and statement executed
   // on Redshift.
   def doTest(sqlContext: SQLContext, tc: TestCase): Unit = {
