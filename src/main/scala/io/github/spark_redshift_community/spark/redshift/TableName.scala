@@ -89,6 +89,6 @@ private[redshift] object TableName {
     if (sb.nonEmpty) {
       parts.append(sb.toString())
     }
-    parts
+    parts.toSeq
   }
 }
