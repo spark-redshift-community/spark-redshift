@@ -377,7 +377,8 @@ private[redshift] class JDBCWrapper extends Serializable {
   /**
    * Compute the SQL schema string for the given Spark SQL Schema.
    */
-  def schemaString(schema: StructType): String = {
+  def schemaString(schema: StructType,
+                   params: Option[MergedParameters] = None): String = {
     val sb = new StringBuilder()
     schema.fields.foreach { field => {
       val name = field.name
@@ -389,7 +390,8 @@ private[redshift] class JDBCWrapper extends Serializable {
           case LongType => "BIGINT"
           case DoubleType => "DOUBLE PRECISION"
           case FloatType => "REAL"
-          case ShortType => "INTEGER"
+          case ShortType => if (params.exists(_.legacyMappingShortToInt)) { "INTEGER" }
+                            else { "SMALLINT" }
           case ByteType => "SMALLINT" // Redshift does not support the BYTE type.
           case BooleanType => "BOOLEAN"
           case StringType =>
@@ -477,8 +479,8 @@ private[redshift] class JDBCWrapper extends Serializable {
       case java.sql.Types.NUMERIC       => DecimalType(38, 18) // Spark 1.5.0 default
       // Redshift Real is represented in 4 bytes IEEE Float. https://docs.aws.amazon.com/redshift/latest/dg/r_Numeric_types201.html
       case java.sql.Types.REAL          => if (params.exists(_.legacyJdbcRealTypeMapping)) { DoubleType } else { FloatType }
-      case java.sql.Types.SMALLINT      => IntegerType
-      case java.sql.Types.TINYINT       => IntegerType
+      case java.sql.Types.SMALLINT      => if (params.exists(_.legacyMappingShortToInt)) { IntegerType } else { ShortType }
+      case java.sql.Types.TINYINT       => ByteType
       case _                            => null
       // scalastyle:on
     }
@@ -519,7 +521,7 @@ private[redshift] object DefaultJDBCWrapper
         (if (overwrite) "or replace" else "") +
         (if (temporary) "temporary" else "") + "table" +
         (if (!overwrite) "if not exists" else "") + Identifier(name) +
-        s"(${schemaString(schema)})")
+        s"(${schemaString(schema, Some(params))})")
         .execute(bindVariableEnabled)(connection)
 
     def createTableLike(newTable: String,

@@ -40,7 +40,7 @@ private[redshift] object Parameters {
   val PARAM_SECRET_ID: String = "secret.id"
   val PARAM_SECRET_REGION: String = "secret.region"
   val PARAM_USER_QUERY_GROUP_LABEL: String = "label"
-
+  val PARAM_LEGACY_MAPPING_SHORT_TO_INT: String = "legacy_mapping_short_to_int"
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
@@ -68,7 +68,8 @@ private[redshift] object Parameters {
     PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
     PARAM_LEGACY_TRIM_CSV_WRITES -> "false",
     PARAM_TEMPDIR_REGION -> "",
-    PARAM_USER_QUERY_GROUP_LABEL -> ""
+    PARAM_USER_QUERY_GROUP_LABEL -> "",
+    PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false"
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP", "PARQUET")
@@ -204,8 +205,7 @@ private[redshift] object Parameters {
       if (dbtable.startsWith("(") && dbtable.endsWith(")")) {
         None
       } else {
-        val addAutoMount = parameters.getOrElse("addautomount", "").equals("true")
-        Some(TableName.parseFromEscaped(dbtable, addAutoMount))
+        Some(TableName.parseFromEscaped(dbtable))
       }
     }
 
@@ -419,6 +419,12 @@ private[redshift] object Parameters {
      */
     def legacyTrimCSVWrites: Boolean =
       parameters(PARAM_LEGACY_TRIM_CSV_WRITES).toBoolean
+
+    /**
+     * Enables the use of Mapping Short to Integer to support legacy applications
+     */
+    def legacyMappingShortToInt: Boolean =
+      parameters(PARAM_LEGACY_MAPPING_SHORT_TO_INT).toBoolean
 
     /**
      * Turns empty strings into nulls

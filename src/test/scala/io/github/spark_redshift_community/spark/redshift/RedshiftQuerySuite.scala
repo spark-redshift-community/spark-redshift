@@ -41,7 +41,7 @@ class RedshiftQuerySuite extends AnyFunSuite with BeforeAndAfterAll {
       create table student(id int)
        using io.github.spark_redshift_community.spark.redshift
        OPTIONS (
-      dbtable 'awsdatacatalog.public."parquet_struct_table_view"',
+      dbtable 'public.parquet_struct_table_view',
       tempdir '/tmp/dir',
       url '<jdbc-url-in-iam scheme>',
       forward_spark_s3_credentials 'true'
@@ -57,7 +57,7 @@ class RedshiftQuerySuite extends AnyFunSuite with BeforeAndAfterAll {
     assert(plan.isInstanceOf[RedshiftScanExec])
     val rsPlan = plan.asInstanceOf[RedshiftScanExec]
     assert(rsPlan.query.statementString ==
-      """SELECT * FROM "awsdatacatalog"."public"."parquet_struct_table_view" AS "RS_CONNECTOR_QUERY_ALIAS""""
+      """SELECT * FROM "public"."parquet_struct_table_view" AS "RS_CONNECTOR_QUERY_ALIAS""""
         .stripMargin)
   }
 

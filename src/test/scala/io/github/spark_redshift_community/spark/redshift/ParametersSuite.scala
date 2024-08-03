@@ -38,7 +38,7 @@ class ParametersSuite extends AnyFunSuite with Matchers {
     mergedParams.rootTempDir should startWith(params("tempdir"))
     mergedParams.createPerQueryTempDir() should startWith(params("tempdir"))
     mergedParams.jdbcUrl shouldBe params("url")
-    mergedParams.table shouldBe Some(TableName("test_schema", "test_table"))
+    mergedParams.table shouldBe Some(TableName("", "test_schema", "test_table"))
     assert(mergedParams.forwardSparkS3Credentials)
     assert(mergedParams.includeColumnList)
     assert(!mergedParams.legacyJdbcRealTypeMapping)
@@ -49,36 +49,6 @@ class ParametersSuite extends AnyFunSuite with Matchers {
         - "forward_spark_s3_credentials"
         - "include_column_list"
     ).foreach {
-      case (key, value) => mergedParams.parameters(key) shouldBe value
-    }
-  }
-
-  test("Minimal valid parameter map is accepted with awsdatacatalog") {
-    val params = Map(
-      "tempdir" -> "s3://foo/bar",
-      "dbtable" -> "test_schema.test_table",
-      "url" -> "jdbc:redshift://foo/bar?user=user&password=password",
-      "forward_spark_s3_credentials" -> "true",
-      "addautomount" -> "true",
-      "include_column_list" -> "true")
-
-    val mergedParams = Parameters.mergeParameters(params)
-
-    mergedParams.rootTempDir should startWith(params("tempdir"))
-    mergedParams.createPerQueryTempDir() should startWith(params("tempdir"))
-    mergedParams.jdbcUrl shouldBe params("url")
-    mergedParams.table shouldBe Some(
-      TableName("test_schema", "test_table", addAutomount = true))
-    assert(mergedParams.forwardSparkS3Credentials)
-    assert(mergedParams.includeColumnList)
-    assert(!mergedParams.legacyJdbcRealTypeMapping)
-
-    // Check that the defaults have been added
-    (
-      Parameters.DEFAULT_PARAMETERS
-        - "forward_spark_s3_credentials"
-        - "include_column_list"
-      ).foreach {
       case (key, value) => mergedParams.parameters(key) shouldBe value
     }
   }

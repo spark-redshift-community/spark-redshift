@@ -103,7 +103,7 @@ You may use this library in your applications with the following dependency info
     spark-submit \
       --deploy-mode cluster \
       --master yarn \
-      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.24,org.apache.spark:spark-avro_2.12:3.5.0,io.github.spark-redshift-community:spark-redshift_2.12:6.2.0-spark_3.5 \
+      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.29,org.apache.spark:spark-avro_2.12:3.5.1,io.github.spark-redshift-community:spark-redshift_2.12:6.3.0-spark_3.5 \
       my_script.py
     ```
 
@@ -114,18 +114,18 @@ You may use this library in your applications with the following dependency info
     <dependency>
         <groupId>io.github.spark-redshift-community</groupId>
         <artifactId>spark-redshift_2.12</artifactId>
-        <version>6.2.0-spark_3.5</version>
+        <version>6.3.0-spark_3.5</version>
     </dependency>
     ```
 
 - **In SBT**:
 
     ```SBT
-    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "6.2.0-spark_3.5"
+    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "6.3.0-spark_3.5"
     ```
 
 
-You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommends that you use [the official Amazon Redshift JDBC driver](https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42/2.1.0.24), which is available on Maven Central. Additionally, is hosted in S3 and can be found in the [official AWS documentation for the Redshift JDBC Driver](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-install.html).
+You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommends that you use [the latest official Amazon Redshift JDBC driver](https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42/), which is available on Maven Central. Additionally, is hosted in S3 and can be found in the [official AWS documentation for the Redshift JDBC Driver](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-install.html).
 
 **Note on Hadoop versions**: This library depends on [`spark-avro`](https://github.com/databricks/spark-avro), which should automatically be downloaded because it is declared as a dependency. However, you may need to provide the corresponding `avro-mapred` dependency which matches your Hadoop distribution. In most deployments, however, this dependency will be automatically provided by your cluster's Spark assemblies and no additional action will be required.
 
@@ -496,13 +496,20 @@ The parameter map or <tt>OPTIONS</tt> provided in Spark SQL supports the followi
     <td><tt>secret.id</tt></td>
     <td>No</td>
     <td>No default</td>
-    <td> The Name or ARN of your secret. May only be used if the user, password and DbUser are not passed in the URL or as options.</td>
+    <td> The Name or ARN of your secret stored in AWS Secrets Manager. May be used to automatically supply Redshift credentials but only if the user, password and DbUser are not passed in the URL or as options.</td>
 </tr>
 <tr> 
     <td><tt>secret.region</tt></td>
     <td>No</td>
     <td>No default</td>
-    <td>The AWS region (e.g., 'us-east-1') where your secret resides. Required when using a name instead of an ARN for <tt>secret.id</tt>. </td>
+    <td>
+       <p>The primary AWS region (e.g., <tt>us-east-1</tt>) for searching for the <tt>secret.id</tt> value. </p>
+       <p>If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>secret.id</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
+       <ol>
+          <li>When the connector is running outside of AWS as automatic region discovery will fail and may prevent authenticating with Redshift.</li>
+          <li>When the connector is running in a different region than <tt>secret.id</tt> as it improves the connector's access performance of the secret.</li>
+       </ol>
+    </td>
 </tr>
  <tr>
     <td><tt>url</tt></td>
@@ -709,16 +716,6 @@ for more information.</p>
     </td>
  </tr> 
  <tr>
-    <td><tt>addautomount</tt></td>
-    <td>No</td>
-    <td>false</td>
-    <td>
-        <p>
-        true - treat schema name as glue db name and append `awsdatacatalog` in rs dbtable name. more details : https://aws.amazon.com/blogs/big-data/simplify-external-object-access-in-amazon-redshift-using-automatic-mounting-of-the-aws-glue-data-catalog/
-        </p>
-    </td>
- </tr> 
- <tr>
     <td><tt>tempformat</tt></td>
     <td>No</td>
     <td><tt>AVRO</tt></td>
@@ -793,25 +790,6 @@ for more information.</p>
     <td>Number of milliseconds to wait between retrying copy operations. Non-positive values will be treated as 30 seconds.</td>
 </tr>
 <tr> 
-    <td><tt>secret.id</tt></td>
-    <td>No</td>
-    <td>No default</td>
-    <td> The Name or ARN of your secret stored in AWS Secrets Manager. May be used to automatically supply Redshift credentials but only if the user, password and DbUser are not passed in the URL or as options.</td>
-</tr>
-<tr> 
-    <td><tt>secret.region</tt></td>
-    <td>No</td>
-    <td>No default</td>
-    <td>
-       <p>The primary AWS region (e.g., <tt>us-east-1</tt>) for searching for the <tt>secret.id</tt> value. </p>
-       <p>If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>secret.id</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
-       <ol>
-          <li>When the connector is running outside of AWS as automatic region discovery will fail and may prevent authenticating with Redshift.</li>
-          <li>When the connector is running in a different region than <tt>secret.id</tt> as it improves the connector's access performance of the secret.</li>
-       </ol>
-    </td>
-</tr>
-<tr> 
     <td><tt>secret.vpcEndpointUrl</tt></td>
     <td>No</td>
     <td>No default</td>
@@ -832,15 +810,15 @@ for more information.</p>
         A complete list of possible options for the Redshift JDBC driver may be seen in the <a href="https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-configuration-options.html">Redshift docs</a>.
     </td>
 </tr>
+<tr>
     <td><tt>label</tt></td>
     <td>No</td>
     <td>""</td>
     <td>
         An identifier to include in the query group set when running queries with the connector. Should be 100 or fewer characters and all characters must be valid unicodeIdentifierParts. Characters in excess of 100 will be trimmed.
-        When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"6.2.0-spark_3.5","op":"Read","lbl":"","tid":""}}`). 
+        When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"6.3.0-spark_3.5","op":"Read","lbl":"","tid":""}}`). 
         This option will be substituted for the value of the `lbl` key.
     </td>
-<tr>
 </tr></table>
 
 ## Additional configuration options
@@ -946,7 +924,7 @@ SET spark.datasource.redshift.community.autopushdown.lazyMode=false
 ### trace_id
 A new tracing identifier field that is added to the existing `label` parameter. When set, the provided string value will be used as part of label. Otherwise, it will default to the Spark application identifier. For example:
 
-`{"spark-redshift-connector":{"svc":"","ver":"6.2.0-spark_3.5","op":"Read","lbl":"","tid":"..."}}`)
+`{"spark-redshift-connector":{"svc":"","ver":"6.3.0-spark_3.5","op":"Read","lbl":"","tid":"..."}}`)
 
 To set the value, run the following command:
 ```sparksql

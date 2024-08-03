@@ -68,7 +68,7 @@ private[redshift] class RedshiftWriter(
    */
   // Visible for testing.
   private[redshift] def createTableSql(data: DataFrame, params: MergedParameters): String = {
-    val schemaSql = jdbcWrapper.schemaString(data.schema)
+    val schemaSql = jdbcWrapper.schemaString(data.schema, Some(params))
     val distStyleDef = params.distStyle match {
       case Some(style) => s"DISTSTYLE $style"
       case None => ""

@@ -294,6 +294,9 @@ case class JoinQuery(left: RedshiftQuery,
     extends RedshiftQuery {
 
   val conj: String = joinType match {
+    case Inner if conditions.isEmpty =>
+      // Treat empty join conditions as cross joins
+      "CROSS JOIN"
     case Inner =>
       // keep the nullability for both projections
       "INNER JOIN"

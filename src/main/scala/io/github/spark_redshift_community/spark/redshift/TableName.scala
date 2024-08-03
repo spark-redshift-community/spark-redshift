@@ -25,20 +25,22 @@ import scala.collection.mutable.ArrayBuffer
 /**
  * Wrapper class for representing the name of a Redshift table.
  */
-private[redshift] case class TableName(
-    unescapedSchemaName: String,
-    unescapedTableName: String,
-    addAutomount: Boolean = false) {
+private[redshift] case class TableName(unescapedDatabaseName: String,
+                                       unescapedSchemaName: String,
+                                       unescapedTableName: String) {
   private def quote(str: String) = '"' + str.replace("\"", "\"\"") + '"'
-
-  private def automountPrefix = if (addAutomount) s"""${quote("awsdatacatalog")}.""" else ""
+  def escapedDatabaseName: String = quote(unescapedDatabaseName)
   def escapedSchemaName: String = quote(unescapedSchemaName)
   def escapedTableName: String = quote(unescapedTableName)
-  override def toString: String = s"$automountPrefix$escapedSchemaName.$escapedTableName"
-  def toStatement: Identifier =
-    Identifier(s"$automountPrefix$escapedSchemaName.$escapedTableName")
-  def toConstantString: ConstantString =
-    ConstantString(s"$automountPrefix$escapedSchemaName.$escapedTableName")
+  override def toString: String = {
+    if (unescapedDatabaseName.isEmpty) {
+      s"$escapedSchemaName.$escapedTableName"
+    } else {
+      s"$escapedDatabaseName.$escapedSchemaName.$escapedTableName"
+    }
+  }
+  def toStatement: Identifier = Identifier(toString)
+  def toConstantString: ConstantString = ConstantString(toString)
 }
 
 private[redshift] object TableName {
@@ -46,19 +48,17 @@ private[redshift] object TableName {
    * Parses a table name which is assumed to have been escaped according to Redshift's rules for
    * delimited identifiers.
    */
-  def parseFromEscaped(str: String, addAutomount: Boolean = false): TableName = {
+  def parseFromEscaped(str: String): TableName = {
     def dropOuterQuotes(s: String) =
       if (s.startsWith("\"") && s.endsWith("\"")) s.drop(1).dropRight(1) else s
     def unescapeQuotes(s: String) = s.replace("\"\"", "\"")
     def unescape(s: String) = unescapeQuotes(dropOuterQuotes(s))
     splitByDots(str) match {
-      case Seq(tableName) =>
-        TableName("PUBLIC", unescape(tableName), addAutomount)
-      case Seq(schemaName, tableName) =>
-        TableName(unescape(schemaName), unescape(tableName), addAutomount)
-      case Seq("awsdatacatalog", schemaName, tableName) =>
-        TableName(unescape(schemaName), unescape(tableName), addAutomount = true)
-      case other => throw new IllegalArgumentException(s"Could not parse table name from '$str'")
+      case Seq(tableName) => TableName("", "PUBLIC", unescape(tableName))
+      case Seq(schemaName, tableName) => TableName("", unescape(schemaName), unescape(tableName))
+      case Seq(databaseName, schemaName, tableName) =>
+        TableName(unescape(databaseName), unescape(schemaName), unescape(tableName))
+      case _ => throw new IllegalArgumentException(s"Could not parse table name from '$str'")
     }
   }
 

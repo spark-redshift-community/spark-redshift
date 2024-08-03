@@ -66,7 +66,7 @@ private[querygeneration] object MiscStatement {
               case (_: BooleanType, _: StringType) =>
                 ConstantString("CASE") +
                   convertStatement(child, fields) +
-                  ConstantString("WHEN TRUE THEN 'true' WHEN FALSE THEN 'false' ELSE 'null' END")
+                  ConstantString("WHEN TRUE THEN 'true' WHEN FALSE THEN 'false' ELSE null END")
               // casting complex types does not work in redshift
               case (_: StructType | _: MapType | _: ArrayType, _) =>
                 throw new RedshiftPushdownUnsupportedException(

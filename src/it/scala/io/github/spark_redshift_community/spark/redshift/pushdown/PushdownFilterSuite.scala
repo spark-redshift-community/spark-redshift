@@ -454,7 +454,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
        |((("SUBQUERY_0"."TESTBYTE"ISNOTNULL)AND
        |("SUBQUERY_0"."TESTINT"ISNOTNULL))AND
        |("SUBQUERY_0"."TESTLONG"ISNOTNULL))AND
-       |(("SUBQUERY_0"."TESTBYTE"<"SUBQUERY_0"."TESTINT")AND
+       |((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )<"SUBQUERY_0"."TESTINT")AND
        |(CAST("SUBQUERY_0"."TESTINT"ASBIGINT)<"SUBQUERY_0"."TESTLONG"))))
        |AS"SUBQUERY_1"LIMIT1""".stripMargin
        )
@@ -550,7 +550,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(1), Row(1), Row(2), Row(2), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
        |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((1+"SUBQUERY_0"."TESTBYTE"))AS
+       |(SELECT*FROM(SELECT((1+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
@@ -637,7 +637,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     s"""select 32767 + testbyte from test_table order by testbyte ASC NULLS LAST""",
     Seq(Row(32767), Row(32767), Row(32768), Row(32768), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((32767+"SUBQUERY_0"."TESTBYTE"))AS
+       |(SELECT*FROM(SELECT((32767+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
@@ -649,7 +649,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     s"""select -32767 + testbyte from test_table order by testbyte ASC NULLS LAST""",
     Seq(Row(-32767), Row(-32767), Row(-32766), Row(-32766), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((-32767+"SUBQUERY_0"."TESTBYTE"))AS
+       |(SELECT*FROM(SELECT((-32767+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
@@ -669,7 +669,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     s"""SELECT -1 + testbyte from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(-1), Row(-1), Row(0), Row(0), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((-1+"SUBQUERY_0"."TESTBYTE"))AS
+       |(SELECT*FROM(SELECT((-1+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS"SUBQUERY_1_COL_1"FROM
        |(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
@@ -771,7 +771,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     s"""select -32767 + testbyte from test_table order by testbyte ASC NULLS LAST""",
     Seq(Row(-32767), Row(-32767), Row(-32766), Row(-32766), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((-32767+"SUBQUERY_0"."TESTBYTE"))AS
+       |(SELECT*FROM(SELECT((-32767+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS"SUBQUERY_1_COL_1"
        |FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
@@ -782,7 +782,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     s"""select -32767 + testbyte from test_table order by testbyte ASC NULLS LAST""",
     Seq(Row(-32767), Row(-32767), Row(-32766), Row(-32766), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((-32767+"SUBQUERY_0"."TESTBYTE"))AS
+       |(SELECT*FROM(SELECT((-32767+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
@@ -802,7 +802,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(-1), Row(-1), Row(0), Row(0), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
        |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTBYTE"-1))AS
+       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )-1))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
@@ -885,7 +885,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(-32767), Row(-32767), Row(-32766), Row(-32766), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
        |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTBYTE"-32767))AS
+       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )-32767))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
@@ -965,7 +965,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(1), Row(1), Row(2), Row(2), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
        |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTBYTE"--1))AS
+       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )--1))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
@@ -1059,7 +1059,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(32767), Row(32767), Row(32768), Row(32768), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
        |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTBYTE"--32767))AS
+       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )--32767))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
@@ -1121,7 +1121,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(0), Row(0), Row(2), Row(2), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
        |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTBYTE"*2))AS
+       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )*2))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
@@ -1217,7 +1217,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(0), Row(0), Row(32767), Row(32767), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
        |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTBYTE"*32767))AS
+       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )*32767))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
@@ -1296,7 +1296,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(0), Row(0), Row(-2), Row(-2), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
        |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTBYTE"*-2))AS
+       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )*-2))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
@@ -1392,7 +1392,7 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(0), Row(0), Row(-32767), Row(-32767), Row(null)),
     s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
        |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTBYTE"*-32767))AS
+       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )*-32767))AS
        |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
        |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
        AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS

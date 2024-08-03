@@ -1,5 +1,5 @@
 /*
- * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,4 +14,13 @@
  * limitations under the License.
  */
 
-ThisBuild / version := "6.3.0"
+package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
+
+import io.github.spark_redshift_community.spark.redshift.pushdown.RedshiftSQLStatement
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
+
+private[querygeneration] object StringStatementExtensions {
+  def unapply(expAttr: (Expression, Seq[Attribute])): Option[RedshiftSQLStatement] = {
+    None
+  }
+}

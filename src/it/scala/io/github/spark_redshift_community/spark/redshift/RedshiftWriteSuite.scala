@@ -144,6 +144,84 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
       conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
     }
   }
+
+  test ("Check ShortType Mapping to SMALLINT Test") {
+    withTempRedshiftTable("myAllTypeTable") { tableName =>
+      // val tableName: String = "myAllTypeTable"
+      val testSchema: StructType = {
+        StructType(Seq(
+          StructField("col_byte", ByteType, nullable = true),
+          StructField("col_short", ShortType, nullable = true),
+          StructField("col_integer", IntegerType, nullable = true),
+          StructField("col_long", LongType, nullable = true)
+        )
+        )
+      }
+
+      val dataRow = Seq(Row(Byte.MaxValue, Short.MaxValue, Integer.MAX_VALUE, Long.MaxValue))
+      val data = sc.parallelize((dataRow))
+      val df = sqlContext.createDataFrame(data, testSchema)
+
+      write(df).option("dbtable", tableName)
+        .option(Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT, value = false)
+        .save()
+      if (!DefaultJDBCWrapper.tableExists(conn, tableName)) {
+        Thread.sleep(1000)
+        assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      }
+      val loadedDf = read.option("dbtable", tableName)
+        .option(Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT, value = false)
+        .load()
+
+      // loadedDf.schema.fields.foreach(elem => println(elem))
+      assert(loadedDf.schema match {
+        case StructType(Array(StructField(_, ShortType, _, _),
+        StructField(_, ShortType, _, _),
+        StructField(_, IntegerType, _, _),
+        StructField(_, LongType, _, _))) => true
+        case _ => false
+      })
+    }
+  }
+  test ("Check ShortType Mapping to INTEGER Test") {
+    withTempRedshiftTable("myAllTypeTable") { tableName =>
+      // val tableName: String = "myAllTypeTable"
+      val testSchema: StructType = {
+        StructType(Seq(
+          StructField("col_byte", ByteType, nullable = true),
+          StructField("col_short", ShortType, nullable = true),
+          StructField("col_integer", IntegerType, nullable = true),
+          StructField("col_long", LongType, nullable = true)
+        )
+        )
+      }
+
+      val dataRow = Seq(Row(Byte.MaxValue, Short.MaxValue, Integer.MAX_VALUE, Long.MaxValue))
+      val data = sc.parallelize((dataRow))
+      val df = sqlContext.createDataFrame(data, testSchema)
+
+      write(df).option("dbtable", tableName)
+        .option(Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT, value = true)
+        .save()
+      if (!DefaultJDBCWrapper.tableExists(conn, tableName)) {
+        Thread.sleep(1000)
+        assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      }
+      val loadedDf = read.option("dbtable", tableName)
+        .option(Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT, value = true)
+        .load()
+
+      // loadedDf.schema.fields.foreach(elem => println(elem))
+      assert(loadedDf.schema match {
+        case StructType(Array(StructField(_, IntegerType, _, _),
+        StructField(_, IntegerType, _, _),
+        StructField(_, IntegerType, _, _),
+        StructField(_, LongType, _, _))) => true
+        case _ => false
+      })
+    }
+  }
+
 }
 
 class AvroRedshiftWriteSuite extends BaseRedshiftWriteSuite {
