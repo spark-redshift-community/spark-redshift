@@ -57,7 +57,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Intersect All clause no pushdown", P0Test, P1Test) {
+  test("Intersect All clause pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
         """SELECT testString, testshort FROM test_table  WHERE testString IS NOT NULL
