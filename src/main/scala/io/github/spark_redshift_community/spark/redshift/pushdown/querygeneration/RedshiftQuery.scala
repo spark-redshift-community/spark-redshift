@@ -335,19 +335,20 @@ case class MergeQuery(targetQuery: SourceQuery,
     }
 
     val sourceTableName = sourceQuery.relation.params.table.get
-    val sourceTableNameStr = sourceTableName.toString
+    val sourceTableNameStrQualifier = Seq(sourceTableName.toString.drop(1).dropRight(1))
+    val sourceRefCols = sourceQuery.refColumns
     val targetTableName = targetQuery.relation.params.table.get
-    val targetTableNameStr = targetTableName.toString
+    val targetTableNameStrQualifier = Seq(targetTableName.toString.drop(1).dropRight(1))
+    val targetRefCols = targetQuery.refColumns
 
-    def replaceAttributeQualifier(  targetQuery: SourceQuery,
-                                    sourceQuery: SourceQuery,
-                                    targetQualifier: Seq[String],
+    def replaceAttributeQualifier(  targetQualifier: Seq[String],
                                     sourceQualifier: Seq[String],
                                     attrRef: AttributeReference): AttributeReference = {
-      if (targetQuery.refColumns.exists(_.exprId == attrRef.exprId)) {
+
+      if (targetRefCols.exists(_.exprId == attrRef.exprId)) {
         attrRef.withQualifier(targetQualifier)
       }
-      else if (sourceQuery.refColumns.exists(_.exprId == attrRef.exprId)) {
+      else if (sourceRefCols.exists(_.exprId == attrRef.exprId)) {
         attrRef.withQualifier(sourceQualifier)
       }
       else {
@@ -355,29 +356,27 @@ case class MergeQuery(targetQuery: SourceQuery,
       }
     }
 
-    def replaceAliasQualifier(targetQuery: SourceQuery,
-                              sourceQuery: SourceQuery,
-                              assignment: Assignment): Expression = {
-      val transformedAssignment = assignment.transform({
+    def setAssignmentQualifier(assignment: Assignment): Assignment = {
+      val newKey = assignment.key.transform({
         case a: AttributeReference =>
-          val targetQualifier = Seq()
-          val sourceQualifier = Seq(sourceTableNameStr.substring(1, sourceTableNameStr.length - 1))
-          replaceAttributeQualifier(targetQuery, sourceQuery, targetQualifier, sourceQualifier, a)
+          replaceAttributeQualifier(Seq(), sourceTableNameStrQualifier, a)
       })
-      transformedAssignment
+      val newValue = assignment.value.transform({
+        case a: AttributeReference =>
+          replaceAttributeQualifier(targetTableNameStrQualifier, sourceTableNameStrQualifier, a)
+      })
+      Assignment(newKey, newValue)
     }
 
     val mergeCondExpression = mergeCondition.transform({
       case a: AttributeReference =>
-        val targetQualifier = Seq(targetTableNameStr.substring(1, targetTableNameStr.length - 1))
-        val sourceQualifier = Seq(sourceTableNameStr.substring(1, sourceTableNameStr.length - 1))
-        replaceAttributeQualifier(targetQuery, sourceQuery, targetQualifier, sourceQualifier, a)
+        replaceAttributeQualifier(targetTableNameStrQualifier, sourceTableNameStrQualifier, a)
     })
 
     val matchedExpression = matchedActions.headOption match {
       case Some(UpdateAction(_, assignments)) =>
         val assignmentsStatement = assignments.map { assignment =>
-          val assignmentExpr = replaceAliasQualifier(targetQuery, sourceQuery, assignment)
+          val assignmentExpr = setAssignmentQualifier(assignment)
           expressionToStatement(assignmentExpr)
         }.mkString(", ")
         s"UPDATE SET $assignmentsStatement"
@@ -386,7 +385,7 @@ case class MergeQuery(targetQuery: SourceQuery,
       case None => // No-Op equivalent operation when no matchedAction
         val cols = targetQuery.refColumns.head
         val nopAssignment = Assignment(cols,
-          cols.withQualifier(Seq(targetTableNameStr.drop(1).dropRight(1))))
+          cols.withQualifier(targetTableNameStrQualifier))
         "UPDATE SET " + expressionToStatement(nopAssignment)
       case _ =>
         val errStmt = expressionToStatement(matchedActions.head).toString
@@ -401,11 +400,8 @@ case class MergeQuery(targetQuery: SourceQuery,
     val unMatchedExpression = notMatchedActions.head match {
       case InsertAction(_, assignments) =>
         val pairs = assignments.map { assignment =>
-          val assignmentExpr = replaceAliasQualifier(targetQuery, sourceQuery, assignment)
-            .asInstanceOf[Assignment]
-          val keyStatementStr = expressionToStatement(assignmentExpr.key)
-            .statementString
-          val keyStatement = keyStatementStr.substring(1, keyStatementStr.length - 1)
+          val assignmentExpr = setAssignmentQualifier(assignment)
+          val keyStatement = expressionToStatement(assignmentExpr.key).statementString
           val valueStatement = expressionToStatement(assignmentExpr.value).statementString
           (keyStatement, valueStatement)
         }
@@ -431,17 +427,17 @@ case class MergeQuery(targetQuery: SourceQuery,
   }
 }
 
-case class UpdateQuery(sourceQuery: SourceQuery,
+case class UpdateQuery(targetQuery: SourceQuery,
                        assignments: Seq[Assignment],
                        condition: Option[Expression])
   extends RedshiftQuery {
-  override val helper: QueryHelper = sourceQuery.helper
+  override val helper: QueryHelper = targetQuery.helper
 
   override def find[T](query: PartialFunction[RedshiftQuery, T])
-  : Option[T] = sourceQuery.find(query)
+  : Option[T] = targetQuery.find(query)
 
   override def getStatement(useAlias: Boolean): RedshiftSQLStatement = {
-    if (sourceQuery.relation.params.table.isEmpty) {
+    if (targetQuery.relation.params.table.isEmpty) {
       throw new RedshiftPushdownUnsupportedException(
         "Unable to pushdown update query for relation without dbtable",
         "UPDATE table",
@@ -449,29 +445,31 @@ case class UpdateQuery(sourceQuery: SourceQuery,
         true
       )
     }
-    val tableName = sourceQuery.relation.params.table.get
-    val tableNameStr = tableName.toString
-    val qualifierName = tableNameStr.substring(1, tableNameStr.length - 1)
+    val targetTableName = targetQuery.relation.params.table.get
+    val targetTableNameStrQualifier = targetTableName.toString.drop(1).dropRight(1)
+    val targetRefCols = targetQuery.refColumns
+
+    def setQualifierFromTarget(qualifierStr: Seq[String])
+      : PartialFunction[Expression, Expression] = {
+      case a: AttributeReference
+        if targetRefCols.exists(_.exprId == a.exprId) =>
+          a.withQualifier(qualifierStr)
+    }
 
     val assignmentsStatement = assignments.map { assignment =>
       // There should be only column name, but not table name (qualifier) in assignment statement
-      val transformedAssignment = assignment.transform({
-        case a: AttributeReference
-          if sourceQuery.refColumns.exists(_.exprId == a.exprId) => a.withQualifier(Seq())
-      })
-      expressionToStatement(transformedAssignment)
+      val transformedKey = assignment.key.transform(setQualifierFromTarget(Seq()))
+      val transformedValue = assignment.value.transform(
+        setQualifierFromTarget(Seq(targetTableNameStrQualifier)))
+      expressionToStatement(Assignment(transformedKey, transformedValue))
     }.mkString(", ")
 
-    val res = ConstantString("UPDATE") + tableName.toStatement +
+    val res = ConstantString("UPDATE") + targetTableName.toStatement +
       ConstantString("SET") + assignmentsStatement
     val suffix: RedshiftSQLStatement = condition match {
       case Some(value) =>
         val conditionStmt = expressionToStatement(
-          value.transform({
-            case a: AttributeReference
-              if sourceQuery.refColumns.
-                exists(_.exprId == a.exprId) => a.withQualifier(Seq(qualifierName))
-          })
+          value.transform(setQualifierFromTarget(Seq(targetTableNameStrQualifier)))
         )
         ConstantString("WHERE") + conditionStmt
       case None => EmptyRedshiftSQLStatement()

@@ -17,7 +17,7 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
 import org.apache.spark.sql.{AnalysisException, Row}
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.functions._
 
 class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
@@ -26,11 +26,10 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
   // These tests cannot use cache since they check the result changing
   override val s3_result_cache: String = "false"
 
-  // DML Update command
   test("Simple Update command with SET and WHERE clause") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"create table ${tableName} (id int, value int)"
+        s"create table $tableName (id int, value int)"
       )
       read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
 
@@ -39,21 +38,82 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
 
-      val pre = sqlContext.sql(s"select value from $tableName where id = 2").collect()(0)(0)
-
       sqlContext.sql(s"update $tableName set value = 25 where id = 2")
 
-      val post = sqlContext.sql(s"select value from $tableName where id = 2").collect()(0)(0)
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = 25
+           | WHERE ( "PUBLIC"."$tableName"."ID" = 2 ) """.stripMargin)
 
-      assert(pre == 20)
-      assert(post == 25)
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(1, 10),
+          Row(2, 25),
+          Row(3, 30)))
+    }
+  }
+
+  test("Update command with SET subquery") {
+    withTempRedshiftTable("updateTable") { tableName =>
+      redshiftWrapper.executeUpdate(conn,
+        s"create table $tableName (id int, value int)"
+      )
+      read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+
+      val initialData = Seq((1, 10), (2, 20), (3, 30))
+      val schema = List("id", "value")
+      val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
+      write(df).option("dbtable", tableName).mode("append").save()
+
+      sqlContext.sql(s"update $tableName set value = " +
+        s"(select max(value) from $tableName) + 5 where id <= 2 ")
+
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = ( ( SELECT ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) )
+           | AS "SUBQUERY_2_COL_0" FROM ( SELECT ( "SUBQUERY_0"."VALUE" )
+           | AS "SUBQUERY_1_COL_0" FROM ( SELECT * FROM "PUBLIC"."$tableName"
+           | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1" LIMIT 1 ) + 5 )
+           | WHERE ( "PUBLIC"."$tableName"."ID" <= 2 ) """.stripMargin)
+
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(1, 35),
+          Row(2, 35),
+          Row(3, 30)))
+    }
+  }
+
+  test("Update command with SET different column in the same table") {
+    withTempRedshiftTable("updateTable") { tableName =>
+      redshiftWrapper.executeUpdate(conn,
+        s"create table $tableName (id int, value int)"
+      )
+      read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+
+      val initialData = Seq((1, 10), (2, 20), (3, 30))
+      val schema = List("id", "value")
+      val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
+      write(df).option("dbtable", tableName).mode("append").save()
+
+      sqlContext.sql(s"update $tableName set value = id, id = value")
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = "PUBLIC"."$tableName"."ID",
+           |     "ID" = "PUBLIC"."$tableName"."VALUE" """.stripMargin)
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(10, 1),
+          Row(20, 2),
+          Row(30, 3))
+      )
     }
   }
 
   test("Command with an alias name for the target table in Redshift.") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"create table ${tableName} (id int, value int)"
+        s"create table $tableName (id int, value int)"
       )
 
       read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
@@ -63,21 +123,25 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
 
-      val pre = sqlContext.sql(s"select value from $tableName where id = 2").collect()(0)(0)
-
       sqlContext.sql(s"update $tableName as TARGET set value = 25 where TARGET.id = 2")
 
-      val post = sqlContext.sql(s"select value from $tableName where id = 2").collect()(0)(0)
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = 25
+           | WHERE ( "PUBLIC"."$tableName"."ID" = 2 ) """.stripMargin)
 
-      assert(pre == 20)
-      assert(post == 25)
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(1, 10),
+          Row(2, 25),
+          Row(3, 30)))
     }
   }
 
   test("Command with only a SET value.") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"create table ${tableName} (id int, value int)"
+        s"create table $tableName (id int, value int)"
       )
 
       read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
@@ -87,23 +151,24 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
 
-      val pre = sqlContext.sql(s"select value from $tableName")
-        .collect().map(_.getInt(0)).toSeq
-
       sqlContext.sql(s"update $tableName set value = 25")
 
-      val post = sqlContext.sql(s"select value from $tableName ").collect()
-        .map(_.getInt(0)).toSeq
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = 25""".stripMargin)
 
-      assert(pre.toSet.equals(Seq(10, 20, 30).toSet))
-      assert(post.equals(Seq(25, 25, 25)))
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(1, 25),
+          Row(2, 25),
+          Row(3, 25)))
     }
   }
 
   test("Command with multiple conditions.") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"create table ${tableName} (id int, value int)"
+        s"create table $tableName (id int, value int)"
       )
 
       read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
@@ -113,16 +178,18 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
 
-      val pre = sqlContext.sql(s"select id from $tableName where value = 25").collect()
-        .map(_.getInt(0)).toSeq
-
       sqlContext.sql(s"update $tableName set value = 25 where id = 2 or id = 1")
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = 25
+           | WHERE ( ( "PUBLIC"."$tableName"."ID" = 2 ) OR
+           |        ( "PUBLIC"."$tableName"."ID" = 1 ) ) """.stripMargin)
 
-      val post = sqlContext.sql(s"select id from $tableName where value = 25").collect()
-        .map(_.getInt(0)).toSeq
-
-      assert(pre.isEmpty)
-      assert(post.equals(Seq(1, 2)))
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(1, 25),
+          Row(2, 25),
+          Row(3, 30)))
     }
   }
 
@@ -131,10 +198,10 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       withTempRedshiftTable("condition") { conditionTable =>
 
         redshiftWrapper.executeUpdate(conn,
-          s"create table ${targetTable} (id int, value int)"
+          s"create table $targetTable (id int, value int)"
         )
         redshiftWrapper.executeUpdate(conn,
-          s"create table ${conditionTable} (id int, value int)"
+          s"create table $conditionTable (id int, value int)"
         )
         read.option("dbtable", targetTable).load.createOrReplaceTempView(targetTable)
         read.option("dbtable", conditionTable).load.createOrReplaceTempView(conditionTable)
@@ -145,20 +212,24 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         write(df).option("dbtable", targetTable).mode("append").save()
         write(df).option("dbtable", conditionTable).mode("append").save()
 
-        val pre = sqlContext.sql(s"select id from $targetTable where value = 25").collect()
-          .map(_.getInt(0)).toSeq
-
         sqlContext.sql(s"update $targetTable as TARGET set value = 25 where " +
           s"exists (select id from $conditionTable where id > 1) ")
 
-        val post = sqlContext.sql(s"select id from $targetTable where value = 25").collect()
-          .map(_.getInt(0)).toSeq
+        checkSqlStatement(
+          s""" UPDATE "PUBLIC"."$targetTable" SET "VALUE" = 25
+             | WHERE ( ( SELECT * FROM ( SELECT ( 1 ) AS "SUBQUERY_2_COL_0"
+             |  FROM ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$conditionTable"
+             |    AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+             |    WHERE ( ( "SUBQUERY_0"."ID" IS NOT NULL )
+             |    AND ( "SUBQUERY_0"."ID" > 1 ) ) ) AS "SUBQUERY_1" )
+             |    AS "SUBQUERY_2" LIMIT 1 ) IS NOT NULL ) """.stripMargin)
 
-        sqlContext.sql(s"delete from $targetTable")
-        sqlContext.sql(s"delete from $conditionTable")
+        checkAnswer(
+          sqlContext.sql(s"select * from $targetTable"),
+          Seq( Row(1, 25),
+            Row(2, 25),
+            Row(3, 25)))
 
-        assert(pre.isEmpty)
-        assert(post.equals(Seq(1, 2, 3)))
       }
     }
   }
@@ -166,7 +237,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
   test("Test non-updated columns retain original values") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"create table ${tableName} (id int, value int, status varchar(15))"
+        s"create table $tableName (id int, value int, status varchar(15))"
       )
 
       read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
@@ -176,30 +247,24 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
 
-      val preValue = sqlContext.sql(s"select value,id from $tableName order by id asc").collect()
-        .map(_.getInt(0)).toSeq
-      val preStatus = sqlContext.sql(s"select status,id from $tableName order by id asc").collect()
-        .map(_.getString(0)).toSeq
-
       sqlContext.sql(s"update $tableName set status = \'RESOLVED\' where id = 2")
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "STATUS" = 'RESOLVED'
+           | WHERE ( "PUBLIC"."$tableName"."ID" = 2 ) """.stripMargin)
 
-      val postValue = sqlContext.sql(s"select value,id from $tableName order by id asc").collect()
-        .map(_.getInt(0)).toSeq
-      val postStatus = sqlContext.sql(s"select status,id from $tableName order by id asc").collect()
-        .map(_.getString(0)).toSeq
-
-      assert(preValue.equals(Seq(10, 20, 30)))
-      assert(postValue.equals(preValue))
-      assert(preStatus.equals(Seq("OPEN", "WIP", "RESOLVED")))
-      assert(postStatus.equals(Seq("OPEN", "RESOLVED", "RESOLVED")))
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(1, 10, "OPEN"),
+          Row(2, 20, "RESOLVED"),
+          Row(3, 30, "RESOLVED")))
     }
   }
-
 
   test("simple test table name with schema name") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"""create table ${tableName} (id int, value int)"""
+        s"""create table $tableName (id int, value int)"""
       )
       read.option("dbtable", s""""PUBLIC"."$tableName"""").load.createOrReplaceTempView(tableName)
 
@@ -208,15 +273,18 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
 
-      val pre = sqlContext.sql(s"select value from $tableName where id = 2")
-        .collect()(0)(0)
-
       sqlContext.sql(s"update $tableName set value = 25 where id = 2")
 
-      val post = sqlContext.sql(s"select value from $tableName where id = 2").collect()(0)(0)
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = 25
+           | WHERE ( "PUBLIC"."$tableName"."ID" = 2 ) """.stripMargin)
 
-      assert(pre == 20)
-      assert(post == 25)
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(1, 10),
+          Row(2, 25),
+          Row(3, 30)))
     }
   }
 
@@ -224,7 +292,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
   test("Command with multiple assignments.") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"create table ${tableName} (id int, value int)"
+        s"create table $tableName (id int, value int)"
       )
 
       read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
@@ -234,23 +302,24 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
 
-      val pre = sqlContext.sql(s"select id from $tableName where value = 25").collect()
-        .map(_.getInt(0)).toSeq
-
       sqlContext.sql(s"update $tableName set value = 25, id = 100 where id = 2")
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = 25 , "ID" = 100
+           | WHERE ( "PUBLIC"."$tableName"."ID" = 2 ) """.stripMargin)
 
-      val post = sqlContext.sql(s"select id from $tableName where value = 25").collect()
-        .map(_.getInt(0)).toSeq
-
-      assert(pre.isEmpty)
-      assert(post.equals(Seq(100)))
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(1, 10),
+          Row(100, 25),
+          Row(3, 30)))
     }
   }
 
   test("Command with multiple assignments and conditions.") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"create table ${tableName} (id int, value int)"
+        s"create table $tableName (id int, value int)"
       )
 
       read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
@@ -260,16 +329,18 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
 
-      val pre = sqlContext.sql(s"select id from $tableName where value = 25").collect()
-        .map(_.getInt(0)).toSeq
-
       sqlContext.sql(s"update $tableName set value = 25, id = 100 where id = 2 or id = 1")
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = 25 , "ID" = 100
+           | WHERE ( ( "PUBLIC"."$tableName"."ID" = 2 )
+           |  OR ( "PUBLIC"."$tableName"."ID" = 1 ) ) """.stripMargin)
 
-      val post = sqlContext.sql(s"select id from $tableName where value = 25").collect()
-        .map(_.getInt(0)).toSeq
-
-      assert(pre.isEmpty)
-      assert(post.equals(Seq(100, 100)))
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(100, 25),
+          Row(100, 25),
+          Row(3, 30)))
     }
   }
 
@@ -314,10 +385,10 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       withTempRedshiftTable("assignment") { assignmentTable =>
 
         redshiftWrapper.executeUpdate(conn,
-          s"create table ${tableName} (id int, value int)"
+          s"create table $tableName (id int, value int)"
         )
         redshiftWrapper.executeUpdate(conn,
-          s"create table ${assignmentTable} (id int, value int)"
+          s"create table $assignmentTable (id int, value int)"
         )
         read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
         read.option("dbtable", assignmentTable).load.createOrReplaceTempView(assignmentTable)
@@ -331,8 +402,8 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         write(df_assign).option("dbtable", assignmentTable).mode("append").save()
 
         sqlContext.sql(s"update $tableName set value = ( select max(value) from " +
-          s"${assignmentTable} " +
-          s"where ${assignmentTable}.id = $tableName.id)")
+          s"$assignmentTable " +
+          s"where $assignmentTable.id = $tableName.id)")
 
         val post = sqlContext.sql(s"select id from $tableName").collect()
           .map(_.getInt(0)).toSeq
@@ -347,7 +418,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
   test("Test less than operator subquery condition ") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"create table ${tableName} (id int, value int)"
+        s"create table $tableName (id int, value int)"
       )
 
       read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
@@ -357,16 +428,15 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
 
-      val pre = sqlContext.sql(s"select id from $tableName where value = -1").collect()
-        .map(_.getInt(0)).toSeq
-
       sqlContext.sql(s"update $tableName set value = -1 where value < 30")
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = -1
+           | WHERE ( "PUBLIC"."$tableName"."VALUE" < 30 ) """.stripMargin)
 
-      val post = sqlContext.sql(s"select id from $tableName where value = -1").collect()
-        .map(_.getInt(0)).toSeq
-
-      assert(pre.isEmpty)
-      assert(post.equals(Seq(1, 2)))
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(1, -1), Row(2, -1), Row(3, 30), Row(4, 40), Row(5, 50)))
     }
   }
 
@@ -375,10 +445,10 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       withTempRedshiftTable("condition") { conditionTable =>
 
         redshiftWrapper.executeUpdate(conn,
-          s"create table ${targetTable} (id int, status varchar(30))"
+          s"create table $targetTable (id int, status varchar(30))"
         )
         redshiftWrapper.executeUpdate(conn,
-          s"create table ${conditionTable} (id int, status varchar(30))"
+          s"create table $conditionTable (id int, status varchar(30))"
         )
         read.option("dbtable", targetTable).load.createOrReplaceTempView(targetTable)
         read.option("dbtable", conditionTable).load.createOrReplaceTempView(conditionTable)
@@ -392,20 +462,20 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         val conditionDf = sqlContext.createDataFrame(conditionData).toDF(schema: _*)
         write(conditionDf).option("dbtable", conditionTable).mode("append").save()
 
-        val pre = sqlContext.sql(s"select id from $targetTable where status = \'returned\'")
-          .collect().map(_.getInt(0)).toSeq
-
         sqlContext.sql(s"update $targetTable as TARGET set status = \'returned\' where " +
           s"exists (select id from $conditionTable where TARGET.id = id) ")
 
-        val post = sqlContext.sql(s"select id from $targetTable where status = \'returned\'")
-          .collect().map(_.getInt(0)).toSeq
+        checkSqlStatement(
+          s""" UPDATE "PUBLIC"."$targetTable"
+             | SET "STATUS" = 'returned'
+             | WHERE EXISTS ( SELECT ( "SUBQUERY_0"."ID" ) AS "SUBQUERY_1_COL_0"
+             |  FROM ( SELECT * FROM "PUBLIC"."$conditionTable" AS "RS_CONNECTOR_QUERY_ALIAS" )
+             |  AS "SUBQUERY_0" WHERE ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_1_COL_0" ) )
+             """.stripMargin)
 
-        sqlContext.sql(s"delete from $targetTable")
-        sqlContext.sql(s"delete from $conditionTable")
-
-        assert(pre.isEmpty)
-        assert(post.equals(Seq(2)))
+        checkAnswer(
+          sqlContext.sql(s"select * from $targetTable"),
+          Seq( Row(1, "shipped"), Row(2, "returned"), Row(3, "processing")))
       }
     }
   }
@@ -414,10 +484,10 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("target") { targetTable =>
       withTempRedshiftTable("condition") { conditionTable =>
         redshiftWrapper.executeUpdate(conn,
-          s"create table ${targetTable} (id int, value int)"
+          s"create table $targetTable (id int, value int)"
         )
         redshiftWrapper.executeUpdate(conn,
-          s"create table ${conditionTable} (id int, value int)"
+          s"create table $conditionTable (id int, value int)"
         )
         read.option("dbtable", targetTable).load.createOrReplaceTempView(targetTable)
         read.option("dbtable", conditionTable).load.createOrReplaceTempView(conditionTable)
@@ -432,20 +502,22 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         val conditionDf = sqlContext.createDataFrame(conditionData).toDF(schema: _*)
         write(conditionDf).option("dbtable", conditionTable).mode("append").save()
 
-        val pre = sqlContext.sql(s"select id from $targetTable where value = 0").collect()
-          .map(_.getInt(0)).toSeq
-
         sqlContext.sql(s"update $targetTable set value = 0 where " +
           s" id NOT IN (select id from $conditionTable where value = -1) ")
 
-        val post = sqlContext.sql(s"select id from $targetTable where value = 0").collect()
-          .map(_.getInt(0)).toSeq
+        checkSqlStatement(
+          s""" UPDATE "PUBLIC"."$targetTable"
+             | SET "VALUE" = 0
+             | WHERE NOT ( "PUBLIC"."$targetTable"."ID" IN ( SELECT ( "SUBQUERY_1"."ID" )
+             |  AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
+             |    ( SELECT * FROM "PUBLIC"."$conditionTable" AS "RS_CONNECTOR_QUERY_ALIAS" )
+             |     AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."VALUE" IS NOT NULL ) AND
+             |     ( "SUBQUERY_0"."VALUE" = -1 ) ) ) AS "SUBQUERY_1" ) ) """.stripMargin)
 
-        sqlContext.sql(s"delete from $targetTable")
-        sqlContext.sql(s"delete from $conditionTable")
+        checkAnswer(
+          sqlContext.sql(s"select * from $targetTable"),
+          Seq( Row(1, 10), Row(2, 20), Row(3, 0), Row(4, 0), Row(5, 50)))
 
-        assert(pre.isEmpty)
-        assert(post.equals(Seq(3, 4)))
       }
     }
   }
@@ -453,7 +525,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
   test("Test DEFAULT null assignment") { // Only work for Null Default
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"create table ${tableName} (id int, value int)"
+        s"create table $tableName (id int, value int)"
       )
       read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
 
@@ -462,24 +534,23 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
 
-      val pre = sqlContext.sql(s"select value from $tableName").collect()
-        .map(_.getInt(0)).toSeq
-
       sqlContext.sql(s"update $tableName set value = DEFAULT where value > 30")
+      checkSqlStatement(
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = NULL
+           | WHERE( "PUBLIC"."$tableName"."VALUE" > 30 )""".stripMargin)
 
-      val post = sqlContext.sql(s"select value from $tableName").collect()
-        .map(row => if (!row.isNullAt(0)) row.getInt(0) else null)
-        .toSeq
+      checkAnswer(
+        sqlContext.sql(s"select * from $tableName"),
+        Seq( Row(1, 10), Row(2, 20), Row(3, 30), Row(4, null), Row(5, null)))
 
-      assert(pre.equals(Seq(10, 20, 30, 40, 50)))
-      assert(post.equals(Seq(10, 20, 30, null, null)))
     }
   }
 
   ignore("Test DEFAULT non-null assignment") { // FAIL: Spark does not know Redshift Default Value
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
-        s"create table ${tableName} (id int, value int default 0)"
+        s"create table $tableName (id int, value int default 0)"
       )
       read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
 
@@ -507,10 +578,10 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("target") { targetTable =>
       withTempRedshiftTable("condition") { conditionTable =>
         redshiftWrapper.executeUpdate(conn,
-          s"create table ${targetTable} (id int, value int)"
+          s"create table $targetTable (id int, value int)"
         )
         redshiftWrapper.executeUpdate(conn,
-          s"create table ${conditionTable} (id int, value int)"
+          s"create table $conditionTable (id int, value int)"
         )
         read.option("dbtable", targetTable).load.createOrReplaceTempView(targetTable)
         read.option("dbtable", conditionTable).load.createOrReplaceTempView(conditionTable)
@@ -525,20 +596,22 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         val conditionDf = sqlContext.createDataFrame(conditionData).toDF(schema: _*)
         write(conditionDf).option("dbtable", conditionTable).mode("append").save()
 
-        val pre = sqlContext.sql(s"select id from $targetTable where value = 0").collect()
-          .map(_.getInt(0)).toSeq
-
         sqlContext.sql(s"update $targetTable set value = 0 where " +
           s" id IN (select id from $conditionTable where value = -1) ")
 
-        val post = sqlContext.sql(s"select id from $targetTable where value = 0").collect()
-          .map(_.getInt(0)).toSeq
+        checkSqlStatement(
+          s""" UPDATE "PUBLIC"."$targetTable"
+             | SET "VALUE" = 0
+             | WHERE "PUBLIC"."$targetTable"."ID" IN ( SELECT ( "SUBQUERY_1"."ID" )
+             |  AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+             |    "PUBLIC"."$conditionTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
+             |     "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."VALUE" IS NOT NULL ) AND
+             |     ( "SUBQUERY_0"."VALUE" = -1 ) ) ) AS "SUBQUERY_1" )""".stripMargin)
 
-        sqlContext.sql(s"delete from $targetTable")
-        sqlContext.sql(s"delete from $conditionTable")
+        checkAnswer(
+          sqlContext.sql(s"select * from $targetTable"),
+          Seq( Row(1, 0), Row(2, 0), Row(3, 30), Row(4, 40), Row(5, 0)))
 
-        assert(pre.isEmpty)
-        assert(post.equals(Seq(1, 2, 5)))
       }
     }
   }
@@ -807,7 +880,6 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
       write(df).option("dbtable", tableName).mode("append").save()
       val updateIdValue = 20
-      val updateCountValue = 20
       sqlContext.sql(
         s"""
            |WITH t2 AS (SELECT 1 AS id UNION SELECT 100 AS id)
