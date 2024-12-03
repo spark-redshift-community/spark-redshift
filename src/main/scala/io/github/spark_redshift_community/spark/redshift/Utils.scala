@@ -53,6 +53,8 @@ object RedshiftFailMessage {
   final val FAIL_PUSHDOWN_UNSUPPORTED_MERGE = "pushdown failed for Spark feature: MERGE"
   final val FAIL_PUSHDOWN_UNSUPPORTED_INTERSECT_ALL =
     "pushdown failed for Spark feature: INTERSECT ALL"
+  final val FAIL_PUSHDOWN_UNSUPPORTED_EXCEPT_ALL =
+    "pushdown failed for Spark feature: EXCEPT ALL"
 }
 
 class RedshiftPushdownException(message: String)

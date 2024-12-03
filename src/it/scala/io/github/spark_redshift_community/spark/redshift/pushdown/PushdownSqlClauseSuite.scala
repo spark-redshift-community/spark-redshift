@@ -96,6 +96,69 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
+  test("Except clause pushdown same table", P0Test, P1Test) {
+    checkAnswer(
+      sqlContext.sql(
+        """SELECT testString, testshort FROM test_table  WHERE testString IS NOT NULL
+          |EXCEPT
+          |SELECT testString, testshort FROM test_table  WHERE testString='f'
+          |""".stripMargin
+      ),
+      Seq(
+        Row("Unicode's樂趣",23),
+        Row("___|_123", 24),
+        Row("asdf", -13))
+    )
+
+    checkSqlStatement(
+      s"""SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_0" ,
+         | ( "SUBQUERY_2"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_3_COL_1" FROM
+         | ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
+         | ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
+         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+         | AND NOT ( COALESCE ( ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) , false ) ) ) )
+         | AS "SUBQUERY_1" ) AS "SUBQUERY_2" GROUP BY "SUBQUERY_2"."SUBQUERY_2_COL_0" ,
+         | "SUBQUERY_2"."SUBQUERY_2_COL_1"
+         |""".stripMargin
+    )
+  }
+
+  test("Except All clause pushdown same table", P0Test, P1Test) {
+    checkAnswer(
+      sqlContext.sql(
+        """SELECT testString, testshort FROM test_table  WHERE testString IS NOT NULL
+          |EXCEPT ALL
+          |SELECT testString, testshort FROM test_table  WHERE testString='f'
+          |""".stripMargin
+      ),
+      Seq(
+        Row("Unicode's樂趣",23),
+        Row("___|_123", 24),
+        Row("asdf", -13))
+    )
+
+    checkSqlStatement(
+      s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_1_COL_0" ,
+         | ( "SUBQUERY_0"."SUBQUERY_2_COL_2" ) AS "SUBQUERY_1_COL_1" ,
+         | ( SUM ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) ) AS "SUBQUERY_1_COL_2" FROM
+         | ( ( SELECT ( 1 ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."TESTSTRING" )
+         | AS "SUBQUERY_2_COL_1" , ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_2"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         | AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" )
+         | UNION ALL
+         | ( SELECT ( -1 ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_1" ,
+         | ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_2" FROM
+         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         | AS "SUBQUERY_0"
+         | WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) ) )
+         | AS "SUBQUERY_1" ) ) AS "SUBQUERY_0" GROUP BY "SUBQUERY_0"."SUBQUERY_2_COL_1" ,
+         | "SUBQUERY_0"."SUBQUERY_2_COL_2" ) AS "SUBQUERY_1" WHERE
+         | ( ( "SUBQUERY_1"."SUBQUERY_1_COL_2" IS NOT NULL ) AND ( "SUBQUERY_1"."SUBQUERY_1_COL_2" > 0 ) )
+         |""".stripMargin
+    )
+  }
+
   test("Union clause pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql(
