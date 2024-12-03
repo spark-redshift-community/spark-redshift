@@ -45,7 +45,6 @@ class MockRedshift(
 
   private[this] val jdbcConnections: mutable.Buffer[Connection] = mutable.Buffer.empty
 
-  val jdbcWrapper: DeprecatedJDBCWrapper = spy(new DeprecatedJDBCWrapper)
   val redshiftWrapper: RedshiftWrapper = spy(new RedshiftWrapper)
 
   private def createMockConnection(): Connection = {
@@ -69,23 +68,6 @@ class MockRedshift(
     })
     conn
   }
-
-  doAnswer(new Answer[Connection] {
-      override def answer(invocation: InvocationOnMock): Connection = createMockConnection()
-    }).when(jdbcWrapper)
-      .getConnector(any[Option[String]](), same(jdbcUrl), any[MergedParameters])
-
-  doAnswer(new Answer[Boolean] {
-    override def answer(invocation: InvocationOnMock): Boolean = {
-      existingTablesAndSchemas.contains(invocation.getArguments()(1).asInstanceOf[String])
-    }
-  }).when(jdbcWrapper).tableExists(any[Connection], anyString())
-
-  doAnswer(new Answer[StructType] {
-    override def answer(invocation: InvocationOnMock): StructType = {
-      existingTablesAndSchemas(invocation.getArguments()(1).asInstanceOf[String])
-    }
-  }).when(jdbcWrapper).resolveTable(any[Connection], anyString(), any[Option[MergedParameters]])
 
   def verifyThatConnectionsWereClosed(): Unit = {
     jdbcConnections.foreach { conn =>
