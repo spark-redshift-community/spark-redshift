@@ -20,7 +20,7 @@ package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.regions.Regions
+import com.amazonaws.regions.{DefaultAwsRegionProviderChain, Regions}
 import com.amazonaws.services.redshiftdataapi.{AWSRedshiftDataAPI, AWSRedshiftDataAPIClient}
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
@@ -319,13 +319,13 @@ private[redshift] object Utils {
     // Either the user didn't provide a region or its malformed. Try to use the
     // connector's region as the tempdir region since they are usually collocated.
     // If they aren't, S3's default provider chain will help resolve the difference.
-    val currRegion = Regions.getCurrentRegion()
+    val currRegion = new DefaultAwsRegionProviderChain().getRegion
 
     // If the user didn't provide a valid tempdir region and we cannot determine
     // the connector's region, the connector is likely running outside of AWS.
     // In this case, warn the user about the performance penalty of not specifying
     // the tempdir region.
-    if (currRegion == null) {
+    if ((currRegion == null) || currRegion.isEmpty) {
       log.warn(
         s"The connector cannot automatically determine a region for 'tempdir'. It " +
           "is highly recommended that the 'tempdir_region' parameter is set to " +
@@ -334,7 +334,7 @@ private[redshift] object Utils {
     }
 
     // If all else fails, pick a default region.
-    if (currRegion != null) currRegion.getName else Regions.US_EAST_1.getName
+    if ((currRegion != null) && currRegion.nonEmpty) currRegion else Regions.US_EAST_1.getName
   }
 
   def getDefaultTempDirRegion(tempDirRegion: Option[String]): String = {
