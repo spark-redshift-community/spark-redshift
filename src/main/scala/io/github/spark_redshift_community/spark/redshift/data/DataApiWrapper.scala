@@ -238,27 +238,12 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
   }
 
   override def getConnector(params: MergedParameters): RedshiftConnection = {
-    DataAPIConnection(
-      params.dataApiRegion,
-      params.dataApiDatabase.getOrElse(
-        throw new IllegalArgumentException("Data API database is required!")),
-      params.dataApiUser,
-      params.dataApiCluster,
-      params.dataApiWorkgroup,
-      params.secretId)
+    DataAPIConnection(params)
   }
 
   override def getConnectorWithQueryGroup(params: MergedParameters,
                                           queryGroup: String): RedshiftConnection = {
-    DataAPIConnection(
-      params.dataApiRegion,
-      params.dataApiDatabase.getOrElse(
-        throw new IllegalArgumentException("Data API database is required!")),
-      params.dataApiUser,
-      params.dataApiCluster,
-      params.dataApiWorkgroup,
-      params.secretId,
-      Option(queryGroup))
+    DataAPIConnection(params, Option(queryGroup))
   }
 
   /**

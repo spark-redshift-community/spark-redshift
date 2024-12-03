@@ -224,7 +224,7 @@ class ParametersSuite extends AnyFunSuite with Matchers {
       Parameters.mergeParameters(params)
     }
 
-    assert(exception.getMessage == "All characters in label option must " +
+    assert(exception.getMessage == "All characters in 'label' option must " +
       "be valid unicode identifier parts (char.isUnicodeIdentifierPart == true), " +
       "'!' character not allowed")
   }

@@ -115,7 +115,7 @@ private[redshift] case class RedshiftRelation(
     checkS3BucketUsage(params, credsProvider)
 
     Utils.collectMetrics(params)
-    val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
+    val queryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
 
     if (requiredColumns.isEmpty) {
       // In the special case where no columns were requested, issue a `count(*)` against Redshift
@@ -274,7 +274,7 @@ private[redshift] case class RedshiftRelation(
 
     val credsProvider =
       AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
-    val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
+    val queryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
     val connWithQG = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
     val tempDir: Option[String] = try {
       checkS3BucketUsage(params, credsProvider)

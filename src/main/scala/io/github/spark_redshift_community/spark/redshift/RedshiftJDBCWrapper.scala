@@ -279,12 +279,6 @@ private[redshift] class DeprecatedJDBCWrapper extends Serializable {
   }
 
   /**
-   * Returns the default application name.
-   */
-  def defaultAppName: String = Utils.connectorServiceName.
-    map(name => s"${Utils.DEFAULT_APP_NAME}$name").getOrElse(Utils.DEFAULT_APP_NAME)
-
-  /**
    * The same as get connector but after connection attempt to set the query group.
    * If setting the query group fails for any reason return a new connection with
    * the query group unset.
@@ -296,7 +290,7 @@ private[redshift] class DeprecatedJDBCWrapper extends Serializable {
    */
   def getConnectorWithQueryGroup(userProvidedDriverClass: Option[String],
                                  url: String,
-                                 params: Option[MergedParameters],
+                                 params: MergedParameters,
                                  queryGroup: String): Connection = {
     val conn = getConnector(userProvidedDriverClass, url, params)
     try {
@@ -321,9 +315,9 @@ private[redshift] class DeprecatedJDBCWrapper extends Serializable {
    */
   def getConnector(userProvidedDriverClass: Option[String],
                    url: String,
-                   params: Option[MergedParameters]): Connection = {
+                   params: MergedParameters): Connection = {
     // Update the url if we are using secrets manager.
-    val updatedURL = if (params.isDefined && params.get.secretId.isDefined) {
+    val updatedURL = if (params.secretId.isDefined) {
       url.replaceFirst("jdbc", "jdbc-secretsmanager")
     } else {
       url
@@ -336,19 +330,17 @@ private[redshift] class DeprecatedJDBCWrapper extends Serializable {
     // Otherwise, EC2 metadata server requests will occur for determining the secret's region which
     // can fail when running outside of AWS environments.
     val driverProperties = new Properties()
-    params.foreach { case MergedParameters(sourceParams) =>
-      Utils.copyProperty("user", sourceParams, driverProperties)
-      Utils.copyProperty("password", sourceParams, driverProperties)
-      Utils.copyProperty("secret.id", "user", sourceParams, driverProperties)
-      Utils.copyProperties("^jdbc\\..+", "^jdbc\\.", "", sourceParams, driverProperties)
-      Utils.copyProperties("^secret\\..+", "^secret\\.", "drivers\\.",
-        sourceParams - "secret.id", System.getProperties)
-    }
+    Utils.copyProperty("user", params.parameters, driverProperties)
+    Utils.copyProperty("password", params.parameters, driverProperties)
+    Utils.copyProperty("secret.id", "user", params.parameters, driverProperties)
+    Utils.copyProperties("^jdbc\\..+", "^jdbc\\.", "", params.parameters, driverProperties)
+    Utils.copyProperties("^secret\\..+", "^secret\\.", "drivers\\.",
+      params.parameters - "secret.id", System.getProperties)
 
     // Set the application name property if not already specified by the client.
     if (!updatedURL.toLowerCase().contains("applicationname=") &&
         !driverProperties.containsKey("applicationname")) {
-      driverProperties.setProperty("applicationname", defaultAppName)
+      driverProperties.setProperty("applicationname", Utils.getApplicationName(params))
     }
 
     val subprotocol = updatedURL.stripPrefix("jdbc:").split(":")(0)

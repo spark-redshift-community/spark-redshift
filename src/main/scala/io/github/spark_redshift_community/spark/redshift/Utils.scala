@@ -409,41 +409,93 @@ private[redshift] object Utils {
     }
   }
 
-  // Note: The default app name _must_ only contain alpha characters to be accepted by Data API.
-  val DEFAULT_APP_NAME = "SparkRedshiftConnector"
-  private val CONNECTOR_SERVICE_NAME_ENV_VAR = "AWS_SPARK_REDSHIFT_CONNECTOR_SERVICE_NAME"
-
+  val CONNECTOR_SERVICE_NAME_ENV_VAR =
+    "AWS_SPARK_REDSHIFT_CONNECTOR_SERVICE_NAME"
   /**
-   * Retrieve the name of the service using the connector.
-   * Is none if environment variable is unset or empty.
+   * Retrieve the name of the service running the connector.
+   * Is none if value is unset, empty, or illegal.
    * @return trimmed service name
    */
-  def connectorServiceName: Option[String] = sys.env.
-    get(CONNECTOR_SERVICE_NAME_ENV_VAR).filter(_.trim.nonEmpty).map(_.trim)
+  private def connectorServiceName: Option[String] = {
+    val configuredValue = sys.env.getOrElse(CONNECTOR_SERVICE_NAME_ENV_VAR, "").trim
+    if (configuredValue.matches("^[a-zA-Z]+$")) {
+      Option(configuredValue)
+    } else {
+      None
+    }
+  }
 
+  /**
+   * Retrieve the name of the connector hosting the connector.
+   * Is none if value is unset, empty, or illegal.
+   * @return trimmed service name
+   */
+  private def connectorHostName(params: MergedParameters): Option[String] = {
+    val configuredValue = params.hostConnector.getOrElse("").trim
+    if (configuredValue.matches("^[a-zA-Z]+$")) {
+      Option(configuredValue)
+    } else {
+      None
+    }
+  }
+
+  // Note: The default app name _must_ only contain alpha characters to be accepted by Data API.
+  val DEFAULT_APP_NAME = "SparkRedshiftConnector"
+
+  /**
+   * Returns the fully defined application name.
+   */
+  def getApplicationName(params: MergedParameters): String = {
+    val app = DEFAULT_APP_NAME
+    val svc = connectorServiceName.getOrElse("")
+    val hst = connectorHostName(params).getOrElse("")
+    s"$app$svc$hst"
+  }
 
   val CONNECTOR_TRACE_ID_ENV_VAR = "AWS_SPARK_REDSHIFT_CONNECTOR_TRACE_ID"
   val CONNECTOR_TRACE_ID_SPARK_CONF = "spark.datasource.redshift.community.trace_id"
   /**
-   * Retrieve the spark configuration for traceId.
-   * If not provided in spark configuration check environment variable.
-   * If neither are provided then use applicationId.
+   * Retrieve the trace identifier for the connector.
+   * Is the Spark application id if unset, empty, or illegal.
    * @param sqlContext Context to check for
-   * @return
+   * @return trimmed trace id
    */
-  def traceId(sqlContext: SQLContext): String = {
-    val configuredValue = sqlContext.
-      getConf(CONNECTOR_TRACE_ID_SPARK_CONF, sys.env.getOrElse(CONNECTOR_TRACE_ID_ENV_VAR, "")).trim
-    val valueIsNotValid = configuredValue.
-      exists(char => !(char.isUnicodeIdentifierPart || char == '-'))
-    if (valueIsNotValid) {
+  private def connectorTraceId(sqlContext: SQLContext): String = {
+    // The Spark configuration has precedence over the environment variable to support mutability.
+    val configuredValue = getSparkConfigValue(CONNECTOR_TRACE_ID_SPARK_CONF,
+      sys.env.getOrElse(CONNECTOR_TRACE_ID_ENV_VAR, "")).trim
+    val validValue = configuredValue.forall(char => char.isUnicodeIdentifierPart || char == '-')
+    if (!validValue) {
       log.warn("Configured trace id is not valid. " +
         "It must only contain characters that are valid unicode identifier parts or '-'.")
     }
-    if (valueIsNotValid || configuredValue.isEmpty) {
-      sqlContext.sparkContext.applicationId
-    } else {
+    if (configuredValue.nonEmpty && validValue) {
       configuredValue
+    } else {
+      sqlContext.sparkContext.applicationId
+    }
+  }
+
+  val CONNECTOR_LABEL_SPARK_CONF = "spark.datasource.redshift.community.label"
+  /**
+   * Retrieve the label for the connector.
+   * Is none if unset, empty, or illegal.
+   * @param params Parameters to use for the property.
+   * @return
+   */
+  private def connectorLabel(params: MergedParameters): Option[String] = {
+    // The property has precence over the Spark configuration since it is more specific.
+    val configuredValue = params.user_query_group_label
+      .getOrElse(getSparkConfigValue(CONNECTOR_LABEL_SPARK_CONF, ""))
+    val validValue = configuredValue.forall(_.isUnicodeIdentifierPart)
+    if (!validValue) {
+      log.warn("Configured query group label is not valid. " +
+        "It must only contain characters that are valid unicode identifier parts.")
+    }
+    if (configuredValue.nonEmpty && validValue) {
+      Option(configuredValue)
+    } else {
+      None
     }
   }
 
@@ -458,23 +510,37 @@ private[redshift] object Utils {
    * ensure the overall length does not exceed the redshift allowed
    * 320 characters for a query group.
    * @param operation the type of operation performed
-   * @param label A user provided identifier to associate with a query
-   *              should be sanitized before use with this function
+   * @param params the user parameters
    * @param sqlContext the sqlContext to check for a trace id
    * @return a string to be used as a query group
    */
-  def queryGroupInfo(operation: MetricOperation, label: String, sqlContext: SQLContext): String = {
-    val MAX_SVC_LENGTH = 30
+  def queryGroupInfo(operation: MetricOperation,
+                     params: MergedParameters,
+                     sqlContext: SQLContext): String = {
+    // Query group field is limited to 320 characters in length so put in some hard limits
+    // on the individual fields.
+    val MAX_SVC_LENGTH = 10
+    val MAX_HST_LENGTH = 10
     val MAX_LBL_LENGTH = 100
     val MAX_TID_LENGTH = 75
-    val svcName = connectorServiceName.getOrElse("")
-    val tid = traceId(sqlContext)
-    val trimmedSvcName = svcName.substring(0, math.min(svcName.length, MAX_SVC_LENGTH))
-    val trimmedLabel = label.substring(0, math.min(label.length, MAX_LBL_LENGTH))
-    val trimmedTID = tid.substring(0, math.min(tid.length, MAX_TID_LENGTH))
-    s"""{"spark-redshift-connector":{"svc":"${trimmedSvcName}",""" +
-      s""""ver":"${BuildInfo.version}","op":"${operation}","lbl":"$trimmedLabel",""" +
-      s""""tid":"${trimmedTID}"}}""".stripMargin
+
+    val svc = connectorServiceName.getOrElse("")
+    val hst = connectorHostName(params).getOrElse("")
+    val lbl = connectorLabel(params).getOrElse("")
+    val tid = connectorTraceId(sqlContext)
+
+    val trimmedSvc = svc.substring(0, math.min(svc.length, MAX_SVC_LENGTH))
+    val trimmedHst = hst.substring(0, math.min(hst.length, MAX_HST_LENGTH))
+    val trimmedLbl = lbl.substring(0, math.min(lbl.length, MAX_LBL_LENGTH))
+    val trimmedTid = tid.substring(0, math.min(tid.length, MAX_TID_LENGTH))
+
+    s"""{"spark-redshift-connector":{""" +
+      s""""svc":"$trimmedSvc",""" +
+      s""""hst":"$trimmedHst",""" +
+      s""""ver":"${BuildInfo.version}",""" +
+      s""""op":"$operation",""" +
+      s""""lbl":"$trimmedLbl",""" +
+      s""""tid":"$trimmedTid"}}""".stripMargin
   }
 
   /**

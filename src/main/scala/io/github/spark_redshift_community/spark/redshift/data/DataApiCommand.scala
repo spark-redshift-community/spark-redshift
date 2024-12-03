@@ -73,13 +73,11 @@ class DataApiCommand(connection: DataAPIConnection,
   }
 
   /**
-   * Returns the default application name. Conforms to naming conventions of Data API for
+   * Returns the application name. Conforms to naming conventions of Data API for
    * setting the application name. The name after "Client:" must only contain alpha characters
    * with no spaces or special characters. Otherwise, they will be ignored.
    */
-  private def defaultAppName: String = Utils.connectorServiceName.
-    map(name => s"Client:${Utils.DEFAULT_APP_NAME}$name")
-      .getOrElse(s"Client:${Utils.DEFAULT_APP_NAME}")
+  private def applicationName: String = s"Client:${Utils.getApplicationName(connection.params)}"
 
   /**
    * Primary entry point for executing commands using the Data API. All public methods should
@@ -130,19 +128,21 @@ class DataApiCommand(connection: DataAPIConnection,
 
     // Initialize the statement request
     val statementRequest = new ExecuteStatementRequest()
-    statementRequest.setStatementName(defaultAppName)
-    statementRequest.setDatabase(connection.database) // Mandatory in all cases
-    if (connection.clusterIdentifier.isDefined) {
-      statementRequest.setClusterIdentifier(connection.clusterIdentifier.get)
+    statementRequest.setStatementName(applicationName)
+    statementRequest.setDatabase(connection.params.dataApiDatabase.getOrElse(
+      throw new IllegalArgumentException("Data API database is required!")
+    ))
+    if (connection.params.dataApiCluster.isDefined) {
+      statementRequest.setClusterIdentifier(connection.params.dataApiCluster.get)
     }
-    if (connection.workgroup.isDefined) {
-      statementRequest.setWorkgroupName(connection.workgroup.get)
+    if (connection.params.dataApiWorkgroup.isDefined) {
+      statementRequest.setWorkgroupName(connection.params.dataApiWorkgroup.get)
     }
-    if (connection.dbUser.isDefined) {
-      statementRequest.setDbUser(connection.dbUser.get)
+    if (connection.params.dataApiUser.isDefined) {
+      statementRequest.setDbUser(connection.params.dataApiUser.get)
     }
-    if (connection.secretId.isDefined) {
-      statementRequest.setSecretArn(connection.secretId.get)
+    if (connection.params.secretId.isDefined) {
+      statementRequest.setSecretArn(connection.params.secretId.get)
     }
     statementRequest.setSql(sql)
 
@@ -183,19 +183,21 @@ class DataApiCommand(connection: DataAPIConnection,
 
     // Initialize the statement request
     val statementRequest = new BatchExecuteStatementRequest()
-    statementRequest.setStatementName(defaultAppName)
-    statementRequest.setDatabase(connection.database) // Mandatory in all cases
-    if (connection.clusterIdentifier.isDefined) {
-      statementRequest.setClusterIdentifier(connection.clusterIdentifier.get)
+    statementRequest.setStatementName(applicationName)
+    statementRequest.setDatabase(connection.params.dataApiDatabase.getOrElse(
+      throw new IllegalArgumentException("Data API database is required!"))
+    )
+    if (connection.params.dataApiCluster.isDefined) {
+      statementRequest.setClusterIdentifier(connection.params.dataApiCluster.get)
     }
-    if (connection.workgroup.isDefined) {
-      statementRequest.setWorkgroupName(connection.workgroup.get)
+    if (connection.params.dataApiWorkgroup.isDefined) {
+      statementRequest.setWorkgroupName(connection.params.dataApiWorkgroup.get)
     }
-    if (connection.dbUser.isDefined) {
-      statementRequest.setDbUser(connection.dbUser.get)
+    if (connection.params.dataApiUser.isDefined) {
+      statementRequest.setDbUser(connection.params.dataApiUser.get)
     }
-    if (connection.secretId.isDefined) {
-      statementRequest.setSecretArn(connection.secretId.get)
+    if (connection.params.secretId.isDefined) {
+      statementRequest.setSecretArn(connection.params.secretId.get)
     }
     statementRequest.setSqls(sqls.asJava)
 
@@ -216,7 +218,7 @@ class DataApiCommand(connection: DataAPIConnection,
 
   private def initializeDataApiClient(): Unit = {
     // Create the DataAPI client.
-    client = Utils.createDataApiClient(connection.region)
+    client = Utils.createDataApiClient(connection.params.dataApiRegion)
   }
 
   val DATA_API_RETRY_DELAY_MIN_KEY = "spark.datasource.redshift.community.data_api_retry_delay_min"

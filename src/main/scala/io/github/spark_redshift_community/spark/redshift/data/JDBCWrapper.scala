@@ -164,12 +164,6 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
   }
 
   /**
-   * Returns the default application name.
-   */
-  def defaultAppName: String = Utils.connectorServiceName.
-    map(name => s"${Utils.DEFAULT_APP_NAME}$name").getOrElse(Utils.DEFAULT_APP_NAME)
-
-  /**
    * Given a driver string and a JDBC url, load the specified driver and return a DB connection.
    *
    * @param userProvidedDriverClass the class name of the JDBC driver for the given url. If this
@@ -202,7 +196,7 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
     // Set the application name property if not already specified by the client.
     if (!updatedURL.toLowerCase().contains("applicationname=") &&
       !driverProperties.containsKey("applicationname")) {
-      driverProperties.setProperty("applicationname", defaultAppName)
+      driverProperties.setProperty("applicationname", Utils.getApplicationName(params))
     }
 
     val subprotocol = updatedURL.stripPrefix("jdbc:").split(":")(0)

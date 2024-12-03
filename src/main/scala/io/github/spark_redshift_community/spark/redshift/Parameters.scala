@@ -51,6 +51,7 @@ private[redshift] object Parameters {
   val PARAM_LEGACY_MAPPING_SHORT_TO_INT: String = "legacy_mapping_short_to_int"
   val PARAM_IS_DELETE: String = "is_delete"
   val PARAM_CHECK_S3_BUCKET_USAGE: String = "check_s3_bucket_usage"
+  val PARAM_HOST_CONNECTOR: String = "host_connector"
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
@@ -78,8 +79,6 @@ private[redshift] object Parameters {
     PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
     PARAM_LEGACY_TRIM_CSV_WRITES -> "false",
     PARAM_TEMPDIR_REGION -> "",
-    PARAM_USER_QUERY_GROUP_LABEL -> "",
-    PARAM_USER_QUERY_GROUP_LABEL -> "",
     PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false",
     PARAM_IS_DELETE -> "false",
     PARAM_CHECK_S3_BUCKET_USAGE -> "true"
@@ -127,6 +126,26 @@ private[redshift] object Parameters {
       throw new IllegalArgumentException(
         "You cannot specify both the 'dbtable' and 'query' parameters at the same time.")
     }
+    if (userParameters.get(PARAM_HOST_CONNECTOR).
+      exists(_.exists(!_.isUnicodeIdentifierPart))) {
+      val invalid = userParameters(PARAM_HOST_CONNECTOR)
+        .find(!_.isUnicodeIdentifierPart).get
+      throw new IllegalArgumentException(
+        s"All characters in '$PARAM_HOST_CONNECTOR' option must be valid unicode " +
+        s"identifier parts (char.isUnicodeIdentifierPart == true), '${invalid}' character " +
+        s"not allowed"
+      )
+    }
+    if (userParameters.get(PARAM_USER_QUERY_GROUP_LABEL).
+      exists(_.exists(!_.isUnicodeIdentifierPart))) {
+      val invalid = userParameters(PARAM_USER_QUERY_GROUP_LABEL)
+        .find(!_.isUnicodeIdentifierPart).get
+      throw new IllegalArgumentException(
+        s"All characters in '$PARAM_USER_QUERY_GROUP_LABEL' option must be valid unicode " +
+          s"identifier parts (char.isUnicodeIdentifierPart == true), '${invalid}' character " +
+          s"not allowed"
+      )
+    }
 
     // Credential validations - specialized for JDBC vs DataAPI
     if (!dataAPICredentials(userParameters)) { // JDBC credentials
@@ -156,7 +175,7 @@ private[redshift] object Parameters {
       // Check for JDBC parameters that are not compatible with DataAPI
       checkUnsupportedParameters(userParameters, "Data API",
         "user", "password", "url", "jdbcdriver", PARAM_SECRET_REGION, "secret.vpcEndpointUrl",
-        "secret.vpcEndpointRegion", PARAM_USER_QUERY_GROUP_LABEL)
+        "secret.vpcEndpointRegion")
       userParameters.foreach {
         case (key, _) =>
           if (key.matches("^jdbc\\..+")) {
@@ -184,17 +203,6 @@ private[redshift] object Parameters {
         throw new IllegalArgumentException(
           "The parameters 'data_api_cluster' and 'data_api_workgroup' are mutually-exclusive.")
       }
-    }
-
-    // Validate the query group (if any)
-    if (userParameters.get(PARAM_USER_QUERY_GROUP_LABEL).
-      exists(_.exists(!_.isUnicodeIdentifierPart))) {
-      val invalid = userParameters(PARAM_USER_QUERY_GROUP_LABEL).
-        find(!_.isUnicodeIdentifierPart).get
-      throw new IllegalArgumentException(
-        "All characters in label option must be valid unicode identifier parts " +
-          s"(char.isUnicodeIdentifierPart == true), '${invalid}' character not allowed"
-      )
     }
   }
 
@@ -417,7 +425,7 @@ private[redshift] object Parameters {
     /**
      * A user provided label to add to query group as value for key lbl
      */
-    def user_query_group_label: String = parameters(PARAM_USER_QUERY_GROUP_LABEL)
+    def user_query_group_label: Option[String] = parameters.get(PARAM_USER_QUERY_GROUP_LABEL)
 
     /**
       * List of semi-colon separated SQL statements to run before write operations.
@@ -564,6 +572,14 @@ private[redshift] object Parameters {
      */
     def isDelete: Boolean = parameters(PARAM_IS_DELETE).toBoolean
 
+    /**
+     * Whether to skip S3 bucket checks.
+     */
     def checkS3BucketUsage: Boolean = parameters(PARAM_CHECK_S3_BUCKET_USAGE).toBoolean
+
+    /**
+     * Name of the parent connector hosting this connector (if any)
+     */
+    def hostConnector: Option[String] = parameters.get(PARAM_HOST_CONNECTOR)
   }
 }

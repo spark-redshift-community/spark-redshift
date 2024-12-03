@@ -15,6 +15,8 @@
  */
 package io.github.spark_redshift_community.spark.redshift.data
 
+import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+
 import java.sql.Connection
 import scala.collection.mutable.ArrayBuffer
 
@@ -38,14 +40,8 @@ private[redshift] case class JDBCConnection(conn: Connection) extends RedshiftCo
   }
 }
 
-private[redshift] case class DataAPIConnection(
-    region: Option[String],
-    database: String, // Mandatory Redshift database name or Glue catalog ARN
-    dbUser: Option[String],
-    clusterIdentifier: Option[String],
-    workgroup: Option[String],
-    secretId: Option[String] = None,
-    queryGroup: Option[String] = None
+private[redshift] case class DataAPIConnection(params: MergedParameters,
+                                               queryGroup: Option[String] = None
   ) extends RedshiftConnection {
   val bufferedCommands: ArrayBuffer[String] = ArrayBuffer.empty
   var autoCommit: Boolean = true
