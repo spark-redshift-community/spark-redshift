@@ -25,12 +25,17 @@ class LSTIntegrationPushdownSuiteBase extends IntegrationPushdownSuiteBase{
     "catalog_returns",
     "catalog_sales",
     "date_dim",
+    "inventory",
+    "store_returns",
+    "web_returns",
+    "web_sales"
   )
 
   // drops the tables necessary for running the TPC-DS correctness suite
   def tableCleanUpHelper(stmt: String): Unit = {
     for ( tpcds_table <- tableNames) {
       redshiftWrapper.executeUpdate(conn, s"${stmt} $tpcds_table")
+      redshiftWrapper.executeUpdate(conn, s"${stmt} ${tpcds_table}_copy")
     }
   }
 
@@ -43,7 +48,11 @@ class LSTIntegrationPushdownSuiteBase extends IntegrationPushdownSuiteBase{
           getClass().getClassLoader().getResourceAsStream(
             s"lst/${filename_prefix}_${lst_table}.sql")
         )
+
+        val create_stmt_copy = s"CREATE TABLE IF NOT EXISTS ${lst_table}_copy (LIKE ${lst_table});"
+
         redshiftWrapper.executeUpdate(conn, create_stmt)
+        redshiftWrapper.executeUpdate(conn, create_stmt_copy)
       }
   }
 
