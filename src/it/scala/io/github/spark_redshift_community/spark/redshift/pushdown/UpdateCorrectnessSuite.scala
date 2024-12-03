@@ -41,9 +41,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       sqlContext.sql(s"update $tableName set value = 25 where id = 2")
 
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "VALUE" = 25
-           | WHERE ( "RT_CONNECTOR_QUERY_ALIAS"."ID" = 2 ) """.stripMargin)
+           | WHERE ( "PUBLIC"."$tableName"."ID" = 2 ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
@@ -69,12 +69,12 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         s"(select max(value) from $tableName) + 5 where id <= 2 ")
 
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "VALUE" = ( ( SELECT ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) )
            | AS "SUBQUERY_2_COL_0" FROM ( SELECT ( "SUBQUERY_0"."VALUE" )
            | AS "SUBQUERY_1_COL_0" FROM ( SELECT * FROM "PUBLIC"."$tableName"
            | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1" LIMIT 1 ) + 5 )
-           | WHERE ( "RT_CONNECTOR_QUERY_ALIAS"."ID" <= 2 ) """.stripMargin)
+           | WHERE ( "PUBLIC"."$tableName"."ID" <= 2 ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
@@ -98,9 +98,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       sqlContext.sql(s"update $tableName set value = id, id = value")
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
-           | SET "VALUE" = "RT_CONNECTOR_QUERY_ALIAS"."ID",
-           |     "ID" = "RT_CONNECTOR_QUERY_ALIAS"."VALUE" """.stripMargin)
+        s""" UPDATE "PUBLIC"."$tableName"
+           | SET "VALUE" = "PUBLIC"."$tableName"."ID",
+           |     "ID" = "PUBLIC"."$tableName"."VALUE" """.stripMargin)
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
         Seq( Row(10, 1),
@@ -126,9 +126,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       sqlContext.sql(s"update $tableName as TARGET set value = 25 where TARGET.id = 2")
 
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "VALUE" = 25
-           | WHERE ( "RT_CONNECTOR_QUERY_ALIAS"."ID" = 2 ) """.stripMargin)
+           | WHERE ( "PUBLIC"."$tableName"."ID" = 2 ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
@@ -154,7 +154,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       sqlContext.sql(s"update $tableName set value = 25")
 
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "VALUE" = 25""".stripMargin)
 
       checkAnswer(
@@ -180,10 +180,10 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       sqlContext.sql(s"update $tableName set value = 25 where id = 2 or id = 1")
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "VALUE" = 25
-           | WHERE ( ( "RT_CONNECTOR_QUERY_ALIAS"."ID" = 2 ) OR
-           |        ( "RT_CONNECTOR_QUERY_ALIAS"."ID" = 1 ) ) """.stripMargin)
+           | WHERE ( ( "PUBLIC"."$tableName"."ID" = 2 ) OR
+           |        ( "PUBLIC"."$tableName"."ID" = 1 ) ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
@@ -216,7 +216,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
           s"exists (select id from $conditionTable where id > 1) ")
 
         checkSqlStatement(
-          s""" UPDATE "PUBLIC"."$targetTable" AS "RT_CONNECTOR_QUERY_ALIAS" SET "VALUE" = 25
+          s""" UPDATE "PUBLIC"."$targetTable" SET "VALUE" = 25
              | WHERE ( ( SELECT * FROM ( SELECT ( 1 ) AS "SUBQUERY_2_COL_0"
              |  FROM ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$conditionTable"
              |    AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
@@ -249,9 +249,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       sqlContext.sql(s"update $tableName set status = \'RESOLVED\' where id = 2")
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "STATUS" = 'RESOLVED'
-           | WHERE ( "RT_CONNECTOR_QUERY_ALIAS"."ID" = 2 ) """.stripMargin)
+           | WHERE ( "PUBLIC"."$tableName"."ID" = 2 ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
@@ -276,9 +276,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       sqlContext.sql(s"update $tableName set value = 25 where id = 2")
 
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "VALUE" = 25
-           | WHERE ( "RT_CONNECTOR_QUERY_ALIAS"."ID" = 2 ) """.stripMargin)
+           | WHERE ( "PUBLIC"."$tableName"."ID" = 2 ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
@@ -304,9 +304,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       sqlContext.sql(s"update $tableName set value = 25, id = 100 where id = 2")
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "VALUE" = 25 , "ID" = 100
-           | WHERE ( "RT_CONNECTOR_QUERY_ALIAS"."ID" = 2 ) """.stripMargin)
+           | WHERE ( "PUBLIC"."$tableName"."ID" = 2 ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
@@ -331,10 +331,10 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       sqlContext.sql(s"update $tableName set value = 25, id = 100 where id = 2 or id = 1")
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "VALUE" = 25 , "ID" = 100
-           | WHERE ( ( "RT_CONNECTOR_QUERY_ALIAS"."ID" = 2 )
-           |  OR ( "RT_CONNECTOR_QUERY_ALIAS"."ID" = 1 ) ) """.stripMargin)
+           | WHERE ( ( "PUBLIC"."$tableName"."ID" = 2 )
+           |  OR ( "PUBLIC"."$tableName"."ID" = 1 ) ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
@@ -430,9 +430,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       sqlContext.sql(s"update $tableName set value = -1 where value < 30")
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "VALUE" = -1
-           | WHERE ( "RT_CONNECTOR_QUERY_ALIAS"."VALUE" < 30 ) """.stripMargin)
+           | WHERE ( "PUBLIC"."$tableName"."VALUE" < 30 ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
@@ -466,11 +466,11 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
           s"exists (select id from $conditionTable where TARGET.id = id) ")
 
         checkSqlStatement(
-          s""" UPDATE "PUBLIC"."$targetTable" AS "RT_CONNECTOR_QUERY_ALIAS"
+          s""" UPDATE "PUBLIC"."$targetTable"
              | SET "STATUS" = 'returned'
              | WHERE EXISTS ( SELECT ( "SUBQUERY_0"."ID" ) AS "SUBQUERY_1_COL_0"
              |  FROM ( SELECT * FROM "PUBLIC"."$conditionTable" AS "RS_CONNECTOR_QUERY_ALIAS" )
-             |  AS "SUBQUERY_0" WHERE ( "RT_CONNECTOR_QUERY_ALIAS"."ID" = "SUBQUERY_1_COL_0" ) )
+             |  AS "SUBQUERY_0" WHERE ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_1_COL_0" ) )
              """.stripMargin)
 
         checkAnswer(
@@ -506,9 +506,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
           s" id NOT IN (select id from $conditionTable where value = -1) ")
 
         checkSqlStatement(
-          s""" UPDATE "PUBLIC"."$targetTable" AS "RT_CONNECTOR_QUERY_ALIAS"
+          s""" UPDATE "PUBLIC"."$targetTable"
              | SET "VALUE" = 0
-             | WHERE NOT ( ( "RT_CONNECTOR_QUERY_ALIAS"."ID" ) IN ( SELECT ( "SUBQUERY_1"."ID" )
+             | WHERE NOT ( ( "PUBLIC"."$targetTable"."ID" ) IN ( SELECT ( "SUBQUERY_1"."ID" )
              |  AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
              |    ( SELECT * FROM "PUBLIC"."$conditionTable" AS "RS_CONNECTOR_QUERY_ALIAS" )
              |     AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."VALUE" IS NOT NULL ) AND
@@ -536,9 +536,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       sqlContext.sql(s"update $tableName set value = DEFAULT where value > 30")
       checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName" AS "RT_CONNECTOR_QUERY_ALIAS"
+        s""" UPDATE "PUBLIC"."$tableName"
            | SET "VALUE" = NULL
-           | WHERE( "RT_CONNECTOR_QUERY_ALIAS"."VALUE" > 30 )""".stripMargin)
+           | WHERE( "PUBLIC"."$tableName"."VALUE" > 30 )""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $tableName"),
@@ -602,11 +602,11 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         val testTableName2 = s""""PUBLIC"."${conditionTable}""""
         checkSqlStatement(
           s"""UPDATE
-             |  $testTableName AS "RT_CONNECTOR_QUERY_ALIAS"
+             |  $testTableName
              |SET
              |  "VALUE" = 0
              |WHERE
-             |  ("RT_CONNECTOR_QUERY_ALIAS"."ID") IN (
+             |  ($testTableName."ID") IN (
              |    SELECT
              |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
              |    FROM
@@ -654,8 +654,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(
-        s"""UPDATE $testTableName AS "RT_CONNECTOR_QUERY_ALIAS"
-           |SET "ID" = 20, "VALUE" = 20""".stripMargin)
+        s"""UPDATE $testTableName SET "ID" = 20, "VALUE" = 20""".stripMargin)
 
       val post = sqlContext.sql(s"select * from $tableName")
       checkAnswer( post, Seq( Row(20, 20), Row(20, 20), Row(20, 20) ) )
@@ -685,17 +684,17 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(s"""UPDATE
-                           |    $testTableName AS "RT_CONNECTOR_QUERY_ALIAS"
+                           |    $testTableName
                            |SET
                            |    "ID" = $updateIdValue,
                            |    "VALUE" = $updateCountValue
                            |WHERE
                            |    (
                            |        (
-                           |            "RT_CONNECTOR_QUERY_ALIAS"."ID" = 1
+                           |            $testTableName."ID" = 1
                            |        )
                            |        AND (
-                           |            "RT_CONNECTOR_QUERY_ALIAS"."VALUE" = 10
+                           |            $testTableName."VALUE" = 10
                            |        )
                            |    )""".stripMargin)
 
@@ -730,13 +729,13 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(s"""UPDATE
-                           | $testTableName AS "RT_CONNECTOR_QUERY_ALIAS"
+                           | $testTableName
                            |SET
                            | "ID" = $updateIdValue,
                            | "VALUE" = $updateCountValue
                            |WHERE
                            | (
-                           |  "RT_CONNECTOR_QUERY_ALIAS"."VALUE" < (
+                           |  $testTableName."VALUE" < (
                            |   SELECT
                            |    ("SUBQUERY_1"."VALUE") AS "SUBQUERY_2_COL_0"
                            |   FROM
@@ -790,12 +789,12 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(s"""UPDATE
-                           |  $testTableName AS "RT_CONNECTOR_QUERY_ALIAS"
+                           |  $testTableName
                            |SET
                            |  "ID" = 20,
                            |  "VALUE" = 20
                            |WHERE
-                           |  ("RT_CONNECTOR_QUERY_ALIAS"."ID") IN (
+                           |  ($testTableName."ID") IN (
                            |    SELECT
                            |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
                            |    FROM
@@ -854,13 +853,13 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(s"""UPDATE
-                           |  $testTableName AS "RT_CONNECTOR_QUERY_ALIAS"
+                           |  $testTableName
                            |SET
                            |  "ID" = 20,
                            |  "VALUE" = 20
                            |WHERE
                            |  NOT (
-                           |    ("RT_CONNECTOR_QUERY_ALIAS"."ID") IN (
+                           |    ($testTableName."ID") IN (
                            |      SELECT
                            |        ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
                            |      FROM
@@ -920,12 +919,12 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(s"""UPDATE
-                           |  $testTableName AS "RT_CONNECTOR_QUERY_ALIAS"
+                           |  $testTableName
                            |SET
                            |  "ID" = 20,
                            |  "VALUE" = 20
                            |WHERE
-                           |  ("RT_CONNECTOR_QUERY_ALIAS"."ID") IN (
+                           |  ($testTableName."ID") IN (
                            |    SELECT
                            |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
                            |    FROM
@@ -947,7 +946,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |      ) AS "SUBQUERY_1"
                            |    WHERE
                            |      (
-                           |        "RT_CONNECTOR_QUERY_ALIAS"."ID" = "SUBQUERY_2_COL_0"
+                           |        $testTableName."ID" = "SUBQUERY_2_COL_0"
                            |      )
                            |  )""".stripMargin)
 
@@ -982,12 +981,12 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(s"""UPDATE
-                           |  $testTableName AS "RT_CONNECTOR_QUERY_ALIAS"
+                           |  $testTableName
                            |SET
                            |  "ID" = 20,
                            |  "VALUE" = 20
                            |WHERE
-                           |  ("RT_CONNECTOR_QUERY_ALIAS"."ID") IN (
+                           |  ($testTableName."ID") IN (
                            |    SELECT
                            |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
                            |    FROM
@@ -1009,7 +1008,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |      ) AS "SUBQUERY_1"
                            |    WHERE
                            |      (
-                           |        "RT_CONNECTOR_QUERY_ALIAS"."ID" = "SUBQUERY_2_COL_0"
+                           |        $testTableName."ID" = "SUBQUERY_2_COL_0"
                            |      )
                            |  )""".stripMargin)
 
@@ -1044,7 +1043,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(s"""UPDATE
-                           |  $testTableName AS "RT_CONNECTOR_QUERY_ALIAS"
+                           |  $testTableName
                            |SET
                            |  "ID" = 20,
                            |  "VALUE" = 20
@@ -1071,7 +1070,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |      ) AS "SUBQUERY_1"
                            |    WHERE
                            |      (
-                           |        "SUBQUERY_2_COL_0" = "RT_CONNECTOR_QUERY_ALIAS"."ID"
+                           |        "SUBQUERY_2_COL_0" = $testTableName."ID"
                            |      )
                            |  )""".stripMargin)
 
@@ -1106,7 +1105,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(s"""UPDATE
-                           |  $testTableName AS "RT_CONNECTOR_QUERY_ALIAS"
+                           |  $testTableName
                            |SET
                            |  "ID" = 20,
                            |  "VALUE" = 20
@@ -1134,7 +1133,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |        ) AS "SUBQUERY_1"
                            |      WHERE
                            |        (
-                           |          "SUBQUERY_2_COL_0" = "RT_CONNECTOR_QUERY_ALIAS"."ID"
+                           |          "SUBQUERY_2_COL_0" = $testTableName."ID"
                            |        )
                            |    )
                            |  )""".stripMargin)
@@ -1163,7 +1162,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       sqlContext.sql(
         s"""
            |WITH t2 AS (SELECT 1 AS id UNION SELECT 100 AS id)
-           |UPDATE $tableName AS "RT_CONNECTOR_QUERY_ALIAS"
+           |UPDATE $tableName
            |SET id = 20, value = 20
            |WHERE EXISTS(SELECT id FROM t2 WHERE id = t2.id AND value = 10);
            |""".stripMargin)

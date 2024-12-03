@@ -117,7 +117,7 @@ private[querygeneration] abstract sealed class RedshiftQuery {
   }
 }
 
-/** The query for a base type.
+/** The query for a base type (representing a table or view).
   *
   * @constructor
   * @param relation   The base RedshiftRelation representing the basic table, view,
@@ -126,28 +126,10 @@ private[querygeneration] abstract sealed class RedshiftQuery {
   *                   These are the columns resolved by RedshiftRelation.
   * @param alias      Query alias.
   */
-abstract sealed class BaseQuery(redshiftRelation: RedshiftRelation,
-                                refCols: Seq[Attribute],
-                                queryAlias: String)
-  extends RedshiftQuery {
-  val relation = redshiftRelation
-  val refColumns = refCols
-  val alias = queryAlias
-}
-
-/** The query for a source base type (representing a table or view).
- *
- * @constructor
- * @param relation   The base RedshiftRelation representing the basic table, view,
- *                   or subquery defined by the user.
- * @param refColumns Columns used to override the output generation for the QueryHelper.
- *                   These are the columns resolved by RedshiftRelation.
- * @param alias      Query alias.
- */
-case class SourceQuery(override val relation: RedshiftRelation,
-                       override val refColumns: Seq[Attribute],
-                       override val alias: String)
-  extends BaseQuery(relation, refColumns, alias) {
+case class SourceQuery(relation: RedshiftRelation,
+                       refColumns: Seq[Attribute],
+                       alias: String)
+    extends RedshiftQuery {
 
   override val helper: QueryHelper = QueryHelper(
     children = Seq.empty,
@@ -172,47 +154,6 @@ case class SourceQuery(override val relation: RedshiftRelation,
 
   override def find[T](query: PartialFunction[RedshiftQuery, T]): Option[T] =
     query.lift(this)
-}
-
-/** The query for a target base type (for DMLs).
- *
- * @constructor
- * @param relation   The base RedshiftRelation representing the basic table defined by the user.
- * @param refColumns Columns used to override the output generation for the QueryHelper.
- *                   These are the columns resolved by RedshiftRelation.
- * @param alias      Query alias.
- */
-case class TargetQuery(override val relation: RedshiftRelation,
-                       override val refColumns: Seq[Attribute],
-                       override val alias: String)
-  extends BaseQuery(relation, refColumns, alias) {
-
-  override val helper: QueryHelper = QueryHelper(
-    children = Seq.empty,
-    projections = None,
-    outputAttributes = Some(refColumns),
-    alias = alias,
-    conjunctionStatement = buildAliasStatement(relation.params.table.get.toStatement.toStatement,
-      "rt_connector_query_alias")
-  )
-
-  /** Triplet that defines the Redshift cluster that houses this base relation.
-   * Currently an exact match on cluster is needed for a join, but we may not need
-   * to be this strict.
-   */
-  val cluster: (String, Option[String], String) = (
-    relation.params.uniqueClusterName, None, ""
-  )
-
-  override def find[T](query: PartialFunction[RedshiftQuery, T]): Option[T] =
-    query.lift(this)
-
-  def updateQualifier(qualifierStr: Seq[String])
-  : PartialFunction[Expression, Expression] = {
-    case a: AttributeReference
-      if refColumns.exists(_.exprId == a.exprId) =>
-      a.withQualifier(qualifierStr)
-  }
 }
 
 /** The query for a local relation (representing Spark internal rows).
@@ -273,23 +214,13 @@ case class LocalQuery(relation: LocalRelation,
   }
 }
 
-case class DeleteQuery (targetQuery: TargetQuery, condition: Expression,
+case class DeleteQuery (relation: SourceQuery, condition: Expression,
                         usingTable: Option[RedshiftQuery] = None) extends RedshiftQuery {
-  override val helper: QueryHelper = QueryHelper(
-    children = usingTable.toSeq,
-    projections = None,
-    outputAttributes = Some(targetQuery.refColumns),
-    alias = targetQuery.alias,
-    conjunctionStatement = buildAliasStatement(
-      targetQuery.relation.params.table.get.toStatement.toStatement,
-      "rt_connector_query_alias")
-  )
-
-  override def find[T](query: PartialFunction[RedshiftQuery, T]): Option[T] =
-    targetQuery.find(query)
+  override val helper: QueryHelper = relation.helper
+  override def find[T](query: PartialFunction[RedshiftQuery, T]): Option[T] = relation.find(query)
 
   override def getStatement(useAlias: Boolean): RedshiftSQLStatement = {
-    if (targetQuery.relation.params.table.isEmpty) {
+    if (relation.relation.params.table.isEmpty) {
       throw new RedshiftPushdownUnsupportedException(
         "Unable to pushdown delete query for relation without dbtable",
         "delete from",
@@ -298,8 +229,11 @@ case class DeleteQuery (targetQuery: TargetQuery, condition: Expression,
       )
     }
 
-    val tableName = targetQuery.relation.params.table.get
-    val tableQualifier: String = tableName.toString.drop(1).dropRight(1)
+    val tableName = relation.relation.params.table.get
+    // tableName string contains surrounding quotes that will be duplicated
+    // when used as a qualifier, this substring removes them
+    val tableNameStr = tableName.toString
+    val qualifierName = tableNameStr.substring(1, tableNameStr.length - 1)
 
     // Redshift does not support using aliases in delete from statements like
     // delete from table as t where t.id = 1. In order to account for this, any
@@ -307,41 +241,67 @@ case class DeleteQuery (targetQuery: TargetQuery, condition: Expression,
     // Any attribute references in the logical plan that have a matching exprId to
     // a column in the relation that is being deleted from with have its qualifier replaced
     // in this way.
-    val conditionStmt: RedshiftSQLStatement =
-      ConstantString("WHERE") + expressionToStatement(
-        condition.transform(targetQuery.updateQualifier(Seq(tableQualifier)))
-      )
+    val transformedCondition = condition.transform({
+      case a: AttributeReference
+        if relation.refColumns.exists(_.exprId == a.exprId) => a.withQualifier(Seq(qualifierName))
+    })
 
     if (usingTable.isDefined) {
-      ConstantString("DELETE FROM") + tableName.toStatement + "USING" +
-        usingTable.get.getStatement(true) + conditionStmt
+
+      usingTable.get match {
+        case SourceQuery(relation, refColumns, _) =>
+          val usingTableName = relation.params.table.get
+          val usingTableNameStr = usingTableName.toString
+          val usingQualifierName = usingTableNameStr.substring(1, usingTableNameStr.length - 1)
+          val usingTransformedCondition = transformedCondition.transform({
+            case a: AttributeReference
+              if refColumns.exists(_.exprId == a.exprId) =>
+              a.withQualifier(Seq(usingQualifierName))
+          })
+          ConstantString("DELETE FROM") + tableName.toStatement + "USING" +
+            usingTableName.toStatement + "WHERE" +
+            expressionToStatement(usingTransformedCondition)
+        case _ =>
+          val helper = usingTable.get.helper
+          // The transformedCondition is the condition of which row is deleted
+          // Pushdown should use the alias name in sub-query
+          // 1st transform: place the alias table name ("qualifier" field)
+          // 2nd transform: place the alias column name ("name" field)
+          val usingTransformedCondition = transformedCondition.transform({
+            case a: AttributeReference
+              if helper.output.exists(_.exprId == a.exprId) =>
+              a.withQualifier(Seq(helper.alias))
+          }).transform({
+            case a: AttributeReference
+              if helper.processedProjections.exists(_.exists(_.exprId == a.exprId)) =>
+                val procAlias: String = helper.processedProjections.get
+                  .find(_.exprId == a.exprId).map(_.name).getOrElse("")
+              if (procAlias.nonEmpty) a.withName(procAlias) else a
+          })
+          ConstantString("DELETE FROM") + tableName.toStatement + "USING" +
+            blockStatement(usingTable.get.getStatement(), usingTable.get.helper.alias) + "WHERE" +
+            expressionToStatement(usingTransformedCondition)
+      }
     } else {
-      ConstantString("DELETE FROM") + tableName.toStatement + conditionStmt
+      ConstantString("DELETE FROM") + tableName.toStatement + "WHERE" +
+        expressionToStatement(transformedCondition)
     }
   }
 }
-case class MergeQuery(targetQuery: TargetQuery,
-                      sourceQuery: RedshiftQuery,
+case class MergeQuery(targetQuery: SourceQuery,
+                      sourceQuery: SourceQuery,
                       mergeCondition: Expression,
                       matchedActions: Seq[MergeAction],
                       notMatchedActions: Seq[MergeAction],
                       notMatchedBySourceActions: Seq[MergeAction])
   extends RedshiftQuery {
-  override val helper: QueryHelper = QueryHelper(
-    children = Seq(sourceQuery),
-    projections = None,
-    outputAttributes = Some(targetQuery.refColumns),
-    alias = targetQuery.alias,
-    conjunctionStatement = buildAliasStatement(
-      targetQuery.relation.params.table.get.toStatement.toStatement,
-      "rt_connector_query_alias")
-  )
+  override val helper: QueryHelper = targetQuery.helper
 
   override def find[T](query: PartialFunction[RedshiftQuery, T])
   : Option[T] = targetQuery.find(query)
 
   override def getStatement(useAlias: Boolean): RedshiftSQLStatement = {
-    if (targetQuery.relation.params.table.isEmpty) {
+    if (sourceQuery.relation.params.table.isEmpty || targetQuery.relation.params.table.isEmpty) {
       throw new RedshiftPushdownUnsupportedException(
         "Unable to pushdown merge query for relation without dbtable",
         "set from",
@@ -414,19 +374,50 @@ case class MergeQuery(targetQuery: TargetQuery,
       )
     }
 
+    val sourceTableName = sourceQuery.relation.params.table.get
+    val sourceTableNameStrQualifier = Seq(sourceTableName.toString.drop(1).dropRight(1))
+    val sourceRefCols = sourceQuery.refColumns
     val targetTableName = targetQuery.relation.params.table.get
-    val tableQualifier: String = targetTableName.toString.drop(1).dropRight(1)
+    val targetTableNameStrQualifier = Seq(targetTableName.toString.drop(1).dropRight(1))
+    val targetRefCols = targetQuery.refColumns
 
-    val mergeCondExpression = mergeCondition.
-      transform(targetQuery.updateQualifier(Seq(tableQualifier)))
+    def replaceAttributeQualifier(  targetQualifier: Seq[String],
+                                    sourceQualifier: Seq[String],
+                                    attrRef: AttributeReference): AttributeReference = {
+
+      if (targetRefCols.exists(_.exprId == attrRef.exprId)) {
+        attrRef.withQualifier(targetQualifier)
+      }
+      else if (sourceRefCols.exists(_.exprId == attrRef.exprId)) {
+        attrRef.withQualifier(sourceQualifier)
+      }
+      else {
+        attrRef
+      }
+    }
+
+    def setAssignmentQualifier(assignment: Assignment): Assignment = {
+      val newKey = assignment.key.transform({
+        case a: AttributeReference =>
+          replaceAttributeQualifier(Seq(), sourceTableNameStrQualifier, a)
+      })
+      val newValue = assignment.value.transform({
+        case a: AttributeReference =>
+          replaceAttributeQualifier(targetTableNameStrQualifier, sourceTableNameStrQualifier, a)
+      })
+      Assignment(newKey, newValue)
+    }
+
+    val mergeCondExpression = mergeCondition.transform({
+      case a: AttributeReference =>
+        replaceAttributeQualifier(targetTableNameStrQualifier, sourceTableNameStrQualifier, a)
+    })
 
     val matchedExpression = localMatchedActions.headOption match {
       case Some(UpdateAction(_, assignments)) =>
         val assignmentsStatement = assignments.map { assignment =>
-          // Redshift only take column name for key, setting qualifier to empty str
-          expressionToStatement(Assignment(assignment.key.transform(
-            targetQuery.updateQualifier(Seq())),
-            assignment.value.transform(targetQuery.updateQualifier(Seq(tableQualifier)))))
+          val assignmentExpr = setAssignmentQualifier(assignment)
+          expressionToStatement(assignmentExpr)
         }.mkString(", ")
         s"UPDATE SET $assignmentsStatement"
       case Some(DeleteAction(_)) =>
@@ -434,7 +425,7 @@ case class MergeQuery(targetQuery: TargetQuery,
       case None => // No-Op equivalent operation when no matchedAction
         val cols = targetQuery.refColumns.head
         val nopAssignment = Assignment(cols,
-          cols.withQualifier(Seq(tableQualifier)))
+          cols.withQualifier(targetTableNameStrQualifier))
         "UPDATE SET " + expressionToStatement(nopAssignment)
       case _ =>
         val errStmt = expressionToStatement(localMatchedActions.head).toString
@@ -449,9 +440,7 @@ case class MergeQuery(targetQuery: TargetQuery,
     val unMatchedExpression = localNotMatchedActions.head match {
       case InsertAction(_, assignments) =>
         val pairs = assignments.map { assignment =>
-          val assignmentExpr = Assignment(assignment.key.transform(
-            targetQuery.updateQualifier(Seq())),
-            assignment.value.transform(targetQuery.updateQualifier(Seq(tableQualifier))))
+          val assignmentExpr = setAssignmentQualifier(assignment)
           val keyStatement = expressionToStatement(assignmentExpr.key).statementString
           val valueStatement = expressionToStatement(assignmentExpr.value).statementString
           (keyStatement, valueStatement)
@@ -469,15 +458,16 @@ case class MergeQuery(targetQuery: TargetQuery,
     }
 
     val res = ConstantString("MERGE INTO") + targetTableName.toStatement +
-      ConstantString("USING")  + sourceQuery.getStatement(true) + ConstantString("ON") +
+      ConstantString("USING")  + sourceTableName.toStatement + ConstantString("ON") +
       expressionToStatement(mergeCondExpression) +
       ConstantString("WHEN MATCHED THEN") + matchedExpression +
       ConstantString("WHEN NOT MATCHED THEN INSERT") + unMatchedExpression
+
     res
   }
 }
 
-case class UpdateQuery(targetQuery: TargetQuery,
+case class UpdateQuery(targetQuery: SourceQuery,
                        assignments: Seq[Assignment],
                        condition: Option[Expression])
   extends RedshiftQuery {
@@ -495,32 +485,47 @@ case class UpdateQuery(targetQuery: TargetQuery,
         true
       )
     }
+    val targetTableName = targetQuery.relation.params.table.get
+    val targetTableNameStrQualifier = targetTableName.toString.drop(1).dropRight(1)
+    val targetRefCols = targetQuery.refColumns
 
-    val assignmentsStmt = assignments.map { assignment =>
-      // Redshift only take column name for key, setting qualifier to empty str
-      expressionToStatement(Assignment(assignment.key.transform(targetQuery.updateQualifier(Seq())),
-        assignment.value.transform(targetQuery.updateQualifier(Seq("rt_connector_query_alias")))))
+    def setQualifierFromTarget(qualifierStr: Seq[String])
+      : PartialFunction[Expression, Expression] = {
+      case a: AttributeReference
+        if targetRefCols.exists(_.exprId == a.exprId) =>
+          a.withQualifier(qualifierStr)
+    }
+
+    val assignmentsStatement = assignments.map { assignment =>
+      // There should be only column name, but not table name (qualifier) in assignment statement
+      val transformedKey = assignment.key.transform(setQualifierFromTarget(Seq()))
+      val transformedValue = assignment.value.transform(
+        setQualifierFromTarget(Seq(targetTableNameStrQualifier)))
+      expressionToStatement(Assignment(transformedKey, transformedValue))
     }.mkString(", ")
 
-    val conditionStmt : RedshiftSQLStatement = condition
-      .map(value => ConstantString("WHERE") + expressionToStatement(
-        value.transform(targetQuery.updateQualifier(Seq("rt_connector_query_alias")))))
-      .getOrElse(EmptyRedshiftSQLStatement())
-
-    ConstantString("UPDATE") + targetQuery.helper.sourceStatement +
-      ConstantString("SET") + assignmentsStmt + conditionStmt
+    val res = ConstantString("UPDATE") + targetTableName.toStatement +
+      ConstantString("SET") + assignmentsStatement
+    val suffix: RedshiftSQLStatement = condition match {
+      case Some(value) =>
+        val conditionStmt = expressionToStatement(
+          value.transform(setQualifierFromTarget(Seq(targetTableNameStrQualifier)))
+        )
+        ConstantString("WHERE") + conditionStmt
+      case None => EmptyRedshiftSQLStatement()
+    }
+    res + suffix
   }
 }
 
-case class InsertQuery (targetQuery: TargetQuery, redshiftQuery: Option[RedshiftQuery],
+case class InsertQuery (relation: SourceQuery, redshiftQuery: Option[RedshiftQuery],
                         overwrite: Boolean) extends RedshiftQuery {
-  override val helper: QueryHelper = targetQuery.helper
+  override val helper: QueryHelper = relation.helper
 
-  override def find[T](query: PartialFunction[RedshiftQuery, T]): Option[T] = targetQuery
-    .find(query)
+  override def find[T](query: PartialFunction[RedshiftQuery, T]): Option[T] = relation.find(query)
 
   override def getStatement(useAlias: Boolean): RedshiftSQLStatement = {
-    if (targetQuery.relation.params.table.isEmpty) {
+    if (relation.relation.params.table.isEmpty) {
       throw new RedshiftPushdownUnsupportedException(
         "Unable to pushdown insert query for relation without dbtable",
         "insert into",
@@ -538,7 +543,7 @@ case class InsertQuery (targetQuery: TargetQuery, redshiftQuery: Option[Redshift
       )
     }
 
-    val tableName = targetQuery.relation.params.table.get
+    val tableName = relation.relation.params.table.get
 
     if (redshiftQuery.isEmpty) {
       EmptyRedshiftSQLStatement()
