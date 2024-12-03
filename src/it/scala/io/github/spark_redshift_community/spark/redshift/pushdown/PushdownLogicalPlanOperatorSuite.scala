@@ -545,6 +545,262 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     doTest(sqlContext, testJoin_float4_unsupported)
   }
 
+  val testJoin1: TestCase = TestCase(
+    """SELECT test_table_2.testbyte FROM test_table JOIN test_table_2
+      | ON test_table.testint = test_table_2.testint
+      |  order by test_table_2.testbyte asc""".stripMargin,
+    Seq(Row(2), Row(2), Row(3), Row(3)),
+    s"""SELECT * FROM ( SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_1" ) AS "SUBQUERY_7_COL_0" FROM (
+       | SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" , (
+       |  "SUBQUERY_5"."SUBQUERY_5_COL_0" ) AS "SUBQUERY_6_COL_1" , (
+       |   "SUBQUERY_5"."SUBQUERY_5_COL_1" ) AS "SUBQUERY_6_COL_2" FROM ( SELECT (
+       |    "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+       |     $test_table AS "RS_CONNECTOR_QUERY_ALIAS"
+       |      ) AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTINT" IS NOT NULL ) ) AS "SUBQUERY_1" ) AS
+       |       "SUBQUERY_2" INNER JOIN ( SELECT ( "SUBQUERY_4"."TESTBYTE" ) AS "SUBQUERY_5_COL_0" ,
+       |        ( "SUBQUERY_4"."TESTINT" ) AS "SUBQUERY_5_COL_1" FROM ( SELECT * FROM (
+       |         SELECT * FROM $test_table_2 AS
+       |          "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_3" WHERE ( "SUBQUERY_3"."TESTINT"
+       |           IS NOT NULL ) ) AS "SUBQUERY_4" ) AS "SUBQUERY_5" ON (
+       |            "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_5"."SUBQUERY_5_COL_1" ) ) AS
+       |             "SUBQUERY_6" ) AS "SUBQUERY_7" ORDER BY ( "SUBQUERY_7"."SUBQUERY_7_COL_0"
+       |              ) ASC NULLS FIRST""".stripMargin
+       )
+
+  val testJoin2: TestCase = TestCase(
+    """SELECT test_table.testbyte FROM test_table JOIN test_table_2
+      | ON test_table.testint = test_table_2.testint""".stripMargin,
+    Seq(Row(1), Row(1), Row(1), Row(1)),
+    s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" FROM ( SELECT (
+       | "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" , (
+       |  "SUBQUERY_2"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_6_COL_1" , (
+       |   "SUBQUERY_5"."SUBQUERY_5_COL_0" ) AS "SUBQUERY_6_COL_2" FROM ( SELECT (
+       |    "SUBQUERY_1"."TESTBYTE" ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."TESTINT" ) AS
+       |     "SUBQUERY_2_COL_1" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
+       |      "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTINT" IS
+       |       NOT NULL ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" INNER JOIN ( SELECT (
+       |        "SUBQUERY_4"."TESTINT" ) AS "SUBQUERY_5_COL_0" FROM ( SELECT * FROM (
+       |         SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_3"
+       |          WHERE ( "SUBQUERY_3"."TESTINT" IS NOT NULL ) ) AS "SUBQUERY_4" ) AS "SUBQUERY_5"
+       |           ON ( "SUBQUERY_2"."SUBQUERY_2_COL_1" = "SUBQUERY_5"."SUBQUERY_5_COL_0" ) )
+       |            AS "SUBQUERY_6"""".stripMargin
+       )
+
+  val testJoin3: TestCase = TestCase(
+    """SELECT test_table.testshort, test_table_2.testint from test_table JOIN test_table_2 on
+      | test_table.testint = test_table_2.testbyte""".stripMargin,
+    Seq(Row(-13, 45), Row(23, 45)),
+    s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_1" ) AS "SUBQUERY_7_COL_0" , (
+       | "SUBQUERY_6"."SUBQUERY_6_COL_3" ) AS "SUBQUERY_7_COL_1" FROM ( SELECT
+       |  ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" , (
+       |   "SUBQUERY_2"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_6_COL_1" , (
+       |    "SUBQUERY_5"."SUBQUERY_5_COL_0" ) AS "SUBQUERY_6_COL_2" , (
+       |     "SUBQUERY_5"."SUBQUERY_5_COL_1" ) AS "SUBQUERY_6_COL_3" FROM ( SELECT (
+       |      "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."TESTSHORT"
+       |       ) AS "SUBQUERY_2_COL_1" FROM ( SELECT * FROM ( SELECT * FROM
+       |        $test_table AS "RS_CONNECTOR_QUERY_ALIAS"
+       |         ) AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTINT" IS NOT NULL ) ) AS "SUBQUERY_1" )
+       |          AS "SUBQUERY_2" INNER JOIN ( SELECT ( "SUBQUERY_4"."TESTBYTE" ) AS
+       |           "SUBQUERY_5_COL_0" , ( "SUBQUERY_4"."TESTINT" ) AS "SUBQUERY_5_COL_1" FROM
+       |            ( SELECT * FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS"
+       |             ) AS "SUBQUERY_3" WHERE ( "SUBQUERY_3"."TESTBYTE" IS NOT NULL ) ) AS
+       |              "SUBQUERY_4" ) AS "SUBQUERY_5" ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = CAST (
+       |               "SUBQUERY_5"."SUBQUERY_5_COL_0" AS INTEGER ) ) )
+       |                AS "SUBQUERY_6"""".stripMargin
+       )
+
+  val testExistsSubquery1: TestCase = TestCase(
+    """SELECT test_table.testint from test_table WHERE
+      | EXISTS(
+      | SELECT test_table_2.testint from test_table_2 WHERE
+      | test_table_2.testbyte = test_table.testbyte
+      | )""".stripMargin,
+    Seq(Row(4141214), Row(42), Row(42), Row(null)),
+    s"""SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_1" ) AS "SUBQUERY_6_COL_0" FROM ( SELECT (
+       | "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0" , (
+       |  "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_4_COL_1" FROM ( SELECT (
+       |   "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0" , ( "SUBQUERY_0"."TESTINT" ) AS
+       |    "SUBQUERY_1_COL_1" FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
+       |     "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE  EXISTS ( SELECT * FROM ( SELECT (
+       |      "SUBQUERY_2"."TESTBYTE" ) AS "SUBQUERY_3_COL_0" FROM ( SELECT * FROM $test_table_2 AS
+       |       "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" ) AS "SUBQUERY_3" WHERE (
+       |       "SUBQUERY_3"."SUBQUERY_3_COL_0" = "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) )
+       |        AS "SUBQUERY_4"""".stripMargin
+       )
+
+  val testExistsSubquery2: TestCase = TestCase(
+    """SELECT test_table.testint from test_table WHERE
+      | EXISTS(
+      | SELECT 1 from test_table_2 WHERE
+      | test_table_2.testbyte = test_table.testbyte
+      | )""".stripMargin,
+    Seq(Row(4141214), Row(42), Row(42), Row(null)),
+    s"""SELECT("SUBQUERY_4"."SUBQUERY_4_COL_1")AS"SUBQUERY_6_COL_0"FROM(SELECT
+       |("SUBQUERY_1"."SUBQUERY_1_COL_0")AS"SUBQUERY_4_COL_0",("SUBQUERY_1"."SUBQUERY_1_COL_1")AS
+       |"SUBQUERY_4_COL_1"FROM(SELECT("SUBQUERY_0"."TESTBYTE")AS"SUBQUERY_1_COL_0",
+       |("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM(SELECT*FROM
+       |$test_table AS"RS_CONNECTOR_QUERY_ALIAS")AS
+       |"SUBQUERY_0")AS"SUBQUERY_1"WHEREEXISTS(SELECT*FROM(SELECT("SUBQUERY_2"."TESTBYTE")AS
+       |"SUBQUERY_3_COL_0"FROM(SELECT*FROM$test_table_2 AS
+       |"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_2")AS"SUBQUERY_3"WHERE(
+       |"SUBQUERY_3"."SUBQUERY_3_COL_0"="SUBQUERY_1"."SUBQUERY_1_COL_0")))AS
+       |"SUBQUERY_4"""".stripMargin
+       )
+
+  val testExistsSubquery3: TestCase = TestCase(
+    """SELECT test_table.testint from test_table WHERE
+      | EXISTS(
+      | SELECT 1 from test_table_2 WHERE
+      | test_table_2.testbyte = test_table.testbyte AND
+      | test_table_2.teststring = test_table.teststring
+      | )""".stripMargin,
+    Seq(Row(4141214)),
+    s"""SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_1" ) AS "SUBQUERY_6_COL_0" FROM ( SELECT (
+       | "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0" , (
+       |  "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_4_COL_1" , (
+       |   "SUBQUERY_1"."SUBQUERY_1_COL_2" ) AS "SUBQUERY_4_COL_2" FROM ( SELECT (
+       |    "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0" , ( "SUBQUERY_0"."TESTINT" ) AS
+       |     "SUBQUERY_1_COL_1" , ( "SUBQUERY_0"."TESTSTRING" ) AS "SUBQUERY_1_COL_2" FROM (
+       |      SELECT * FROM $test_table AS
+       |       "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE  EXISTS (
+       |        SELECT * FROM ( SELECT ( "SUBQUERY_2"."TESTBYTE" ) AS "SUBQUERY_3_COL_0" , (
+       |         "SUBQUERY_2"."TESTSTRING" ) AS "SUBQUERY_3_COL_1" FROM ( SELECT * FROM
+       |          $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" ) AS "SUBQUERY_3"
+       |           WHERE ( ( "SUBQUERY_3"."SUBQUERY_3_COL_0" = "SUBQUERY_1"."SUBQUERY_1_COL_0" )
+       |            AND ( "SUBQUERY_3"."SUBQUERY_3_COL_1" = "SUBQUERY_1"."SUBQUERY_1_COL_2" ) ) )
+       |             ) AS "SUBQUERY_4"""".stripMargin
+       )
+
+  val testExistsSubquery4: TestCase = TestCase(
+    """SELECT test_table.testint from test_table WHERE
+      | EXISTS(
+      | SELECT 1 from test_table_2 WHERE
+      | test_table_2.testbool = test_table.testbool AND
+      | test_table_2.testshort > test_table.testshort
+      | )""".stripMargin,
+    Seq(Row(42), Row(42)),
+    s"""SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_1" ) AS "SUBQUERY_6_COL_0" FROM ( SELECT (
+       | "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0" , (
+       |  "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_4_COL_1" , (
+       |   "SUBQUERY_1"."SUBQUERY_1_COL_2" ) AS "SUBQUERY_4_COL_2" FROM ( SELECT (
+       |    "SUBQUERY_0"."TESTBOOL" ) AS "SUBQUERY_1_COL_0" , ( "SUBQUERY_0"."TESTINT" ) AS
+       |     "SUBQUERY_1_COL_1" , ( "SUBQUERY_0"."TESTSHORT" ) AS "SUBQUERY_1_COL_2" FROM (
+       |      SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS
+       |       "SUBQUERY_1" WHERE  EXISTS ( SELECT * FROM ( SELECT ( "SUBQUERY_2"."TESTBOOL" )
+       |        AS "SUBQUERY_3_COL_0" , ( "SUBQUERY_2"."TESTSHORT" ) AS "SUBQUERY_3_COL_1" FROM (
+       |         SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" ) AS
+       |          "SUBQUERY_3" WHERE
+       |           ( ( "SUBQUERY_3"."SUBQUERY_3_COL_0" = "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AND
+       |            ( "SUBQUERY_3"."SUBQUERY_3_COL_1" > "SUBQUERY_1"."SUBQUERY_1_COL_2" )
+       |            ) ) ) AS "SUBQUERY_4"""".stripMargin
+       )
+
+  val testExistsSubquery5: TestCase = TestCase(
+    """SELECT test_table.testint from test_table WHERE
+      | NOT EXISTS(
+      | SELECT test_table_2.testint from test_table_2 WHERE
+      | test_table_2.testbyte = test_table.testbyte
+      | )""".stripMargin,
+    Seq(Row(null)),
+    s"""SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_1" ) AS "SUBQUERY_6_COL_0" FROM ( SELECT (
+       | "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0" , (
+       |  "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_4_COL_1" FROM ( SELECT (
+       |   "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0" , ( "SUBQUERY_0"."TESTINT" ) AS
+       |    "SUBQUERY_1_COL_1" FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
+       |     "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE NOT EXISTS ( SELECT * FROM ( SELECT (
+       |      "SUBQUERY_2"."TESTBYTE" ) AS "SUBQUERY_3_COL_0" FROM ( SELECT * FROM $test_table_2 AS
+       |       "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" ) AS "SUBQUERY_3" WHERE (
+       |       "SUBQUERY_3"."SUBQUERY_3_COL_0" = "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) )
+       |        AS "SUBQUERY_4"""".stripMargin
+  )
+
+  val testExistsSubquery6: TestCase = TestCase(
+    """SELECT test_table.testint from test_table WHERE
+      | NOT EXISTS(
+      | SELECT 1 from test_table_2 WHERE
+      | test_table_2.testbyte = test_table.testbyte
+      | )""".stripMargin,
+    Seq(Row(null)),
+    s"""SELECT("SUBQUERY_4"."SUBQUERY_4_COL_1")AS"SUBQUERY_6_COL_0"FROM(SELECT
+       |("SUBQUERY_1"."SUBQUERY_1_COL_0")AS"SUBQUERY_4_COL_0",("SUBQUERY_1"."SUBQUERY_1_COL_1")AS
+       |"SUBQUERY_4_COL_1"FROM(SELECT("SUBQUERY_0"."TESTBYTE")AS"SUBQUERY_1_COL_0",
+       |("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM(SELECT*FROM
+       |$test_table AS"RS_CONNECTOR_QUERY_ALIAS")AS
+       |"SUBQUERY_0")AS"SUBQUERY_1"WHERENOTEXISTS(SELECT*FROM(SELECT("SUBQUERY_2"."TESTBYTE")AS
+       |"SUBQUERY_3_COL_0"FROM(SELECT*FROM$test_table_2 AS
+       |"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_2")AS"SUBQUERY_3"WHERE(
+       |"SUBQUERY_3"."SUBQUERY_3_COL_0"="SUBQUERY_1"."SUBQUERY_1_COL_0")))AS
+       |"SUBQUERY_4"""".stripMargin
+  )
+
+  val testExistsSubquery7: TestCase = TestCase(
+    """SELECT test_table.testint from test_table WHERE
+      | NOT EXISTS(
+      | SELECT 1 from test_table_2 WHERE
+      | test_table_2.testbyte = test_table.testbyte AND
+      | test_table_2.teststring = test_table.teststring
+      | )""".stripMargin,
+    Seq(Row(42), Row(42), Row(null), Row(null)),
+    s"""SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_1" ) AS "SUBQUERY_6_COL_0" FROM ( SELECT (
+       | "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0" , (
+       |  "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_4_COL_1" , (
+       |   "SUBQUERY_1"."SUBQUERY_1_COL_2" ) AS "SUBQUERY_4_COL_2" FROM ( SELECT (
+       |    "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0" , ( "SUBQUERY_0"."TESTINT" ) AS
+       |     "SUBQUERY_1_COL_1" , ( "SUBQUERY_0"."TESTSTRING" ) AS "SUBQUERY_1_COL_2" FROM (
+       |      SELECT * FROM $test_table AS
+       |       "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1" WHERE NOT EXISTS (
+       |        SELECT * FROM ( SELECT ( "SUBQUERY_2"."TESTBYTE" ) AS "SUBQUERY_3_COL_0" , (
+       |         "SUBQUERY_2"."TESTSTRING" ) AS "SUBQUERY_3_COL_1" FROM ( SELECT * FROM
+       |          $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" ) AS "SUBQUERY_3"
+       |           WHERE ( ( "SUBQUERY_3"."SUBQUERY_3_COL_0" = "SUBQUERY_1"."SUBQUERY_1_COL_0" )
+       |            AND ( "SUBQUERY_3"."SUBQUERY_3_COL_1" = "SUBQUERY_1"."SUBQUERY_1_COL_2" ) ) )
+       |             ) AS "SUBQUERY_4"""".stripMargin
+  )
+
+  val testExistsSubquery8: TestCase = TestCase(
+    """SELECT test_table.testint from test_table WHERE
+      | NOT EXISTS(
+      | SELECT 1 from test_table_2 WHERE
+      | test_table_2.testbool = test_table.testbool AND
+      | test_table_2.testshort > test_table.testshort
+      | )""".stripMargin,
+    Seq(Row(4141214), Row(null), Row(null)),
+    s"""SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_1" ) AS "SUBQUERY_6_COL_0" FROM ( SELECT (
+       | "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0" , (
+       |  "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_4_COL_1" , (
+       |   "SUBQUERY_1"."SUBQUERY_1_COL_2" ) AS "SUBQUERY_4_COL_2" FROM ( SELECT (
+       |    "SUBQUERY_0"."TESTBOOL" ) AS "SUBQUERY_1_COL_0" , ( "SUBQUERY_0"."TESTINT" ) AS
+       |     "SUBQUERY_1_COL_1" , ( "SUBQUERY_0"."TESTSHORT" ) AS "SUBQUERY_1_COL_2" FROM (
+       |      SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS
+       |       "SUBQUERY_1" WHERE NOT EXISTS ( SELECT * FROM ( SELECT ( "SUBQUERY_2"."TESTBOOL" )
+       |        AS "SUBQUERY_3_COL_0" , ( "SUBQUERY_2"."TESTSHORT" ) AS "SUBQUERY_3_COL_1" FROM (
+       |         SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_2" ) AS
+       |          "SUBQUERY_3" WHERE
+       |           ( ( "SUBQUERY_3"."SUBQUERY_3_COL_0" = "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AND
+       |            ( "SUBQUERY_3"."SUBQUERY_3_COL_1" > "SUBQUERY_1"."SUBQUERY_1_COL_2" )
+       |            ) ) ) AS "SUBQUERY_4"""".stripMargin
+  )
+
+  test("Test JOIN logical operator plan with select on outer attribute") {
+    doTest(sqlContext, testJoin1)
+    doTest(sqlContext, testJoin2)
+    doTest(sqlContext, testJoin3)
+  }
+
+  test("Test Implicit Join with EXISTS operator") {
+    doTest(sqlContext, testExistsSubquery1)
+    doTest(sqlContext, testExistsSubquery2)
+    doTest(sqlContext, testExistsSubquery3)
+    doTest(sqlContext, testExistsSubquery4)
+  }
+
+  test("Test Implicit Join with NOT EXISTS operator") {
+    doTest(sqlContext, testExistsSubquery5)
+    doTest(sqlContext, testExistsSubquery6)
+    doTest(sqlContext, testExistsSubquery7)
+    doTest(sqlContext, testExistsSubquery8)
+  }
+
   val testJoin01: TestCase = TestCase(
     """SELECT test_table_2.testbyte FROM test_table JOIN test_table_2
       | ON test_table.testint = test_table_2.testbyte order by 1""".stripMargin,
