@@ -297,8 +297,12 @@ private[redshift] case class RedshiftRelation(
   }
 
   def runDMLFromSQL(statement: RedshiftSQLStatement): Seq[Row] = {
-    val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
+    /*
+     * TODO - Temporarily disable usage of query groups to avoid USE <db> issue for DML operations.
+    val queryGroup = Utils.queryGroupInfo(Utils.Write, params.user_query_group_label, sqlContext)
     val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
+    */
+    val conn = redshiftWrapper.getConnector(params)
     val statementStr = statement.statementString
 
     // Save the last query so it can be inspected
