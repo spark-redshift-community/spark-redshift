@@ -31,12 +31,14 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |WHEN NOT MATCHED THEN INSERT *""".stripMargin,
     Seq(Row()),
     /* This needs to be adjusted after extending the DML MERGE */
-    s"""MERGE INTO "PUBLIC"."web_returns_copy" USING "PUBLIC"."web_returns" ON (
+    s"""MERGE INTO "PUBLIC"."web_returns_copy" USING ( SELECT * FROM
+       | "PUBLIC"."web_returns" AS "RS_CONNECTOR_QUERY_ALIAS" )
+       |  AS "SUBQUERY_0"ON (
        |    (
-       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ORDER_NUMBER" = "PUBLIC"."WEB_RETURNS"."WR_ORDER_NUMBER"
+       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ORDER_NUMBER" = "SUBQUERY_0"."WR_ORDER_NUMBER"
        |    )
        |    AND (
-       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ITEM_SK" = "PUBLIC"."WEB_RETURNS"."WR_ITEM_SK"
+       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ITEM_SK" = "SUBQUERY_0"."WR_ITEM_SK"
        |    )
        |)
        |WHEN MATCHED THEN
@@ -73,30 +75,30 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |    )
        |VALUES
        |    (
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNED_DATE_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNED_TIME_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_ITEM_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CUSTOMER_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_HDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_ADDR_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_CUSTOMER_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_CDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_HDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_ADDR_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_WEB_PAGE_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REASON_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_ORDER_NUMBER",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_QUANTITY",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_AMT",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_TAX",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_AMT_INC_TAX",
-       |        "PUBLIC"."WEB_RETURNS"."WR_FEE",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_SHIP_COST",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CASH",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REVERSED_CHARGE",
-       |        "PUBLIC"."WEB_RETURNS"."WR_ACCOUNT_CREDIT",
-       |        "PUBLIC"."WEB_RETURNS"."WR_NET_LOSS"
+       |        "SUBQUERY_0"."WR_RETURNED_DATE_SK",
+       |        "SUBQUERY_0"."WR_RETURNED_TIME_SK",
+       |        "SUBQUERY_0"."WR_ITEM_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_CUSTOMER_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_CDEMO_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_HDEMO_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_ADDR_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_CUSTOMER_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_CDEMO_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_HDEMO_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_ADDR_SK",
+       |        "SUBQUERY_0"."WR_WEB_PAGE_SK",
+       |        "SUBQUERY_0"."WR_REASON_SK",
+       |        "SUBQUERY_0"."WR_ORDER_NUMBER",
+       |        "SUBQUERY_0"."WR_RETURN_QUANTITY",
+       |        "SUBQUERY_0"."WR_RETURN_AMT",
+       |        "SUBQUERY_0"."WR_RETURN_TAX",
+       |        "SUBQUERY_0"."WR_RETURN_AMT_INC_TAX",
+       |        "SUBQUERY_0"."WR_FEE",
+       |        "SUBQUERY_0"."WR_RETURN_SHIP_COST",
+       |        "SUBQUERY_0"."WR_REFUNDED_CASH",
+       |        "SUBQUERY_0"."WR_REVERSED_CHARGE",
+       |        "SUBQUERY_0"."WR_ACCOUNT_CREDIT",
+       |        "SUBQUERY_0"."WR_NET_LOSS"
        |    )""".stripMargin.replaceAll("\\s", ""))
 
   test("1. Merge Single Insert") {
@@ -125,12 +127,13 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |WHEN NOT MATCHED AND s.wr_item_sk % 2 = 0 THEN INSERT *
        |WHEN NOT MATCHED THEN INSERT *""".stripMargin,
     Seq(Row()),
-    s"""MERGE INTO "PUBLIC"."web_returns_copy" USING "PUBLIC"."web_returns" ON (
+    s"""MERGE INTO "PUBLIC"."web_returns_copy" USING ( SELECT * FROM "PUBLIC"."web_returns"
+       | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ON (
        |    (
-       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ORDER_NUMBER" = "PUBLIC"."WEB_RETURNS"."WR_ORDER_NUMBER"
+       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ORDER_NUMBER" = "SUBQUERY_0"."WR_ORDER_NUMBER"
        |    )
        |    AND (
-       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ITEM_SK" = "PUBLIC"."WEB_RETURNS"."WR_ITEM_SK"
+       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ITEM_SK" = "SUBQUERY_0"."WR_ITEM_SK"
        |    )
        |)
        |WHEN MATCHED THEN
@@ -167,30 +170,30 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |    )
        |VALUES
        |    (
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNED_DATE_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNED_TIME_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_ITEM_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CUSTOMER_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_HDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_ADDR_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_CUSTOMER_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_CDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_HDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_ADDR_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_WEB_PAGE_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REASON_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_ORDER_NUMBER",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_QUANTITY",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_AMT",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_TAX",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_AMT_INC_TAX",
-       |        "PUBLIC"."WEB_RETURNS"."WR_FEE",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_SHIP_COST",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CASH",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REVERSED_CHARGE",
-       |        "PUBLIC"."WEB_RETURNS"."WR_ACCOUNT_CREDIT",
-       |        "PUBLIC"."WEB_RETURNS"."WR_NET_LOSS"
+       |        "SUBQUERY_0"."WR_RETURNED_DATE_SK",
+       |        "SUBQUERY_0"."WR_RETURNED_TIME_SK",
+       |        "SUBQUERY_0"."WR_ITEM_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_CUSTOMER_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_CDEMO_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_HDEMO_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_ADDR_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_CUSTOMER_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_CDEMO_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_HDEMO_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_ADDR_SK",
+       |        "SUBQUERY_0"."WR_WEB_PAGE_SK",
+       |        "SUBQUERY_0"."WR_REASON_SK",
+       |        "SUBQUERY_0"."WR_ORDER_NUMBER",
+       |        "SUBQUERY_0"."WR_RETURN_QUANTITY",
+       |        "SUBQUERY_0"."WR_RETURN_AMT",
+       |        "SUBQUERY_0"."WR_RETURN_TAX",
+       |        "SUBQUERY_0"."WR_RETURN_AMT_INC_TAX",
+       |        "SUBQUERY_0"."WR_FEE",
+       |        "SUBQUERY_0"."WR_RETURN_SHIP_COST",
+       |        "SUBQUERY_0"."WR_REFUNDED_CASH",
+       |        "SUBQUERY_0"."WR_REVERSED_CHARGE",
+       |        "SUBQUERY_0"."WR_ACCOUNT_CREDIT",
+       |        "SUBQUERY_0"."WR_NET_LOSS"
        |    )""".stripMargin.replaceAll("\\s", ""))
   test("2. Merge Multiple Inserts") {
     read
@@ -219,14 +222,15 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |WHEN MATCHED THEN DELETE""".stripMargin,
     Seq(Row()),
     s"""DELETE FROM
-       |  "PUBLIC"."web_returns_copy" USING "PUBLIC"."web_returns"
-       |WHERE
+       |  "PUBLIC"."web_returns_copy" USING ( SELECT * FROM "PUBLIC"."web_returns"
+       | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1"
+       | WHERE
        |  (
        |    (
-       |      "PUBLIC"."WEB_RETURNS_COPY"."WR_ORDER_NUMBER" = "PUBLIC"."WEB_RETURNS"."WR_ORDER_NUMBER"
+       |      "PUBLIC"."WEB_RETURNS_COPY"."WR_ORDER_NUMBER" = "SUBQUERY_1"."WR_ORDER_NUMBER"
        |    )
        |    AND (
-       |      "PUBLIC"."WEB_RETURNS_COPY"."WR_ITEM_SK" = "PUBLIC"."WEB_RETURNS"."WR_ITEM_SK"
+       |      "PUBLIC"."WEB_RETURNS_COPY"."WR_ITEM_SK" = "SUBQUERY_1"."WR_ITEM_SK"
        |    )
        |  )""".stripMargin.replaceAll("\\s", ""))
   test("3. Merge Delete") {
@@ -256,41 +260,43 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |WHEN MATCHED THEN UPDATE SET *
        |WHEN NOT MATCHED THEN INSERT *""".stripMargin,
     Seq(Row()),
-    s"""MERGE INTO "PUBLIC"."web_returns_copy" USING "PUBLIC"."web_returns" ON (
+    s"""MERGE INTO "PUBLIC"."web_returns_copy" USING ( SELECT * FROM "PUBLIC"."web_returns"
+       | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+       | ON (
        |    (
-       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ORDER_NUMBER" = "PUBLIC"."WEB_RETURNS"."WR_ORDER_NUMBER"
+       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ORDER_NUMBER" = "SUBQUERY_0"."WR_ORDER_NUMBER"
        |    )
        |    AND (
-       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ITEM_SK" = "PUBLIC"."WEB_RETURNS"."WR_ITEM_SK"
+       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ITEM_SK" = "SUBQUERY_0"."WR_ITEM_SK"
        |    )
        |)
        |WHEN MATCHED THEN
        |UPDATE
        |SET
-       |    "WR_RETURNED_DATE_SK" = "PUBLIC"."WEB_RETURNS"."WR_RETURNED_DATE_SK",
-       |    "WR_RETURNED_TIME_SK" = "PUBLIC"."WEB_RETURNS"."WR_RETURNED_TIME_SK",
-       |    "WR_ITEM_SK" = "PUBLIC"."WEB_RETURNS"."WR_ITEM_SK",
-       |    "WR_REFUNDED_CUSTOMER_SK" = "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CUSTOMER_SK",
-       |    "WR_REFUNDED_CDEMO_SK" = "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CDEMO_SK",
-       |    "WR_REFUNDED_HDEMO_SK" = "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_HDEMO_SK",
-       |    "WR_REFUNDED_ADDR_SK" = "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_ADDR_SK",
-       |    "WR_RETURNING_CUSTOMER_SK" = "PUBLIC"."WEB_RETURNS"."WR_RETURNING_CUSTOMER_SK",
-       |    "WR_RETURNING_CDEMO_SK" = "PUBLIC"."WEB_RETURNS"."WR_RETURNING_CDEMO_SK",
-       |    "WR_RETURNING_HDEMO_SK" = "PUBLIC"."WEB_RETURNS"."WR_RETURNING_HDEMO_SK",
-       |    "WR_RETURNING_ADDR_SK" = "PUBLIC"."WEB_RETURNS"."WR_RETURNING_ADDR_SK",
-       |    "WR_WEB_PAGE_SK" = "PUBLIC"."WEB_RETURNS"."WR_WEB_PAGE_SK",
-       |    "WR_REASON_SK" = "PUBLIC"."WEB_RETURNS"."WR_REASON_SK",
-       |    "WR_ORDER_NUMBER" = "PUBLIC"."WEB_RETURNS"."WR_ORDER_NUMBER",
-       |    "WR_RETURN_QUANTITY" = "PUBLIC"."WEB_RETURNS"."WR_RETURN_QUANTITY",
-       |    "WR_RETURN_AMT" = "PUBLIC"."WEB_RETURNS"."WR_RETURN_AMT",
-       |    "WR_RETURN_TAX" = "PUBLIC"."WEB_RETURNS"."WR_RETURN_TAX",
-       |    "WR_RETURN_AMT_INC_TAX" = "PUBLIC"."WEB_RETURNS"."WR_RETURN_AMT_INC_TAX",
-       |    "WR_FEE" = "PUBLIC"."WEB_RETURNS"."WR_FEE",
-       |    "WR_RETURN_SHIP_COST" = "PUBLIC"."WEB_RETURNS"."WR_RETURN_SHIP_COST",
-       |    "WR_REFUNDED_CASH" = "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CASH",
-       |    "WR_REVERSED_CHARGE" = "PUBLIC"."WEB_RETURNS"."WR_REVERSED_CHARGE",
-       |    "WR_ACCOUNT_CREDIT" = "PUBLIC"."WEB_RETURNS"."WR_ACCOUNT_CREDIT",
-       |    "WR_NET_LOSS" = "PUBLIC"."WEB_RETURNS"."WR_NET_LOSS"
+       |    "WR_RETURNED_DATE_SK" = "SUBQUERY_0"."WR_RETURNED_DATE_SK",
+       |    "WR_RETURNED_TIME_SK" = "SUBQUERY_0"."WR_RETURNED_TIME_SK",
+       |    "WR_ITEM_SK" = "SUBQUERY_0"."WR_ITEM_SK",
+       |    "WR_REFUNDED_CUSTOMER_SK" = "SUBQUERY_0"."WR_REFUNDED_CUSTOMER_SK",
+       |    "WR_REFUNDED_CDEMO_SK" = "SUBQUERY_0"."WR_REFUNDED_CDEMO_SK",
+       |    "WR_REFUNDED_HDEMO_SK" = "SUBQUERY_0"."WR_REFUNDED_HDEMO_SK",
+       |    "WR_REFUNDED_ADDR_SK" = "SUBQUERY_0"."WR_REFUNDED_ADDR_SK",
+       |    "WR_RETURNING_CUSTOMER_SK" = "SUBQUERY_0"."WR_RETURNING_CUSTOMER_SK",
+       |    "WR_RETURNING_CDEMO_SK" = "SUBQUERY_0"."WR_RETURNING_CDEMO_SK",
+       |    "WR_RETURNING_HDEMO_SK" = "SUBQUERY_0"."WR_RETURNING_HDEMO_SK",
+       |    "WR_RETURNING_ADDR_SK" = "SUBQUERY_0"."WR_RETURNING_ADDR_SK",
+       |    "WR_WEB_PAGE_SK" = "SUBQUERY_0"."WR_WEB_PAGE_SK",
+       |    "WR_REASON_SK" = "SUBQUERY_0"."WR_REASON_SK",
+       |    "WR_ORDER_NUMBER" = "SUBQUERY_0"."WR_ORDER_NUMBER",
+       |    "WR_RETURN_QUANTITY" = "SUBQUERY_0"."WR_RETURN_QUANTITY",
+       |    "WR_RETURN_AMT" = "SUBQUERY_0"."WR_RETURN_AMT",
+       |    "WR_RETURN_TAX" = "SUBQUERY_0"."WR_RETURN_TAX",
+       |    "WR_RETURN_AMT_INC_TAX" = "SUBQUERY_0"."WR_RETURN_AMT_INC_TAX",
+       |    "WR_FEE" = "SUBQUERY_0"."WR_FEE",
+       |    "WR_RETURN_SHIP_COST" = "SUBQUERY_0"."WR_RETURN_SHIP_COST",
+       |    "WR_REFUNDED_CASH" = "SUBQUERY_0"."WR_REFUNDED_CASH",
+       |    "WR_REVERSED_CHARGE" = "SUBQUERY_0"."WR_REVERSED_CHARGE",
+       |    "WR_ACCOUNT_CREDIT" = "SUBQUERY_0"."WR_ACCOUNT_CREDIT",
+       |    "WR_NET_LOSS" = "SUBQUERY_0"."WR_NET_LOSS"
        |    WHEN NOT MATCHED THEN
        |INSERT
        |    (
@@ -321,30 +327,30 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |    )
        |VALUES
        |    (
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNED_DATE_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNED_TIME_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_ITEM_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CUSTOMER_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_HDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_ADDR_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_CUSTOMER_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_CDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_HDEMO_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURNING_ADDR_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_WEB_PAGE_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REASON_SK",
-       |        "PUBLIC"."WEB_RETURNS"."WR_ORDER_NUMBER",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_QUANTITY",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_AMT",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_TAX",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_AMT_INC_TAX",
-       |        "PUBLIC"."WEB_RETURNS"."WR_FEE",
-       |        "PUBLIC"."WEB_RETURNS"."WR_RETURN_SHIP_COST",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REFUNDED_CASH",
-       |        "PUBLIC"."WEB_RETURNS"."WR_REVERSED_CHARGE",
-       |        "PUBLIC"."WEB_RETURNS"."WR_ACCOUNT_CREDIT",
-       |        "PUBLIC"."WEB_RETURNS"."WR_NET_LOSS"
+       |        "SUBQUERY_0"."WR_RETURNED_DATE_SK",
+       |        "SUBQUERY_0"."WR_RETURNED_TIME_SK",
+       |        "SUBQUERY_0"."WR_ITEM_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_CUSTOMER_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_CDEMO_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_HDEMO_SK",
+       |        "SUBQUERY_0"."WR_REFUNDED_ADDR_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_CUSTOMER_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_CDEMO_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_HDEMO_SK",
+       |        "SUBQUERY_0"."WR_RETURNING_ADDR_SK",
+       |        "SUBQUERY_0"."WR_WEB_PAGE_SK",
+       |        "SUBQUERY_0"."WR_REASON_SK",
+       |        "SUBQUERY_0"."WR_ORDER_NUMBER",
+       |        "SUBQUERY_0"."WR_RETURN_QUANTITY",
+       |        "SUBQUERY_0"."WR_RETURN_AMT",
+       |        "SUBQUERY_0"."WR_RETURN_TAX",
+       |        "SUBQUERY_0"."WR_RETURN_AMT_INC_TAX",
+       |        "SUBQUERY_0"."WR_FEE",
+       |        "SUBQUERY_0"."WR_RETURN_SHIP_COST",
+       |        "SUBQUERY_0"."WR_REFUNDED_CASH",
+       |        "SUBQUERY_0"."WR_REVERSED_CHARGE",
+       |        "SUBQUERY_0"."WR_ACCOUNT_CREDIT",
+       |        "SUBQUERY_0"."WR_NET_LOSS"
        |    )""".stripMargin.replaceAll("\\s", ""))
   test("4. Merge Upsert") {
     read
@@ -610,25 +616,25 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
     Seq(Row()),
     /* This needs to be adjusted after extending the DML MERGE */
     s"""UPDATE
-       |    "PUBLIC"."web_returns_copy"
+       |    "PUBLIC"."web_returns_copy" AS "RT_CONNECTOR_QUERY_ALIAS"
        |SET
        |    "WR_RETURN_QUANTITY" = (
-       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_RETURN_QUANTITY" + 100
+       |        "RT_CONNECTOR_QUERY_ALIAS"."WR_RETURN_QUANTITY" + 100
        |    ),
        |    "WR_RETURN_AMT" = CAST (
        |        (
-       |            "PUBLIC"."WEB_RETURNS_COPY"."WR_RETURN_AMT" + 100
+       |            "RT_CONNECTOR_QUERY_ALIAS"."WR_RETURN_AMT" + 100
        |        ) AS DECIMAL(7, 2)
        |    ),
        |    "WR_NET_LOSS" = CAST (
        |        (
-       |            "PUBLIC"."WEB_RETURNS_COPY"."WR_NET_LOSS" + 100
+       |            "RT_CONNECTOR_QUERY_ALIAS"."WR_NET_LOSS" + 100
        |        ) AS DECIMAL(7, 2)
        |    )
        |WHERE
        |    (
-       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ORDER_NUMBER",
-       |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ITEM_SK"
+       |        "RT_CONNECTOR_QUERY_ALIAS"."WR_ORDER_NUMBER",
+       |        "RT_CONNECTOR_QUERY_ALIAS"."WR_ITEM_SK"
        |    ) IN (
        |        SELECT
        |            ("SUBQUERY_0"."WR_ORDER_NUMBER") AS "SUBQUERY_1_COL_0",

@@ -55,12 +55,13 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s""" MERGE INTO "PUBLIC"."$targetTable"
-           | USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           | USING (SELECT * FROM "PUBLIC"."$sourceTable"
+           | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_0"."NEW_ID" )
            | WHEN MATCHED THEN UPDATE SET "ID" = "PUBLIC"."$targetTable"."ID"
            | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME") VALUES
-           | ("PUBLIC"."$sourceTable"."NEW_ID", "PUBLIC"."$sourceTable"."STATUS",
-           |  "PUBLIC"."$sourceTable"."NAME" ) """.stripMargin)
+           | ("SUBQUERY_0"."NEW_ID", "SUBQUERY_0"."STATUS",
+           |  "SUBQUERY_0"."NAME" ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),
@@ -89,8 +90,10 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
       val testTargetTableName = s""""PUBLIC"."${targetTable}""""
-      checkSqlStatement(s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
-                           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+      checkSqlStatement(s"""MERGE INTO $testTargetTableName USING ( SELECT * FROM
+                           | $testSourceTableName
+                           | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ON (
+                           |    $testTargetTableName."ID" = "SUBQUERY_0"."NEW_ID"
                            |)
                            |WHEN MATCHED THEN DELETE
                            |WHEN NOT MATCHED THEN
@@ -98,9 +101,9 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |    ("ID", "STATUS", "NAME")
                            |VALUES
                            |    (
-                           |        $testSourceTableName."NEW_ID",
-                           |        $testSourceTableName."STATUS",
-                           |        $testSourceTableName."NAME"
+                           |        "SUBQUERY_0"."NEW_ID",
+                           |        "SUBQUERY_0"."STATUS",
+                           |        "SUBQUERY_0"."NAME"
                            |    )""".stripMargin)
 
       checkAnswer(
@@ -131,12 +134,13 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""
-           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           |MERGE INTO "PUBLIC"."$targetTable" USING ( SELECT * FROM
+           | "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_0"."NEW_ID" )
            | WHEN MATCHED THEN DELETE
            | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME") VALUES
-           |     ("PUBLIC"."$sourceTable"."NEW_ID", "PUBLIC"."$sourceTable"."STATUS",
-           |     "PUBLIC"."$sourceTable"."NAME" )
+           |     ("SUBQUERY_0"."NEW_ID", "SUBQUERY_0"."STATUS",
+           |     "SUBQUERY_0"."NAME" )
            |""".stripMargin)
 
       checkAnswer(
@@ -189,12 +193,13 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""
-           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           |MERGE INTO "PUBLIC"."$targetTable" USING ( SELECT * FROM
+           | "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_0"."NEW_ID" )
            | WHEN MATCHED THEN DELETE
            | WHEN NOT MATCHED THEN INSERT ("STATUS", "NAME", "ID") VALUES
-           |     ("PUBLIC"."$sourceTable"."STATUS", "PUBLIC"."$sourceTable"."NAME",
-           |     "PUBLIC"."$sourceTable"."NEW_ID" )
+           |     ("SUBQUERY_0"."STATUS", "SUBQUERY_0"."NAME",
+           |     "SUBQUERY_0"."NEW_ID" )
            |""".stripMargin)
 
       checkAnswer(
@@ -229,13 +234,14 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""
-           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           |MERGE INTO "PUBLIC"."$targetTable" USING ( SELECT * FROM
+           | "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_0"."NEW_ID" )
            | WHEN MATCHED THEN DELETE
            | WHEN NOT MATCHED THEN INSERT ("STATUS", "NAME", "ID") VALUES
-           |  ( CASE WHEN ( ( "PUBLIC"."$sourceTable"."STATUS" % 2 ) = 1 ) THEN 999 ELSE 888 END,
-           |    CONCAT ( "PUBLIC"."$sourceTable"."NAME" , ' JR' ),
-           |    CAST ( ( CAST ( "PUBLIC"."$sourceTable"."NEW_ID" AS INTEGER ) + 10 ) AS SMALLINT))
+           |  ( CASE WHEN ( ( "SUBQUERY_0"."STATUS" % 2 ) = 1 ) THEN 999 ELSE 888 END,
+           |    CONCAT ( "SUBQUERY_0"."NAME" , ' JR' ),
+           |    CAST ( ( CAST ( "SUBQUERY_0"."NEW_ID" AS INTEGER ) + 10 ) AS SMALLINT))
            |""".stripMargin)
 
       checkAnswer(
@@ -289,8 +295,10 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
       val testTargetTableName = s""""PUBLIC"."${targetTable}""""
-      checkSqlStatement(s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
-                           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+      checkSqlStatement(s"""MERGE INTO $testTargetTableName USING ( SELECT * FROM
+                           | $testSourceTableName  AS "RS_CONNECTOR_QUERY_ALIAS" )
+                           |  AS "SUBQUERY_0" ON (
+                           |    $testTargetTableName."ID" = "SUBQUERY_0"."NEW_ID"
                            |)
                            |WHEN MATCHED THEN DELETE
                            |WHEN NOT MATCHED THEN
@@ -298,7 +306,7 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |    ("ID", "STATUS", "NAME")
                            |VALUES
                            |    (
-                           |        $testSourceTableName."NEW_ID",
+                           |        "SUBQUERY_0"."NEW_ID",
                            |        -1,
                            |        'N/A'
                            |    )""".stripMargin)
@@ -327,10 +335,11 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
       val testTargetTableName = s""""PUBLIC"."${targetTable}""""
       checkSqlStatement(s"""DELETE FROM
-                           |    $testTargetTableName USING $testSourceTableName
+                           |    $testTargetTableName USING ( SELECT * FROM
+                           |    $testSourceTableName AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1"
                            |WHERE
                            |    (
-                           |        $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+                           |        $testTargetTableName."ID" = "SUBQUERY_1"."NEW_ID"
                            |    )""".stripMargin)
 
       checkAnswer(
@@ -422,7 +431,7 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
   
-  ignore("Merge with source subquery") {
+  test("Merge with source subquery") {
     withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
       initialMergeTestData(sourceTable, targetTable)
       sqlContext.sql(
@@ -437,12 +446,28 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |        (my_source.new_id, -1, \'N/A\');
            |""".stripMargin)
 
+      val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
+      val testTargetTableName = s""""PUBLIC"."${targetTable}""""
+      checkSqlStatement(
+        s"""MERGE INTO
+           |  $testTargetTableName USING ( SELECT
+           |  ("SUBQUERY_1"."SUBQUERY_1_COL_0") AS "SUBQUERY_2_COL_0"
+           |  FROM ( SELECT ( "SUBQUERY_0"."NEW_ID" ) AS "SUBQUERY_1_COL_0"
+           |  FROM ( SELECT * FROM
+           |  $testSourceTableName AS "RS_CONNECTOR_QUERY_ALIAS") AS "SUBQUERY_0")
+           |  AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2" ON
+           | ( $testTargetTableName."ID" = "SUBQUERY_2"."SUBQUERY_2_COL_0" )
+           | WHEN MATCHED THEN UPDATE SET
+           | "ID" = "SUBQUERY_2"."SUBQUERY_2_COL_0" WHEN NOT MATCHED THEN
+           |  INSERT ("ID", "STATUS", "NAME") VALUES ("SUBQUERY_2"."SUBQUERY_2_COL_0", -1, 'N/A' )
+           | """.stripMargin)
+
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),
         Seq( Row(1, 400, "john"),
-          Row(2, 501, "sean"),
+          Row(2, 401, "sean"),
           Row(3, 402, "mike"),
-          Row(4, 502, "nathan"),
+          Row(4, 403, "nathan"),
           Row(5, 405, "victor"),
           Row(6, -1, "N/A"))
       )
@@ -466,21 +491,23 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
       val testTargetTableName = s""""PUBLIC"."${targetTable}""""
       checkSqlStatement(
-        s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
-           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+        s"""MERGE INTO $testTargetTableName USING ( SELECT * FROM
+           | $testSourceTableName AS "RS_CONNECTOR_QUERY_ALIAS" )
+           |  AS "SUBQUERY_0" ON (
+           |    $testTargetTableName."ID" = "SUBQUERY_0"."NEW_ID"
            |)
            |WHEN MATCHED THEN
            |UPDATE
            |SET
-           |    "NAME" = $testSourceTableName."NAME"
+           |    "NAME" = "SUBQUERY_0"."NAME"
            |    WHEN NOT MATCHED THEN
            |INSERT
            |    ("ID", "STATUS", "NAME")
            |VALUES
            |    (
-           |        $testSourceTableName."NEW_ID",
-           |        $testSourceTableName."STATUS",
-           |        $testSourceTableName."NAME"
+           |        "SUBQUERY_0"."NEW_ID",
+           |        "SUBQUERY_0"."STATUS",
+           |        "SUBQUERY_0"."NAME"
            |    )""".stripMargin)
 
       checkAnswer(
@@ -513,13 +540,14 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""
-           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           |MERGE INTO "PUBLIC"."$targetTable" USING ( SELECT * FROM
+           | "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_0"."NEW_ID" )
            | WHEN MATCHED THEN
-           |     UPDATE SET "NAME" = "PUBLIC"."$sourceTable"."NAME"
+           |     UPDATE SET "NAME" = "SUBQUERY_0"."NAME"
            | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME") VALUES
-           |     ("PUBLIC"."$sourceTable"."NEW_ID", "PUBLIC"."$sourceTable"."STATUS",
-           |     "PUBLIC"."$sourceTable"."NAME" )
+           |     ("SUBQUERY_0"."NEW_ID", "SUBQUERY_0"."STATUS",
+           |     "SUBQUERY_0"."NAME" )
            |""".stripMargin)
 
       checkAnswer(
@@ -558,18 +586,19 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""
-           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           |MERGE INTO "PUBLIC"."$targetTable" USING ( SELECT * FROM
+           |"PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_0"."NEW_ID" )
            | WHEN MATCHED THEN UPDATE SET
-           |  "NAME" = CONCAT ( "PUBLIC"."$sourceTable"."NAME" , ' II' ),
-           |  "STATUS" = CASE WHEN ( ( "PUBLIC"."$sourceTable"."STATUS" % 2 ) = 1 )
+           |  "NAME" = CONCAT ( "SUBQUERY_0"."NAME" , ' II' ),
+           |  "STATUS" = CASE WHEN ( ( "SUBQUERY_0"."STATUS" % 2 ) = 1 )
            |      THEN 999 ELSE 888 END,
-           |  "ID" = CAST ( ( CAST ( "PUBLIC"."$sourceTable"."NEW_ID" AS INTEGER ) + 10 )
+           |  "ID" = CAST ( ( CAST ( "SUBQUERY_0"."NEW_ID" AS INTEGER ) + 10 )
            |      AS SMALLINT )
            | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME")VALUES
-           |    ("PUBLIC"."$sourceTable"."NEW_ID",
-           |     "PUBLIC"."$sourceTable"."STATUS",
-           |     "PUBLIC"."$sourceTable"."NAME" )
+           |    ("SUBQUERY_0"."NEW_ID",
+           |     "SUBQUERY_0"."STATUS",
+           |     "SUBQUERY_0"."NAME" )
            |""".stripMargin)
 
       checkAnswer(
@@ -637,18 +666,19 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""
-           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           |MERGE INTO "PUBLIC"."$targetTable" USING ( SELECT * FROM
+           | "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_0"."NEW_ID" )
            | WHEN MATCHED THEN UPDATE SET
-           |  "NAME" = CONCAT ( "PUBLIC"."$sourceTable"."NAME" , ' II' ),
-           |  "STATUS" = CASE WHEN ( ( "PUBLIC"."$sourceTable"."STATUS" % 2 ) = 1 )
+           |  "NAME" = CONCAT ( "SUBQUERY_0"."NAME" , ' II' ),
+           |  "STATUS" = CASE WHEN ( ( "SUBQUERY_0"."STATUS" % 2 ) = 1 )
            |      THEN 999 ELSE 888 END,
-           |  "ID" = CAST ( ( CAST ( "PUBLIC"."$sourceTable"."NEW_ID" AS INTEGER ) + 10 )
+           |  "ID" = CAST ( ( CAST ( "SUBQUERY_0"."NEW_ID" AS INTEGER ) + 10 )
            |      AS SMALLINT )
            | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME")VALUES
-           |    ("PUBLIC"."$sourceTable"."NEW_ID",
-           |     "PUBLIC"."$sourceTable"."STATUS",
-           |     "PUBLIC"."$sourceTable"."NAME" )
+           |    ("SUBQUERY_0"."NEW_ID",
+           |     "SUBQUERY_0"."STATUS",
+           |     "SUBQUERY_0"."NAME" )
            |""".stripMargin)
 
       checkAnswer(
@@ -678,22 +708,23 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
       val testTargetTableName = s""""PUBLIC"."${targetTable}""""
       checkSqlStatement(
-        s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
-           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+        s"""MERGE INTO $testTargetTableName USING ( SELECT * FROM
+           | $testSourceTableName AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ON (
+           |    $testTargetTableName."ID" = "SUBQUERY_0"."NEW_ID"
            |)
            |WHEN MATCHED THEN
            |UPDATE
            |SET
-           |    "STATUS" = $testSourceTableName."STATUS",
-           |    "NAME" = $testSourceTableName."NAME"
+           |    "STATUS" = "SUBQUERY_0"."STATUS",
+           |    "NAME" = "SUBQUERY_0"."NAME"
            |    WHEN NOT MATCHED THEN
            |INSERT
            |    ("ID", "STATUS", "NAME")
            |VALUES
            |    (
-           |        $testSourceTableName."NEW_ID",
-           |        $testSourceTableName."STATUS",
-           |        $testSourceTableName."NAME"
+           |        "SUBQUERY_0"."NEW_ID",
+           |        "SUBQUERY_0"."STATUS",
+           |        "SUBQUERY_0"."NAME"
            |    )""".stripMargin)
 
       checkAnswer(
@@ -723,17 +754,18 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s""" MERGE INTO "PUBLIC"."$targetTable"
-           | USING "PUBLIC"."$sourceTable"
+           | USING ( SELECT * FROM
+           | "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
            | ON ( "PUBLIC"."$targetTable"."ID" =
-           |            "PUBLIC"."$sourceTable"."NEW_ID" )
+           |            "SUBQUERY_0"."NEW_ID" )
            | WHEN MATCHED THEN
            |    UPDATE SET "STATUS" = ( ( "PUBLIC"."$targetTable"."STATUS" +
-           |                            "PUBLIC"."$sourceTable"."STATUS" ) + 1000 ),
-           |               "NAME" = "PUBLIC"."$sourceTable"."NAME"
+           |                            "SUBQUERY_0"."STATUS" ) + 1000 ),
+           |               "NAME" = "SUBQUERY_0"."NAME"
            | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME") VALUES
-           |    ("PUBLIC"."$sourceTable"."NEW_ID",
-           |     "PUBLIC"."$sourceTable"."STATUS",
-           |     "PUBLIC"."$sourceTable"."NAME" ) """.stripMargin)
+           |    ("SUBQUERY_0"."NEW_ID",
+           |     "SUBQUERY_0"."STATUS",
+           |     "SUBQUERY_0"."NAME" ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),
@@ -763,19 +795,20 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s""" MERGE INTO "PUBLIC"."$targetTable"
-           | USING "PUBLIC"."$sourceTable"
+           | USING ( SELECT * FROM
+           | "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
            | ON ( "PUBLIC"."$targetTable"."ID" =
-           |            "PUBLIC"."$sourceTable"."NEW_ID" )
+           |            "SUBQUERY_0"."NEW_ID" )
            | WHEN MATCHED THEN
            |    UPDATE SET "STATUS" = ( ( ( "PUBLIC"."$targetTable"."STATUS" +
-           |                            "PUBLIC"."$sourceTable"."STATUS" ) +
+           |                            "SUBQUERY_0"."STATUS" ) +
            |                            LENGTH ( "PUBLIC"."$targetTable"."NAME" ) ) +
-           |                            CAST ( "PUBLIC"."$sourceTable"."NEW_ID" AS INTEGER ) ),
-           |               "NAME" = "PUBLIC"."$sourceTable"."NAME"
+           |                            CAST ( "SUBQUERY_0"."NEW_ID" AS INTEGER ) ),
+           |               "NAME" = "SUBQUERY_0"."NAME"
            | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME") VALUES
-           |    ("PUBLIC"."$sourceTable"."NEW_ID",
-           |     "PUBLIC"."$sourceTable"."STATUS",
-           |     "PUBLIC"."$sourceTable"."NAME" ) """.stripMargin)
+           |    ("SUBQUERY_0"."NEW_ID",
+           |     "SUBQUERY_0"."STATUS",
+           |     "SUBQUERY_0"."NAME" ) """.stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),
@@ -807,22 +840,24 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
       val testTargetTableName = s""""PUBLIC"."${targetTable}""""
       checkSqlStatement(
-        s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
-           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+        s"""MERGE INTO $testTargetTableName USING ( SELECT * FROM
+           | $testSourceTableName AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0" ON (
+           |    $testTargetTableName."ID" = "SUBQUERY_0"."NEW_ID"
            |)
            |WHEN MATCHED THEN
            |UPDATE
            |SET
-           |    "STATUS" = $testSourceTableName."STATUS",
-           |    "NAME" = $testSourceTableName."NAME"
+           |    "STATUS" = "SUBQUERY_0"."STATUS",
+           |    "NAME" = "SUBQUERY_0"."NAME"
            |    WHEN NOT MATCHED THEN
            |INSERT
            |    ("ID", "STATUS", "NAME")
            |VALUES
            |    (
-           |        $testSourceTableName."NEW_ID",
-           |        $testSourceTableName."STATUS",
-           |        $testSourceTableName."NAME"
+           |        "SUBQUERY_0"."NEW_ID",
+           |        "SUBQUERY_0"."STATUS",
+           |        "SUBQUERY_0"."NAME"
            |    )""".stripMargin)
 
       checkAnswer(

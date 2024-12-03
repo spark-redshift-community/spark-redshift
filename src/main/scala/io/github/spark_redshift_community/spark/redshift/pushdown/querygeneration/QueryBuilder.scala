@@ -68,17 +68,17 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
     treeRoot.output
   }
 
-  /** Finds the SourceQuery in this given tree. */
-  private lazy val source = {
+  /** Finds the BaseQuery in this given tree. */
+  private lazy val baseQuery: BaseQuery = {
     checkTree()
     treeRoot
       .find {
-        case q: SourceQuery => q
+        case q: BaseQuery => q
       }
       .getOrElse(
         throw new RedshiftPushdownException(
           "Something went wrong: a query tree was generated with no " +
-            "Redshift SourceQuery found."
+            "Redshift BaseQuery found."
         )
       )
   }
@@ -127,7 +127,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
         .map(attr => StructField(attr.name, attr.dataType, attr.nullable, attr.metadata))
     )
 
-    source.relation.buildScanFromSQL[T](statement, Some(schema))
+    baseQuery.relation.buildScanFromSQL[T](statement, Some(schema))
   }
 
   private def checkTree(): Unit = {
@@ -152,12 +152,12 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
       case l @ LocalRelation(output: Seq[Attribute], _, _) =>
         Some(LocalQuery(l, output, alias.next))
       case DeleteFromTable(l @ LogicalRelation(relation: RedshiftRelation, _, _, _), condition) =>
-        Some(DeleteQuery(SourceQuery(relation, l.output, alias.next()), condition))
+        Some(DeleteQuery(TargetQuery(relation, l.output, alias.next()), condition))
       case UpdateTable(l @ LogicalRelation(r: RedshiftRelation, _, _, _), assignments, condition) =>
-        Some(UpdateQuery(SourceQuery(r, l.output, alias.next()), assignments, condition))
+        Some(UpdateQuery(TargetQuery(r, l.output, alias.next()), assignments, condition))
       case InsertIntoDataSourceCommand(l@LogicalRelation(relation: RedshiftRelation, _, _, _),
       plan, overwrite) =>
-        Some(InsertQuery(SourceQuery(relation, l.output, alias.next()),
+        Some(InsertQuery(TargetQuery(relation, l.output, alias.next()),
           generateQueries(EliminateSubqueryAliasesAndView(plan)), overwrite))
       case MergeIntoTable(targetTable@LogicalRelation(target: RedshiftRelation, _, _, _),
         sourcePlan,
@@ -167,8 +167,8 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
                 && notMatchedBySourceActions.isEmpty) {
           matchedActions.head match {
             case DeleteAction(None) =>
-              return Some(DeleteQuery(SourceQuery(target, targetTable.output, alias.next()),
-                                mergeCondition, generateQueries(sourcePlan)))
+              return Some(DeleteQuery(TargetQuery(target, targetTable.output, alias.next()),
+                mergeCondition, generateQueries(sourcePlan)))
             case UpdateAction(condition, assignments) =>
               // TODO: Only UPDATE in matched Action
               throw new NotImplementedError()
@@ -181,18 +181,19 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
               )
           }
         }
-        sourcePlan match {
-          case LogicalRelation(source: RedshiftRelation, _, _, _) =>
-            Some(MergeQuery(SourceQuery(target, targetTable.output, alias.next()),
-              SourceQuery(source, sourcePlan.output, alias.next()),
-              mergeCondition, matchedActions, notMatchedActions, notMatchedBySourceActions))
-          case _ =>
+
+        generateQueries(sourcePlan) match {
+          case None =>
             throw new RedshiftPushdownUnsupportedException(
-            RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
-            s"${plan.nodeName} Sub-query for source unsupported",
-            plan.getClass.getName,
-            true
-          )
+              RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
+              s"${plan.nodeName} missing source query",
+              plan.getClass.getName,
+              true
+            )
+          case Some(sourceQuery) =>
+            Some(MergeQuery(
+              TargetQuery(target, targetTable.output, alias.next()), sourceQuery,
+              mergeCondition, matchedActions, notMatchedActions, notMatchedBySourceActions))
         }
 
       case UnaryOp(child) =>
@@ -327,13 +328,14 @@ private[redshift] object QueryBuilder {
     qb.tryBuild.map { executedBuilder =>
       executedBuilder.treeRoot match {
         case _: DeleteQuery | _: UpdateQuery | _: InsertQuery | _: MergeQuery => {
-          val command = RedshiftDMLExec(executedBuilder.statement, executedBuilder.source.relation)
+          val command = RedshiftDMLExec(executedBuilder.statement,
+            executedBuilder.baseQuery.relation)
           Seq(ExecutedCommandExec(command))
         }
         case _ if isLazy =>
           log.info("Using lazy mode for redshift query push down")
           Seq(RedshiftScanExec(executedBuilder.getOutput,
-          executedBuilder.statement, executedBuilder.source.relation))
+            executedBuilder.statement, executedBuilder.baseQuery.relation))
         case _ =>
           log.warn("Using eager mode for redshift query push down. " +
           "To improve performance please run " +
