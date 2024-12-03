@@ -103,7 +103,7 @@ You may use this library in your applications with the following dependency info
     spark-submit \
       --deploy-mode cluster \
       --master yarn \
-      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.29,org.apache.spark:spark-avro_2.12:3.5.1,io.github.spark-redshift-community:spark-redshift_2.12:6.3.0-spark_3.5 \
+      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.30,org.apache.spark:spark-avro_2.12:3.5.2,io.github.spark-redshift-community:spark-redshift_2.12:6.3.0-spark_3.5 \
       my_script.py
     ```
 

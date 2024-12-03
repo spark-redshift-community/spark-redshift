@@ -26,7 +26,7 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
-val sparkVersion = "3.5.1"
+val sparkVersion = "3.5.2"
 val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
@@ -34,7 +34,7 @@ val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 lazy val IntegrationTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.4")
-val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.29")
+val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.30")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
 val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.12.262")
 // access tokens for aws/shared and our own internal CodeArtifacts repo
