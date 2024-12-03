@@ -667,17 +667,17 @@ class CSVNonPushDownInsertCorrectnessSuite extends NonPushDownInsertCorrectnessS
     super.read.option("tempformat", "CSV")
 }
 
-class CSVGZIPNonPushDownInsertCorrectnessSuite extends NonPushDownInsertCorrectnessSuite {
+class CSVGZipNonPushDownInsertCorrectnessSuite extends NonPushDownInsertCorrectnessSuite {
   override def read: DataFrameReader =
     super.read.option("tempformat", "CSV GZIP")
 }
 
-class AVRONonPushDownInsertCorrectnessSuite extends NonPushDownInsertCorrectnessSuite {
+class AvroNonPushDownInsertCorrectnessSuite extends NonPushDownInsertCorrectnessSuite {
   override def read: DataFrameReader =
     super.read.option("tempformat", "AVRO")
 }
 
-class PARQUETNonPushDownInsertCorrectnessSuite extends NonPushDownInsertCorrectnessSuite {
+class ParquetNonPushDownInsertCorrectnessSuite extends NonPushDownInsertCorrectnessSuite {
   override def read: DataFrameReader =
     super.read.option("tempformat", "PARQUET")
 }

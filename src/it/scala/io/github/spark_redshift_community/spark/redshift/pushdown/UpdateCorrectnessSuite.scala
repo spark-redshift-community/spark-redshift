@@ -20,7 +20,7 @@ import org.apache.spark.sql.{AnalysisException, Row}
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.functions._
 
-trait UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
+class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
   // These tests cannot disable pushdown since update happens in pushdown
   override protected val auto_pushdown: String = "true"
   // These tests cannot use cache since they check the result changing
@@ -824,14 +824,4 @@ trait UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       assert(filteredCountDf == 2)
     }
   }
-}
-
-
-
-class TextUpdateCorrectnessSuite extends UpdateCorrectnessSuite {
-  override val s3format = "TEXT"
-}
-
-class ParquetUpdateCorrectnessSuite extends UpdateCorrectnessSuite {
-  override val s3format = "PARQUET"
 }

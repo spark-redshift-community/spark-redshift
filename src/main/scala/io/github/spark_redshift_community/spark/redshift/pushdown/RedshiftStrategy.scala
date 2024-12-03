@@ -56,18 +56,21 @@ class RedshiftStrategy(session: SparkSession) extends Strategy {
     val useLazyMode = session.conf.get(RedshiftStrategy.LAZY_CONF_KEY, "true")
       .toBoolean
 
+    // Gather the list of Redshift clusters for all referenced tables in the query plan.
     val allRedshiftInstances = plan.map {
       case LogicalRelation(relation: RedshiftRelation, _, _, _) =>
         relation.params.uniqueClusterName
       case _ => ""
     }.filter(_.nonEmpty)
 
-    // cannot produce a valid plan if multiple redshift instances are needed
-    if (!allRedshiftInstances.forall(_ == allRedshiftInstances.head)) {
+    // Make sure the query plan spans only a single cluster since cross-cluster queries
+    // may fail or produce incorrect results when run from a single cluster.
+    if (allRedshiftInstances.isEmpty) {
+      None
+    } else if (!allRedshiftInstances.forall(_ == allRedshiftInstances.head)) {
       logWarning("Unable to pushdown query across multiple clusters")
       None
-    }
-    else {
+    } else {
       QueryBuilder.getSparkPlanFromLogicalPlan(plan, useLazyMode)
     }
   }
