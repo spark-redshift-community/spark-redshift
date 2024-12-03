@@ -565,15 +565,10 @@ private[redshift] class RedshiftWriter(
         "For delete operations you must assign saveMode as SaveMode.Overwrite")
     }
 
-    val creds: AWSCredentialsProvider =
+    val credsProvider: AWSCredentialsProvider =
       AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
 
-    // Make sure a cross-region write has the necessary connector parameters set.
-    if (params.tempFormat == "PARQUET") {
-      Utils.checkRedshiftAndS3OnSameRegionParquetWrite(params, s3ClientFactory(creds, params))
-    } else {
-      Utils.checkRedshiftAndS3OnSameRegion(params, s3ClientFactory(creds, params))
-    }
+    checkS3BucketUsage(params, credsProvider)
 
     // When using the Avro tempformat, log an informative error message in case any column names
     // are unsupported by Avro's schema validation:
@@ -596,8 +591,6 @@ private[redshift] class RedshiftWriter(
     Utils.assertThatFileSystemIsNotS3BlockFileSystem(
       new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
 
-    Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      params, s3ClientFactory(creds, params))
     Utils.collectMetrics(params)
 
     // Save the table's rows to S3:
@@ -637,10 +630,10 @@ private[redshift] class RedshiftWriter(
           log.info("Deleting Redshift data from : {}", table)
           log.info(" - matching columns: {}",
             data.schema.fields.map(f => s""""${f.name}"""").mkString(", "))
-          doRedshiftDelete(conn, data, params, creds, manifestUrl)
+          doRedshiftDelete(conn, data, params, credsProvider, manifestUrl)
         } else {
           log.info("Loading new Redshift data to: {}", table)
-          doRedshiftLoad(conn, data, params, creds, manifestUrl)
+          doRedshiftLoad(conn, data, params, credsProvider, manifestUrl)
         }
 
         redshiftWrapper.commit(conn)
@@ -658,6 +651,22 @@ private[redshift] class RedshiftWriter(
         conn.close()
       }
     }
+  }
+
+  private def checkS3BucketUsage(params: MergedParameters,
+                                 credsProvider: AWSCredentialsProvider): Unit = {
+    if (!params.checkS3BucketUsage) return
+
+    val s3Client: AmazonS3 = s3ClientFactory(credsProvider, params)
+
+    // Make sure a cross-region write has the necessary connector parameters set.
+    if (params.tempFormat == "PARQUET") {
+      Utils.checkRedshiftAndS3OnSameRegionParquetWrite(params, s3Client)
+    } else {
+      Utils.checkRedshiftAndS3OnSameRegion(params, s3Client)
+    }
+
+    Utils.checkThatBucketHasObjectLifecycleConfiguration(params, s3Client)
   }
 }
 

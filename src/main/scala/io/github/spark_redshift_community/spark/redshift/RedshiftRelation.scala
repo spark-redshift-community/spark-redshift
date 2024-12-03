@@ -96,6 +96,8 @@ private[redshift] case class RedshiftRelation(
   private def checkS3BucketUsage(params: MergedParameters,
                                  credsProvider: AWSCredentialsProvider): Unit = {
 
+    if (!params.checkS3BucketUsage) return
+
     val s3Client: AmazonS3 = s3ClientFactory(credsProvider, params)
 
     // Make sure a cross-region read has the necessary connector parameters set.
@@ -110,9 +112,7 @@ private[redshift] case class RedshiftRelation(
     val credsProvider = AWSCredentialsUtils.load(
       params, sqlContext.sparkContext.hadoopConfiguration)
 
-    if (params.checkS3BucketUsage) {
-      checkS3BucketUsage(params, credsProvider)
-    }
+    checkS3BucketUsage(params, credsProvider)
 
     Utils.collectMetrics(params)
     val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
@@ -271,9 +271,7 @@ private[redshift] case class RedshiftRelation(
 
       val resultSchema: StructType = getResultSchema(statement, schema, conn)
 
-      if (params.checkS3BucketUsage) {
-        checkS3BucketUsage(params, credsProvider)
-      }
+      checkS3BucketUsage(params, credsProvider)
 
       Utils.collectMetrics(params)
 
@@ -487,14 +485,18 @@ private[redshift] case class RedshiftRelation(
   // We need to use a manifest in order to guard against S3's eventually-consistent listings.
   private def getFilesToRead(tempDir: String, sc: SparkContext): Seq[String] = {
 
-    // Clean the tempDir URI
-    val cleanedTempDirUri = Utils.fixS3Url(
-      Utils.removeCredentialsFromURI(URI.create(tempDir)).toString)
+    val tempDirUri = URI.create(tempDir)
+    val cleanedTempDirUri = Utils.removeCredentialsFromURI(tempDirUri)
+    // Extract the scheme from tempDir (e.g., s3, s3a, etc.)
+    val tempDirScheme = tempDirUri.getScheme
+
+    // Extract the credentials (if any) from the original tempDir URI
+    val credentials = extractCredentialsFromUri(tempDirUri)
 
     // Use Hadoop's FileSystem to interact with S3
     val conf = sc.hadoopConfiguration
-    val fs = FileSystem.get(URI.create(cleanedTempDirUri), conf)
-    val manifestPath = new Path(s"$cleanedTempDirUri/manifest")
+    val fs = FileSystem.get(cleanedTempDirUri, conf)
+    val manifestPath = new Path(s"${cleanedTempDirUri.toString}/manifest")
 
     if (fs.exists(manifestPath)) {
       val is = fs.open(manifestPath)
@@ -510,18 +512,51 @@ private[redshift] case class RedshiftRelation(
         log.info("End finding S3 files to read")
       }
 
+      // Reintroduce credentials (if any) and ensure the scheme matches the tempDir scheme
       // The filenames in the manifest are of the form s3://bucket/key, without credentials.
-      // If the S3 credentials were originally specified in the tempdir's URI, then we need to
+      // If the S3 credentials were originally specified in the tempdir, then we need to
       // reintroduce them here
-      s3Files.map { file =>
-        s"$tempDir/${file.stripPrefix(cleanedTempDirUri).stripPrefix("/")}"
+      val correctedS3Files = s3Files.map { file =>
+        addCredentialsAndEnsureScheme(file, credentials, tempDirScheme)
       }
+
+      correctedS3Files
+
     } else {
-      // If manifest doesn't exist, likely it is because the resultset is empty.
-      // For empty resultset, Redshift sometimes doesn't create any files. So return empty Seq.
+      // If manifest doesn't exist, likely it is because the result set is empty.
+      // For empty result set, Redshift sometimes doesn't create any files. So return empty Seq.
       // An unlikely scenario is the result files are removed from S3.
       log.debug(s"${manifestPath} not found")
       Seq.empty[String]
+    }
+  }
+
+  // Function to extract credentials (if present) from the URI
+  private def extractCredentialsFromUri(uri: URI): Option[String] = {
+    Option(uri.getUserInfo)
+  }
+
+  // Function to reintroduce credentials and ensure the same scheme
+  private def addCredentialsAndEnsureScheme(filePath: String,
+                                            credentials: Option[String],
+                                            scheme: String): String = {
+    val fileUri = URI.create(filePath)
+
+    // Extract the bucket (host part)
+    val bucket = fileUri.getHost
+
+    // Extract the prefix path, which is the part after the bucket
+    val prefixPath = fileUri.getPath.stripPrefix("/")
+
+    // Reconstruct the file path without credentials and scheme
+    val filePathWithoutSchemeAndCreds = s"$bucket/$prefixPath"
+
+    // Add credentials (if available) and scheme to the constructed path
+    credentials match {
+      case Some(creds) =>
+        s"$scheme://$creds@$filePathWithoutSchemeAndCreds"
+      case None =>
+        s"$scheme://$filePathWithoutSchemeAndCreds"
     }
   }
 

@@ -532,6 +532,12 @@ need to be configured to allow access from your driver application.
    <td>No default</td>
    <td>Fully specified ARN of the <a href="http://docs.aws.amazon.com/redshift/latest/mgmt/copy-unload-iam-role.html">IAM Role</a> attached to the Redshift cluster, ex: arn:aws:iam::123456789000:role/redshift_iam_role</td>
  </tr>
+ <tr>
+   <td>check_s3_bucket_usage</td>
+   <td>No</td>
+   <td>true</td>
+   <td>A flag to ensure cross-region parameters and bucket lifecycle policy for automatic cleanup are in place.</td>
+ </tr>
   <tr>
     <td><tt>forward_spark_s3_credentials</tt></td>
     <td>No</td>
