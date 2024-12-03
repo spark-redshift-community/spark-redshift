@@ -514,4 +514,15 @@ trait StringSubstringCorrectnessSuite extends StringIntegrationPushdownSuiteBase
     s"""SELECT "testvarstring", "testid" FROM $test_table WHERE "testid" IS NOT NULL
        | AND "testid" = 1""".stripMargin // expectedPushdownStatement
   )
+
+  val testSubstr47: TestCase = TestCase(
+    """SELECT SUBSTRING(testfixedstring, 1, 8) FROM test_table
+      | WHERE testid=6""".stripMargin, // sparkStatement
+    Seq(Row("  Hello ")), // expectedResult
+    s"""SELECT ( SUBSTRING ( "SQ_1"."TESTFIXEDSTRING" , 1 , 8 ) ) AS
+       | "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+       | $test_table AS "RCQ_ALIAS" ) AS "SQ_0" WHERE
+       | ( ( "SQ_0"."TESTID" IS NOT NULL ) AND ( "SQ_0"."TESTID" = 6 ) ) ) AS
+       | "SQ_1"""".stripMargin // expectedPushdownStatement
+  )
 }

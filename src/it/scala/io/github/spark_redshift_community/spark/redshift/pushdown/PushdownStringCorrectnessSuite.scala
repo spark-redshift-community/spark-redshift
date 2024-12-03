@@ -191,6 +191,7 @@ abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectness
     testSubstr44,
     testSubstr45,
     testSubstr46)
+//    testSubstr47) // [Redshift-7057]
 
     cases.par.foreach { doTest(sqlContext, _) }
   }
