@@ -648,11 +648,6 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |            ) AS "SUBQUERY_0"
        |    )""".stripMargin.replaceAll("\\s", ""))
 
-  /*
-  The Spark plan utilizes named_struct (CreateNamedStruct) operators
-  which are currently unsupported. This sub-query pushdown is also missing
-  for the Delete-1 LST-Bench workload query. Once added, it will address both failures.
-   */
   test("7. LST small-writes UPDATE matches the subquery") {
     read
       .option("dbtable", s"web_returns")

@@ -47,95 +47,30 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |            d_date BETWEEN '2024-01-01' AND '2024-01-05'
        |    );""".stripMargin,
     Seq(Row()),
-    """DELETE FROM
-      |  "PUBLIC"."catalog_sales"
-      |WHERE
-      |  (
-      |  (
-      |    "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" >= (
-      |    SELECT
-      |      (MIN ("SUBQUERY_2"."SUBQUERY_2_COL_0")) AS "SUBQUERY_3_COL_0"
-      |    FROM
-      |      (
-      |      SELECT
-      |        ("SUBQUERY_1"."D_DATE_SK") AS "SUBQUERY_2_COL_0"
-      |      FROM
-      |        (
-      |        SELECT
-      |          *
-      |        FROM
-      |          (
-      |          SELECT
-      |            *
-      |          FROM
-      |            "PUBLIC"."date_dim" AS "RS_CONNECTOR_QUERY_ALIAS"
-      |          ) AS "SUBQUERY_0"
-      |        WHERE
-      |          (
-      |          ("SUBQUERY_0"."D_DATE" IS NOT NULL)
-      |          AND (
-      |            (
-      |            "SUBQUERY_0"."D_DATE" >= DATEADD(day, 19723, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
-      |            )
-      |            AND (
-      |            "SUBQUERY_0"."D_DATE" <= DATEADD(
-      |              day,
-      |              19727,
-      |              TO_DATE('1970-01-01', 'YYYY-MM-DD')
-      |            )
-      |            )
-      |          )
-      |          )
-      |        ) AS "SUBQUERY_1"
-      |      ) AS "SUBQUERY_2"
-      |    LIMIT
-      |      1
-      |    )
-      |  )
-      |  AND (
-      |    "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" <= (
-      |    SELECT
-      |      (MAX ("SUBQUERY_2"."SUBQUERY_2_COL_0")) AS "SUBQUERY_3_COL_0"
-      |    FROM
-      |      (
-      |      SELECT
-      |        ("SUBQUERY_1"."D_DATE_SK") AS "SUBQUERY_2_COL_0"
-      |      FROM
-      |        (
-      |        SELECT
-      |          *
-      |        FROM
-      |          (
-      |          SELECT
-      |            *
-      |          FROM
-      |            "PUBLIC"."date_dim" AS "RS_CONNECTOR_QUERY_ALIAS"
-      |          ) AS "SUBQUERY_0"
-      |        WHERE
-      |          (
-      |          ("SUBQUERY_0"."D_DATE" IS NOT NULL)
-      |          AND (
-      |            (
-      |            "SUBQUERY_0"."D_DATE" >= DATEADD(day, 19728, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
-      |            )
-      |            AND (
-      |            "SUBQUERY_0"."D_DATE" <= DATEADD(
-      |              day,
-      |              19732,
-      |              TO_DATE('1970-01-01', 'YYYY-MM-DD')
-      |            )
-      |            )
-      |          )
-      |          )
-      |        ) AS "SUBQUERY_1"
-      |      ) AS "SUBQUERY_2"
-      |    LIMIT
-      |      1
-      |    )
-      |  )
-      |  )""".stripMargin)
+    """DELETE FROM "PUBLIC"."catalog_sales" WHERE ( ( "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" >=
+      | ( SELECT ( "SUBQUERY_4_COL_0" . "MIN(D_DATE_SK)" ::INTEGER ) FROM ( SELECT (
+      | OBJECT( 'min(d_date_sk)' , "SUBQUERY_3"."SUBQUERY_3_COL_0" , 'max(d_date_sk)' ,
+      | "SUBQUERY_3"."SUBQUERY_3_COL_1" ) ) AS "SUBQUERY_4_COL_0" FROM ( SELECT ( MIN (
+      | "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ) AS "SUBQUERY_3_COL_0" , ( MAX (
+      | "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ) AS "SUBQUERY_3_COL_1" FROM ( SELECT (
+      | "SUBQUERY_1"."D_DATE_SK" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+      | "PUBLIC"."date_dim" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( (
+      | "SUBQUERY_0"."D_DATE" IS NOT NULL ) AND ( ( "SUBQUERY_0"."D_DATE" >= DATEADD(day, 19723 ,
+      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) AND ( "SUBQUERY_0"."D_DATE" <= DATEADD(day, 19727 ,
+      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1 )
+      | AS "SUBQUERY_3" ) ) ) AND ( "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" <= ( SELECT (
+      | "SUBQUERY_4_COL_0" . "MAX(D_DATE_SK)" ::INTEGER ) FROM ( SELECT ( OBJECT( 'min(d_date_sk)'
+      | , "SUBQUERY_3"."SUBQUERY_3_COL_0" , 'max(d_date_sk)' , "SUBQUERY_3"."SUBQUERY_3_COL_1" ) )
+      | AS "SUBQUERY_4_COL_0" FROM ( SELECT ( MIN ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ) AS
+      | "SUBQUERY_3_COL_0" , ( MAX ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ) AS "SUBQUERY_3_COL_1"
+      | FROM ( SELECT ( "SUBQUERY_1"."D_DATE_SK" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM (
+      | SELECT * FROM "PUBLIC"."date_dim" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE (
+      | ( "SUBQUERY_0"."D_DATE" IS NOT NULL ) AND ( ( "SUBQUERY_0"."D_DATE" >= DATEADD(day, 19723 ,
+      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) AND ( "SUBQUERY_0"."D_DATE" <= DATEADD(day, 19727 ,
+      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1 )
+      | AS "SUBQUERY_3" ) ) ) )""".stripMargin)
 
-  ignore("LST-Delete-1") { // Fails
+  test("LST-Delete-1") {
     read.option("dbtable", s"catalog_sales").load()
       .createOrReplaceTempView(s"catalog_sales")
     read.option("dbtable", s"catalog_returns").load()
@@ -157,7 +92,12 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
         Row(20230901),
         Row(20230831),
         Row(20230830),
-        Row(20230829)))
+        Row(20230829),
+        Row(10),
+        Row(9),
+        Row(8),
+        Row(7),
+        Row(6)))
   }
 
   val testDelete2: TestCase = TestCase(

@@ -19,7 +19,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown.querygenerati
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, IntVariable, RedshiftSQLStatement}
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Coalesce, Descending, Exists, Expression, If, In, InSet, InSubquery, Literal, MakeDecimal, NullsFirst, NullsLast, SortOrder, UnscaledValue}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Coalesce, CreateNamedStruct, Descending, Exists, Expression, If, In, InSet, InSubquery, Literal, MakeDecimal, NullsFirst, NullsLast, SortOrder, UnscaledValue}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
@@ -36,6 +36,19 @@ private[querygeneration] object MiscStatement {
     Option(expr match {
       case Alias(child: Expression, name: String) =>
         blockStatement(convertStatement(child, fields), name)
+
+      case CreateNamedStruct(children: Seq[Expression])
+        if children.zipWithIndex.forall(pair =>
+          if (pair._2 % 2 == 1) {
+              // Redshift doesn't support time/date for values in Objects
+              pair._1.dataType match {
+                case DateType | TimestampType | TimestampNTZType => false
+                case _ => true
+              }
+          } else true
+        ) =>
+        ConstantString("OBJECT(") + mkStatement( children.map(convertStatement(_, fields)), ",") +
+        ConstantString(")")
 
       // Context for removing the ansi condition check:
       // Snowflake added this ansi check during the Spark 3.2 upgrade
