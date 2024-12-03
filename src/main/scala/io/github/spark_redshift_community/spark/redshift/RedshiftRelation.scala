@@ -26,6 +26,8 @@ import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParam
 import io.github.spark_redshift_community.spark.redshift.RedshiftRelation.schemaTypesMatch
 import io.github.spark_redshift_community.spark.redshift.data.{RedshiftConnection, RedshiftWrapper}
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftSQLStatement, SqlToS3TempCache}
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.SparkContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -91,7 +93,11 @@ private[redshift] case class RedshiftRelation(
     filters.filterNot(filter => FilterPushdown.buildFilterExpression(schema, filter).isDefined)
   }
 
-  private def checkS3BucketUsage(params: MergedParameters, s3Client: AmazonS3): Unit = {
+  private def checkS3BucketUsage(params: MergedParameters,
+                                 credsProvider: AWSCredentialsProvider): Unit = {
+
+    val s3Client: AmazonS3 = s3ClientFactory(credsProvider, params)
+
     // Make sure a cross-region read has the necessary connector parameters set.
     Utils.checkRedshiftAndS3OnSameRegion(params, s3Client)
 
@@ -100,8 +106,14 @@ private[redshift] case class RedshiftRelation(
   }
 
   override def buildScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[Row] = {
-    val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
-    checkS3BucketUsage(params, s3ClientFactory(creds, params))
+
+    val credsProvider = AWSCredentialsUtils.load(
+      params, sqlContext.sparkContext.hadoopConfiguration)
+
+    if (params.checkS3BucketUsage) {
+      checkS3BucketUsage(params, credsProvider)
+    }
+
     Utils.collectMetrics(params)
     val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
 
@@ -133,7 +145,8 @@ private[redshift] case class RedshiftRelation(
     } else {
       // Unload data from Redshift into a temporary directory in S3:
       val tempDir = params.createPerQueryTempDir(true)
-      val unloadSql = buildUnloadStmt(requiredColumns, filters, tempDir, creds, params.sseKmsKey)
+      val unloadSql = buildUnloadStmt(
+        requiredColumns, filters, tempDir, credsProvider, params.sseKmsKey)
       val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
       try {
         log.info("Unloading data from Redshift")
@@ -142,7 +155,7 @@ private[redshift] case class RedshiftRelation(
         conn.close()
       }
 
-      val filesToRead: Seq[String] = getFilesToRead(creds, tempDir)
+      val filesToRead: Seq[String] = getFilesToRead(tempDir, sqlContext.sparkContext)
 
       val prunedSchema = pruneSchema(schema, requiredColumns)
 
@@ -160,14 +173,14 @@ private[redshift] case class RedshiftRelation(
                                requiredColumns: Array[String],
                                filters: Array[Filter],
                                tempDir: String,
-                               creds: AWSCredentialsProvider,
+                               credsProvider: AWSCredentialsProvider,
                                sseKmsKey: Option[String]): String = {
     assert(!requiredColumns.isEmpty)
     // Always quote column names:
     val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
     val whereClause = FilterPushdown.buildWhereClause(schema, filters, escapeQuote = true)
     val credsString: String =
-      AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.getCredentials)
+      AWSCredentialsUtils.getRedshiftCredentialsString(params, credsProvider.getCredentials)
     val query = {
       // Since the query passed to UNLOAD will be enclosed in single quotes, we need to escape
       // any backslashes and single quotes that appear in the query itself
@@ -203,13 +216,13 @@ private[redshift] case class RedshiftRelation(
                                statement: RedshiftSQLStatement,
                                schema: StructType,
                                tempDir: String,
-                               creds: AWSCredentialsProvider,
+                               credsProvider: AWSCredentialsProvider,
                                sseKmsKey: Option[String],
                                threadName: String): String = {
     assert(schema.nonEmpty)
 
     val credsString: String =
-      AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.getCredentials)
+      AWSCredentialsUtils.getRedshiftCredentialsString(params, credsProvider.getCredentials)
 
     // Since the query passed to UNLOAD will be enclosed in single quotes, we need to escape
     // any backslashes and single quotes that appear in the query itself
@@ -251,28 +264,30 @@ private[redshift] case class RedshiftRelation(
                             threadName: String = Thread.currentThread.getName): RDD[Row] = {
     val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
     val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
-    val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
+    val credsProvider = AWSCredentialsUtils.load(
+      params, sqlContext.sparkContext.hadoopConfiguration)
 
     val (resultSchema, tempDir) = try {
 
       val resultSchema: StructType = getResultSchema(statement, schema, conn)
 
-      checkS3BucketUsage(params, s3ClientFactory(creds, params))
+      if (params.checkS3BucketUsage) {
+        checkS3BucketUsage(params, credsProvider)
+      }
+
       Utils.collectMetrics(params)
 
       // If the same query was run before, get the result s3 path from the cache.
       // Otherwise, unload the data.
       val tempDir = GetCachedS3QueryPath(statement, threadName)
-        .orElse {
-          UnloadDataToS3(statement, conn, resultSchema, creds, threadName)
-        }
+        .orElse(unloadDataToS3(statement, conn, resultSchema, credsProvider, threadName))
 
       (resultSchema, tempDir)
     } finally {
       conn.close()
     }
 
-    val filesToRead: Seq[String] = getFilesToRead(creds, tempDir.get)
+    val filesToRead: Seq[String] = getFilesToRead(tempDir.get, sqlContext.sparkContext)
     if (params.unloadS3Format == "PARQUET") {
       readRDDFromParquet(resultSchema, filesToRead)
     } else {
@@ -323,17 +338,17 @@ private[redshift] case class RedshiftRelation(
   // Note: Connection is passed to this method, & responsibility of
   // managing connection lies to the caller. closing connection here
   // leads to failure if caller method perform another operation on it
-  private def UnloadDataToS3(statement: RedshiftSQLStatement,
+  private def unloadDataToS3(statement: RedshiftSQLStatement,
                              conn: RedshiftConnection,
                              resultSchema: StructType,
-                             creds: AWSCredentialsProvider,
+                             credsProvider: AWSCredentialsProvider,
                              threadName: String): Option[String] = {
 
     val newTempDir = params.createPerQueryTempDir(true)
     val unloadSql = buildUnloadStmt(statement,
       resultSchema,
       newTempDir,
-      creds,
+      credsProvider,
       params.sseKmsKey,
       threadName)
     log.info("Unloading data from Redshift")
@@ -470,15 +485,19 @@ private[redshift] case class RedshiftRelation(
 
   // Read the MANIFEST file to get the list of S3 part files that were written by Redshift.
   // We need to use a manifest in order to guard against S3's eventually-consistent listings.
-  private def getFilesToRead[Row](creds: AWSCredentialsProvider, tempDir: String) = {
+  private def getFilesToRead(tempDir: String, sc: SparkContext): Seq[String] = {
 
-    val cleanedTempDirUri =
-      Utils.fixS3Url(Utils.removeCredentialsFromURI(URI.create(tempDir)).toString)
-    val s3URI = Utils.createS3URI(cleanedTempDirUri)
-    val s3Client = s3ClientFactory(creds, params)
+    // Clean the tempDir URI
+    val cleanedTempDirUri = Utils.fixS3Url(
+      Utils.removeCredentialsFromURI(URI.create(tempDir)).toString)
 
-    if (s3Client.doesObjectExist(s3URI.getBucket, s3URI.getKey + "manifest")) {
-      val is = s3Client.getObject(s3URI.getBucket, s3URI.getKey + "manifest").getObjectContent
+    // Use Hadoop's FileSystem to interact with S3
+    val conf = sc.hadoopConfiguration
+    val fs = FileSystem.get(URI.create(cleanedTempDirUri), conf)
+    val manifestPath = new Path(s"$cleanedTempDirUri/manifest")
+
+    if (fs.exists(manifestPath)) {
+      val is = fs.open(manifestPath)
       val s3Files = try {
         log.info("Begin finding S3 files to read")
         val mapper = new ObjectMapper
@@ -490,21 +509,20 @@ private[redshift] case class RedshiftRelation(
         is.close()
         log.info("End finding S3 files to read")
       }
+
       // The filenames in the manifest are of the form s3://bucket/key, without credentials.
       // If the S3 credentials were originally specified in the tempdir's URI, then we need to
       // reintroduce them here
       s3Files.map { file =>
-        tempDir.stripSuffix("/") + '/' + file.stripPrefix(cleanedTempDirUri).stripPrefix("/")
+        s"$tempDir/${file.stripPrefix(cleanedTempDirUri).stripPrefix("/")}"
       }
-    }
-    else {
+    } else {
       // If manifest doesn't exist, likely it is because the resultset is empty.
       // For empty resultset, Redshift sometimes doesn't create any files. So return empty Seq.
       // An unlikely scenario is the result files are removed from S3.
-      log.debug(s"${s3URI}/manifest not found")
+      log.debug(s"${manifestPath} not found")
       Seq.empty[String]
     }
-
   }
 
   // Note: this method should not cause side effect.

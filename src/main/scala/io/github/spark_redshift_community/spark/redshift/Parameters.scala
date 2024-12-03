@@ -54,6 +54,7 @@ private[redshift] object Parameters {
   val PARAM_LEGACY_MAPPING_SHORT_TO_INT: String = "legacy_mapping_short_to_int"
   val PARAM_SKIP_DSW_WORKAROUND = "skip_dsw_workaround"
   val PARAM_IS_DELETE: String = "is_delete"
+  val PARAM_CHECK_S3_BUCKET_USAGE: String = "check_s3_bucket_usage"
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
@@ -88,7 +89,8 @@ private[redshift] object Parameters {
     PARAM_USER_QUERY_GROUP_LABEL -> "",
     PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false",
     PARAM_SKIP_DSW_WORKAROUND -> "false",
-    PARAM_IS_DELETE -> "false"
+    PARAM_IS_DELETE -> "false",
+    PARAM_CHECK_S3_BUCKET_USAGE -> "true"
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP", "PARQUET")
@@ -575,5 +577,7 @@ private[redshift] object Parameters {
      * Delete support
      */
     def isDelete: Boolean = parameters(PARAM_IS_DELETE).toBoolean
+
+    def checkS3BucketUsage: Boolean = parameters(PARAM_CHECK_S3_BUCKET_USAGE).toBoolean
   }
 }

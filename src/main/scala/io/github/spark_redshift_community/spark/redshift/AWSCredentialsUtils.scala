@@ -53,6 +53,7 @@ private[redshift] object AWSCredentialsUtils {
       throw new IllegalStateException("No Redshift S3 authentication mechanism was specified")
     }
   }
+
   def staticCredentialsProvider(credentials: AWSCredentials): AWSCredentialsProvider = {
     new AWSCredentialsProvider {
       override def getCredentials: AWSCredentials = credentials
