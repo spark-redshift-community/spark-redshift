@@ -258,6 +258,18 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
           }
         }
 
+      case Intersect(left, right, isAll) =>
+        if (isAll) {
+          throw new RedshiftPushdownUnsupportedException(
+            RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_INTERSECT_ALL,
+            s"${plan.nodeName} INTERSECT ALL",
+            plan.getClass.getName,
+            false
+          )
+        } else {
+          Some(SetQuery(Seq(left, right), alias.next, "INTERSECT"))
+        }
+
       // From Spark 3.1, Union has 3 parameters
       case Union(children, byName, allowMissingCol) =>
         // Don't support Union by Name. For details about what's UNION by Name,
@@ -272,7 +284,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
             false
           )
         } else {
-          Some(UnionQuery(children, alias.next))
+          Some(SetQuery(children, alias.next, "UNION ALL"))
         }
 
       case _ =>

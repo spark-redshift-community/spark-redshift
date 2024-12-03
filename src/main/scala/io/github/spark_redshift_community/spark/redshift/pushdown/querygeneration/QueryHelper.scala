@@ -44,7 +44,7 @@ private[querygeneration] case class QueryHelper(
      fields: Option[Seq[Attribute]] = None,
      // For some query clauses we may override the outputAttributes, but will
      // need a different set of resolvable attributes to be visible to the parent
-     // query clause, e.g., in UnionQuery
+     // query clause, e.g., in SetQuery
      visibleAttributeOverride: Option[Seq[Attribute]] = None
 ) {
 

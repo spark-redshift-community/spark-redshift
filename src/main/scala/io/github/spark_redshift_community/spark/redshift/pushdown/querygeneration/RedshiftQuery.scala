@@ -769,13 +769,14 @@ case class LeftSemiJoinQuery(left: RedshiftQuery,
     query.lift(this).orElse(left.find(query)).orElse(right.find(query))
 }
 
-/** The query for union.
+/** The query for Set operations.
   *
   * @constructor
-  * @param children Children of the union expression.
+  * @param children Children of the set expression.
   */
-case class UnionQuery(children: Seq[LogicalPlan],
+case class SetQuery(children: Seq[LogicalPlan],
                       alias: String,
+                      setOperation: String,
                       outputCols: Option[Seq[Attribute]] = None)
     extends RedshiftQuery {
 
@@ -786,8 +787,8 @@ case class UnionQuery(children: Seq[LogicalPlan],
   if(queries.contains(null)) {
     throw new RedshiftPushdownUnsupportedException(
       RedshiftFailMessage.FAIL_PUSHDOWN_STATEMENT,
-      "Union",
-      "Not all Union children query supported",
+      setOperation,
+      "Not all " + setOperation + " children query supported",
       false)
   }
   override val helper: QueryHelper =
@@ -809,7 +810,7 @@ case class UnionQuery(children: Seq[LogicalPlan],
       if (queries.nonEmpty) {
         mkStatement(
           queries.map(c => blockStatement(c.getStatement())),
-          "UNION ALL"
+          setOperation
         )
       } else {
         EmptyRedshiftSQLStatement()
