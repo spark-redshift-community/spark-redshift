@@ -21,6 +21,7 @@ import java.sql.{ResultSetMetaData, SQLException}
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.TimestampNTZTypeExtractor
 import io.github.spark_redshift_community.spark.redshift.pushdown.{BooleanVariable, ByteVariable, ConstantString, DoubleVariable, FloatVariable, IntVariable, LongVariable, RedshiftSQLStatement, ShortVariable, StatementElement, StringVariable}
 import org.slf4j.LoggerFactory
 
@@ -350,7 +351,7 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
       case "character varying" => StringType
       case "bit" => BooleanType
       case "time without time zone" => TimestampType
-      case "timestamp without time zone" => if (redshift.legacyTimestampHandling) TimestampType else TimestampNTZType
+      case "timestamp without time zone" => if (redshift.legacyTimestampHandling) TimestampType else TimestampNTZTypeExtractor.defaultType
       case "timestamp with time zone" => TimestampType
       case "xid" => if (signed) { LongType } else { DecimalType(20, 0) }
       case "tid" => StringType
@@ -369,7 +370,7 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
       case "time" => TimestampType
       case "time with time zone" => TimestampType
       case "timetz" => TimestampType
-      case "timestamp" => if (redshift.legacyTimestampHandling) TimestampType else TimestampNTZType
+      case "timestamp" => if (redshift.legacyTimestampHandling) TimestampType else TimestampNTZTypeExtractor.defaultType
       case "timestamptz" => TimestampType
       case "oidvector" => StringType
       case "super" => StringType

@@ -104,6 +104,12 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
+           | SELECT ( CAST ( "SQ_2"."SQ_2_COL_0" AS INTEGER ) ) AS "SQ_3_COL_0" ,
+           | ( CAST ( "SQ_2"."SQ_2_COL_1" AS INTEGER ) ) AS "SQ_3_COL_1" FROM (
+           | SELECT ( "SQ_1"."COL2" ) AS "SQ_2_COL_0" , ( "SQ_1"."COL1" ) AS
+           | "SQ_2_COL_1" FROM ( ( (SELECT 100 AS "col1", 1 AS "col2") UNION ALL
+           | (SELECT 2000 AS "col1", 3 AS "col2") ) ) AS "SQ_1" ) AS "SQ_2"""".stripMargin,
+        s"""INSERT INTO "PUBLIC"."$tableName"
            | SELECT ( CAST ( "SQ_2"."SQ_2_COL_1" AS INTEGER ) ) AS "SQ_3_COL_0" ,
            | ( CAST ( "SQ_2"."SQ_2_COL_0" AS INTEGER ) ) AS "SQ_3_COL_1"
            | FROM ( SELECT ( "SQ_1"."COL1" ) AS "SQ_2_COL_0" , ( "SQ_1"."COL2" ) AS "SQ_2_COL_1"
@@ -121,30 +127,41 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("Push down insert literal values with part of columns into the table") {
-    withTempRedshiftTable("insertTable") { tableName =>
-      redshiftWrapper.executeUpdate(conn,
-        s"CREATE TABLE ${tableName} (a int, b int, c varchar(256))"
-      )
-      read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
-      val pre = sqlContext.sql(s"SELECT * FROM ${tableName}").count
+    // Support for missing values began with Spark 3.4
+    if (sparkVersion.greaterThanOrEqualTo("3.4")) {
+      withTempRedshiftTable("insertTable") { tableName =>
+        redshiftWrapper.executeUpdate(conn,
+          s"CREATE TABLE ${tableName} (a int, b int, c varchar(256))"
+        )
+        read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+        val pre = sqlContext.sql(s"SELECT * FROM ${tableName}").count
 
-      sqlContext.sql(s"INSERT INTO ${tableName} (a, c) VALUES (100, '1'), (2000, '2')")
+        sqlContext.sql(s"INSERT INTO ${tableName} (a, c) VALUES (100, '1'), (2000, '2')")
 
-      checkSqlStatement(
-        s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( CAST ( "SQ_2"."SQ_2_COL_0" AS INTEGER ) ) AS "SQ_3_COL_0" ,
-           | ( NULL ) AS "SQ_3_COL_1" , ( CAST ( "SQ_2"."SQ_2_COL_1" AS VARCHAR ) ) AS "SQ_3_COL_2"
-           | FROM ( SELECT ( "SQ_1"."COL1" ) AS "SQ_2_COL_0" , ( "SQ_1"."COL2" ) AS "SQ_2_COL_1"
-           | FROM ( ( (SELECT 100  AS "col1", '1'  AS "col2") UNION ALL
-           | (SELECT 2000  AS "col1", '2'  AS "col2") ) ) AS "SQ_1" ) AS "SQ_2""""
-          .stripMargin
-      )
+        checkSqlStatement(
+          s"""INSERT INTO "PUBLIC"."$tableName"
+             | SELECT ( CAST ( "SQ_2"."SQ_2_COL_0" AS INTEGER ) ) AS "SQ_3_COL_0" ,
+             | ( CAST ( "SQ_2"."SQ_2_COL_1" AS INTEGER ) ) AS "SQ_3_COL_1" , ( CAST
+             | ( "SQ_2"."SQ_2_COL_2" AS VARCHAR ) ) AS "SQ_3_COL_2" FROM ( SELECT
+             | ( "SQ_1"."A" ) AS "SQ_2_COL_0" , ( "SQ_1"."B" ) AS "SQ_2_COL_1" ,
+             | ( "SQ_1"."C" ) AS "SQ_2_COL_2" FROM ( ( (SELECT 100 AS "a", '1' AS
+             | "c", NULL AS "b") UNION ALL (SELECT 2000 AS "a", '2' AS "c", NULL AS
+             | "b") ) ) AS "SQ_1" ) AS "SQ_2"""".stripMargin,
+          s"""INSERT INTO "PUBLIC"."$tableName"
+             | SELECT ( CAST ( "SQ_2"."SQ_2_COL_0" AS INTEGER ) ) AS "SQ_3_COL_0" ,
+             | ( NULL ) AS "SQ_3_COL_1" , ( CAST ( "SQ_2"."SQ_2_COL_1" AS VARCHAR ) ) AS "SQ_3_COL_2"
+             | FROM ( SELECT ( "SQ_1"."COL1" ) AS "SQ_2_COL_0" , ( "SQ_1"."COL2" ) AS "SQ_2_COL_1"
+             | FROM ( ( (SELECT 100  AS "col1", '1'  AS "col2") UNION ALL
+             | (SELECT 2000 AS "col1", '2' AS "col2") ) ) AS "SQ_1" ) AS "SQ_2""""
+            .stripMargin
+        )
 
-      val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
+        val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
 
-      assert(pre == 0)
-      val expected = Array(Array(100, null, "1"), Array(2000, null, "2"))
-      post should contain theSameElementsAs expected
+        assert(pre == 0)
+        val expected = Array(Array(100, null, "1"), Array(2000, null, "2"))
+        post should contain theSameElementsAs expected
+      }
     }
   }
 
@@ -205,33 +222,42 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("Push down insert rows from reading another table") {
-    withTempRedshiftTable("insertTable") { tableName =>
-      redshiftWrapper.executeUpdate(conn,
-        s"CREATE TABLE ${tableName} (a int, b int)"
-      )
-      read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
-      read.option("dbtable", source_table).load().createOrReplaceTempView(source_table)
+    // Support for missing values began with Spark 3.4
+    if (sparkVersion.greaterThanOrEqualTo("3.4")) {
+      withTempRedshiftTable("insertTable") { tableName =>
+        redshiftWrapper.executeUpdate(conn,
+          s"CREATE TABLE ${tableName} (a int, b int)"
+        )
+        read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+        read.option("dbtable", source_table).load().createOrReplaceTempView(source_table)
 
-      val pre = sqlContext.sql(s"SELECT * FROM ${tableName}").count
+        val pre = sqlContext.sql(s"SELECT * FROM ${tableName}").count
 
-      sqlContext.sql(s"INSERT INTO TABLE ${tableName} (a) SELECT testint FROM $source_table")
+        sqlContext.sql(s"INSERT INTO TABLE ${tableName} (a) SELECT testint FROM $source_table")
 
-      checkSqlStatement(
-        s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( "SQ_3"."SQ_3_COL_0" ) AS "SQ_4_COL_0" ,
-           | ( NULL ) AS "SQ_4_COL_1" FROM ( SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_0"
-           | FROM ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0"
-           | FROM ( SELECT * FROM "PUBLIC"."$source_table"
-           | AS "RCQ_ALIAS" ) AS "SQ_1" ) AS "SQ_2" ) AS "SQ_3""""
-          .stripMargin
-      )
+        checkSqlStatement(
+          s"""INSERT INTO "PUBLIC"."$tableName"
+             | SELECT ( CAST ( "SQ_2"."SQ_2_COL_0" AS INTEGER ) ) AS "SQ_3_COL_0" ,
+             | ( CAST ( "SQ_2"."SQ_2_COL_1" AS INTEGER ) ) AS "SQ_3_COL_1" FROM
+             | ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0" , ( NULL ) AS "SQ_2_COL_1"
+             | FROM ( SELECT * FROM "PUBLIC"."$source_table"
+             | AS "RCQ_ALIAS" ) AS "SQ_1" ) AS "SQ_2"""".stripMargin,
+          s"""INSERT INTO "PUBLIC"."$tableName"
+             | SELECT ( "SQ_3"."SQ_3_COL_0" ) AS "SQ_4_COL_0" ,
+             | ( NULL ) AS "SQ_4_COL_1" FROM ( SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_0"
+             | FROM ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0"
+             | FROM ( SELECT * FROM "PUBLIC"."$source_table"
+             | AS "RCQ_ALIAS" ) AS "SQ_1" ) AS "SQ_2" ) AS "SQ_3""""
+            .stripMargin
+        )
 
-      val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
+        val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
 
-      assert(pre == 0)
-      val expected = Array(Array(null, null), Array(4141214, null),
-        Array(null, null), Array(42, null), Array(42, null))
-      post should contain theSameElementsAs expected
+        assert(pre == 0)
+        val expected = Array(Array(null, null), Array(4141214, null),
+          Array(null, null), Array(42, null), Array(42, null))
+        post should contain theSameElementsAs expected
+      }
     }
   }
 
@@ -328,43 +354,54 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("Push down insert with select columns in an order") {
-    withTempRedshiftTable("insertTargetTable") { tableName =>
-      withTempRedshiftTable("insertSourceTable") { tableNameSource =>
-        redshiftWrapper.executeUpdate(conn,
-          s"create table ${tableNameSource} (id int, value int, quantity int)"
-        )
-        redshiftWrapper.executeUpdate(conn,
-          s"create table ${tableName} (id int, value int, quantity int)"
-        )
-        read.option("dbtable", tableNameSource).load.createOrReplaceTempView(tableNameSource)
-        read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+    // Support for missing values began with Spark 3.4
+    if (sparkVersion.greaterThanOrEqualTo("3.4")) {
+      withTempRedshiftTable("insertTargetTable") { tableName =>
+        withTempRedshiftTable("insertSourceTable") { tableNameSource =>
+          redshiftWrapper.executeUpdate(conn,
+            s"create table ${tableNameSource} (id int, value int, quantity int)"
+          )
+          redshiftWrapper.executeUpdate(conn,
+            s"create table ${tableName} (id int, value int, quantity int)"
+          )
+          read.option("dbtable", tableNameSource).load.createOrReplaceTempView(tableNameSource)
+          read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
 
-        val initialData = Seq((1, 10, 100), (2, 20, 200), (3, 30, 300))
-        val schema = List("id", "value", "quantity")
-        val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
-        write(df).option("dbtable", tableNameSource).mode("append").save()
+          val initialData = Seq((1, 10, 100), (2, 20, 200), (3, 30, 300))
+          val schema = List("id", "value", "quantity")
+          val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
+          write(df).option("dbtable", tableNameSource).mode("append").save()
 
-        val pre = sqlContext.sql(s"SELECT * FROM $tableName").count()
+          val pre = sqlContext.sql(s"SELECT * FROM $tableName").count()
 
-        sqlContext.sql(s"INSERT INTO ${tableName} " +
-          s"(quantity, id) SELECT quantity, id FROM $tableNameSource")
+          sqlContext.sql(s"INSERT INTO ${tableName} " +
+            s"(quantity, id) SELECT quantity, id FROM $tableNameSource")
 
-        checkSqlStatement(
-          s"""INSERT INTO "PUBLIC"."$tableName"
-             | SELECT ( "SQ_3"."SQ_3_COL_1" ) AS "SQ_4_COL_0" , ( NULL ) AS "SQ_4_COL_1" ,
-             | ( "SQ_3"."SQ_3_COL_0" ) AS "SQ_4_COL_2" FROM ( SELECT ( "SQ_2"."SQ_2_COL_0" )
-             | AS "SQ_3_COL_0" , ( "SQ_2"."SQ_2_COL_1" ) AS "SQ_3_COL_1"
-             | FROM ( SELECT ( "SQ_1"."QUANTITY" ) AS "SQ_2_COL_0" , ( "SQ_1"."ID" )
-             | AS "SQ_2_COL_1" FROM ( SELECT * FROM "PUBLIC"."$tableNameSource" AS
-             | "RCQ_ALIAS" ) AS "SQ_1" ) AS "SQ_2" ) AS "SQ_3""""
-            .stripMargin
-        )
+          checkSqlStatement(
+            s"""INSERT INTO "PUBLIC"."$tableName"
+               | SELECT ( "SQ_3"."SQ_3_COL_0" ) AS "SQ_4_COL_0" , ( CAST ( "SQ_3"."SQ_3_COL_1"
+               | AS INTEGER ) ) AS "SQ_4_COL_1" , ( "SQ_3"."SQ_3_COL_2" ) AS "SQ_4_COL_2" FROM
+               | ( SELECT ( "SQ_2"."SQ_2_COL_1" ) AS "SQ_3_COL_0" , ( "SQ_2"."SQ_2_COL_2" ) AS
+               | "SQ_3_COL_1" , ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_2" FROM ( SELECT (
+               | "SQ_1"."QUANTITY" ) AS "SQ_2_COL_0" , ( "SQ_1"."ID" ) AS "SQ_2_COL_1" , ( NULL )
+               | AS "SQ_2_COL_2" FROM ( SELECT * FROM "PUBLIC"."$tableNameSource" AS "RCQ_ALIAS" )
+               | AS "SQ_1" ) AS "SQ_2" ) AS "SQ_3"""".stripMargin,
+            s"""INSERT INTO "PUBLIC"."$tableName"
+               | SELECT ( "SQ_3"."SQ_3_COL_1" ) AS "SQ_4_COL_0" , ( NULL ) AS "SQ_4_COL_1" ,
+               | ( "SQ_3"."SQ_3_COL_0" ) AS "SQ_4_COL_2" FROM ( SELECT ( "SQ_2"."SQ_2_COL_0" )
+               | AS "SQ_3_COL_0" , ( "SQ_2"."SQ_2_COL_1" ) AS "SQ_3_COL_1"
+               | FROM ( SELECT ( "SQ_1"."QUANTITY" ) AS "SQ_2_COL_0" , ( "SQ_1"."ID" )
+               | AS "SQ_2_COL_1" FROM ( SELECT * FROM "PUBLIC"."$tableNameSource" AS
+               | "RCQ_ALIAS" ) AS "SQ_1" ) AS "SQ_2" ) AS "SQ_3""""
+              .stripMargin
+          )
 
-        val post = sqlContext.sql(s"SELECT * FROM $tableName").collect().map(row => row.toSeq).toSeq
+          val post = sqlContext.sql(s"SELECT * FROM $tableName").collect().map(row => row.toSeq).toSeq
 
-        assert(pre == 0)
-        val expected = Array(Array(1, null, 100), Array(2, null, 200), Array(3, null, 300))
-        post should contain theSameElementsAs expected
+          assert(pre == 0)
+          val expected = Array(Array(1, null, 100), Array(2, null, 200), Array(3, null, 300))
+          post should contain theSameElementsAs expected
+        }
       }
     }
   }
@@ -406,34 +443,43 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("Push down insert rows from reading another table with where clause") {
-    withTempRedshiftTable("insertTable") { tableName =>
-      redshiftWrapper.executeUpdate(conn,
-        s"CREATE TABLE ${tableName} (a int, b int)"
-      )
-      read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
-      read.option("dbtable", source_table).load().createOrReplaceTempView(source_table)
+    // Support for missing values began with Spark 3.4
+    if (sparkVersion.greaterThanOrEqualTo("3.4")) {
+      withTempRedshiftTable("insertTable") { tableName =>
+        redshiftWrapper.executeUpdate(conn,
+          s"CREATE TABLE ${tableName} (a int, b int)"
+        )
+        read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+        read.option("dbtable", source_table).load().createOrReplaceTempView(source_table)
 
-      val pre = sqlContext.sql(s"select * from ${tableName}").count
+        val pre = sqlContext.sql(s"select * from ${tableName}").count
 
-      sqlContext.sql(
-        s"INSERT INTO TABLE ${tableName} (a) SELECT testint FROM $source_table WHERE testint > 0")
+        sqlContext.sql(
+          s"INSERT INTO TABLE ${tableName} (a) SELECT testint FROM $source_table WHERE testint > 0")
 
-      checkSqlStatement(
-        s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( "SQ_4"."SQ_4_COL_0" ) AS "SQ_5_COL_0" ,
-           | ( NULL ) AS "SQ_5_COL_1" FROM ( SELECT ( "SQ_3"."SQ_3_COL_0" ) AS
-           | "SQ_4_COL_0" FROM ( SELECT ( "SQ_2"."TESTINT" ) AS "SQ_3_COL_0" FROM
-           | ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$source_table" AS "RCQ_ALIAS" )
-           | AS "SQ_1" WHERE ( "SQ_1"."TESTINT" > 0 ) )
-           | AS "SQ_2" ) AS "SQ_3" ) AS "SQ_4""""
-          .stripMargin
-      )
+        checkSqlStatement(
+          s"""INSERT INTO "PUBLIC"."$tableName"
+             | SELECT ( CAST ( "SQ_3"."SQ_3_COL_0" AS INTEGER ) ) AS "SQ_4_COL_0" ,
+             | ( CAST ( "SQ_3"."SQ_3_COL_1" AS INTEGER ) ) AS "SQ_4_COL_1" FROM ( SELECT
+             | ( "SQ_2"."TESTINT" ) AS "SQ_3_COL_0" , ( NULL ) AS "SQ_3_COL_1" FROM (
+             | SELECT * FROM ( SELECT * FROM "PUBLIC"."$source_table" AS "RCQ_ALIAS" )
+             | AS "SQ_1" WHERE ( "SQ_1"."TESTINT" > 0 ) ) AS "SQ_2" ) AS "SQ_3"""".stripMargin,
+          s"""INSERT INTO "PUBLIC"."$tableName"
+             | SELECT ( "SQ_4"."SQ_4_COL_0" ) AS "SQ_5_COL_0" ,
+             | ( NULL ) AS "SQ_5_COL_1" FROM ( SELECT ( "SQ_3"."SQ_3_COL_0" ) AS
+             | "SQ_4_COL_0" FROM ( SELECT ( "SQ_2"."TESTINT" ) AS "SQ_3_COL_0" FROM
+             | ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$source_table" AS "RCQ_ALIAS" )
+             | AS "SQ_1" WHERE ( "SQ_1"."TESTINT" > 0 ) )
+             | AS "SQ_2" ) AS "SQ_3" ) AS "SQ_4""""
+            .stripMargin
+        )
 
-      val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
+        val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
 
-      assert(pre == 0)
-      val expected = Array(Array(4141214, null), Array(42, null), Array(42, null))
-      post should contain theSameElementsAs expected
+        assert(pre == 0)
+        val expected = Array(Array(4141214, null), Array(42, null), Array(42, null))
+        post should contain theSameElementsAs expected
+      }
     }
   }
 
@@ -452,6 +498,15 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |WHERE testint IN (SELECT testint FROM $source_table WHERE testint > 0)""".stripMargin)
 
       checkSqlStatement(
+        s"""INSERT INTO "PUBLIC"."$tableName"
+           | SELECT ( CAST ( "SQ_3"."SQ_3_COL_0" AS INTEGER ) )
+           | AS "SQ_4_COL_0" FROM ( SELECT ( "SQ_2"."TESTINT" ) AS
+           | "SQ_3_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+           | "PUBLIC"."$source_table" AS "RCQ_ALIAS" ) AS "SQ_1"
+           | WHERE ( "SQ_1"."TESTINT" ) IN ( SELECT ( "SQ_1"."TESTINT" )
+           | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+           | "PUBLIC"."$source_table" AS "RCQ_ALIAS" ) AS "SQ_0" WHERE
+           | ( "SQ_0"."TESTINT" > 0 ) ) AS "SQ_1" ) ) AS "SQ_2" ) AS "SQ_3"""".stripMargin,
         s"""INSERT INTO "PUBLIC"."$tableName"
            | SELECT ( "SQ_3"."SQ_3_COL_0" ) AS "SQ_4_COL_0" FROM
            | ( SELECT ( "SQ_2"."TESTINT" ) AS "SQ_3_COL_0" FROM ( SELECT
@@ -473,65 +528,80 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("Push down insert row from reading aggregation of another table") {
-    withTempRedshiftTable("insertTable") { tableName =>
-      redshiftWrapper.executeUpdate(conn,
-        s"CREATE TABLE ${tableName} (a int, b int)"
-      )
-      read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
-      read.option("dbtable", source_table).load().createOrReplaceTempView(source_table)
+    // Support for partial values with aggregations began with Spark 3.5
+    if (sparkVersion.greaterThanOrEqualTo("3.5")) {
+      withTempRedshiftTable("insertTable") { tableName =>
+        redshiftWrapper.executeUpdate(conn,
+          s"CREATE TABLE ${tableName} (a int, b int)"
+        )
+        read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+        read.option("dbtable", source_table).load().createOrReplaceTempView(source_table)
 
-      val pre = sqlContext.sql(s"SELECT * FROM ${tableName}").count
+        val pre = sqlContext.sql(s"SELECT * FROM ${tableName}").count
 
-      sqlContext.sql(s"INSERT INTO ${tableName} (a) SELECT MIN(testint) FROM $source_table")
+        sqlContext.sql(s"INSERT INTO ${tableName} (a) SELECT MIN(testint) FROM $source_table")
 
-      checkSqlStatement(
-        s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( CAST ( "SQ_3"."SQ_3_COL_0" AS INTEGER ) ) AS "SQ_4_COL_0" ,
-           | ( NULL ) AS "SQ_4_COL_1" FROM ( SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_0"
-           | FROM ( SELECT ( MIN ( "SQ_1"."TESTINT" ) ) AS "SQ_2_COL_0" FROM
-           | ( SELECT * FROM "PUBLIC"."$source_table" AS "RCQ_ALIAS" )
-           | AS "SQ_1" LIMIT 1 ) AS "SQ_2" ) AS "SQ_3""""
-          .stripMargin
-      )
+        checkSqlStatement(
+          s"""INSERT INTO "PUBLIC"."$tableName"
+             | SELECT ( CAST ( "SQ_3"."SQ_3_COL_0" AS INTEGER ) ) AS "SQ_4_COL_0" ,
+             | ( NULL ) AS "SQ_4_COL_1" FROM ( SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_0"
+             | FROM ( SELECT ( MIN ( "SQ_1"."TESTINT" ) ) AS "SQ_2_COL_0" FROM
+             | ( SELECT * FROM "PUBLIC"."$source_table" AS "RCQ_ALIAS" )
+             | AS "SQ_1" LIMIT 1 ) AS "SQ_2" ) AS "SQ_3""""
+            .stripMargin
+        )
 
-      val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
+        val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
 
-      assert(pre == 0)
-      val expected = Array(Array(42, null))
-      post should contain theSameElementsAs expected
+        assert(pre == 0)
+        val expected = Array(Array(42, null))
+        post should contain theSameElementsAs expected
+      }
     }
   }
 
   test("Push down insert from reading another table with order by") {
-    withTempRedshiftTable("insertTable") { tableName =>
-      redshiftWrapper.executeUpdate(conn,
-        s"CREATE TABLE ${tableName} (a int, b int)"
-      )
-      read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
-      read.option("dbtable", source_table).load().createOrReplaceTempView(source_table)
+    // Support for missing values began with Spark 3.4
+    if (sparkVersion.greaterThanOrEqualTo("3.4")) {
+      withTempRedshiftTable("insertTable") { tableName =>
+        redshiftWrapper.executeUpdate(conn,
+          s"CREATE TABLE ${tableName} (a int, b int)"
+        )
+        read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+        read.option("dbtable", source_table).load().createOrReplaceTempView(source_table)
 
-      val pre = sqlContext.sql(s"select * from ${tableName}").count
+        val pre = sqlContext.sql(s"select * from ${tableName}").count
 
-      sqlContext.sql(s"""INSERT INTO ${tableName} (b)
-           |SELECT testint FROM $source_table ORDER BY testint""".stripMargin)
+        sqlContext.sql(
+          s"""INSERT INTO ${tableName} (b)
+             |SELECT testint FROM $source_table ORDER BY testint""".stripMargin)
 
-      checkSqlStatement(
-        s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( NULL ) AS "SQ_5_COL_0" , ( "SQ_4"."SQ_4_COL_0" ) AS "SQ_5_COL_1"
-           | FROM ( SELECT ( "SQ_3"."SQ_2_COL_0" ) AS "SQ_4_COL_0" FROM
-           | ( SELECT * FROM ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0"
-           | FROM ( SELECT * FROM "PUBLIC"."$source_table" AS "RCQ_ALIAS" ) AS "SQ_1" )
-           | AS "SQ_2" ORDER BY ( "SQ_2"."SQ_2_COL_0" )
-           | ASC NULLS FIRST ) AS "SQ_3" ) AS "SQ_4""""
-          .stripMargin
-      )
+        checkSqlStatement(
+          s"""INSERT INTO "PUBLIC"."$tableName"
+             | SELECT ( CAST ( "SQ_4"."SQ_4_COL_0" AS INTEGER ) ) AS "SQ_5_COL_0" ,
+             | ( CAST ( "SQ_4"."SQ_4_COL_1" AS INTEGER ) ) AS "SQ_5_COL_1" FROM (
+             | SELECT ( "SQ_3"."SQ_2_COL_1" ) AS "SQ_4_COL_0" , ( "SQ_3"."SQ_2_COL_0" )
+             | AS "SQ_4_COL_1" FROM ( SELECT * FROM ( SELECT ( "SQ_1"."TESTINT" ) AS
+             | "SQ_2_COL_0" , ( NULL ) AS "SQ_2_COL_1" FROM ( SELECT * FROM "PUBLIC".
+             | "$source_table" AS "RCQ_ALIAS" ) AS "SQ_1" ) AS "SQ_2" ORDER BY (
+             | "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3" ) AS "SQ_4"""".stripMargin,
+          s"""INSERT INTO "PUBLIC"."$tableName"
+             | SELECT ( NULL ) AS "SQ_5_COL_0" , ( "SQ_4"."SQ_4_COL_0" ) AS "SQ_5_COL_1"
+             | FROM ( SELECT ( "SQ_3"."SQ_2_COL_0" ) AS "SQ_4_COL_0" FROM
+             | ( SELECT * FROM ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0"
+             | FROM ( SELECT * FROM "PUBLIC"."$source_table" AS "RCQ_ALIAS" ) AS "SQ_1" )
+             | AS "SQ_2" ORDER BY ( "SQ_2"."SQ_2_COL_0" )
+             | ASC NULLS FIRST ) AS "SQ_3" ) AS "SQ_4""""
+            .stripMargin
+        )
 
-      val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
+        val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
 
-      assert(pre == 0)
-      val expected = Array(Array(null, null),
-        Array(null, 4141214), Array(null, null), Array(null, 42), Array(null, 42))
-      post should contain theSameElementsAs expected
+        assert(pre == 0)
+        val expected = Array(Array(null, null),
+          Array(null, 4141214), Array(null, null), Array(null, 42), Array(null, 42))
+        post should contain theSameElementsAs expected
+      }
     }
   }
 

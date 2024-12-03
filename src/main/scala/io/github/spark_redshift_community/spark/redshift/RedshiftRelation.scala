@@ -469,7 +469,7 @@ private[redshift] case class RedshiftRelation(
           field.metadata.contains("redshift_type") &&
             Seq("super", "bpchar").contains(field.metadata.getString("redshift_type"))
         case TimestampType | ShortType | ByteType => true
-        case TimestampNTZType if !redshift.legacyTimestampHandling => true
+        case TimestampNTZTypeExtractor(_) if !redshift.legacyTimestampHandling => true
         case _ => false
       }
     }) || overrideNullable || schemasDoNotMatch

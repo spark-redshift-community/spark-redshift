@@ -103,10 +103,12 @@ trait IntegrationSuiteBase
   protected var sqlContext: SQLContext = _
   protected var redshiftWrapper: RedshiftWrapper = _
   protected var conn: RedshiftConnection = _
+  protected var sparkVersion: ComparableVersion = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     sc = new SparkContext("local", "RedshiftSourceSuite")
+    sparkVersion = ComparableVersion(sc.version)
     // Bypass Hadoop's FileSystem caching mechanism so that we don't cache the credentials:
     sc.hadoopConfiguration.setBoolean("fs.s3.impl.disable.cache", true)
     sc.hadoopConfiguration.setBoolean("fs.s3n.impl.disable.cache", true)

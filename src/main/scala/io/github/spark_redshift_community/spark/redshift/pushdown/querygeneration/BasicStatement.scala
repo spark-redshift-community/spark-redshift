@@ -18,10 +18,11 @@
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
 import io.github.spark_redshift_community.spark.redshift
-import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
+import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException, TimestampNTZTypeExtractor}
 import io.github.spark_redshift_community.spark.redshift.pushdown._
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, BinaryOperator, BitwiseAnd, BitwiseNot, BitwiseOr, BitwiseXor, EqualNullSafe, Expression, Literal, Or}
 import org.apache.spark.sql.types._
+
 import scala.language.postfixOps
 import org.apache.spark.sql.catalyst.plans.logical.Assignment
 
@@ -93,7 +94,7 @@ private[querygeneration] object BasicStatement {
             StringVariable(Option(l.toString)) + "::TIMESTAMP"
           case TimestampType =>
             StringVariable(Option(l.toString)) + "::TIMESTAMPTZ"
-          case TimestampNTZType if !redshift.legacyTimestampHandling =>
+          case TimestampNTZTypeExtractor(_) if !redshift.legacyTimestampHandling =>
             StringVariable(Option(l.toString)) + "::TIMESTAMP"
           case _: StructType | _: MapType | _: ArrayType =>
             throw new RedshiftPushdownUnsupportedException(

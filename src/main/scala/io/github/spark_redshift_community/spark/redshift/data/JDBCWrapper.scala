@@ -418,7 +418,6 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
       case java.sql.Types.DATE          => DateType
       case java.sql.Types.TIME          => TimestampType
       case java.sql.Types.TIMESTAMP     => TimestampType
-      case java.sql.Types.TIMESTAMP_WITH_TIMEZONE => TimestampType
 
       // Boolean Type
       case java.sql.Types.BIT           => BooleanType // @see JdbcDialect for quirks

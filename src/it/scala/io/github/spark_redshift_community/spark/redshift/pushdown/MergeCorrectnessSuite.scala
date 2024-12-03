@@ -805,50 +805,53 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("Merge_NOT_MATCHED_BY_TARGET") {
-    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
-      initialMergeTestData(sourceTable, targetTable)
-      val query =
-        s"""MERGE INTO $targetTable
-           |USING $sourceTable
+    // Support for "WHEN NOT MATCHED BY TARGET" began with Spark 3.4
+    if (sparkVersion.greaterThanOrEqualTo("3.4")) {
+      withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+        initialMergeTestData(sourceTable, targetTable)
+        val query =
+          s"""MERGE INTO $targetTable
+             |USING $sourceTable
            ON $targetTable.id = $sourceTable.new_id
-           |WHEN MATCHED THEN
-           |    UPDATE SET
-           |     $targetTable.status = $sourceTable.status, $targetTable.name = $sourceTable.name
-           |WHEN NOT MATCHED BY TARGET THEN
-           |    INSERT (id, status, name) VALUES
-           |     ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)""".stripMargin
-      sqlContext.sql(query)
+             |WHEN MATCHED THEN
+             |    UPDATE SET
+             |     $targetTable.status = $sourceTable.status, $targetTable.name = $sourceTable.name
+             |WHEN NOT MATCHED BY TARGET THEN
+             |    INSERT (id, status, name) VALUES
+             |     ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)""".stripMargin
+        sqlContext.sql(query)
 
-      val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
-      val testTargetTableName = s""""PUBLIC"."${targetTable}""""
-      checkSqlStatement(
-        s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
-           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
-           |)
-           |WHEN MATCHED THEN
-           |UPDATE
-           |SET
-           |    "STATUS" = $testSourceTableName."STATUS",
-           |    "NAME" = $testSourceTableName."NAME"
-           |    WHEN NOT MATCHED THEN
-           |INSERT
-           |    ("ID", "STATUS", "NAME")
-           |VALUES
-           |    (
-           |        $testSourceTableName."NEW_ID",
-           |        $testSourceTableName."STATUS",
-           |        $testSourceTableName."NAME"
-           |    )""".stripMargin)
+        val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
+        val testTargetTableName = s""""PUBLIC"."${targetTable}""""
+        checkSqlStatement(
+          s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
+             |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+             |)
+             |WHEN MATCHED THEN
+             |UPDATE
+             |SET
+             |    "STATUS" = $testSourceTableName."STATUS",
+             |    "NAME" = $testSourceTableName."NAME"
+             |    WHEN NOT MATCHED THEN
+             |INSERT
+             |    ("ID", "STATUS", "NAME")
+             |VALUES
+             |    (
+             |        $testSourceTableName."NEW_ID",
+             |        $testSourceTableName."STATUS",
+             |        $testSourceTableName."NAME"
+             |    )""".stripMargin)
 
-      checkAnswer(
-        sqlContext.sql(s"select * from $targetTable"),
-        Seq( Row(1, 400, "john"),
-          Row(2, 501, "emily"),
-          Row(3, 402, "mike"),
-          Row(4, 502, "emma"),
-          Row(5, 405, "victor"),
-          Row(6, 503, "pam"))
-      )
+        checkAnswer(
+          sqlContext.sql(s"select * from $targetTable"),
+          Seq(Row(1, 400, "john"),
+            Row(2, 501, "emily"),
+            Row(3, 402, "mike"),
+            Row(4, 502, "emma"),
+            Row(5, 405, "victor"),
+            Row(6, 503, "pam"))
+        )
+      }
     }
   }
 
@@ -876,18 +879,22 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("Negative test: NOT MATCH BY SOURCE action") {
-    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
-      initialMergeTestData(sourceTable, targetTable)
-      val query = s"""MERGE INTO $targetTable
-                     |USING $sourceTable
-                     |ON $targetTable.id = $sourceTable.new_id
-                     |WHEN NOT MATCHED BY SOURCE THEN DELETE;""".stripMargin
+    // Support for "WHEN NOT MATCHED BY SOURCE" began with Spark 3.4
+    if (sparkVersion.greaterThanOrEqualTo("3.4")) {
+      withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+        initialMergeTestData(sourceTable, targetTable)
+        val query =
+          s"""MERGE INTO $targetTable
+             |USING $sourceTable
+             |ON $targetTable.id = $sourceTable.new_id
+             |WHEN NOT MATCHED BY SOURCE THEN DELETE;""".stripMargin
 
-      try {
-        sqlContext.sql(query)
-      } catch {
-        case e: Exception =>
-          assert(e.getMessage.equals("MERGE INTO TABLE is not supported temporarily."))
+        try {
+          sqlContext.sql(query)
+        } catch {
+          case e: Exception =>
+            assert(e.getMessage.equals("MERGE INTO TABLE is not supported temporarily."))
+        }
       }
     }
   }

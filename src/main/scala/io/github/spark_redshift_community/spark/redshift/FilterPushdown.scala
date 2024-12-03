@@ -81,7 +81,7 @@ private[redshift] object FilterPushdown {
             } else {
               s"'${value.asInstanceOf[Timestamp]}'"
             }
-          case TimestampNTZType if !redshift.legacyTimestampHandling =>
+          case TimestampNTZTypeExtractor(_) if !redshift.legacyTimestampHandling =>
             if (escapeQuote) {
               s"''${value.asInstanceOf[LocalDateTime]}''"
             } else {

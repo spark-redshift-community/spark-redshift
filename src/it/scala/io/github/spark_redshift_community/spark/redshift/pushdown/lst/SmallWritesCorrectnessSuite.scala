@@ -610,6 +610,27 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |);""".stripMargin,
     Seq(Row()),
     /* This needs to be adjusted after extending the DML MERGE */
+    s"""UPDATE "PUBLIC"."web_returns_copy"
+       |SET    "wr_return_quantity" = ( "PUBLIC"."web_returns_copy"."wr_return_quantity"
+       |                                + 100 ),
+       |       "wr_return_amt" = Cast (Cast ((
+       |                         Cast ( "PUBLIC"."web_returns_copy"."wr_return_amt" AS
+       |                         DECIMAL(
+       |                         8, 2
+       |                                           ) )
+       |                         + 100.00 ) AS DECIMAL(8, 2)) AS DECIMAL(7, 2)),
+       |       "wr_net_loss" = Cast (Cast ((
+       |                       Cast ( "PUBLIC"."web_returns_copy"."wr_net_loss"
+       |                       AS DECIMAL(8, 2)
+       |                                       )
+       |                       + 100.00 ) AS DECIMAL(8, 2)) AS DECIMAL(7, 2))
+       |WHERE  ( "PUBLIC"."web_returns_copy"."wr_order_number",
+       |                "PUBLIC"."web_returns_copy"."wr_item_sk" ) IN
+       |              (SELECT ( "SQ_0"."wr_order_number" ) AS "SQ_1_COL_0",
+       |                      ( "SQ_0"."wr_item_sk" )      AS "SQ_1_COL_1"
+       |               FROM   (SELECT *
+       |                       FROM   "PUBLIC"."web_returns" AS "RCQ_ALIAS") AS "SQ_0")"""
+      .stripMargin.replaceAll("\\s", ""),
     s"""UPDATE
        |    "PUBLIC"."web_returns_copy"
        |SET

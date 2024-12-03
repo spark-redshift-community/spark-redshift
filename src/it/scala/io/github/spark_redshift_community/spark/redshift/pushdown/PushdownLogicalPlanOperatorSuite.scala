@@ -2156,6 +2156,11 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       | SELECT test_table.testint FROM test_table
       | ORDER BY 1""".stripMargin,
     Seq(Row(null), Row(42)),
+    s"""SELECT ( "SQ_0"."testint" ) AS "SQ_1_COL_0"
+       |FROM   (SELECT *
+       |        FROM   $test_table AS
+       |               "RCQ_ALIAS")
+       |       AS "SQ_0" """.stripMargin,
     s"""SELECT * FROM ( ( SELECT ( CAST ( "SQ_0"."TESTBYTE" AS INTEGER ) )
        | AS "SQ_1_COL_0" FROM
        | ( SELECT * FROM $test_table_2 AS "RCQ_ALIAS" ) AS "SQ_0" )
@@ -2171,6 +2176,11 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       | SELECT test_table.testint FROM test_table
       | ORDER BY 1""".stripMargin,
     Seq(Row(null), Row(42)),
+    s"""SELECT ( "SQ_0"."testint" ) AS "SQ_1_COL_0"
+       |FROM   (SELECT *
+       |        FROM   $test_table AS
+       |               "RCQ_ALIAS")
+       |       AS "SQ_0" """.stripMargin,
     s"""SELECT * FROM ( ( SELECT ( CAST ( "SQ_0"."TESTBYTE" AS INTEGER ) )
        | AS "SQ_1_COL_0" FROM
        | ( SELECT * FROM $test_table_2 AS "RCQ_ALIAS" ) AS "SQ_0" )

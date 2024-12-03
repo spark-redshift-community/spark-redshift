@@ -21,6 +21,7 @@ import io.github.spark_redshift_community.spark.redshift.pushdown.deoptimize.Und
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftDMLExec, RedshiftPlan, RedshiftSQLStatement, RedshiftScanExec, RedshiftStrategy}
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownException, RedshiftPushdownUnsupportedException, RedshiftRelation}
 import io.github.spark_redshift_community.spark.redshift.pushdown.optimizers.LeftSemiAntiJoinOptimizations.{isDistinctAggregate, isPassThroughProjection, isSetOperation, pullUpLeftSemiJoinOverProjectAndInnerJoin}
+import org.apache.oro.text.MatchAction
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, NamedExpression}
@@ -160,12 +161,11 @@ class QueryBuilder(plan: LogicalPlan) {
       plan, overwrite) =>
         Some(InsertQuery(SourceQuery(relation, l.output, alias.next()),
           generateQueries(EliminateSubqueryAliasesAndView(plan)), overwrite))
-      case MergeIntoTable(targetTable@LogicalRelation(target: RedshiftRelation, _, _, _),
-        sourcePlan,
-        mergeCondition, matchedActions, notMatchedActions, notMatchedBySourceActions) =>
+      case MergeIntoTableExtractor(targetTable, target, sourcePlan, mergeCondition, matchedActions,
+                                   notMatchedActions, notMatchedBySourceActions) =>
         // If there is only matched action
-        if (notMatchedActions.isEmpty && matchedActions.size == 1
-                && notMatchedBySourceActions.isEmpty) {
+        if (notMatchedActions.isEmpty && matchedActions.size == 1 &&
+            notMatchedBySourceActions.isEmpty) {
           matchedActions.head match {
             case DeleteAction(None) =>
               return Some(DeleteQuery(SourceQuery(target, targetTable.output, alias.next()),

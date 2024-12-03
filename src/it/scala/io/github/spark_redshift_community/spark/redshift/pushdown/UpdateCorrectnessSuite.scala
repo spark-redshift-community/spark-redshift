@@ -371,7 +371,8 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       assert(exception.getMessage.equals("[INVALID_EXTRACT_BASE_FIELD_TYPE] Can't extract a " +
         "value from \"address\". Need a complex type [STRUCT, ARRAY, MAP] but got \"STRING\".; " +
-        "line 1 pos 42"))
+        "line 1 pos 42") ||
+      exception.getMessage.contains("need struct type but got string"))
 
       checkAnswer(
         read.schema(dataframeSchema).option("dbtable", tableName).load().select("address.city"),
@@ -523,27 +524,30 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("Test DEFAULT null assignment") { // Only work for Null Default
-    withTempRedshiftTable("updateTable") { tableName =>
-      redshiftWrapper.executeUpdate(conn,
-        s"create table $tableName (id int, value int)"
-      )
-      read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+    // Support for DEFAULT began with Spark 3.4
+    if (sparkVersion.greaterThanOrEqualTo("3.4")) {
+      withTempRedshiftTable("updateTable") { tableName =>
+        redshiftWrapper.executeUpdate(conn,
+          s"create table $tableName (id int, value int)"
+        )
+        read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
 
-      val initialData = Seq((1, 10), (2, 20), (3, 30), (4, 40), (5, 50))
-      val schema = List("id", "value")
-      val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
-      write(df).option("dbtable", tableName).mode("append").save()
+        val initialData = Seq((1, 10), (2, 20), (3, 30), (4, 40), (5, 50))
+        val schema = List("id", "value")
+        val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
+        write(df).option("dbtable", tableName).mode("append").save()
 
-      sqlContext.sql(s"update $tableName set value = DEFAULT where value > 30")
-      checkSqlStatement(
-        s""" UPDATE "PUBLIC"."$tableName"
-           | SET "VALUE" = NULL
-           | WHERE( "PUBLIC"."$tableName"."VALUE" > 30 )""".stripMargin)
+        sqlContext.sql(s"update $tableName set value = DEFAULT where value > 30")
+        checkSqlStatement(
+          s""" UPDATE "PUBLIC"."$tableName"
+             | SET "VALUE" = NULL
+             | WHERE( "PUBLIC"."$tableName"."VALUE" > 30 )""".stripMargin)
 
-      checkAnswer(
-        sqlContext.sql(s"select * from $tableName"),
-        Seq( Row(1, 10), Row(2, 20), Row(3, 30), Row(4, null), Row(5, null)))
+        checkAnswer(
+          sqlContext.sql(s"select * from $tableName"),
+          Seq(Row(1, 10), Row(2, 20), Row(3, 30), Row(4, null), Row(5, null)))
 
+      }
     }
   }
 

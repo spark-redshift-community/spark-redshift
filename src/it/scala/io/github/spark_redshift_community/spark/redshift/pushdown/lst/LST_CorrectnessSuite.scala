@@ -225,36 +225,31 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |        FROM
        |            inventory;""".stripMargin,
     Seq(Row()),
-    s"""INSERT INTO
-       |    "PUBLIC"."inventory_copy"
-       |SELECT
-       |    (
-       |        CAST ("SQ_2"."SQ_2_COL_0" AS INTEGER)
-       |    ) AS "SQ_3_COL_0",
-       |    (
-       |        CAST ("SQ_2"."SQ_2_COL_1" AS INTEGER)
-       |    ) AS "SQ_3_COL_1",
-       |    (
-       |        CAST ("SQ_2"."SQ_2_COL_2" AS INTEGER)
-       |    ) AS "SQ_3_COL_2",
-       |    (
-       |        CAST ("SQ_2"."SQ_2_COL_3" AS INTEGER)
-       |    ) AS "SQ_3_COL_3"
-       |FROM
-       |    (
-       |        SELECT
-       |            ("SQ_1"."INV_ITEM_SK") AS "SQ_2_COL_0",
-       |            ("SQ_1"."INV_WAREHOUSE_SK") AS "SQ_2_COL_1",
-       |            ("SQ_1"."INV_QUANTITY_ON_HAND") AS "SQ_2_COL_2",
-       |            ("SQ_1"."INV_DATE_SK") AS "SQ_2_COL_3"
-       |        FROM
-       |            (
-       |                SELECT
-       |                    *
-       |                FROM
-       |                    "PUBLIC"."inventory" AS "RCQ_ALIAS"
-       |            ) AS "SQ_1"
-       |    ) AS "SQ_2"""".stripMargin)
+    s"""INSERT INTO "PUBLIC"."inventory_copy"
+       |SELECT ( Cast ("SQ_14"."sq_14_col_0" AS INTEGER) ) AS "SQ_15_COL_0",
+       |       ( Cast ("SQ_14"."sq_14_col_1" AS INTEGER) ) AS "SQ_15_COL_1",
+       |       ( Cast ("SQ_14"."sq_14_col_2" AS INTEGER) ) AS "SQ_15_COL_2",
+       |       ( Cast ("SQ_14"."sq_14_col_3" AS INTEGER) ) AS "SQ_15_COL_3"
+       |FROM   (SELECT ( "SQ_13"."inv_item_sk" )          AS "SQ_14_COL_0",
+       |               ( "SQ_13"."inv_warehouse_sk" )     AS "SQ_14_COL_1",
+       |               ( "SQ_13"."inv_quantity_on_hand" ) AS "SQ_14_COL_2",
+       |               ( "SQ_13"."inv_date_sk" )          AS "SQ_14_COL_3"
+       |        FROM   (SELECT *
+       |                FROM   "PUBLIC"."inventory" AS "RCQ_ALIAS") AS "SQ_13") AS
+       |       "SQ_14""""
+      .stripMargin,
+    s"""INSERT INTO "PUBLIC"."inventory_copy"
+       |SELECT ( Cast ("SQ_2"."sq_2_col_0" AS INTEGER) ) AS "SQ_3_COL_0",
+       |       ( Cast ("SQ_2"."sq_2_col_1" AS INTEGER) ) AS "SQ_3_COL_1",
+       |       ( Cast ("SQ_2"."sq_2_col_2" AS INTEGER) ) AS "SQ_3_COL_2",
+       |       ( Cast ("SQ_2"."sq_2_col_3" AS INTEGER) ) AS "SQ_3_COL_3"
+       |FROM   (SELECT ( "SQ_1"."inv_item_sk" )          AS "SQ_2_COL_0",
+       |               ( "SQ_1"."inv_warehouse_sk" )     AS "SQ_2_COL_1",
+       |               ( "SQ_1"."inv_quantity_on_hand" ) AS "SQ_2_COL_2",
+       |               ( "SQ_1"."inv_date_sk" )          AS "SQ_2_COL_3"
+       |        FROM   (SELECT *
+       |                FROM   "PUBLIC"."inventory" AS "RCQ_ALIAS") AS "SQ_1") AS "SQ_2""""
+      .stripMargin)
 
   test("LST-Insert-1") {
     read

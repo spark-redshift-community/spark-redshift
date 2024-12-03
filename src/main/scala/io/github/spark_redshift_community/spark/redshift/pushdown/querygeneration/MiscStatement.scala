@@ -15,10 +15,11 @@
 * limitations under the License.
 */
 
+//import io.github.spark_redshift_community.spark.redshift
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, IntVariable, RedshiftSQLStatement}
-import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
+import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException, TimestampNTZTypeExtractor}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Coalesce, CreateNamedStruct, Descending, Exists, Expression, If, In, InSet, InSubquery, Literal, MakeDecimal, NullsFirst, NullsLast, SortOrder, UnscaledValue}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
@@ -42,7 +43,7 @@ private[querygeneration] object MiscStatement {
           if (pair._2 % 2 == 1) {
               // Redshift doesn't support time/date for values in Objects
               pair._1.dataType match {
-                case DateType | TimestampType | TimestampNTZType => false
+                case DateType | TimestampType | TimestampNTZTypeExtractor(_) => false
                 case _ => true
               }
           } else true
@@ -62,7 +63,7 @@ private[querygeneration] object MiscStatement {
             // For known unsupported data conversion, raise exception to break the
             // pushdown process.
             (child.dataType, t) match {
-              case (_: DateType | _: TimestampType | _: TimestampNTZType,
+              case (_: DateType | _: TimestampType | TimestampNTZTypeExtractor(_),
                     _: IntegerType | _: LongType | _: FloatType | _: DoubleType | _: DecimalType) =>
                 // This exception will not break the connector. It will be caught in
                 // QueryBuilder.treeRoot.
@@ -141,7 +142,7 @@ private[querygeneration] object MiscStatement {
           mkStatement(values.map(convertStatement(_, fields)), ", ")
         ) + ConstantString("IN") + convertSubQuery(fields, subQuery.plan, subQuery.joinCond)
 
-      case Exists(subQuery, _, _, joinCond, _) =>
+      case ExistsExtractor(subQuery, joinCond) =>
         ConstantString("EXISTS").toStatement + convertSubQuery(fields, subQuery, joinCond)
 
       case UnscaledValue(child) =>
