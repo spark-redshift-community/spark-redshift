@@ -476,7 +476,7 @@ private[redshift] class RedshiftWriter(
     val manifestUrl = unloadData(
       sqlContext,
       data,
-      tempDir = params.createPerQueryTempDir(false),
+      tempDir = params.createPerQueryTempDir(),
       tempFormat = params.tempFormat,
       nullString = params.nullString,
       trimCSV = params.legacyTrimCSVWrites)

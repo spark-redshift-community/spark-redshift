@@ -44,7 +44,6 @@ private[redshift] object Parameters {
   val PARAM_DATA_API_USER: String = "data_api_user"
   val PARAM_DATA_API_CLUSTER: String = "data_api_cluster"
   val PARAM_DATA_API_WORKGROUP: String = "data_api_workgroup"
-  val PARAM_TEMPDIR_WRITE_ONLY = "tempdir_write_only"
   val PARAM_TEMPORARY_AWS_ACCESS_KEY_ID = "temporary_aws_access_key_id"
   val PARAM_TEMPORARY_AWS_SECRET_ACCESS_KEY = "temporary_aws_secret_access_key"
   val PARAM_TEMPORARY_AWS_SESSION_TOKEN = "temporary_aws_session_token"
@@ -245,7 +244,6 @@ private[redshift] object Parameters {
      * are available for S3.
      */
     def rootTempDir: String = parameters("tempdir") // Default or Read Only
-    def rootTempDirWriteOnly: Option[String] = parameters.get(PARAM_TEMPDIR_WRITE_ONLY)
 
     /**
      * AWS region where the 'tempdir' is located. Setting this option will improve connector
@@ -283,16 +281,8 @@ private[redshift] object Parameters {
 
     /**
      * Creates a per-query subdirectory in the [[rootTempDir]], with a random UUID.
-     * @param readOnly  Whether Spark will only read from the directory (and not write to it).
      */
-    def createPerQueryTempDir(readOnly: Boolean): String = {
-      val tempRoot = if (!readOnly && rootTempDirWriteOnly.isDefined) {
-        rootTempDirWriteOnly.get
-      } else {
-        rootTempDir
-      }
-      Utils.makeTempPath(tempRoot)
-    }
+    def createPerQueryTempDir(): String = Utils.makeTempPath(rootTempDir)
 
     /**
      * The Redshift table to be used as the target when loading or writing data.

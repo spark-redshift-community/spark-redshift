@@ -145,7 +145,7 @@ private[redshift] case class RedshiftRelation(
       }
     } else {
       // Unload data from Redshift into a temporary directory in S3:
-      val tempDir = params.createPerQueryTempDir(true)
+      val tempDir = params.createPerQueryTempDir()
       val unloadSql = buildUnloadStmt(
         requiredColumns, filters, tempDir, credsProvider, params.sseKmsKey)
       val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
@@ -358,7 +358,7 @@ private[redshift] case class RedshiftRelation(
                              credsProvider: AWSCredentialsProvider,
                              threadName: String): Option[String] = {
 
-    val newTempDir = params.createPerQueryTempDir(true)
+    val newTempDir = params.createPerQueryTempDir()
     val unloadSql = buildUnloadStmt(statement,
       resultSchema,
       newTempDir,
