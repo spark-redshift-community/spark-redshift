@@ -569,7 +569,7 @@ private[redshift] object Parameters {
       } else if (dataApiWorkgroup.isDefined) {
         "DataAPI:Workgroup:" + dataApiWorkgroup.get
       } else {
-        "" // Unspecified (i.e., Service-managed compute)
+        "Serverless" // Unspecified (i.e., Service-managed compute)
       }
     }
  
