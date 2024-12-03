@@ -260,6 +260,8 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
 
       case Intersect(left, right, isAll) =>
         if (isAll) {
+          // Redshift Doesn't support INTERSECT ALL based on
+          // the doc: https://docs.aws.amazon.com/redshift/latest/dg/r_UNION.html
           throw new RedshiftPushdownUnsupportedException(
             RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_INTERSECT_ALL,
             s"${plan.nodeName} INTERSECT ALL",
