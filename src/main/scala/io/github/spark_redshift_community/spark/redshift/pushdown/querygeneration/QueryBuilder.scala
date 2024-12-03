@@ -17,6 +17,7 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
+import io.github.spark_redshift_community.spark.redshift.pushdown.deoptimize.UndoCharTypePadding
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftDMLExec, RedshiftPlan, RedshiftSQLStatement, RedshiftScanExec, RedshiftStrategy}
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownException, RedshiftPushdownUnsupportedException, RedshiftRelation}
 import io.github.spark_redshift_community.spark.redshift.pushdown.optimizers.LeftSemiAntiJoinOptimizations.{isDistinctAggregate, isPassThroughProjection, isSetOperation, pullUpLeftSemiJoinOverProjectAndInnerJoin}
@@ -25,6 +26,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.{InsertIntoDataSourceCommand, LogicalRelation}
@@ -100,7 +102,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
   private[redshift] lazy val treeRoot: RedshiftQuery = {
     try {
       log.debug("Begin query generation.")
-      generateQueries(pullUpLeftSemiJoinOverProjectAndInnerJoin(plan)).get
+      generateQueries(deoptimizeForPushdown(plan)).get
     } catch {
       // Qualify the exception with whether the plan applies to Redshift. Note that it
       // isn't necessarily a problem even when there are redshift tables in the query plan.
@@ -345,6 +347,13 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
           false
         )
     }
+  }
+
+  private def deoptimizeForPushdown(plan: LogicalPlan): LogicalPlan = {
+    val deoptimizeRules: Seq[Rule[LogicalPlan]] = Seq(
+      pullUpLeftSemiJoinOverProjectAndInnerJoin,
+      UndoCharTypePadding)
+    deoptimizeRules.foldLeft(plan)((currentPlan, rule) => rule(currentPlan))
   }
 
   /**
