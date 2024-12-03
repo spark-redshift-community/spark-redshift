@@ -264,7 +264,7 @@ class DataApiCommand(connection: DataAPIConnection,
 
     // Ensure the query completed successfully.
     if (describeResult.getStatus() == STATUS_ABORTED) {
-      throw new RuntimeException("DataAPI query was aborted")
+      throw new DataApiRuntimeException("DataAPI query was aborted")
     }
     if (describeResult.getStatus() == STATUS_FAILED) {
       val error = if (describeResult.getError() != null) {
@@ -272,7 +272,7 @@ class DataApiCommand(connection: DataAPIConnection,
       } else {
         "unknown error"
       }
-      throw new RuntimeException("DataAPI query execution failed: " + error)
+      throw new DataApiRuntimeException("DataAPI query execution failed: " + error)
     }
 
     log.info("The following Redshift Data API request id completed successfully: {}", requestId)

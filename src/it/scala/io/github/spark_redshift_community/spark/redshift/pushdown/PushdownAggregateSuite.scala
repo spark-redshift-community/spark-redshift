@@ -23,38 +23,38 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
   val testCount: TestCase = TestCase (
     """SELECT COUNT(1) FROM test_table""",
     Seq(Row(5)),
-    s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0" LIMIT 1""".stripMargin
+    s"""SELECT ( COUNT ( 1 ) ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       | AS "SQ_0" LIMIT 1""".stripMargin
   )
 
   val testCountDistinct: TestCase = TestCase (
     """SELECT COUNT(DISTINCT testdouble) FROM test_table""",
     Seq(Row(3)),
-    s"""SELECT ( COUNT ( DISTINCT "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0" FROM
-       | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin
+    s"""SELECT ( COUNT ( DISTINCT "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."TESTDOUBLE" ) AS "SQ_1_COL_0" FROM
+       | ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin
   )
 
   val testCountGroupBy1: TestCase = TestCase (
     """SELECT COUNT(1), testbyte FROM test_table GROUP BY testbyte""",
     Seq(Row(1, null), Row(2, 0), Row(2, 1)),
-    s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" ,
-       | ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
+    s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" ,
+       | ( "SQ_1"."SQ_1_COL_0" ) AS "SQ_2_COL_1"
+       | FROM ( SELECT ( "SQ_0"."TESTBYTE" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" GROUP BY "SQ_1"."SQ_1_COL_0"""".stripMargin
   )
 
   val testCountGroupBy2: TestCase = TestCase (
     """SELECT COUNT(testbyte), testbyte FROM test_table GROUP BY testbyte""",
     Seq(Row(0, null), Row(2, 0), Row(2, 1)),
-    s"""SELECT ( COUNT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0" ,
-       | ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
+    s"""SELECT ( COUNT ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0" ,
+       | ( "SQ_1"."SQ_1_COL_0" ) AS "SQ_2_COL_1"
+       | FROM ( SELECT ( "SQ_0"."TESTBYTE" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" GROUP BY "SQ_1"."SQ_1_COL_0"""".stripMargin
   )
 
   test("Test COUNT aggregation statements", P0Test, P1Test) {
@@ -67,21 +67,21 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
   val testMax: TestCase = TestCase (
     """SELECT MAX(testdouble) FROM test_table""",
     Seq(Row(1234152.12312498)),
-    s"""SELECT ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS"SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin
+    s"""SELECT ( MAX ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."TESTDOUBLE" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS"SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin
   )
 
   val testMaxGroupBy: TestCase = TestCase (
     """SELECT MAX(testfloat), testbyte FROM test_table GROUP BY testbyte""",
     Seq(Row(null, null), Row(100000f, 0), Row(1f, 1)),
-    s"""SELECT ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) ) AS "SUBQUERY_2_COL_0" ,
-       | ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0" ,
-       | ( "SUBQUERY_0"."TESTFLOAT" ) AS "SUBQUERY_1_COL_1"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
+    s"""SELECT ( MAX ( "SQ_1"."SQ_1_COL_1" ) ) AS "SQ_2_COL_0" ,
+       | ( "SQ_1"."SQ_1_COL_0" ) AS "SQ_2_COL_1"
+       | FROM ( SELECT ( "SQ_0"."TESTBYTE" ) AS "SQ_1_COL_0" ,
+       | ( "SQ_0"."TESTFLOAT" ) AS "SQ_1_COL_1"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" GROUP BY "SQ_1"."SQ_1_COL_0"""".stripMargin
   )
 
   test("Test Max aggregation statements", P0Test, P1Test) {
@@ -92,21 +92,21 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
   val testMin: TestCase = TestCase(
     """SELECT MIN(testfloat) FROM test_table""",
     Seq(Row(-1.0)),
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTFLOAT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS"RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."TESTFLOAT" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS"RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin
   )
 
   val testMinGroupBy: TestCase = TestCase (
     """SELECT MIN(testfloat), testbyte FROM test_table GROUP BY testbyte""",
     Seq(Row(null, null), Row(-1f, 0), Row(0f, 1)),
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) ) AS "SUBQUERY_2_COL_0" ,
-       | ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0" ,
-       | ( "SUBQUERY_0"."TESTFLOAT" ) AS "SUBQUERY_1_COL_1"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_1" ) ) AS "SQ_2_COL_0" ,
+       | ( "SQ_1"."SQ_1_COL_0" ) AS "SQ_2_COL_1"
+       | FROM ( SELECT ( "SQ_0"."TESTBYTE" ) AS "SQ_1_COL_0" ,
+       | ( "SQ_0"."TESTFLOAT" ) AS "SQ_1_COL_1"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" GROUP BY "SQ_1"."SQ_1_COL_0"""".stripMargin
   )
 
   test("Test Min aggregation statements", P0Test, P1Test) {
@@ -117,21 +117,21 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
   val testAvg: TestCase = TestCase(
     """SELECT AVG(testdouble) FROM test_table""",
     Seq(Row(0.0)),
-    s"""SELECT ( AVG ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTDOUBLE" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin
+    s"""SELECT ( AVG ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."TESTDOUBLE" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin
   )
 
   val testAvgGroupBy: TestCase = TestCase (
     """SELECT AVG(testint), testbyte FROM test_table GROUP BY testbyte""",
     Seq(Row(null, null), Row(4141214f, 0), Row(42f, 1)),
-    s"""SELECT ( AVG ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ::FLOAT ) ) AS "SUBQUERY_2_COL_0" ,
-       | ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0" ,
-       | ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_1"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
+    s"""SELECT ( AVG ( "SQ_1"."SQ_1_COL_1" ::FLOAT ) ) AS "SQ_2_COL_0" ,
+       | ( "SQ_1"."SQ_1_COL_0" ) AS "SQ_2_COL_1"
+       | FROM ( SELECT ( "SQ_0"."TESTBYTE" ) AS "SQ_1_COL_0" ,
+       | ( "SQ_0"."TESTINT" ) AS "SQ_1_COL_1"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" GROUP BY "SQ_1"."SQ_1_COL_0"""".stripMargin
   )
 
   test("Test Avg aggregation statements", P0Test, P1Test) {
@@ -142,21 +142,21 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
   val testSum: TestCase = TestCase(
     """SELECT SUM(testfloat) FROM test_table""",
     Seq(Row(100000.0)),
-    s"""SELECT ( SUM ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTFLOAT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin
+    s"""SELECT ( SUM ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."TESTFLOAT" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin
   )
 
   val testSumGroupBy: TestCase = TestCase (
     """SELECT SUM(testint), testbyte FROM test_table GROUP BY testbyte""",
     Seq(Row(null, null), Row(4141214, 0), Row(84, 1)),
-    s"""SELECT ( SUM ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) ) AS "SUBQUERY_2_COL_0" ,
-       | ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
-       | FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0" ,
-       | ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_1"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"""".stripMargin
+    s"""SELECT ( SUM ( "SQ_1"."SQ_1_COL_1" ) ) AS "SQ_2_COL_0" ,
+       | ( "SQ_1"."SQ_1_COL_0" ) AS "SQ_2_COL_1"
+       | FROM ( SELECT ( "SQ_0"."TESTBYTE" ) AS "SQ_1_COL_0" ,
+       | ( "SQ_0"."TESTINT" ) AS "SQ_1_COL_1"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" GROUP BY "SQ_1"."SQ_1_COL_0"""".stripMargin
   )
 
   test("Test Sum aggregation statements", P0Test, P1Test) {
@@ -174,15 +174,15 @@ abstract class PushdownAggregateSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( CAST ( ( SUM ( (
-         |CAST ( "SUBQUERY_2"."SUBQUERY_2_COL_1" AS DECIMAL(5, 2) ) * POW(10, 2 ) ) ) / POW(10, 2 ) )
-         |AS DECIMAL( 15 , 2 ) ) ) AS "SUBQUERY_3_COL_0" ,
-         |( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_1"
-         |FROM ( SELECT ( "SUBQUERY_1"."TESTBYTE" ) AS "SUBQUERY_2_COL_0" ,
-         |( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_1" FROM ( SELECT * FROM
-         |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTBYTE" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTBYTE" > 0 ) ) ) AS "SUBQUERY_1" )
-         |AS "SUBQUERY_2" GROUP BY "SUBQUERY_2"."SUBQUERY_2_COL_0"
+         |CAST ( "SQ_2"."SQ_2_COL_1" AS DECIMAL(5, 2) ) * POW(10, 2 ) ) ) / POW(10, 2 ) )
+         |AS DECIMAL( 15 , 2 ) ) ) AS "SQ_3_COL_0" ,
+         |( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_1"
+         |FROM ( SELECT ( "SQ_1"."TESTBYTE" ) AS "SQ_2_COL_0" ,
+         |( "SQ_1"."TESTINT" ) AS "SQ_2_COL_1" FROM ( SELECT * FROM
+         |( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTBYTE" IS NOT NULL )
+         |AND ( "SQ_0"."TESTBYTE" > 0 ) ) ) AS "SQ_1" )
+         |AS "SQ_2" GROUP BY "SQ_2"."SQ_2_COL_0"
          |""".stripMargin
     )
   }

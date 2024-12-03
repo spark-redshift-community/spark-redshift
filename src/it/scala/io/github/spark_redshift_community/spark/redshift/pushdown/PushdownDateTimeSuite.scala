@@ -75,46 +75,46 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
     """SELECT DATE_ADD(testdate, 1) FROM test_table
       | WHERE testdate >= cast('2015-07-02' as date)""".stripMargin,
     Seq(Row(Date.valueOf("2015-07-03")), Row(Date.valueOf("2015-07-04"))),
-    s"""SELECT ( DATEADD ( day, 1, "SUBQUERY_1"."TESTDATE" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTDATE" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTDATE" >= DATEADD ( day, 16618,
-       | TO_DATE ( \\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) ) AS "SUBQUERY_1"""".stripMargin
+    s"""SELECT ( DATEADD ( day, 1, "SQ_1"."TESTDATE" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       | AS "SQ_0" WHERE ( ( "SQ_0"."TESTDATE" IS NOT NULL )
+       | AND ( "SQ_0"."TESTDATE" >= DATEADD ( day, 16618,
+       | TO_DATE ( \\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) ) AS "SQ_1"""".stripMargin
   )
 
   val testDateAdd2: TestCase = TestCase(
     """SELECT DATE_ADD(testdate, 1) FROM test_table
       | WHERE testdate >= to_date('2015-07-02')""".stripMargin,
     Seq(Row(Date.valueOf("2015-07-03")), Row(Date.valueOf("2015-07-04"))),
-    s"""SELECT ( DATEADD ( day, 1, "SUBQUERY_1"."TESTDATE" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTDATE" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTDATE" >= DATEADD ( day, 16618,
-       | TO_DATE ( \\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) ) AS "SUBQUERY_1"""".stripMargin
+    s"""SELECT ( DATEADD ( day, 1, "SQ_1"."TESTDATE" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       | AS "SQ_0" WHERE ( ( "SQ_0"."TESTDATE" IS NOT NULL )
+       | AND ( "SQ_0"."TESTDATE" >= DATEADD ( day, 16618,
+       | TO_DATE ( \\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) ) AS "SQ_1"""".stripMargin
   )
 
   val testDateAdd3: TestCase = TestCase(
     """SELECT DATE_ADD(testtimestamp, 1) FROM test_table
       | WHERE testtimestamp >= cast('2015-07-02 00:00:00' as timestamp)""".stripMargin,
     Seq(Row(Date.valueOf("2015-07-03")), Row(Date.valueOf("2015-07-04"))),
-    s"""SELECT ( DATEADD ( day, 1 , CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS DATE ) ) )
-       | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
-       | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-       | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
-       | AS "SUBQUERY_1"""".stripMargin
+    s"""SELECT ( DATEADD ( day, 1 , CAST ( "SQ_1"."TESTTIMESTAMP" AS DATE ) ) )
+       | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+       | AS "RCQ_ALIAS" ) AS "SQ_0"
+       | WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL )
+       | AND ( "SQ_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
+       | AS "SQ_1"""".stripMargin
   )
 
   val testDateAdd4: TestCase = TestCase(
     """SELECT DATE_ADD(testtimestamp, 1) FROM test_table
       | WHERE testtimestamp >= to_timestamp('2015-07-02 00:00:00')""".stripMargin,
     Seq(Row(Date.valueOf("2015-07-03")), Row(Date.valueOf("2015-07-04"))),
-    s"""SELECT ( DATEADD ( day, 1 , CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS DATE ) ) )
-       | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
-       | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-       | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
-       | AS "SUBQUERY_1"""".stripMargin
+    s"""SELECT ( DATEADD ( day, 1 , CAST ( "SQ_1"."TESTTIMESTAMP" AS DATE ) ) )
+       | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+       | AS "RCQ_ALIAS" ) AS "SQ_0"
+       | WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL )
+       | AND ( "SQ_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
+       | AS "SQ_1"""".stripMargin
   )
 
   test("Test DateAdd datetime expressions", P0Test, P1Test) {
@@ -129,11 +129,11 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
       | WHERE testdate <= cast('2015-07-02' as date)""".stripMargin,
     Seq(Row(Date.valueOf("2015-06-30")),
       Row(Date.valueOf("2015-07-01"))),
-    s"""SELECT ( DATEADD ( day, (0- (1)), "SUBQUERY_1"."TESTDATE" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTDATE" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTDATE" <= DATEADD ( day, 16618,
-       | TO_DATE ( \\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) ) AS "SUBQUERY_1"""".stripMargin
+    s"""SELECT ( DATEADD ( day, (0- (1)), "SQ_1"."TESTDATE" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       | AS "SQ_0" WHERE ( ( "SQ_0"."TESTDATE" IS NOT NULL )
+       | AND ( "SQ_0"."TESTDATE" <= DATEADD ( day, 16618,
+       | TO_DATE ( \\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) ) AS "SQ_1"""".stripMargin
   )
 
   val testDateSub2: TestCase = TestCase(
@@ -142,11 +142,11 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(Date.valueOf("2015-06-30")),
       Row(Date.valueOf("2015-07-01")),
       Row(Date.valueOf("2015-07-02"))),
-    s"""SELECT ( DATEADD ( day, (0 - (1)), "SUBQUERY_1"."TESTDATE" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTDATE" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTDATE" >= DATEADD ( day, 16617,
-       | TO_DATE ( \\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) ) AS "SUBQUERY_1"""".stripMargin
+    s"""SELECT ( DATEADD ( day, (0 - (1)), "SQ_1"."TESTDATE" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       | AS "SQ_0" WHERE ( ( "SQ_0"."TESTDATE" IS NOT NULL )
+       | AND ( "SQ_0"."TESTDATE" >= DATEADD ( day, 16617,
+       | TO_DATE ( \\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) ) AS "SQ_1"""".stripMargin
   )
 
   val testDateSub3: TestCase = TestCase(
@@ -155,12 +155,12 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(Date.valueOf("2015-06-30")),
       Row(Date.valueOf("2015-07-01")),
       Row(Date.valueOf("2015-07-02"))),
-    s"""SELECT ( DATEADD ( day, (0 - (1)), CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS DATE ) ) )
-       | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
-       | AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTDATE" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTDATE" >=
-       | DATEADD(day, 16617, TO_DATE( \\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) ) AS "SUBQUERY_1"
+    s"""SELECT ( DATEADD ( day, (0 - (1)), CAST ( "SQ_1"."TESTTIMESTAMP" AS DATE ) ) )
+       | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+       | AS "RCQ_ALIAS" )
+       | AS "SQ_0" WHERE ( ( "SQ_0"."TESTDATE" IS NOT NULL )
+       | AND ( "SQ_0"."TESTDATE" >=
+       | DATEADD(day, 16617, TO_DATE( \\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) ) AS "SQ_1"
        | """.stripMargin
   )
 
@@ -168,24 +168,24 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
     """SELECT DATE_SUB(testtimestamp, 1) FROM test_table
       | WHERE testtimestamp < to_timestamp('2015-07-02 00:00:00')""".stripMargin,
     Seq(Row(Date.valueOf("2015-06-30"))),
-    s"""SELECT ( DATEADD ( day, (0 - (1)), CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS DATE ) ) )
-       | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
-       | AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL ) AND
-       | ( "SUBQUERY_0"."TESTTIMESTAMP" < \\'2015-07-0200:00:00\\' ::TIMESTAMP) ) )
-       | AS "SUBQUERY_1"""".stripMargin
+    s"""SELECT ( DATEADD ( day, (0 - (1)), CAST ( "SQ_1"."TESTTIMESTAMP" AS DATE ) ) )
+       | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+       | AS "RCQ_ALIAS" )
+       | AS "SQ_0" WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL ) AND
+       | ( "SQ_0"."TESTTIMESTAMP" < \\'2015-07-0200:00:00\\' ::TIMESTAMP) ) )
+       | AS "SQ_1"""".stripMargin
   )
 
   val testDateSub5: TestCase = TestCase(
     """SELECT DATE_SUB(testtimestamp, 1) FROM test_table
       | WHERE testtimestamp >= cast('2015-07-02 00:00:00' as timestamp)""".stripMargin,
     Seq(Row(Date.valueOf("2015-07-01")), Row(Date.valueOf("2015-07-02"))),
-    s"""SELECT ( DATEADD ( day, (0 - (1)), CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS DATE ) ) )
-       | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
-       | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-       | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
-       | AS "SUBQUERY_1"""".stripMargin
+    s"""SELECT ( DATEADD ( day, (0 - (1)), CAST ( "SQ_1"."TESTTIMESTAMP" AS DATE ) ) )
+       | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+       | AS "RCQ_ALIAS" ) AS "SQ_0"
+       | WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL )
+       | AND ( "SQ_0"."TESTTIMESTAMP" >= \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
+       | AS "SQ_1"""".stripMargin
   )
 
   test("Test DateSub datetime expressions", P0Test, P1Test) {
@@ -202,11 +202,11 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(Timestamp.valueOf("2015-07-01 00:00:00")),
       Row(Timestamp.valueOf("2015-07-02 00:00:00")),
       Row(Timestamp.valueOf("2015-07-03 00:00:00"))),
-    s"""SELECT ( CAST ( "SUBQUERY_1"."TESTDATE" AS TIMESTAMP ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-       | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-01 00:00:00\\' ::TIMESTAMP ) ) )
-       | AS "SUBQUERY_1"""".stripMargin
+    s"""SELECT ( CAST ( "SQ_1"."TESTDATE" AS TIMESTAMP ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       | AS "SQ_0" WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL )
+       | AND ( "SQ_0"."TESTTIMESTAMP" >= \\'2015-07-01 00:00:00\\' ::TIMESTAMP ) ) )
+       | AS "SQ_1"""".stripMargin
   )
 
   val testDatetimeCast2: TestCase = TestCase(
@@ -215,12 +215,12 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
     Seq(Row(Date.valueOf("2015-07-01")),
       Row(Date.valueOf("2015-07-02")),
       Row(Date.valueOf("2015-07-03"))),
-    s"""SELECT ( CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS DATE)) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS")
-       | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTDATE" IS NOT NULL ) AND
-       | ( "SUBQUERY_0"."TESTDATE" >=
+    s"""SELECT ( CAST ( "SQ_1"."TESTTIMESTAMP" AS DATE)) AS "SQ_2_COL_0"
+       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS")
+       | AS "SQ_0" WHERE ( ( "SQ_0"."TESTDATE" IS NOT NULL ) AND
+       | ( "SQ_0"."TESTDATE" >=
        | DATEADD (day, 16617, TO_DATE ( \\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
-       | AS "SUBQUERY_1"""".stripMargin
+       | AS "SQ_1"""".stripMargin
   )
 
   test("Test casting datetime expressions", P0Test, P1Test) {
@@ -258,23 +258,23 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
       Timestamp.valueOf("2015-07-03 12:34:00"),
       Timestamp.valueOf("2015-07-03 12:34:56"))),
       s"""SELECT
-         |( DATE_TRUNC ( \\'YEAR\\' , CAST ( "SUBQUERY_1"."TESTDATE" AS TIMESTAMP ) ) ) AS "SUBQUERY_2_COL_0" ,
-         |( DATE_TRUNC ( \\'QUARTER\\' , CAST ( "SUBQUERY_1"."TESTDATE" AS TIMESTAMP ) ) ) AS "SUBQUERY_2_COL_1" ,
-         |( DATE_TRUNC ( \\'MONTH\\' , CAST ( "SUBQUERY_1"."TESTDATE" AS TIMESTAMP ) ) ) AS "SUBQUERY_2_COL_2" ,
-         |( DATE_TRUNC ( \\'WEEK\\' , CAST ( "SUBQUERY_1"."TESTDATE" AS TIMESTAMP ) ) ) AS "SUBQUERY_2_COL_3" ,
-         |( DATE_TRUNC ( \\'DAY\\' , CAST ( "SUBQUERY_1"."TESTDATE" AS TIMESTAMP ) ) ) AS "SUBQUERY_2_COL_4" ,
-         |( DATE_TRUNC ( \\'YEAR\\' , "SUBQUERY_1"."TESTTIMESTAMP" ) ) AS "SUBQUERY_2_COL_5" ,
-         |( DATE_TRUNC ( \\'QUARTER\\' , "SUBQUERY_1"."TESTTIMESTAMP" ) ) AS "SUBQUERY_2_COL_6" ,
-         |( DATE_TRUNC ( \\'MONTH\\' , "SUBQUERY_1"."TESTTIMESTAMP" ) ) AS "SUBQUERY_2_COL_7" ,
-         |( DATE_TRUNC ( \\'WEEK\\' , "SUBQUERY_1"."TESTTIMESTAMP" ) ) AS "SUBQUERY_2_COL_8" ,
-         |( DATE_TRUNC ( \\'DAY\\' , "SUBQUERY_1"."TESTTIMESTAMP" ) ) AS "SUBQUERY_2_COL_9" ,
-         |( DATE_TRUNC ( \\'HOUR\\' , "SUBQUERY_1"."TESTTIMESTAMP" ) ) AS "SUBQUERY_2_COL_10" ,
-         |( DATE_TRUNC ( \\'MINUTE\\' , "SUBQUERY_1"."TESTTIMESTAMP" ) ) AS "SUBQUERY_2_COL_11" ,
-         |( DATE_TRUNC ( \\'SECOND\\' , "SUBQUERY_1"."TESTTIMESTAMP" ) ) AS "SUBQUERY_2_COL_12"
-         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-         | AND ( "SUBQUERY_0"."TESTTIMESTAMP" > \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
-         | AS "SUBQUERY_1"""".stripMargin
+         |( DATE_TRUNC ( \\'YEAR\\' , CAST ( "SQ_1"."TESTDATE" AS TIMESTAMP ) ) ) AS "SQ_2_COL_0" ,
+         |( DATE_TRUNC ( \\'QUARTER\\' , CAST ( "SQ_1"."TESTDATE" AS TIMESTAMP ) ) ) AS "SQ_2_COL_1" ,
+         |( DATE_TRUNC ( \\'MONTH\\' , CAST ( "SQ_1"."TESTDATE" AS TIMESTAMP ) ) ) AS "SQ_2_COL_2" ,
+         |( DATE_TRUNC ( \\'WEEK\\' , CAST ( "SQ_1"."TESTDATE" AS TIMESTAMP ) ) ) AS "SQ_2_COL_3" ,
+         |( DATE_TRUNC ( \\'DAY\\' , CAST ( "SQ_1"."TESTDATE" AS TIMESTAMP ) ) ) AS "SQ_2_COL_4" ,
+         |( DATE_TRUNC ( \\'YEAR\\' , "SQ_1"."TESTTIMESTAMP" ) ) AS "SQ_2_COL_5" ,
+         |( DATE_TRUNC ( \\'QUARTER\\' , "SQ_1"."TESTTIMESTAMP" ) ) AS "SQ_2_COL_6" ,
+         |( DATE_TRUNC ( \\'MONTH\\' , "SQ_1"."TESTTIMESTAMP" ) ) AS "SQ_2_COL_7" ,
+         |( DATE_TRUNC ( \\'WEEK\\' , "SQ_1"."TESTTIMESTAMP" ) ) AS "SQ_2_COL_8" ,
+         |( DATE_TRUNC ( \\'DAY\\' , "SQ_1"."TESTTIMESTAMP" ) ) AS "SQ_2_COL_9" ,
+         |( DATE_TRUNC ( \\'HOUR\\' , "SQ_1"."TESTTIMESTAMP" ) ) AS "SQ_2_COL_10" ,
+         |( DATE_TRUNC ( \\'MINUTE\\' , "SQ_1"."TESTTIMESTAMP" ) ) AS "SQ_2_COL_11" ,
+         |( DATE_TRUNC ( \\'SECOND\\' , "SQ_1"."TESTTIMESTAMP" ) ) AS "SQ_2_COL_12"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         | AS "SQ_0" WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL )
+         | AND ( "SQ_0"."TESTTIMESTAMP" > \\'2015-07-02 00:00:00\\' ::TIMESTAMP ) ) )
+         | AS "SQ_1"""".stripMargin
   )
 
   // Function trunc cannot be pushed down.
@@ -318,24 +318,24 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
     """SELECT add_months(testdate, 1) FROM test_table
       | WHERE testdate > cast('2015-07-02' as date)""".stripMargin,
     Seq(Row(Date.valueOf("2015-08-03"))),
-    s"""SELECT ( ADD_MONTHS ( "SUBQUERY_1"."TESTDATE", 1 ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTDATE" IS NOT NULL ) AND
-       | ( "SUBQUERY_0"."TESTDATE" >
+    s"""SELECT ( ADD_MONTHS ( "SQ_1"."TESTDATE", 1 ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       | AS "SQ_0" WHERE ( ( "SQ_0"."TESTDATE" IS NOT NULL ) AND
+       | ( "SQ_0"."TESTDATE" >
        | DATEADD ( day, 16618, TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\' ) ) ) ) )
-       | AS "SUBQUERY_1"""".stripMargin
+       | AS "SQ_1"""".stripMargin
   )
 
   val testAddMonths2: TestCase = TestCase(
     """SELECT add_months(testtimestamp, 1) FROM test_table
       | WHERE testtimestamp > to_timestamp('2015-07-02 00:00:00')""".stripMargin,
     Seq(Row(Date.valueOf("2015-08-03"))),
-    s"""SELECT ( ADD_MONTHS ( CAST ( "SUBQUERY_1"."TESTTIMESTAMP" AS DATE ), 1))
-       | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-       | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL ) AND
-       | ( "SUBQUERY_0"."TESTTIMESTAMP" > \\'2015-07-0200:00:00\\' ::TIMESTAMP ) ) )
-       | AS "SUBQUERY_1"""".stripMargin
+    s"""SELECT ( ADD_MONTHS ( CAST ( "SQ_1"."TESTTIMESTAMP" AS DATE ), 1))
+       | AS "SQ_2_COL_0" FROM ( SELECT * FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0"
+       | WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL ) AND
+       | ( "SQ_0"."TESTTIMESTAMP" > \\'2015-07-0200:00:00\\' ::TIMESTAMP ) ) )
+       | AS "SQ_1"""".stripMargin
   )
 
   test("Test ADD_MONTHS datetime expressions", P0Test, P1Test) {
@@ -350,10 +350,10 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
         ZonedDateTime.parse("2018-12-17 17:37:16 US/Pacific", formatter).toInstant))))
 
     checkSqlStatement(
-      s"""SELECT ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-         | FROM ( SELECT ( "SUBQUERY_0"."TESTTIMESTAMPTZ" ) AS "SUBQUERY_1_COL_0"
-         | FROM ( SELECT * FROM $test_tz_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-         | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+      s"""SELECT ( MAX ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+         | FROM ( SELECT ( "SQ_0"."TESTTIMESTAMPTZ" ) AS "SQ_1_COL_0"
+         | FROM ( SELECT * FROM $test_tz_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+         | AS "SQ_1" LIMIT 1""".stripMargin)
   }
 
   test("Test timestamptz type", TimestamptzTest, P0Test, P1Test) {
@@ -375,10 +375,10 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT * FROM ( SELECT * FROM $test_tz_table
-         | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-         | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2015-07-01 00:00:00\\' ::TIMESTAMP ) ) )
-         | AS "SUBQUERY_1" ORDER BY ( "SUBQUERY_1"."TESTID" ) ASC NULLS FIRST""".stripMargin)
+         | AS "RCQ_ALIAS" ) AS "SQ_0"
+         | WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL )
+         | AND ( "SQ_0"."TESTTIMESTAMP" >= \\'2015-07-01 00:00:00\\' ::TIMESTAMP ) ) )
+         | AS "SQ_1" ORDER BY ( "SQ_1"."TESTID" ) ASC NULLS FIRST""".stripMargin)
   }
 
   test("Test DATE_ADD on timestamptz type", TimestamptzTest, P0Test, P1Test) {
@@ -390,13 +390,13 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( COUNT ( DATEADD ( day, 1, CAST ( "SUBQUERY_2"."SUBQUERY_2_COL_0" AS DATE ) ) ) )
-         | AS "SUBQUERY_3_COL_0" FROM ( SELECT ( "SUBQUERY_1"."TESTTIMESTAMPTZ" )
-         | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_tz_table
-         | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL ) AND
-         | ( "SUBQUERY_0"."TESTTIMESTAMP" < \\'2018-12-17 08:00:00\\' ::TIMESTAMP ) ) )
-         | AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin)
+      s"""SELECT ( COUNT ( DATEADD ( day, 1, CAST ( "SQ_2"."SQ_2_COL_0" AS DATE ) ) ) )
+         | AS "SQ_3_COL_0" FROM ( SELECT ( "SQ_1"."TESTTIMESTAMPTZ" )
+         | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_tz_table
+         | AS "RCQ_ALIAS" ) AS "SQ_0"
+         | WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL ) AND
+         | ( "SQ_0"."TESTTIMESTAMP" < \\'2018-12-17 08:00:00\\' ::TIMESTAMP ) ) )
+         | AS "SQ_1" ) AS "SQ_2" LIMIT 1""".stripMargin)
   }
 
   test("Test DATE_SUB on timestamptz type", TimestamptzTest, P0Test, P1Test) {
@@ -409,13 +409,13 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( COUNT ( DATEADD ( day, ( 0 - (1) ),
-         | CAST ( "SUBQUERY_2"."SUBQUERY_2_COL_0" AS DATE ) ) ) )
-         | AS "SUBQUERY_3_COL_0" FROM ( SELECT ( "SUBQUERY_1"."TESTTIMESTAMPTZ" )
-         | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_tz_table
-         | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         | WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL ) AND
-         | ( "SUBQUERY_0"."TESTTIMESTAMP" < \\'2018-12-17 08:00:00\\' ::TIMESTAMP ) ) )
-         | AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin)
+         | CAST ( "SQ_2"."SQ_2_COL_0" AS DATE ) ) ) )
+         | AS "SQ_3_COL_0" FROM ( SELECT ( "SQ_1"."TESTTIMESTAMPTZ" )
+         | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_tz_table
+         | AS "RCQ_ALIAS" ) AS "SQ_0"
+         | WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL ) AND
+         | ( "SQ_0"."TESTTIMESTAMP" < \\'2018-12-17 08:00:00\\' ::TIMESTAMP ) ) )
+         | AS "SQ_1" ) AS "SQ_2" LIMIT 1""".stripMargin)
   }
 
   test("Test DATE_TRUNC on timestamptz type", TimestamptzTest, P0Test, P1Test) {
@@ -437,14 +437,14 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT
-      |( DATE_TRUNC ( \\'YEAR\\' , "SUBQUERY_1"."TESTTIMESTAMPTZ" ) ) AS "SUBQUERY_2_COL_0",
-      |( DATE_TRUNC ( \\'QUARTER\\' , "SUBQUERY_1"."TESTTIMESTAMPTZ" ) ) AS "SUBQUERY_2_COL_1",
-      |( DATE_TRUNC ( \\'MONTH\\' , "SUBQUERY_1"."TESTTIMESTAMPTZ" ) ) AS "SUBQUERY_2_COL_2",
-      |( DATE_TRUNC ( \\'HOUR\\' , "SUBQUERY_1"."TESTTIMESTAMPTZ" ) ) AS "SUBQUERY_2_COL_3"
-      | FROM ( SELECT * FROM ( SELECT * FROM $test_tz_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-      | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTTIMESTAMP" IS NOT NULL )
-      | AND ( "SUBQUERY_0"."TESTTIMESTAMP" >= \\'2018-12-19 08:37:16\\' ::TIMESTAMP ) ) )
-      | AS "SUBQUERY_1"""".stripMargin)
+      |( DATE_TRUNC ( \\'YEAR\\' , "SQ_1"."TESTTIMESTAMPTZ" ) ) AS "SQ_2_COL_0",
+      |( DATE_TRUNC ( \\'QUARTER\\' , "SQ_1"."TESTTIMESTAMPTZ" ) ) AS "SQ_2_COL_1",
+      |( DATE_TRUNC ( \\'MONTH\\' , "SQ_1"."TESTTIMESTAMPTZ" ) ) AS "SQ_2_COL_2",
+      |( DATE_TRUNC ( \\'HOUR\\' , "SQ_1"."TESTTIMESTAMPTZ" ) ) AS "SQ_2_COL_3"
+      | FROM ( SELECT * FROM ( SELECT * FROM $test_tz_table AS "RCQ_ALIAS" )
+      | AS "SQ_0" WHERE ( ( "SQ_0"."TESTTIMESTAMP" IS NOT NULL )
+      | AND ( "SQ_0"."TESTTIMESTAMP" >= \\'2018-12-19 08:37:16\\' ::TIMESTAMP ) ) )
+      | AS "SQ_1"""".stripMargin)
   }
 }
 

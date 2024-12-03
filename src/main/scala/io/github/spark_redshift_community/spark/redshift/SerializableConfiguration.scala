@@ -44,10 +44,10 @@ class SerializableConfiguration(@transient var value: Configuration)
       block
     } catch {
       case e: IOException =>
-        log.error("Exception encountered", e)
+        log.error("Exception encountered: {}", e.getMessage)
         throw e
       case NonFatal(e) =>
-        log.error("Exception encountered", e)
+        log.error("Exception encountered: {}", e.getMessage)
         throw new IOException(e)
     }
   }

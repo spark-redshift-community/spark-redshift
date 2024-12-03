@@ -25,64 +25,64 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
   val testMin00: TestCase = TestCase(
     """SELECT MIN(col_smallint_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-200)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_SMALLINT_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_SMALLINT_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin01: TestCase = TestCase(
     """SELECT MIN(col_smallint_bytedict) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-200)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_SMALLINT_BYTEDICT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_SMALLINT_BYTEDICT" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin02: TestCase = TestCase(
     """SELECT MIN(col_smallint_delta) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-200)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_SMALLINT_DELTA" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_SMALLINT_DELTA" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin03: TestCase = TestCase(
     """SELECT MIN(col_smallint_lzo) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-200)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_SMALLINT_LZO" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_SMALLINT_LZO" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin04: TestCase = TestCase(
     """SELECT MIN(col_smallint_mostly8) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-200)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_SMALLINT_MOSTLY8" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_SMALLINT_MOSTLY8" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin05: TestCase = TestCase(
     """SELECT MIN(col_smallint_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-200)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_SMALLINT_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_SMALLINT_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin06: TestCase = TestCase(
     """SELECT MIN(col_smallint_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-200)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_SMALLINT_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_SMALLINT_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin07: TestCase = TestCase(
@@ -95,78 +95,78 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       Row(-197, -150),
       Row(-196, -166)), // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0") ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_SMALLINT_RAW" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_SMALLINT_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0") ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_SMALLINT_RAW" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_SMALLINT_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" ) AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMin10: TestCase = TestCase(
     """SELECT MIN(col_int_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-500)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_INT_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_INT_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin11: TestCase = TestCase(
     """SELECT MIN(col_int_bytedict) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-500)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_INT_BYTEDICT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_INT_BYTEDICT" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin12: TestCase = TestCase(
     """SELECT MIN(col_int_delta) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-500)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_INT_DELTA" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_INT_DELTA" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin13: TestCase = TestCase(
     """SELECT MIN(col_int_lzo) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-500)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_INT_LZO" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_INT_LZO" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin14: TestCase = TestCase(
     """SELECT MIN(col_int_mostly8) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-500)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_INT_MOSTLY8" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_INT_MOSTLY8" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin15: TestCase = TestCase(
     """SELECT MIN(col_int_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-500)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_INT_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_INT_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin16: TestCase = TestCase(
     """SELECT MIN(col_int_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-500)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_INT_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_INT_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin17: TestCase = TestCase(
@@ -179,78 +179,78 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       Row(-497, -473),
       Row(-496, 464)), // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0") ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_INT_RAW" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_INT_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0") ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_INT_RAW" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_INT_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" ) AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMin20: TestCase = TestCase(
     """SELECT MIN(col_bigint_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-9993)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_BIGINT_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_BIGINT_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin21: TestCase = TestCase(
     """SELECT MIN(col_bigint_bytedict) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-9994)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_BIGINT_BYTEDICT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_BIGINT_BYTEDICT" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin22: TestCase = TestCase(
     """SELECT MIN(col_bigint_delta) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-10000)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_BIGINT_DELTA" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_BIGINT_DELTA" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin23: TestCase = TestCase(
     """SELECT MIN(col_bigint_lzo) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-9995)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_BIGINT_LZO" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_BIGINT_LZO" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin24: TestCase = TestCase(
     """SELECT MIN(col_bigint_mostly8) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-9994)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_BIGINT_MOSTLY8" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_BIGINT_MOSTLY8" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin25: TestCase = TestCase(
     """SELECT MIN(col_bigint_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-9996)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_BIGINT_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_BIGINT_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin26: TestCase = TestCase(
     """SELECT MIN(col_bigint_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-9987)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_BIGINT_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_BIGINT_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin27: TestCase = TestCase(
@@ -263,96 +263,96 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       Row(-9965, 2510),
       Row(-9951, 5378)), // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0") ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_BIGINT_RAW" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_BIGINT_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0") ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_BIGINT_RAW" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_BIGINT_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" ) AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMin30: TestCase = TestCase(
     """SELECT MIN(col_decimal_1_0_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-9)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DECIMAL_1_0_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DECIMAL_1_0_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin31: TestCase = TestCase(
     """SELECT MIN(col_decimal_18_0_bytedict) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-99974)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DECIMAL_18_0_BYTEDICT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DECIMAL_18_0_BYTEDICT" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin32: TestCase = TestCase(
     """SELECT MIN(col_decimal_18_18_delta) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(0.10006)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DECIMAL_18_18_DELTA" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DECIMAL_18_18_DELTA" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin33: TestCase = TestCase(
     """SELECT MIN(col_decimal_38_0_lzo) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-99969669)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DECIMAL_38_0_LZO" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DECIMAL_38_0_LZO" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin34: TestCase = TestCase(
     """SELECT MIN(col_decimal_38_37_mostly8) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(0.10002635)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DECIMAL_38_37_MOSTLY8" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DECIMAL_38_37_MOSTLY8" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin35: TestCase = TestCase(
     """SELECT MIN(col_decimal_38_37_mostly16) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(0.1000715)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DECIMAL_38_37_MOSTLY16" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DECIMAL_38_37_MOSTLY16" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin36: TestCase = TestCase(
     """SELECT MIN(col_decimal_38_37_mostly32) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(0.100037)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DECIMAL_38_37_MOSTLY32" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DECIMAL_38_37_MOSTLY32" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin37: TestCase = TestCase(
     """SELECT MIN(col_decimal_18_0_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-99959)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DECIMAL_18_0_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DECIMAL_18_0_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin38: TestCase = TestCase(
     """SELECT MIN(col_decimal_18_18_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(0.10022)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DECIMAL_18_18_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DECIMAL_18_18_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin39: TestCase = TestCase(
@@ -365,87 +365,87 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       Row(0.10112, 0.699),
       Row(0.10175, 0.54476)), // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0") ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_DECIMAL_18_18_RAW" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_DECIMAL_18_18_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0") ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_DECIMAL_18_18_RAW" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_DECIMAL_18_18_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" ) AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMin40: TestCase = TestCase(
     """SELECT MIN(col_float4_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-39.9913.toFloat)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_FLOAT4_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_FLOAT4_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin41: TestCase = TestCase(
     """SELECT MIN(col_float4_bytedict) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-39.981083.toFloat)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_FLOAT4_BYTEDICT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_FLOAT4_BYTEDICT" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin42: TestCase = TestCase(
     """SELECT MIN(col_float4_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-39.99827.toFloat)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_FLOAT4_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_FLOAT4_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin43: TestCase = TestCase(
     """SELECT MIN(col_float4_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-39.99878.toFloat)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_FLOAT4_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_FLOAT4_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin44: TestCase = TestCase(
     """SELECT MIN(col_float8_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-59.98780168437003)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_FLOAT8_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_FLOAT8_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin45: TestCase = TestCase(
     """SELECT MIN(col_float8_bytedict) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-59.96662513909352)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_FLOAT8_BYTEDICT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_FLOAT8_BYTEDICT" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin46: TestCase = TestCase(
     """SELECT MIN(col_float8_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-59.91385721198996)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_FLOAT8_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_FLOAT8_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin47: TestCase = TestCase(
     """SELECT MIN(col_float8_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(-59.98139065242519)), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_FLOAT8_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_FLOAT8_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin48: TestCase = TestCase(
@@ -458,14 +458,14 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       Row(-39.920315.toFloat, -18.851852.toFloat),
       Row(-39.919968.toFloat, -15.938475.toFloat)), // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0") ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_FLOAT4_RAW" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_FLOAT4_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0") ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_FLOAT4_RAW" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_FLOAT4_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" ) AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
@@ -479,14 +479,14 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       Row(-59.90738346844318, -53.58293774248173),
       Row(-59.89910788903543, 37.013841179953545)), // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0") ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_FLOAT8_RAW" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_FLOAT8_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0") ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_FLOAT8_RAW" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_FLOAT8_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" ) AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
@@ -494,25 +494,25 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
   val testMin50_unsupported: TestCase = TestCase(
     """SELECT MIN(col_boolean_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(false)), // expectedResult
-    s"""SELECT ( "SUBQUERY_0"."COL_BOOLEAN_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0"""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( "SQ_0"."COL_BOOLEAN_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       | AS "SQ_0"""".stripMargin // expectedPushdownStatement
   )
 
   val testMin51_unsupported: TestCase = TestCase(
     """SELECT MIN(col_boolean_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(false)), // expectedResult
-    s"""SELECT ( "SUBQUERY_0"."COL_BOOLEAN_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0"""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( "SQ_0"."COL_BOOLEAN_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       | AS "SQ_0"""".stripMargin // expectedPushdownStatement
   )
 
   val testMin52_unsupported: TestCase = TestCase(
     """SELECT MIN(col_boolean_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(false)), // expectedResult
-    s"""SELECT ( "SUBQUERY_0"."COL_BOOLEAN_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       | AS "SUBQUERY_0"""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( "SQ_0"."COL_BOOLEAN_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       | AS "SQ_0"""".stripMargin // expectedPushdownStatement
   )
 
   val testMin53: TestCase = TestCase(
@@ -521,51 +521,51 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       | order by col_boolean_zstd limit 5""".stripMargin, // sparkStatement
     Seq(Row(false, -500), Row(true, -500)), // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_INT_ZSTD" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_BOOLEAN_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_INT_ZSTD" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_BOOLEAN_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0") AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMin60: TestCase = TestCase(
     """SELECT MIN(col_char_1_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row("A")), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_CHAR_1_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_CHAR_1_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin61: TestCase = TestCase(
     """SELECT MIN(col_char_255_lzo) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row("A probably.")), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_CHAR_255_LZO" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_CHAR_255_LZO" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin62: TestCase = TestCase(
     """SELECT MIN(col_char_2000_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row("A beautiful much.")), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_CHAR_2000_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_CHAR_2000_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin63: TestCase = TestCase(
     """SELECT MIN(col_char_max_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row("A central require.")), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_CHAR_MAX_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_CHAR_MAX_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin64: TestCase = TestCase(
@@ -578,51 +578,51 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       Row("A significant Democrat through.", "Oil for blue happen."),
       Row("Ability gas sport win.", "Tough audience land.")), // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_CHAR_255_LZO" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_CHAR_MAX_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_CHAR_255_LZO" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_CHAR_MAX_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0") AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMin70: TestCase = TestCase(
     """SELECT MIN(col_varchar_1_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row("A")), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_VARCHAR_1_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_VARCHAR_1_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin71: TestCase = TestCase(
     """SELECT MIN(col_varchar_255_lzo) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row("A another act.")), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_VARCHAR_255_LZO" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_VARCHAR_255_LZO" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin72: TestCase = TestCase(
     """SELECT MIN(col_varchar_2000_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row("A day over manage.")), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_VARCHAR_2000_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_VARCHAR_2000_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin73: TestCase = TestCase(
     """SELECT MIN(col_varchar_max_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row("A arm ready mean.")), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_VARCHAR_MAX_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_VARCHAR_MAX_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin74: TestCase = TestCase(
@@ -635,78 +635,78 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       Row("A rest new apply.", "Within that become."),
       Row("A science whom seven and.", "Approach right set.")), // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_VARCHAR_255_LZO" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_VARCHAR_MAX_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_VARCHAR_255_LZO" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_VARCHAR_MAX_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0") AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMin80: TestCase = TestCase(
     """SELECT MIN(col_date_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Date.valueOf("1970-01-03"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DATE_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DATE_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin81: TestCase = TestCase(
     """SELECT MIN(col_date_bytedict) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Date.valueOf("1970-01-07"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DATE_BYTEDICT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DATE_BYTEDICT" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin82: TestCase = TestCase(
     """SELECT MIN(col_date_delta) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Date.valueOf("1970-01-06"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DATE_DELTA" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DATE_DELTA" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin83: TestCase = TestCase(
     """SELECT MIN(col_date_delta32k) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Date.valueOf("1970-01-10"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DATE_DELTA32K" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DATE_DELTA32K" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin84: TestCase = TestCase(
     """SELECT MIN(col_date_lzo) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Date.valueOf("1970-01-02"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DATE_LZO" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DATE_LZO" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin85: TestCase = TestCase(
     """SELECT MIN(col_date_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Date.valueOf("1970-01-01"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DATE_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DATE_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin86: TestCase = TestCase(
     """SELECT MIN(col_date_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Date.valueOf("1970-01-02"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_DATE_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_DATE_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin87: TestCase = TestCase(
@@ -719,78 +719,78 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       Row(Date.valueOf("1970-01-15"), Date.valueOf("2010-09-19")),
       Row(Date.valueOf("1970-01-19"), Date.valueOf("2004-03-17"))), // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_DATE_LZO" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_DATE_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_DATE_LZO" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_DATE_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0") AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 
   val testMin90: TestCase = TestCase(
     """SELECT MIN(col_timestamp_raw) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Timestamp.valueOf("1970-01-03 22:34:25.0"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMP_RAW" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_TIMESTAMP_RAW" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin91: TestCase = TestCase(
     """SELECT MIN(col_timestamp_bytedict) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Timestamp.valueOf("1970-01-07 04:00:48.0"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMP_BYTEDICT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_TIMESTAMP_BYTEDICT" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin92: TestCase = TestCase(
     """SELECT MIN(col_timestamp_delta) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Timestamp.valueOf("1970-01-04 18:35:46.0"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMP_DELTA" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_TIMESTAMP_DELTA" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin93: TestCase = TestCase(
     """SELECT MIN(col_timestamp_delta32k) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Timestamp.valueOf("1970-01-03 20:55:29.0"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMP_DELTA32K" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_TIMESTAMP_DELTA32K" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin94: TestCase = TestCase(
     """SELECT MIN(col_timestamp_lzo) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Timestamp.valueOf("1970-01-01 02:05:23.0"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMP_LZO" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_TIMESTAMP_LZO" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin95: TestCase = TestCase(
     """SELECT MIN(col_timestamp_runlength) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Timestamp.valueOf("1970-01-10 02:35:20.0"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMP_RUNLENGTH" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_TIMESTAMP_RUNLENGTH" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin96: TestCase = TestCase(
     """SELECT MIN(col_timestamp_zstd) FROM test_table""".stripMargin, // sparkStatement
     Seq(Row(Timestamp.valueOf("1970-01-01 06:36:17.0"))), // expectedResult
-    s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-       | FROM ( SELECT ( "SUBQUERY_0"."COL_TIMESTAMP_ZSTD" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       | AS "SUBQUERY_1" LIMIT 1""".stripMargin // expectedPushdownStatement
+    s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+       | FROM ( SELECT ( "SQ_0"."COL_TIMESTAMP_ZSTD" ) AS "SQ_1_COL_0"
+       | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       | AS "SQ_1" LIMIT 1""".stripMargin // expectedPushdownStatement
   )
 
   val testMin97: TestCase = TestCase(
@@ -804,14 +804,14 @@ trait AggregateMinCorrectnessSuite extends IntegrationPushdownSuiteBase {
       Row(Timestamp.valueOf("1970-01-05 20:52:40.0"), Timestamp.valueOf("2002-10-17 23:10:20.0"))),
     // expectedResult
     s"""SELECT * FROM ( SELECT * FROM (
-       | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-       | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
-       | SELECT ( "SUBQUERY_0"."COL_TIMESTAMP_LZO" ) AS "SUBQUERY_1_COL_0",
-       | ( "SUBQUERY_0"."COL_TIMESTAMP_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0") AS "SUBQUERY_1"
-       | GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-       | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-       | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+       | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+       | ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_1" FROM (
+       | SELECT ( "SQ_0"."COL_TIMESTAMP_LZO" ) AS "SQ_1_COL_0",
+       | ( "SQ_0"."COL_TIMESTAMP_ZSTD" ) AS "SQ_1_COL_1" FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0") AS "SQ_1"
+       | GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+       | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+       | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
        | LIMIT 5""".stripMargin // expectedPushdownStatement
   )
 }

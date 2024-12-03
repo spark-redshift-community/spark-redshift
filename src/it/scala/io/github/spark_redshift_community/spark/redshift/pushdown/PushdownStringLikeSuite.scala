@@ -96,11 +96,11 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
           Seq(Row(true)))
 
         checkSqlStatement(
-          s"""SELECT ( ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR
-             | ) LIKE $sqlPattern ) ) AS "SUBQUERY_2_COL_0" FROM ( SELECT *
-             | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-             | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
-             | ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS "SUBQUERY_1"""".stripMargin)
+          s"""SELECT ( ( CAST ( "SQ_1"."${column.toUpperCase}" AS VARCHAR
+             | ) LIKE $sqlPattern ) ) AS "SQ_2_COL_0" FROM ( SELECT *
+             | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+             | AS "SQ_0" WHERE ( ( "SQ_0"."TESTID" IS NOT NULL ) AND
+             | ( "SQ_0"."TESTID" = 1 ) ) ) AS "SQ_1"""".stripMargin)
       })
     })
   }
@@ -115,14 +115,14 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
         Seq(Row(true)))
 
       checkSqlStatement(
-        s"""SELECT ( ( ( LENGTH ( "SUBQUERY_1"."${column.toUpperCase}" ) >= 10 ) AND (
-           | ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR )
+        s"""SELECT ( ( ( LENGTH ( "SQ_1"."${column.toUpperCase}" ) >= 10 ) AND (
+           | ( CAST ( "SQ_1"."${column.toUpperCase}" AS VARCHAR )
            | LIKE CONCAT(\\'Hello\\', \\'%\\') ) AND
-           | ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR )
+           | ( CAST ( "SQ_1"."${column.toUpperCase}" AS VARCHAR )
            | LIKE CONCAT(\\'%\\', \\'World\\' ) ) ) ) )
-           | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
-           | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID"
-           | IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS "SUBQUERY_1"""".stripMargin)
+           | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
+           | "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( "SQ_0"."TESTID"
+           | IS NOT NULL ) AND ( "SQ_0"."TESTID" = 1 ) ) ) AS "SQ_1"""".stripMargin)
     })
   }
 
@@ -136,11 +136,11 @@ abstract class PushdownStringLikeSuite extends StringIntegrationPushdownSuiteBas
         Seq(Row(true)))
 
       checkSqlStatement(
-        s"""SELECT ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR )
-           | LIKE \\'%Hello%World%\\' ) AS "SUBQUERY_2_COL_0" FROM ( SELECT *
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND
-           | ( "SUBQUERY_0"."TESTID" = 1 ) ) ) AS "SUBQUERY_1"""".stripMargin)
+        s"""SELECT ( CAST ( "SQ_1"."${column.toUpperCase}" AS VARCHAR )
+           | LIKE \\'%Hello%World%\\' ) AS "SQ_2_COL_0" FROM ( SELECT *
+           | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           | AS "SQ_0" WHERE ( ( "SQ_0"."TESTID" IS NOT NULL ) AND
+           | ( "SQ_0"."TESTID" = 1 ) ) ) AS "SQ_1"""".stripMargin)
     })
   }
 }

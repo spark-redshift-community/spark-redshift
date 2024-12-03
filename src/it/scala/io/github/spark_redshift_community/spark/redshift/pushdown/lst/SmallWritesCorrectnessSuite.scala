@@ -396,90 +396,90 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
     s"""INSERT INTO
        |  "PUBLIC"."store_returns_copy"
        |SELECT
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_0") AS "SUBQUERY_4_COL_0",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_1") AS "SUBQUERY_4_COL_1",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_2") AS "SUBQUERY_4_COL_2",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_3") AS "SUBQUERY_4_COL_3",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_4") AS "SUBQUERY_4_COL_4",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_5") AS "SUBQUERY_4_COL_5",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_6") AS "SUBQUERY_4_COL_6",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_7") AS "SUBQUERY_4_COL_7",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_8") AS "SUBQUERY_4_COL_8",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_9") AS "SUBQUERY_4_COL_9",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_10") AS "SUBQUERY_4_COL_10",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_11") AS "SUBQUERY_4_COL_11",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_12") AS "SUBQUERY_4_COL_12",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_13") AS "SUBQUERY_4_COL_13",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_14") AS "SUBQUERY_4_COL_14",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_15") AS "SUBQUERY_4_COL_15",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_16") AS "SUBQUERY_4_COL_16",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_17") AS "SUBQUERY_4_COL_17",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_18") AS "SUBQUERY_4_COL_18",
-       |  ("SUBQUERY_3"."SUBQUERY_3_COL_19") AS "SUBQUERY_4_COL_19"
+       |  ("SQ_3"."SQ_3_COL_0") AS "SQ_4_COL_0",
+       |  ("SQ_3"."SQ_3_COL_1") AS "SQ_4_COL_1",
+       |  ("SQ_3"."SQ_3_COL_2") AS "SQ_4_COL_2",
+       |  ("SQ_3"."SQ_3_COL_3") AS "SQ_4_COL_3",
+       |  ("SQ_3"."SQ_3_COL_4") AS "SQ_4_COL_4",
+       |  ("SQ_3"."SQ_3_COL_5") AS "SQ_4_COL_5",
+       |  ("SQ_3"."SQ_3_COL_6") AS "SQ_4_COL_6",
+       |  ("SQ_3"."SQ_3_COL_7") AS "SQ_4_COL_7",
+       |  ("SQ_3"."SQ_3_COL_8") AS "SQ_4_COL_8",
+       |  ("SQ_3"."SQ_3_COL_9") AS "SQ_4_COL_9",
+       |  ("SQ_3"."SQ_3_COL_10") AS "SQ_4_COL_10",
+       |  ("SQ_3"."SQ_3_COL_11") AS "SQ_4_COL_11",
+       |  ("SQ_3"."SQ_3_COL_12") AS "SQ_4_COL_12",
+       |  ("SQ_3"."SQ_3_COL_13") AS "SQ_4_COL_13",
+       |  ("SQ_3"."SQ_3_COL_14") AS "SQ_4_COL_14",
+       |  ("SQ_3"."SQ_3_COL_15") AS "SQ_4_COL_15",
+       |  ("SQ_3"."SQ_3_COL_16") AS "SQ_4_COL_16",
+       |  ("SQ_3"."SQ_3_COL_17") AS "SQ_4_COL_17",
+       |  ("SQ_3"."SQ_3_COL_18") AS "SQ_4_COL_18",
+       |  ("SQ_3"."SQ_3_COL_19") AS "SQ_4_COL_19"
        |FROM
        |  (
        |    SELECT
-       |      ("SUBQUERY_1"."SR_RETURNED_DATE_SK") AS "SUBQUERY_3_COL_0",
-       |      ("SUBQUERY_1"."SR_RETURN_TIME_SK") AS "SUBQUERY_3_COL_1",
-       |      ("SUBQUERY_1"."SR_ITEM_SK") AS "SUBQUERY_3_COL_2",
-       |      ("SUBQUERY_1"."SR_CUSTOMER_SK") AS "SUBQUERY_3_COL_3",
-       |      ("SUBQUERY_1"."SR_CDEMO_SK") AS "SUBQUERY_3_COL_4",
-       |      ("SUBQUERY_1"."SR_HDEMO_SK") AS "SUBQUERY_3_COL_5",
-       |      ("SUBQUERY_1"."SR_ADDR_SK") AS "SUBQUERY_3_COL_6",
-       |      ("SUBQUERY_1"."SR_STORE_SK") AS "SUBQUERY_3_COL_7",
-       |      ("SUBQUERY_1"."SR_REASON_SK") AS "SUBQUERY_3_COL_8",
-       |      ("SUBQUERY_1"."SR_TICKET_NUMBER") AS "SUBQUERY_3_COL_9",
-       |      ("SUBQUERY_1"."SR_RETURN_QUANTITY") AS "SUBQUERY_3_COL_10",
-       |      ("SUBQUERY_1"."SR_RETURN_AMT") AS "SUBQUERY_3_COL_11",
-       |      ("SUBQUERY_1"."SR_RETURN_TAX") AS "SUBQUERY_3_COL_12",
-       |      ("SUBQUERY_1"."SR_RETURN_AMT_INC_TAX") AS "SUBQUERY_3_COL_13",
-       |      ("SUBQUERY_1"."SR_FEE") AS "SUBQUERY_3_COL_14",
-       |      ("SUBQUERY_1"."SR_RETURN_SHIP_COST") AS "SUBQUERY_3_COL_15",
-       |      ("SUBQUERY_1"."SR_REFUNDED_CASH") AS "SUBQUERY_3_COL_16",
-       |      ("SUBQUERY_1"."SR_REVERSED_CHARGE") AS "SUBQUERY_3_COL_17",
-       |      ("SUBQUERY_1"."SR_STORE_CREDIT") AS "SUBQUERY_3_COL_18",
-       |      ("SUBQUERY_1"."SR_NET_LOSS") AS "SUBQUERY_3_COL_19",
-       |      ("SUBQUERY_2"."SR_RETURNED_DATE_SK") AS "SUBQUERY_3_COL_20",
-       |      ("SUBQUERY_2"."SR_RETURN_TIME_SK") AS "SUBQUERY_3_COL_21",
-       |      ("SUBQUERY_2"."SR_ITEM_SK") AS "SUBQUERY_3_COL_22",
-       |      ("SUBQUERY_2"."SR_CUSTOMER_SK") AS "SUBQUERY_3_COL_23",
-       |      ("SUBQUERY_2"."SR_CDEMO_SK") AS "SUBQUERY_3_COL_24",
-       |      ("SUBQUERY_2"."SR_HDEMO_SK") AS "SUBQUERY_3_COL_25",
-       |      ("SUBQUERY_2"."SR_ADDR_SK") AS "SUBQUERY_3_COL_26",
-       |      ("SUBQUERY_2"."SR_STORE_SK") AS "SUBQUERY_3_COL_27",
-       |      ("SUBQUERY_2"."SR_REASON_SK") AS "SUBQUERY_3_COL_28",
-       |      ("SUBQUERY_2"."SR_TICKET_NUMBER") AS "SUBQUERY_3_COL_29",
-       |      ("SUBQUERY_2"."SR_RETURN_QUANTITY") AS "SUBQUERY_3_COL_30",
-       |      ("SUBQUERY_2"."SR_RETURN_AMT") AS "SUBQUERY_3_COL_31",
-       |      ("SUBQUERY_2"."SR_RETURN_TAX") AS "SUBQUERY_3_COL_32",
-       |      ("SUBQUERY_2"."SR_RETURN_AMT_INC_TAX") AS "SUBQUERY_3_COL_33",
-       |      ("SUBQUERY_2"."SR_FEE") AS "SUBQUERY_3_COL_34",
-       |      ("SUBQUERY_2"."SR_RETURN_SHIP_COST") AS "SUBQUERY_3_COL_35",
-       |      ("SUBQUERY_2"."SR_REFUNDED_CASH") AS "SUBQUERY_3_COL_36",
-       |      ("SUBQUERY_2"."SR_REVERSED_CHARGE") AS "SUBQUERY_3_COL_37",
-       |      ("SUBQUERY_2"."SR_STORE_CREDIT") AS "SUBQUERY_3_COL_38",
-       |      ("SUBQUERY_2"."SR_NET_LOSS") AS "SUBQUERY_3_COL_39"
+       |      ("SQ_1"."SR_RETURNED_DATE_SK") AS "SQ_3_COL_0",
+       |      ("SQ_1"."SR_RETURN_TIME_SK") AS "SQ_3_COL_1",
+       |      ("SQ_1"."SR_ITEM_SK") AS "SQ_3_COL_2",
+       |      ("SQ_1"."SR_CUSTOMER_SK") AS "SQ_3_COL_3",
+       |      ("SQ_1"."SR_CDEMO_SK") AS "SQ_3_COL_4",
+       |      ("SQ_1"."SR_HDEMO_SK") AS "SQ_3_COL_5",
+       |      ("SQ_1"."SR_ADDR_SK") AS "SQ_3_COL_6",
+       |      ("SQ_1"."SR_STORE_SK") AS "SQ_3_COL_7",
+       |      ("SQ_1"."SR_REASON_SK") AS "SQ_3_COL_8",
+       |      ("SQ_1"."SR_TICKET_NUMBER") AS "SQ_3_COL_9",
+       |      ("SQ_1"."SR_RETURN_QUANTITY") AS "SQ_3_COL_10",
+       |      ("SQ_1"."SR_RETURN_AMT") AS "SQ_3_COL_11",
+       |      ("SQ_1"."SR_RETURN_TAX") AS "SQ_3_COL_12",
+       |      ("SQ_1"."SR_RETURN_AMT_INC_TAX") AS "SQ_3_COL_13",
+       |      ("SQ_1"."SR_FEE") AS "SQ_3_COL_14",
+       |      ("SQ_1"."SR_RETURN_SHIP_COST") AS "SQ_3_COL_15",
+       |      ("SQ_1"."SR_REFUNDED_CASH") AS "SQ_3_COL_16",
+       |      ("SQ_1"."SR_REVERSED_CHARGE") AS "SQ_3_COL_17",
+       |      ("SQ_1"."SR_STORE_CREDIT") AS "SQ_3_COL_18",
+       |      ("SQ_1"."SR_NET_LOSS") AS "SQ_3_COL_19",
+       |      ("SQ_2"."SR_RETURNED_DATE_SK") AS "SQ_3_COL_20",
+       |      ("SQ_2"."SR_RETURN_TIME_SK") AS "SQ_3_COL_21",
+       |      ("SQ_2"."SR_ITEM_SK") AS "SQ_3_COL_22",
+       |      ("SQ_2"."SR_CUSTOMER_SK") AS "SQ_3_COL_23",
+       |      ("SQ_2"."SR_CDEMO_SK") AS "SQ_3_COL_24",
+       |      ("SQ_2"."SR_HDEMO_SK") AS "SQ_3_COL_25",
+       |      ("SQ_2"."SR_ADDR_SK") AS "SQ_3_COL_26",
+       |      ("SQ_2"."SR_STORE_SK") AS "SQ_3_COL_27",
+       |      ("SQ_2"."SR_REASON_SK") AS "SQ_3_COL_28",
+       |      ("SQ_2"."SR_TICKET_NUMBER") AS "SQ_3_COL_29",
+       |      ("SQ_2"."SR_RETURN_QUANTITY") AS "SQ_3_COL_30",
+       |      ("SQ_2"."SR_RETURN_AMT") AS "SQ_3_COL_31",
+       |      ("SQ_2"."SR_RETURN_TAX") AS "SQ_3_COL_32",
+       |      ("SQ_2"."SR_RETURN_AMT_INC_TAX") AS "SQ_3_COL_33",
+       |      ("SQ_2"."SR_FEE") AS "SQ_3_COL_34",
+       |      ("SQ_2"."SR_RETURN_SHIP_COST") AS "SQ_3_COL_35",
+       |      ("SQ_2"."SR_REFUNDED_CASH") AS "SQ_3_COL_36",
+       |      ("SQ_2"."SR_REVERSED_CHARGE") AS "SQ_3_COL_37",
+       |      ("SQ_2"."SR_STORE_CREDIT") AS "SQ_3_COL_38",
+       |      ("SQ_2"."SR_NET_LOSS") AS "SQ_3_COL_39"
        |    FROM
        |      (
        |        SELECT
        |          *
        |        FROM
-       |          "PUBLIC"."store_returns" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |      ) AS "SUBQUERY_1"
+       |          "PUBLIC"."store_returns" AS "RCQ_ALIAS"
+       |      ) AS "SQ_1"
        |      INNER JOIN (
        |        SELECT
        |          *
        |        FROM
-       |          "PUBLIC"."store_returns_copy" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |      ) AS "SUBQUERY_2" ON (
+       |          "PUBLIC"."store_returns_copy" AS "RCQ_ALIAS"
+       |      ) AS "SQ_2" ON (
        |        (
-       |          "SUBQUERY_2"."SR_TICKET_NUMBER" = "SUBQUERY_1"."SR_TICKET_NUMBER"
+       |          "SQ_2"."SR_TICKET_NUMBER" = "SQ_1"."SR_TICKET_NUMBER"
        |        )
        |        AND (
-       |          "SUBQUERY_2"."SR_ITEM_SK" = "SUBQUERY_1"."SR_ITEM_SK"
+       |          "SQ_2"."SR_ITEM_SK" = "SQ_1"."SR_ITEM_SK"
        |        )
        |      )
-       |  ) AS "SUBQUERY_3"""".stripMargin)
+       |  ) AS "SQ_3"""".stripMargin)
   test("5. Insert") {
     read
       .option("dbtable", s"store_returns")
@@ -515,47 +515,47 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |WHERE
        |  ("PUBLIC"."WEB_SALES_COPY"."WS_ORDER_NUMBER") IN (
        |    SELECT
-       |      ("SUBQUERY_4"."SUBQUERY_4_COL_3") AS "SUBQUERY_5_COL_0"
+       |      ("SQ_4"."SQ_4_COL_3") AS "SQ_5_COL_0"
        |    FROM
        |      (
        |        SELECT
-       |          ("SUBQUERY_1"."SUBQUERY_1_COL_0") AS "SUBQUERY_4_COL_0",
-       |          ("SUBQUERY_1"."SUBQUERY_1_COL_1") AS "SUBQUERY_4_COL_1",
-       |          ("SUBQUERY_3"."SUBQUERY_3_COL_0") AS "SUBQUERY_4_COL_2",
-       |          ("SUBQUERY_3"."SUBQUERY_3_COL_1") AS "SUBQUERY_4_COL_3"
+       |          ("SQ_1"."SQ_1_COL_0") AS "SQ_4_COL_0",
+       |          ("SQ_1"."SQ_1_COL_1") AS "SQ_4_COL_1",
+       |          ("SQ_3"."SQ_3_COL_0") AS "SQ_4_COL_2",
+       |          ("SQ_3"."SQ_3_COL_1") AS "SQ_4_COL_3"
        |        FROM
        |          (
        |            SELECT
-       |              ("SUBQUERY_0"."WS_ITEM_SK") AS "SUBQUERY_1_COL_0",
-       |              ("SUBQUERY_0"."WS_ORDER_NUMBER") AS "SUBQUERY_1_COL_1"
+       |              ("SQ_0"."WS_ITEM_SK") AS "SQ_1_COL_0",
+       |              ("SQ_0"."WS_ORDER_NUMBER") AS "SQ_1_COL_1"
        |            FROM
        |              (
        |                SELECT
        |                  *
        |                FROM
-       |                  "PUBLIC"."web_sales_copy" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |              ) AS "SUBQUERY_0"
-       |          ) AS "SUBQUERY_1"
+       |                  "PUBLIC"."web_sales_copy" AS "RCQ_ALIAS"
+       |              ) AS "SQ_0"
+       |          ) AS "SQ_1"
        |          INNER JOIN (
        |            SELECT
-       |              ("SUBQUERY_2"."WS_ITEM_SK") AS "SUBQUERY_3_COL_0",
-       |              ("SUBQUERY_2"."WS_ORDER_NUMBER") AS "SUBQUERY_3_COL_1"
+       |              ("SQ_2"."WS_ITEM_SK") AS "SQ_3_COL_0",
+       |              ("SQ_2"."WS_ORDER_NUMBER") AS "SQ_3_COL_1"
        |            FROM
        |              (
        |                SELECT
        |                  *
        |                FROM
-       |                  "PUBLIC"."web_sales" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |              ) AS "SUBQUERY_2"
-       |          ) AS "SUBQUERY_3" ON (
+       |                  "PUBLIC"."web_sales" AS "RCQ_ALIAS"
+       |              ) AS "SQ_2"
+       |          ) AS "SQ_3" ON (
        |            (
-       |              "SUBQUERY_1"."SUBQUERY_1_COL_1" = "SUBQUERY_3"."SUBQUERY_3_COL_1"
+       |              "SQ_1"."SQ_1_COL_1" = "SQ_3"."SQ_3_COL_1"
        |            )
        |            AND (
-       |              "SUBQUERY_1"."SUBQUERY_1_COL_0" = "SUBQUERY_3"."SUBQUERY_3_COL_0"
+       |              "SQ_1"."SQ_1_COL_0" = "SQ_3"."SQ_3_COL_0"
        |            )
        |          )
-       |      ) AS "SUBQUERY_4"
+       |      ) AS "SQ_4"
        |  )""".stripMargin)
 
   test("6. LST small-writes DELETE from subquery with inner join") {
@@ -631,15 +631,15 @@ class SmallWritesCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |        "PUBLIC"."WEB_RETURNS_COPY"."WR_ITEM_SK"
        |    ) IN (
        |        SELECT
-       |            ("SUBQUERY_0"."WR_ORDER_NUMBER") AS "SUBQUERY_1_COL_0",
-       |            ("SUBQUERY_0"."WR_ITEM_SK") AS "SUBQUERY_1_COL_1"
+       |            ("SQ_0"."WR_ORDER_NUMBER") AS "SQ_1_COL_0",
+       |            ("SQ_0"."WR_ITEM_SK") AS "SQ_1_COL_1"
        |        FROM
        |            (
        |                SELECT
        |                    *
        |                FROM
-       |                    "PUBLIC"."web_returns" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |            ) AS "SUBQUERY_0"
+       |                    "PUBLIC"."web_returns" AS "RCQ_ALIAS"
+       |            ) AS "SQ_0"
        |    )""".stripMargin.replaceAll("\\s", ""))
 
   test("7. LST small-writes UPDATE matches the subquery") {

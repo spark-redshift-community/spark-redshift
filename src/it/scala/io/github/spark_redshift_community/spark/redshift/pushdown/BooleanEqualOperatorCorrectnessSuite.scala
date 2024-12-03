@@ -98,12 +98,12 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" = $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0"
+           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" = $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -130,11 +130,11 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) ) = $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( CAST ( "SQ_0"."$column_name" AS DECIMAL(19, 18) ) = $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1
            |""".stripMargin)
     })
   }
@@ -162,12 +162,12 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" = $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" = $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -231,11 +231,11 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM
-           |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" = $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM
+           |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" = $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -259,12 +259,12 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" =
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" =
            |DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -295,12 +295,12 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" = \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" = \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -330,11 +330,11 @@ abstract class BooleanEqualOperatorCorrectnessSuite extends IntegrationPushdownS
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
-           |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-           | WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           | AND ( "SUBQUERY_0"."$column_name" = $scala_value $expected_cast ) ) )
-           | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM ( SELECT * FROM
+           |( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0"
+           | WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           | AND ( "SQ_0"."$column_name" = $scala_value $expected_cast ) ) )
+           | AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 

@@ -18,6 +18,8 @@
 package io.github.spark_redshift_community.spark.redshift
 
 
+import io.github.spark_redshift_community.spark.redshift
+
 import java.sql.Timestamp
 import java.text.{DecimalFormat, DecimalFormatSymbols, SimpleDateFormat}
 import java.time.{DateTimeException, LocalDateTime, ZoneId, ZonedDateTime}
@@ -213,7 +215,7 @@ private[redshift] object Conversions {
       case DateType if from!=null && from.isInstanceOf[Long] =>
         DateTimeUtils.microsToDays(
           from.asInstanceOf[Long], ZoneId.of("UTC"))
-      case TimestampType if from!=null =>
+      case TimestampType if redshift.legacyTimestampHandling && from!=null =>
         if (redshiftType == "timestamptz") {
           from
         } else DateTimeUtils.toUTCTime(from.asInstanceOf[Long], ZoneId.systemDefault().getId)

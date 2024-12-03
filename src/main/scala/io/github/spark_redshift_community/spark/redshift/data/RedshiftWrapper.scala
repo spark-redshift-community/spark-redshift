@@ -15,6 +15,7 @@
  */
 package io.github.spark_redshift_community.spark.redshift.data
 
+import io.github.spark_redshift_community.spark.redshift
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, RedshiftSQLStatement}
 import org.apache.spark.sql.types._
@@ -54,7 +55,8 @@ private[redshift] class RedshiftWrapper extends Serializable {
             } else {
               s"VARCHAR(MAX)"
             }
-          case TimestampType => "TIMESTAMP"
+          case TimestampType => if (redshift.legacyTimestampHandling) "TIMESTAMP" else "TIMESTAMPTZ"
+          case TimestampNTZType if !redshift.legacyTimestampHandling => "TIMESTAMP"
           case DateType => "DATE"
           case t: DecimalType => s"DECIMAL(${t.precision},${t.scale})"
           case _: ArrayType | _: MapType | _: StructType => "SUPER"

@@ -33,10 +33,10 @@ class PushdownLocalRelationSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( CAST ( "SUBQUERY_1"."COL1" AS INTEGER ) ) AS "SUBQUERY_2_COL_0" ,
-           | ( CAST ( "SUBQUERY_1"."COL2" AS INTEGER ) ) AS "SUBQUERY_2_COL_1"
+           | SELECT ( CAST ( "SQ_1"."COL1" AS INTEGER ) ) AS "SQ_2_COL_0" ,
+           | ( CAST ( "SQ_1"."COL2" AS INTEGER ) ) AS "SQ_2_COL_1"
            | FROM ( ( (SELECT 1  AS "col1", 100  AS "col2")
-           | UNION ALL (SELECT 3  AS "col1", 2000  AS "col2") ) ) AS "SUBQUERY_1"""".stripMargin
+           | UNION ALL (SELECT 3  AS "col1", 2000  AS "col2") ) ) AS "SQ_1"""".stripMargin
       )
 
       val post = sqlContext.sql(s"SELECT * FROM ${tableName}").collect().map(row => row.toSeq).toSeq
@@ -74,14 +74,14 @@ class PushdownLocalRelationSuite extends IntegrationPushdownSuiteBase {
            | ON v.id = t.a""".stripMargin).collect().map(row => row.toSeq).toSeq
 
       checkSqlStatement(
-        s"""SELECT ( "SUBQUERY_0"."ID" ) AS "SUBQUERY_3_COL_0" ,
-           | ( "SUBQUERY_0"."NAME" ) AS "SUBQUERY_3_COL_1" ,
-           | ( "SUBQUERY_2"."A" ) AS "SUBQUERY_3_COL_2" , ( "SUBQUERY_2"."B" ) AS "SUBQUERY_3_COL_3"
+        s"""SELECT ( "SQ_0"."ID" ) AS "SQ_3_COL_0" ,
+           | ( "SQ_0"."NAME" ) AS "SQ_3_COL_1" ,
+           | ( "SQ_2"."A" ) AS "SQ_3_COL_2" , ( "SQ_2"."B" ) AS "SQ_3_COL_3"
            | FROM ( ( (SELECT 1  AS "id", 1000  AS "name") UNION ALL (SELECT 2  AS "id", 2000  AS "name")
-           | UNION ALL (SELECT 3  AS "id", 3000  AS "name") ) ) AS "SUBQUERY_0" INNER JOIN
-           | ( SELECT * FROM ( SELECT * FROM "PUBLIC"."${tableName}" AS "RS_CONNECTOR_QUERY_ALIAS" )
-           | AS "SUBQUERY_1" WHERE ( "SUBQUERY_1"."A" IS NOT NULL ) ) AS "SUBQUERY_2" ON
-           |  ( "SUBQUERY_0"."ID" = "SUBQUERY_2"."A" )""".stripMargin
+           | UNION ALL (SELECT 3  AS "id", 3000  AS "name") ) ) AS "SQ_0" INNER JOIN
+           | ( SELECT * FROM ( SELECT * FROM "PUBLIC"."${tableName}" AS "RCQ_ALIAS" )
+           | AS "SQ_1" WHERE ( "SQ_1"."A" IS NOT NULL ) ) AS "SQ_2" ON
+           |  ( "SQ_0"."ID" = "SQ_2"."A" )""".stripMargin
       )
 
       assert(pre == 0)

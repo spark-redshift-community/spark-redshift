@@ -70,10 +70,10 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s""" UPDATE "PUBLIC"."$tableName"
-           | SET "VALUE" = ( ( SELECT ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) )
-           | AS "SUBQUERY_2_COL_0" FROM ( SELECT ( "SUBQUERY_0"."VALUE" )
-           | AS "SUBQUERY_1_COL_0" FROM ( SELECT * FROM "PUBLIC"."$tableName"
-           | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1" LIMIT 1 ) + 5 )
+           | SET "VALUE" = ( ( SELECT ( MAX ( "SQ_1"."SQ_1_COL_0" ) )
+           | AS "SQ_2_COL_0" FROM ( SELECT ( "SQ_0"."VALUE" )
+           | AS "SQ_1_COL_0" FROM ( SELECT * FROM "PUBLIC"."$tableName"
+           | AS "RCQ_ALIAS" ) AS "SQ_0" ) AS "SQ_1" LIMIT 1 ) + 5 )
            | WHERE ( "PUBLIC"."$tableName"."ID" <= 2 ) """.stripMargin)
 
       checkAnswer(
@@ -217,12 +217,12 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
         checkSqlStatement(
           s""" UPDATE "PUBLIC"."$targetTable" SET "VALUE" = 25
-             | WHERE ( ( SELECT * FROM ( SELECT ( 1 ) AS "SUBQUERY_2_COL_0"
+             | WHERE ( ( SELECT * FROM ( SELECT ( 1 ) AS "SQ_2_COL_0"
              |  FROM ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$conditionTable"
-             |    AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-             |    WHERE ( ( "SUBQUERY_0"."ID" IS NOT NULL )
-             |    AND ( "SUBQUERY_0"."ID" > 1 ) ) ) AS "SUBQUERY_1" )
-             |    AS "SUBQUERY_2" LIMIT 1 ) IS NOT NULL ) """.stripMargin)
+             |    AS "RCQ_ALIAS" ) AS "SQ_0"
+             |    WHERE ( ( "SQ_0"."ID" IS NOT NULL )
+             |    AND ( "SQ_0"."ID" > 1 ) ) ) AS "SQ_1" )
+             |    AS "SQ_2" LIMIT 1 ) IS NOT NULL ) """.stripMargin)
 
         checkAnswer(
           sqlContext.sql(s"select * from $targetTable"),
@@ -468,9 +468,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         checkSqlStatement(
           s""" UPDATE "PUBLIC"."$targetTable"
              | SET "STATUS" = 'returned'
-             | WHERE EXISTS ( SELECT ( "SUBQUERY_0"."ID" ) AS "SUBQUERY_1_COL_0"
-             |  FROM ( SELECT * FROM "PUBLIC"."$conditionTable" AS "RS_CONNECTOR_QUERY_ALIAS" )
-             |  AS "SUBQUERY_0" WHERE ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_1_COL_0" ) )
+             | WHERE EXISTS ( SELECT ( "SQ_0"."ID" ) AS "SQ_1_COL_0"
+             |  FROM ( SELECT * FROM "PUBLIC"."$conditionTable" AS "RCQ_ALIAS" )
+             |  AS "SQ_0" WHERE ( "PUBLIC"."$targetTable"."ID" = "SQ_1_COL_0" ) )
              """.stripMargin)
 
         checkAnswer(
@@ -508,11 +508,11 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         checkSqlStatement(
           s""" UPDATE "PUBLIC"."$targetTable"
              | SET "VALUE" = 0
-             | WHERE NOT ( ( "PUBLIC"."$targetTable"."ID" ) IN ( SELECT ( "SUBQUERY_1"."ID" )
-             |  AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
-             |    ( SELECT * FROM "PUBLIC"."$conditionTable" AS "RS_CONNECTOR_QUERY_ALIAS" )
-             |     AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."VALUE" IS NOT NULL ) AND
-             |     ( "SUBQUERY_0"."VALUE" = -1 ) ) ) AS "SUBQUERY_1" ) ) """.stripMargin)
+             | WHERE NOT ( ( "PUBLIC"."$targetTable"."ID" ) IN ( SELECT ( "SQ_1"."ID" )
+             |  AS "SQ_2_COL_0" FROM ( SELECT * FROM
+             |    ( SELECT * FROM "PUBLIC"."$conditionTable" AS "RCQ_ALIAS" )
+             |     AS "SQ_0" WHERE ( ( "SQ_0"."VALUE" IS NOT NULL ) AND
+             |     ( "SQ_0"."VALUE" = -1 ) ) ) AS "SQ_1" ) ) """.stripMargin)
 
         checkAnswer(
           sqlContext.sql(s"select * from $targetTable"),
@@ -608,7 +608,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
              |WHERE
              |  ($testTableName."ID") IN (
              |    SELECT
-             |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+             |      ("SQ_1"."ID") AS "SQ_2_COL_0"
              |    FROM
              |      (
              |        SELECT
@@ -618,14 +618,14 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
              |            SELECT
              |              *
              |            FROM
-             |              $testTableName2 AS "RS_CONNECTOR_QUERY_ALIAS"
-             |          ) AS "SUBQUERY_0"
+             |              $testTableName2 AS "RCQ_ALIAS"
+             |          ) AS "SQ_0"
              |        WHERE
              |          (
-             |            ("SUBQUERY_0"."VALUE" IS NOT NULL)
-             |            AND ("SUBQUERY_0"."VALUE" = -1)
+             |            ("SQ_0"."VALUE" IS NOT NULL)
+             |            AND ("SQ_0"."VALUE" = -1)
              |          )
-             |      ) AS "SUBQUERY_1"
+             |      ) AS "SQ_1"
              |  )""".stripMargin)
 
 
@@ -737,7 +737,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            | (
                            |  $testTableName."VALUE" < (
                            |   SELECT
-                           |    ("SUBQUERY_1"."VALUE") AS "SUBQUERY_2_COL_0"
+                           |    ("SQ_1"."VALUE") AS "SQ_2_COL_0"
                            |   FROM
                            |    (
                            |     SELECT
@@ -747,14 +747,14 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |       SELECT
                            |        *
                            |       FROM
-                           |        $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-                           |      ) AS "SUBQUERY_0"
+                           |        $testTableName AS "RCQ_ALIAS"
+                           |      ) AS "SQ_0"
                            |     WHERE
                            |      (
-                           |       ("SUBQUERY_0"."VALUE" IS NOT NULL)
-                           |       AND ("SUBQUERY_0"."VALUE" = 20)
+                           |       ("SQ_0"."VALUE" IS NOT NULL)
+                           |       AND ("SQ_0"."VALUE" = 20)
                            |      )
-                           |    ) AS "SUBQUERY_1"
+                           |    ) AS "SQ_1"
                            |  )
                            | )""".stripMargin)
 
@@ -796,7 +796,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |WHERE
                            |  ($testTableName."ID") IN (
                            |    SELECT
-                           |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |      ("SQ_1"."ID") AS "SQ_2_COL_0"
                            |    FROM
                            |      (
                            |        SELECT
@@ -806,20 +806,20 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |            SELECT
                            |              *
                            |            FROM
-                           |              $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-                           |          ) AS "SUBQUERY_0"
+                           |              $testTableName AS "RCQ_ALIAS"
+                           |          ) AS "SQ_0"
                            |        WHERE
                            |          (
                            |            (
-                           |              ("SUBQUERY_0"."ID" IS NOT NULL)
-                           |              AND ("SUBQUERY_0"."VALUE" IS NOT NULL)
+                           |              ("SQ_0"."ID" IS NOT NULL)
+                           |              AND ("SQ_0"."VALUE" IS NOT NULL)
                            |            )
                            |            AND (
-                           |              ("SUBQUERY_0"."ID" = 1)
-                           |              AND ("SUBQUERY_0"."VALUE" = 10)
+                           |              ("SQ_0"."ID" = 1)
+                           |              AND ("SQ_0"."VALUE" = 10)
                            |            )
                            |          )
-                           |      ) AS "SUBQUERY_1"
+                           |      ) AS "SQ_1"
                            |  )""".stripMargin)
 
       val post = sqlContext.sql(s"select * from $tableName")
@@ -861,7 +861,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |  NOT (
                            |    ($testTableName."ID") IN (
                            |      SELECT
-                           |        ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |        ("SQ_1"."ID") AS "SQ_2_COL_0"
                            |      FROM
                            |        (
                            |          SELECT
@@ -871,20 +871,20 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |              SELECT
                            |                *
                            |              FROM
-                           |                $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-                           |            ) AS "SUBQUERY_0"
+                           |                $testTableName AS "RCQ_ALIAS"
+                           |            ) AS "SQ_0"
                            |          WHERE
                            |            (
                            |              (
-                           |                ("SUBQUERY_0"."ID" IS NOT NULL)
-                           |                AND ("SUBQUERY_0"."VALUE" IS NOT NULL)
+                           |                ("SQ_0"."ID" IS NOT NULL)
+                           |                AND ("SQ_0"."VALUE" IS NOT NULL)
                            |              )
                            |              AND (
-                           |                ("SUBQUERY_0"."ID" = 1)
-                           |                AND ("SUBQUERY_0"."VALUE" = 10)
+                           |                ("SQ_0"."ID" = 1)
+                           |                AND ("SQ_0"."VALUE" = 10)
                            |              )
                            |            )
-                           |        ) AS "SUBQUERY_1"
+                           |        ) AS "SQ_1"
                            |    )
                            |  )""".stripMargin)
 
@@ -926,7 +926,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |WHERE
                            |  ($testTableName."ID") IN (
                            |    SELECT
-                           |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |      ("SQ_1"."ID") AS "SQ_2_COL_0"
                            |    FROM
                            |      (
                            |        SELECT
@@ -936,17 +936,17 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |            SELECT
                            |              *
                            |            FROM
-                           |              $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-                           |          ) AS "SUBQUERY_0"
+                           |              $testTableName AS "RCQ_ALIAS"
+                           |          ) AS "SQ_0"
                            |        WHERE
                            |          (
-                           |            ("SUBQUERY_0"."VALUE" IS NOT NULL)
-                           |            AND ("SUBQUERY_0"."VALUE" = 10)
+                           |            ("SQ_0"."VALUE" IS NOT NULL)
+                           |            AND ("SQ_0"."VALUE" = 10)
                            |          )
-                           |      ) AS "SUBQUERY_1"
+                           |      ) AS "SQ_1"
                            |    WHERE
                            |      (
-                           |        $testTableName."ID" = "SUBQUERY_2_COL_0"
+                           |        $testTableName."ID" = "SQ_2_COL_0"
                            |      )
                            |  )""".stripMargin)
 
@@ -988,7 +988,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |WHERE
                            |  ($testTableName."ID") IN (
                            |    SELECT
-                           |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |      ("SQ_1"."ID") AS "SQ_2_COL_0"
                            |    FROM
                            |      (
                            |        SELECT
@@ -998,17 +998,17 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |            SELECT
                            |              *
                            |            FROM
-                           |              $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-                           |          ) AS "SUBQUERY_0"
+                           |              $testTableName AS "RCQ_ALIAS"
+                           |          ) AS "SQ_0"
                            |        WHERE
                            |          (
-                           |            ("SUBQUERY_0"."VALUE" IS NOT NULL)
-                           |            AND ("SUBQUERY_0"."VALUE" = 10)
+                           |            ("SQ_0"."VALUE" IS NOT NULL)
+                           |            AND ("SQ_0"."VALUE" = 10)
                            |          )
-                           |      ) AS "SUBQUERY_1"
+                           |      ) AS "SQ_1"
                            |    WHERE
                            |      (
-                           |        $testTableName."ID" = "SUBQUERY_2_COL_0"
+                           |        $testTableName."ID" = "SQ_2_COL_0"
                            |      )
                            |  )""".stripMargin)
 
@@ -1050,7 +1050,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |WHERE
                            |  EXISTS (
                            |    SELECT
-                           |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |      ("SQ_1"."ID") AS "SQ_2_COL_0"
                            |    FROM
                            |      (
                            |        SELECT
@@ -1060,17 +1060,17 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |            SELECT
                            |              *
                            |            FROM
-                           |              $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-                           |          ) AS "SUBQUERY_0"
+                           |              $testTableName AS "RCQ_ALIAS"
+                           |          ) AS "SQ_0"
                            |        WHERE
                            |          (
-                           |            ("SUBQUERY_0"."VALUE" IS NOT NULL)
-                           |            AND ("SUBQUERY_0"."VALUE" = 10)
+                           |            ("SQ_0"."VALUE" IS NOT NULL)
+                           |            AND ("SQ_0"."VALUE" = 10)
                            |          )
-                           |      ) AS "SUBQUERY_1"
+                           |      ) AS "SQ_1"
                            |    WHERE
                            |      (
-                           |        "SUBQUERY_2_COL_0" = $testTableName."ID"
+                           |        "SQ_2_COL_0" = $testTableName."ID"
                            |      )
                            |  )""".stripMargin)
 
@@ -1113,7 +1113,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |  NOT (
                            |    EXISTS (
                            |      SELECT
-                           |        ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |        ("SQ_1"."ID") AS "SQ_2_COL_0"
                            |      FROM
                            |        (
                            |          SELECT
@@ -1123,17 +1123,17 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
                            |              SELECT
                            |                *
                            |              FROM
-                           |                $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-                           |            ) AS "SUBQUERY_0"
+                           |                $testTableName AS "RCQ_ALIAS"
+                           |            ) AS "SQ_0"
                            |          WHERE
                            |            (
-                           |              ("SUBQUERY_0"."VALUE" IS NOT NULL)
-                           |              AND ("SUBQUERY_0"."VALUE" = 10)
+                           |              ("SQ_0"."VALUE" IS NOT NULL)
+                           |              AND ("SQ_0"."VALUE" = 10)
                            |            )
-                           |        ) AS "SUBQUERY_1"
+                           |        ) AS "SQ_1"
                            |      WHERE
                            |        (
-                           |          "SUBQUERY_2_COL_0" = $testTableName."ID"
+                           |          "SQ_2_COL_0" = $testTableName."ID"
                            |        )
                            |    )
                            |  )""".stripMargin)

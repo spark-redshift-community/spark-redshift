@@ -194,7 +194,7 @@ private[redshift] object Utils {
       true
     } catch {
       case NonFatal(e) =>
-        log.warn("An error occurred while trying to read the S3 bucket lifecycle configuration")
+        log.warn("An error occurred while trying to read the S3 bucket lifecycle configuration: {}", e.getMessage)
         false
     }
   }
@@ -241,7 +241,7 @@ private[redshift] object Utils {
       Some(region)
     } catch {
       case NonFatal(e) =>
-        log.warn("An error occurred while trying to determine the S3 bucket's region", e)
+        log.warn("An error occurred while trying to determine the S3 bucket's region: {}", e.getMessage)
         None
     }
   }

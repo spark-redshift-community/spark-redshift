@@ -388,7 +388,7 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
         s"""DELETE FROM
            | $testTargetTableName USING (
            |  SELECT
-           |   ("SUBQUERY_2"."NEW_ID") AS "SUBQUERY_3_COL_0"
+           |   ("SQ_2"."NEW_ID") AS "SQ_3_COL_0"
            |  FROM
            |   (
            |    SELECT
@@ -398,18 +398,18 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |      SELECT
            |       *
            |      FROM
-           |       $testSourceTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-           |     ) AS "SUBQUERY_1"
+           |       $testSourceTableName AS "RCQ_ALIAS"
+           |     ) AS "SQ_1"
            |    WHERE
            |     (
-           |      ("SUBQUERY_1"."NEW_ID" IS NOT NULL)
-           |      AND ("SUBQUERY_1"."NEW_ID" > 3)
+           |      ("SQ_1"."NEW_ID" IS NOT NULL)
+           |      AND ("SQ_1"."NEW_ID" > 3)
            |     )
-           |   ) AS "SUBQUERY_2"
-           | ) AS "SUBQUERY_3"
+           |   ) AS "SQ_2"
+           | ) AS "SQ_3"
            |WHERE
            | (
-           |  $testTargetTableName."ID" = "SUBQUERY_3"."SUBQUERY_3_COL_0"
+           |  $testTargetTableName."ID" = "SQ_3"."SQ_3_COL_0"
            | )""".stripMargin)
 
       checkAnswer(

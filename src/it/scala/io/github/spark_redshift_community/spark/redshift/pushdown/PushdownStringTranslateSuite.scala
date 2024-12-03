@@ -52,12 +52,12 @@ abstract class PushdownStringTranslateSuite extends StringIntegrationPushdownSui
           Seq(Row(result)))
 
         checkSqlStatement(
-          s"""SELECT ( TRANSLATE ( "SUBQUERY_1"."${column.toUpperCase}" ,
+          s"""SELECT ( TRANSLATE ( "SQ_1"."${column.toUpperCase}" ,
              | \\'$from\\' , \\'$to\\' ) ) AS
-             | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
-             | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID"
-             | IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = $id ) ) ) AS
-             | "SUBQUERY_1"""".stripMargin)
+             | "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
+             | "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( "SQ_0"."TESTID"
+             | IS NOT NULL ) AND ( "SQ_0"."TESTID" = $id ) ) ) AS
+             | "SQ_1"""".stripMargin)
       })
     })
   }
@@ -87,12 +87,12 @@ abstract class PushdownStringTranslateSuite extends StringIntegrationPushdownSui
           Seq(Row(result)))
 
         checkSqlStatement(
-          s"""SELECT ( TRANSLATE ( "SUBQUERY_1"."${column.toUpperCase}" ,
+          s"""SELECT ( TRANSLATE ( "SQ_1"."${column.toUpperCase}" ,
              | \\'$from\\' , \\'$to\\' ) ) AS
-             | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
-             | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID"
-             | IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = $id ) ) ) AS
-             | "SUBQUERY_1"""".stripMargin)
+             | "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
+             | "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( "SQ_0"."TESTID"
+             | IS NOT NULL ) AND ( "SQ_0"."TESTID" = $id ) ) ) AS
+             | "SQ_1"""".stripMargin)
       })
     })
   }

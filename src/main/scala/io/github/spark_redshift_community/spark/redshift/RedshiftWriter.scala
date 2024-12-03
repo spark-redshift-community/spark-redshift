@@ -178,7 +178,7 @@ private[redshift] class RedshiftWriter(
       } catch {
         case e: SQLException =>
           log.error("SQLException thrown while running COPY query; will attempt to retrieve " +
-            "more information by querying the STL_LOAD_ERRORS table", e)
+            "more information by querying the STL_LOAD_ERRORS table: {}", e.getMessage)
           // Try to query Redshift's STL_LOAD_ERRORS table to figure out why the load failed.
           // See http://docs.aws.amazon.com/redshift/latest/dg/r_STL_LOAD_ERRORS.html for details.
           redshiftWrapper.rollback(conn)
@@ -216,7 +216,7 @@ private[redshift] class RedshiftWriter(
             }
           } catch {
             case NonFatal(e2) =>
-              log.error("Error occurred while querying STL_LOAD_ERRORS", e2)
+              log.error("Error occurred while querying STL_LOAD_ERRORS: {}", e2.getMessage)
               None
           }
           throw detailedException.getOrElse(e)
@@ -271,7 +271,7 @@ private[redshift] class RedshiftWriter(
       } catch {
         case e: SQLException =>
           log.error("SQLException thrown while running COPY query; will attempt to retrieve " +
-            "more information by querying the STL_LOAD_ERRORS table", e)
+            "more information by querying the STL_LOAD_ERRORS table: {}", e.getMessage)
           // Try to query Redshift's STL_LOAD_ERRORS table to figure out why the load failed.
           // See http://docs.aws.amazon.com/redshift/latest/dg/r_STL_LOAD_ERRORS.html for details.
           redshiftWrapper.rollback(conn)
@@ -309,7 +309,7 @@ private[redshift] class RedshiftWriter(
             }
           } catch {
             case NonFatal(e2) =>
-              log.error("Error occurred while querying STL_LOAD_ERRORS", e2)
+              log.error("Error occurred while querying STL_LOAD_ERRORS: {}", e2.getMessage)
               None
           }
           throw detailedException.getOrElse(e)
@@ -561,7 +561,7 @@ private[redshift] class RedshiftWriter(
         "https://github.com/databricks/spark-redshift/pull/157")
     }
 
-    if(saveMode != SaveMode.Overwrite && params.isDelete){
+    if ((saveMode != SaveMode.Overwrite) && params.isDelete) {
       throw new IllegalArgumentException(
         "For delete operations you must assign saveMode as SaveMode.Overwrite")
     }
@@ -589,8 +589,10 @@ private[redshift] class RedshiftWriter(
       }
     }
 
-    Utils.assertThatFileSystemIsNotS3BlockFileSystem(
-      new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
+    if (params.checkS3BucketUsage) {
+      Utils.assertThatFileSystemIsNotS3BlockFileSystem(
+        new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
+    }
 
     Utils.collectMetrics(params)
 
@@ -656,11 +658,11 @@ private[redshift] class RedshiftWriter(
       } catch {
         case NonFatal(e) =>
           try {
-            log.error("Exception thrown during Redshift load; will roll back transaction", e)
+            log.error("Exception thrown during Redshift load; will roll back transaction: {}", e.getMessage)
             redshiftWrapper.rollback(conn)
           } catch {
             case NonFatal(e2) =>
-              log.error("Exception while rolling back transaction", e2)
+              log.error("Exception while rolling back transaction: {}", e2.getMessage)
           }
           throw e
       } finally {

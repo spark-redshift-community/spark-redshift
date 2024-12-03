@@ -27,11 +27,11 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" )
-         | AS "SUBQUERY_1_COL_0"
+      s"""SELECT * FROM ( SELECT ( "SQ_0"."TESTBYTE" )
+         | AS "SQ_1_COL_0"
          | FROM ( SELECT * FROM $test_table
-         | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-         | AS "SUBQUERY_1" LIMIT 1""".stripMargin
+         | AS "RCQ_ALIAS" ) AS "SQ_0" )
+         | AS "SQ_1" LIMIT 1""".stripMargin
     )
   }
 
@@ -47,21 +47,21 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""(SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_3_COL_0" ,
-         | ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_1"
-         | FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0" ,
-         | ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_1" FROM
+      s"""(SELECT ( "SQ_2"."SQ_2_COL_1" ) AS "SQ_3_COL_0" ,
+         | ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_1"
+         | FROM ( SELECT ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_0" ,
+         | ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_1" FROM
          | ( SELECT * FROM ( SELECT * FROM $test_table AS
-         | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-         | ( "SUBQUERY_0"."TESTSTRING"  IS NOT NULL ) ) AS "SUBQUERY_1" )
-         | AS "SUBQUERY_2" )
+         | "RCQ_ALIAS" ) AS "SQ_0" WHERE
+         | ( "SQ_0"."TESTSTRING"  IS NOT NULL ) ) AS "SQ_1" )
+         | AS "SQ_2" )
          | INTERSECT
-         | ( SELECT ( "SUBQUERY_1"."TESTSTRING" )
-         | AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."TESTSHORT" )
-         | AS "SUBQUERY_2_COL_1" FROM ( SELECT * FROM ( SELECT * FROM
-         | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
-         | "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         | AND ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SUBQUERY_1")
+         | ( SELECT ( "SQ_1"."TESTSTRING" )
+         | AS "SQ_2_COL_0" , ( "SQ_1"."TESTSHORT" )
+         | AS "SQ_2_COL_1" FROM ( SELECT * FROM ( SELECT * FROM
+         | $test_table AS "RCQ_ALIAS" ) AS
+         | "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         | AND ( "SQ_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SQ_1")
          |""".stripMargin
     )
   }
@@ -78,29 +78,29 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_2"."SUBQUERY_1_COL_2" ) AS "SUBQUERY_3_COL_0" ,
-         | ( "SUBQUERY_2"."SUBQUERY_1_COL_3" ) AS "SUBQUERY_3_COL_1" ,
-         | ( CASE WHEN ( "SUBQUERY_2"."SUBQUERY_1_COL_0" > "SUBQUERY_2"."SUBQUERY_1_COL_1" )
-         | THEN "SUBQUERY_2"."SUBQUERY_1_COL_1" ELSE "SUBQUERY_2"."SUBQUERY_1_COL_0" END )
-         | AS "SUBQUERY_3_COL_2" FROM ( SELECT * FROM ( SELECT ( COUNT ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) )
-         | AS "SUBQUERY_1_COL_0" , ( COUNT ( "SUBQUERY_0"."SUBQUERY_2_COL_1" ) ) AS "SUBQUERY_1_COL_1" ,
-         | ( "SUBQUERY_0"."SUBQUERY_2_COL_2" ) AS "SUBQUERY_1_COL_2" ,
-         | ( "SUBQUERY_0"."SUBQUERY_2_COL_3" ) AS "SUBQUERY_1_COL_3" FROM ( ( SELECT ( true )
-         | AS "SUBQUERY_2_COL_0" , ( NULL ) AS "SUBQUERY_2_COL_1" , ( "SUBQUERY_1"."TESTSTRING" )
-         | AS "SUBQUERY_2_COL_2" , ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_3" FROM
+      s"""SELECT ( "SQ_2"."SQ_1_COL_2" ) AS "SQ_3_COL_0" ,
+         | ( "SQ_2"."SQ_1_COL_3" ) AS "SQ_3_COL_1" ,
+         | ( CASE WHEN ( "SQ_2"."SQ_1_COL_0" > "SQ_2"."SQ_1_COL_1" )
+         | THEN "SQ_2"."SQ_1_COL_1" ELSE "SQ_2"."SQ_1_COL_0" END )
+         | AS "SQ_3_COL_2" FROM ( SELECT * FROM ( SELECT ( COUNT ( "SQ_0"."SQ_2_COL_0" ) )
+         | AS "SQ_1_COL_0" , ( COUNT ( "SQ_0"."SQ_2_COL_1" ) ) AS "SQ_1_COL_1" ,
+         | ( "SQ_0"."SQ_2_COL_2" ) AS "SQ_1_COL_2" ,
+         | ( "SQ_0"."SQ_2_COL_3" ) AS "SQ_1_COL_3" FROM ( ( SELECT ( true )
+         | AS "SQ_2_COL_0" , ( NULL ) AS "SQ_2_COL_1" , ( "SQ_1"."TESTSTRING" )
+         | AS "SQ_2_COL_2" , ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_3" FROM
          | ( SELECT * FROM ( SELECT * FROM $test_table
-         | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) )
-         | AS "SUBQUERY_1" )
+         | AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( "SQ_0"."TESTSTRING" IS NOT NULL ) )
+         | AS "SQ_1" )
          | UNION ALL
-         | ( SELECT ( NULL ) AS "SUBQUERY_2_COL_0" ,
-         | ( true ) AS "SUBQUERY_2_COL_1" , ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_2" ,
-         | ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_3" FROM ( SELECT * FROM
+         | ( SELECT ( NULL ) AS "SQ_2_COL_0" ,
+         | ( true ) AS "SQ_2_COL_1" , ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_2" ,
+         | ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_3" FROM ( SELECT * FROM
          | ( SELECT * FROM $test_table AS
-         | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         | AND ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SUBQUERY_1" ) ) AS
-         | "SUBQUERY_0" GROUP BY "SUBQUERY_0"."SUBQUERY_2_COL_2" , "SUBQUERY_0"."SUBQUERY_2_COL_3" )
-         | AS "SUBQUERY_1" WHERE ( ( "SUBQUERY_1"."SUBQUERY_1_COL_0" >= 1 ) AND
-         | ( "SUBQUERY_1"."SUBQUERY_1_COL_1" >= 1 ) ) ) AS "SUBQUERY_2"
+         | "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         | AND ( "SQ_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SQ_1" ) ) AS
+         | "SQ_0" GROUP BY "SQ_0"."SQ_2_COL_2" , "SQ_0"."SQ_2_COL_3" )
+         | AS "SQ_1" WHERE ( ( "SQ_1"."SQ_1_COL_0" >= 1 ) AND
+         | ( "SQ_1"."SQ_1_COL_1" >= 1 ) ) ) AS "SQ_2"
          |""".stripMargin
     )
   }
@@ -121,15 +121,15 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
 
     // On same table LeftAnti is not used. It is optimized to filters
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_0" ,
-         | ( "SUBQUERY_2"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_3_COL_1" FROM
-         | ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
-         | ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
-         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         | AND NOT ( COALESCE ( ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) , false ) ) ) )
-         | AS "SUBQUERY_1" ) AS "SUBQUERY_2" GROUP BY "SUBQUERY_2"."SUBQUERY_2_COL_0" ,
-         | "SUBQUERY_2"."SUBQUERY_2_COL_1"
+      s"""SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_0" ,
+         | ( "SQ_2"."SQ_2_COL_1" ) AS "SQ_3_COL_1" FROM
+         | ( SELECT ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_0" ,
+         | ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_1" FROM
+         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         | AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         | AND NOT ( COALESCE ( ( "SQ_0"."TESTSTRING" = \\'f\\' ) , false ) ) ) )
+         | AS "SQ_1" ) AS "SQ_2" GROUP BY "SQ_2"."SQ_2_COL_0" ,
+         | "SQ_2"."SQ_2_COL_1"
          |""".stripMargin
     )
   }
@@ -150,15 +150,15 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
 
     // On same table LeftAnti is not used. It is optimized to filters
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_0" ,
-         | ( "SUBQUERY_2"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_3_COL_1" FROM
-         | ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
-         | ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
-         |  ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |  AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
-         |  AND NOT ( COALESCE ( ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) , false ) ) ) )
-         |  AS "SUBQUERY_1" ) AS "SUBQUERY_2" GROUP BY "SUBQUERY_2"."SUBQUERY_2_COL_0" ,
-         |  "SUBQUERY_2"."SUBQUERY_2_COL_1"
+      s"""SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_0" ,
+         | ( "SQ_2"."SQ_2_COL_1" ) AS "SQ_3_COL_1" FROM
+         | ( SELECT ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_0" ,
+         | ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_1" FROM
+         |  ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |  AS "SQ_0" WHERE ( ( "SQ_0"."TESTSHORT" IS NOT NULL )
+         |  AND NOT ( COALESCE ( ( "SQ_0"."TESTSTRING" = \\'f\\' ) , false ) ) ) )
+         |  AS "SQ_1" ) AS "SQ_2" GROUP BY "SQ_2"."SQ_2_COL_0" ,
+         |  "SQ_2"."SQ_2_COL_1"
          |""".stripMargin
     )
   }
@@ -178,22 +178,22 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( "SUBQUERY_0"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_1_COL_0" ,
-         | ( "SUBQUERY_0"."SUBQUERY_2_COL_2" ) AS "SUBQUERY_1_COL_1" ,
-         | ( SUM ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) ) AS "SUBQUERY_1_COL_2" FROM
-         | ( ( SELECT ( 1 ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."TESTSTRING" )
-         | AS "SUBQUERY_2_COL_1" , ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_2"
-         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         | AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" )
+      s"""SELECT * FROM ( SELECT ( "SQ_0"."SQ_2_COL_1" ) AS "SQ_1_COL_0" ,
+         | ( "SQ_0"."SQ_2_COL_2" ) AS "SQ_1_COL_1" ,
+         | ( SUM ( "SQ_0"."SQ_2_COL_0" ) ) AS "SQ_1_COL_2" FROM
+         | ( ( SELECT ( 1 ) AS "SQ_2_COL_0" , ( "SQ_1"."TESTSTRING" )
+         | AS "SQ_2_COL_1" , ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_2"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         | AS "SQ_0" WHERE ( "SQ_0"."TESTSTRING" IS NOT NULL ) ) AS "SQ_1" )
          | UNION ALL
-         | ( SELECT ( -1 ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_1" ,
-         | ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_2" FROM
-         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         | AS "SUBQUERY_0"
-         | WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) ) )
-         | AS "SUBQUERY_1" ) ) AS "SUBQUERY_0" GROUP BY "SUBQUERY_0"."SUBQUERY_2_COL_1" ,
-         | "SUBQUERY_0"."SUBQUERY_2_COL_2" ) AS "SUBQUERY_1" WHERE
-         | ( ( "SUBQUERY_1"."SUBQUERY_1_COL_2" IS NOT NULL ) AND ( "SUBQUERY_1"."SUBQUERY_1_COL_2" > 0 ) )
+         | ( SELECT ( -1 ) AS "SQ_2_COL_0" , ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_1" ,
+         | ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_2" FROM
+         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         | AS "SQ_0"
+         | WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL ) AND ( "SQ_0"."TESTSTRING" = \\'f\\' ) ) )
+         | AS "SQ_1" ) ) AS "SQ_0" GROUP BY "SQ_0"."SQ_2_COL_1" ,
+         | "SQ_0"."SQ_2_COL_2" ) AS "SQ_1" WHERE
+         | ( ( "SQ_1"."SQ_1_COL_2" IS NOT NULL ) AND ( "SQ_1"."SQ_1_COL_2" > 0 ) )
          |""".stripMargin
     )
   }
@@ -213,18 +213,18 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_1_COL_0" ,
-         |( "SUBQUERY_0"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_1_COL_1"
-         |FROM ( ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
-         |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
-         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" )
-         |UNION ALL ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
-         |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
-         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SUBQUERY_1" ) ) AS "SUBQUERY_0"
-         |GROUP BY "SUBQUERY_0"."SUBQUERY_2_COL_0" , "SUBQUERY_0"."SUBQUERY_2_COL_1"
+      s"""SELECT ( "SQ_0"."SQ_2_COL_0" ) AS "SQ_1_COL_0" ,
+         |( "SQ_0"."SQ_2_COL_1" ) AS "SQ_1_COL_1"
+         |FROM ( ( SELECT ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_0" ,
+         |( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_1" FROM
+         |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( "SQ_0"."TESTSTRING" IS NOT NULL ) ) AS "SQ_1" )
+         |UNION ALL ( SELECT ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_0" ,
+         |( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_1" FROM
+         |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SQ_1" ) ) AS "SQ_0"
+         |GROUP BY "SQ_0"."SQ_2_COL_0" , "SQ_0"."SQ_2_COL_1"
          |""".stripMargin
     )
   }
@@ -245,15 +245,15 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
-         |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
-         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" )
-         |UNION ALL ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
-         |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1" FROM
-         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SUBQUERY_1" )
+      s"""( SELECT ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_0" ,
+         |( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_1" FROM
+         |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( "SQ_0"."TESTSTRING" IS NOT NULL ) ) AS "SQ_1" )
+         |UNION ALL ( SELECT ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_0" ,
+         |( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_1" FROM
+         |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SQ_1" )
          |""".stripMargin
     )
   }
@@ -265,12 +265,12 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSHORT" > 0 ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
-         |ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+      s"""SELECT * FROM ( SELECT ( "SQ_1"."TESTSHORT" )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSHORT" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSHORT" > 0 ) ) ) AS "SQ_1" ) AS "SQ_2"
+         |ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST
          |""".stripMargin
     )
   }
@@ -284,12 +284,12 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTSHORT" )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSHORT" > 0 ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
-         |ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) DESC NULLS LAST
+      s"""SELECT * FROM ( SELECT ( "SQ_1"."TESTSHORT" )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSHORT" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSHORT" > 0 ) ) ) AS "SQ_1" ) AS "SQ_2"
+         |ORDER BY ( "SQ_2"."SQ_2_COL_0" ) DESC NULLS LAST
          |""".stripMargin
     )
   }
@@ -307,27 +307,27 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" ,
-         |( "SUBQUERY_6"."SUBQUERY_6_COL_2" ) AS "SUBQUERY_7_COL_1"
+      s"""SELECT ( "SQ_6"."SQ_6_COL_0" ) AS "SQ_7_COL_0" ,
+         |( "SQ_6"."SQ_6_COL_2" ) AS "SQ_7_COL_1"
          |FROM (
-         |SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" ,
-         |( "SUBQUERY_5"."SUBQUERY_5_COL_0" ) AS "SUBQUERY_6_COL_1" ,
-         |( "SUBQUERY_5"."SUBQUERY_5_COL_1" ) AS "SUBQUERY_6_COL_2"
-         |FROM ( SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0" FROM
+         |SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_6_COL_0" ,
+         |( "SQ_5"."SQ_5_COL_0" ) AS "SQ_6_COL_1" ,
+         |( "SQ_5"."SQ_5_COL_1" ) AS "SQ_6_COL_2"
+         |FROM ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0" FROM
          |( SELECT * FROM
-         |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) )
-         |AND ( "SUBQUERY_0"."TESTINT" IS NOT NULL ) ) ) AS "SUBQUERY_1" )
-         |AS "SUBQUERY_2"
+         |( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) )
+         |AND ( "SQ_0"."TESTINT" IS NOT NULL ) ) ) AS "SQ_1" )
+         |AS "SQ_2"
          |INNER JOIN
-         |( SELECT ( "SUBQUERY_4"."TESTINT" ) AS "SUBQUERY_5_COL_0" ,
-         |( "SUBQUERY_4"."TESTSHORT" ) AS "SUBQUERY_5_COL_1"
+         |( SELECT ( "SQ_4"."TESTINT" ) AS "SQ_5_COL_0" ,
+         |( "SQ_4"."TESTSHORT" ) AS "SQ_5_COL_1"
          |FROM ( SELECT * FROM
-         |( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_3"
-         |WHERE ( "SUBQUERY_3"."TESTINT" IS NOT NULL ) ) AS "SUBQUERY_4" )
-         |AS "SUBQUERY_5"
-         | ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_5"."SUBQUERY_5_COL_0" ) ) AS "SUBQUERY_6"
+         |( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_3"
+         |WHERE ( "SQ_3"."TESTINT" IS NOT NULL ) ) AS "SQ_4" )
+         |AS "SQ_5"
+         | ON ( "SQ_2"."SQ_2_COL_0" = "SQ_5"."SQ_5_COL_0" ) ) AS "SQ_6"
          |""".stripMargin
     )
   }
@@ -346,24 +346,24 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" ,
-         |( "SUBQUERY_6"."SUBQUERY_6_COL_2" ) AS "SUBQUERY_7_COL_1"
+      s"""SELECT ( "SQ_6"."SQ_6_COL_0" ) AS "SQ_7_COL_0" ,
+         |( "SQ_6"."SQ_6_COL_2" ) AS "SQ_7_COL_1"
          |FROM (
-         |SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" ,
-         |( "SUBQUERY_5"."SUBQUERY_5_COL_0" ) AS "SUBQUERY_6_COL_1" ,
-         |( "SUBQUERY_5"."SUBQUERY_5_COL_1" ) AS "SUBQUERY_6_COL_2"
-         |FROM ( SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
+         |SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_6_COL_0" ,
+         |( "SQ_5"."SQ_5_COL_0" ) AS "SQ_6_COL_1" ,
+         |( "SQ_5"."SQ_5_COL_1" ) AS "SQ_6_COL_2"
+         |FROM ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) ) AS "SQ_1" ) AS "SQ_2"
          |LEFT OUTER JOIN
-         |( SELECT ( "SUBQUERY_4"."TESTINT" ) AS "SUBQUERY_5_COL_0" ,
-         |( "SUBQUERY_4"."TESTSHORT" ) AS "SUBQUERY_5_COL_1"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_3"
-         |WHERE ( ( "SUBQUERY_3"."TESTINT" IS NOT NULL )
-         |AND ( "SUBQUERY_3"."TESTINT" != 42 ) ) ) AS "SUBQUERY_4" ) AS "SUBQUERY_5"
-         |ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_5"."SUBQUERY_5_COL_0" ) ) AS "SUBQUERY_6"
+         |( SELECT ( "SQ_4"."TESTINT" ) AS "SQ_5_COL_0" ,
+         |( "SQ_4"."TESTSHORT" ) AS "SQ_5_COL_1"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_3"
+         |WHERE ( ( "SQ_3"."TESTINT" IS NOT NULL )
+         |AND ( "SQ_3"."TESTINT" != 42 ) ) ) AS "SQ_4" ) AS "SQ_5"
+         |ON ( "SQ_2"."SQ_2_COL_0" = "SQ_5"."SQ_5_COL_0" ) ) AS "SQ_6"
          |""".stripMargin
     )
   }
@@ -381,25 +381,25 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_2" ) AS "SUBQUERY_7_COL_0" ,
-         |( "SUBQUERY_6"."SUBQUERY_6_COL_1" ) AS "SUBQUERY_7_COL_1"
+      s"""SELECT ( "SQ_6"."SQ_6_COL_2" ) AS "SQ_7_COL_0" ,
+         |( "SQ_6"."SQ_6_COL_1" ) AS "SQ_7_COL_1"
          |FROM (
-         |SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" ,
-         |( "SUBQUERY_2"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_6_COL_1" ,
-         |( "SUBQUERY_5"."SUBQUERY_5_COL_0" ) AS "SUBQUERY_6_COL_2"
-         |FROM ( SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0" ,
-         |( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_1"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTINT" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTINT" != 42 ) ) )
-         |AS "SUBQUERY_1" ) AS "SUBQUERY_2"
+         |SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_6_COL_0" ,
+         |( "SQ_2"."SQ_2_COL_1" ) AS "SQ_6_COL_1" ,
+         |( "SQ_5"."SQ_5_COL_0" ) AS "SQ_6_COL_2"
+         |FROM ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0" ,
+         |( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_1"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTINT" IS NOT NULL ) AND ( "SQ_0"."TESTINT" != 42 ) ) )
+         |AS "SQ_1" ) AS "SQ_2"
          |RIGHT OUTER JOIN
-         |( SELECT ( "SUBQUERY_4"."TESTINT" ) AS "SUBQUERY_5_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_3" WHERE ( ( "SUBQUERY_3"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_3"."TESTSTRING" = \\'asdf\\' ) ) ) AS "SUBQUERY_4" )
-         |AS "SUBQUERY_5" ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" =
-         |"SUBQUERY_5"."SUBQUERY_5_COL_0" ) ) AS "SUBQUERY_6"""".stripMargin
+         |( SELECT ( "SQ_4"."TESTINT" ) AS "SQ_5_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_3" WHERE ( ( "SQ_3"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_3"."TESTSTRING" = \\'asdf\\' ) ) ) AS "SQ_4" )
+         |AS "SQ_5" ON ( "SQ_2"."SQ_2_COL_0" =
+         |"SQ_5"."SQ_5_COL_0" ) ) AS "SQ_6"""".stripMargin
     )
   }
 
@@ -415,26 +415,26 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" ,
-         |( "SUBQUERY_6"."SUBQUERY_6_COL_1" ) AS "SUBQUERY_7_COL_1"
+      s"""SELECT ( "SQ_6"."SQ_6_COL_0" ) AS "SQ_7_COL_0" ,
+         |( "SQ_6"."SQ_6_COL_1" ) AS "SQ_7_COL_1"
          |FROM (
-         |SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" ,
-         |( "SUBQUERY_5"."SUBQUERY_5_COL_0" ) AS "SUBQUERY_6_COL_1"
+         |SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_6_COL_0" ,
+         |( "SQ_5"."SQ_5_COL_0" ) AS "SQ_6_COL_1"
          |FROM (
-         |SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
+         |SELECT ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'f\\' ) ) ) AS "SQ_1" ) AS "SQ_2"
          |FULL OUTER JOIN
-         |( SELECT ( "SUBQUERY_4"."TESTSTRING" ) AS "SUBQUERY_5_COL_0"
+         |( SELECT ( "SQ_4"."TESTSTRING" ) AS "SQ_5_COL_0"
          |FROM (
-         |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_3"
-         |WHERE ( ( "SUBQUERY_3"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_3"."TESTSTRING" = \\'asdf\\' ) ) ) AS "SUBQUERY_4" )
-         |AS "SUBQUERY_5"
-         |ON ( "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_5"."SUBQUERY_5_COL_0" ) )
-         |AS "SUBQUERY_6"
+         |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_3"
+         |WHERE ( ( "SQ_3"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_3"."TESTSTRING" = \\'asdf\\' ) ) ) AS "SQ_4" )
+         |AS "SQ_5"
+         |ON ( "SQ_2"."SQ_2_COL_0" = "SQ_5"."SQ_5_COL_0" ) )
+         |AS "SQ_6"
          |""".stripMargin
     )
   }
@@ -462,17 +462,17 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_5_COL_0" ,
-         |( "SUBQUERY_4"."SUBQUERY_4_COL_2" ) AS "SUBQUERY_5_COL_1" FROM ( SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" )
-         |AS "SUBQUERY_4_COL_0" , ( "SUBQUERY_3"."NAME" ) AS "SUBQUERY_4_COL_1" , ( "SUBQUERY_3"."LANGUAGE" )
-         |AS "SUBQUERY_4_COL_2" FROM ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" FROM
-         |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
+      s"""SELECT * FROM ( SELECT ( "SQ_4"."SQ_4_COL_0" ) AS "SQ_5_COL_0" ,
+         |( "SQ_4"."SQ_4_COL_2" ) AS "SQ_5_COL_1" FROM ( SELECT ( "SQ_2"."SQ_2_COL_0" )
+         |AS "SQ_4_COL_0" , ( "SQ_3"."NAME" ) AS "SQ_4_COL_1" , ( "SQ_3"."LANGUAGE" )
+         |AS "SQ_4_COL_2" FROM ( SELECT ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_0" FROM
+         |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( "SQ_0"."TESTSTRING" IS NOT NULL ) ) AS "SQ_1" ) AS "SQ_2"
          |INNER JOIN ( ( (SELECT \\'asdf\\'  AS "name", \\'lang1\\'  AS "language") UNION ALL
          |(SELECT \\'f\\'  AS "name", \\'lang2\\'  AS "language") UNION ALL
-         |(SELECT \\'notexist\\'  AS "name", \\'lang3\\'  AS "language") ) ) AS "SUBQUERY_3" ON
-         |( "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_3"."NAME" ) ) AS "SUBQUERY_4" )
-         |AS "SUBQUERY_5" ORDER BY ( "SUBQUERY_5"."SUBQUERY_5_COL_0" ) ASC NULLS FIRST
+         |(SELECT \\'notexist\\'  AS "name", \\'lang3\\'  AS "language") ) ) AS "SQ_3" ON
+         |( "SQ_2"."SQ_2_COL_0" = "SQ_3"."NAME" ) ) AS "SQ_4" )
+         |AS "SQ_5" ORDER BY ( "SQ_5"."SQ_5_COL_0" ) ASC NULLS FIRST
          |""".stripMargin
     )
   }
@@ -490,12 +490,12 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT (
-         |CAST ( "SUBQUERY_1"."TESTLONG" AS DECIMAL(20, 2) ) )
-         |AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTLONG" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTLONG" > 0 ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
-         |ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+         |CAST ( "SQ_1"."TESTLONG" AS DECIMAL(20, 2) ) )
+         |AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+         |AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTLONG" IS NOT NULL )
+         |AND ( "SQ_0"."TESTLONG" > 0 ) ) ) AS "SQ_1" ) AS "SQ_2"
+         |ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST
          |""".stripMargin
     )
   }
@@ -509,12 +509,12 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_0"
-         |FROM ( SELECT ( "SUBQUERY_1"."TESTLONG" ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTLONG" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTLONG" > 0 ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
-         |GROUP BY "SUBQUERY_2"."SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_0"
+         |FROM ( SELECT ( "SQ_1"."TESTLONG" ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTLONG" IS NOT NULL )
+         |AND ( "SQ_0"."TESTLONG" > 0 ) ) ) AS "SQ_1" ) AS "SQ_2"
+         |GROUP BY "SQ_2"."SQ_2_COL_0"
          |""".stripMargin
     )
   }
@@ -535,7 +535,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT avg(testlong) FROM
          |$test_table WHERE testlong > 0 GROUP BY testlong
-         |ORDER BY testlong limit 1 ) AS "RS_CONNECTOR_QUERY_ALIAS"
+         |ORDER BY testlong limit 1 ) AS "RCQ_ALIAS"
          |""".stripMargin
     )
   }
@@ -573,18 +573,18 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( "SUBQUERY_3"."SUBQUERY_3_COL_0" ) AS "SUBQUERY_4_COL_0" ,
-         |( "SUBQUERY_3"."SUBQUERY_3_COL_2" ) AS "SUBQUERY_4_COL_1" FROM ( SELECT ( "SUBQUERY_1"."TESTSTRING" )
-         |AS "SUBQUERY_3_COL_0" , ( "SUBQUERY_2"."NAME" ) AS "SUBQUERY_3_COL_1" ,
-         |( "SUBQUERY_2"."LANGUAGE" ) AS "SUBQUERY_3_COL_2" FROM ( SELECT * FROM ( SELECT * FROM (
+      s"""SELECT * FROM ( SELECT ( "SQ_3"."SQ_3_COL_0" ) AS "SQ_4_COL_0" ,
+         |( "SQ_3"."SQ_3_COL_2" ) AS "SQ_4_COL_1" FROM ( SELECT ( "SQ_1"."TESTSTRING" )
+         |AS "SQ_3_COL_0" , ( "SQ_2"."NAME" ) AS "SQ_3_COL_1" ,
+         |( "SQ_2"."LANGUAGE" ) AS "SQ_3_COL_2" FROM ( SELECT * FROM ( SELECT * FROM (
          |SELECT teststring FROM $test_table WHERE testlong > 0 AND teststring = \\'asdf\\' Limit 1
-         |) AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" INNER JOIN
+         |) AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( "SQ_0"."TESTSTRING" IS NOT NULL ) ) AS "SQ_1" INNER JOIN
          |( ( (SELECT \\'asdf\\'  AS "name", \\'lang1\\'  AS "language") UNION ALL
          |(SELECT \\'f\\'  AS "name", \\'lang2\\'  AS "language")
-         |UNION ALL (SELECT \\'notexist\\'  AS "name", \\'lang3\\'  AS "language") ) ) AS "SUBQUERY_2" ON
-         |( "SUBQUERY_1"."TESTSTRING" = "SUBQUERY_2"."NAME" ) ) AS "SUBQUERY_3" )
-         |AS "SUBQUERY_4" ORDER BY ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) ASC NULLS FIRST
+         |UNION ALL (SELECT \\'notexist\\'  AS "name", \\'lang3\\'  AS "language") ) ) AS "SQ_2" ON
+         |( "SQ_1"."TESTSTRING" = "SQ_2"."NAME" ) ) AS "SQ_3" )
+         |AS "SQ_4" ORDER BY ( "SQ_4"."SQ_4_COL_0" ) ASC NULLS FIRST
          |""".stripMargin
     )
   }

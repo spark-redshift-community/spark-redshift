@@ -15,6 +15,8 @@
  */
 package io.github.spark_redshift_community.spark.redshift.data
 
+import io.github.spark_redshift_community.spark.redshift
+
 import java.sql.{ResultSetMetaData, SQLException}
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
@@ -69,7 +71,7 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
         statement.cancel()
       } catch {
         case e: Throwable =>
-          log.error("Exception occurred while cancelling Data API request", e)
+          log.error("Exception occurred while cancelling Data API request: {}", e.getMessage)
       }
     }
   }
@@ -105,7 +107,7 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
           throw e
         } catch {
           case s: SQLException =>
-            log.error("Exception occurred while cancelling query", s)
+            log.error("Exception occurred while cancelling query: {}", s.getMessage)
             throw e
         }
     }
@@ -348,7 +350,7 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
       case "character varying" => StringType
       case "bit" => BooleanType
       case "time without time zone" => TimestampType
-      case "timestamp without time zone" => TimestampType
+      case "timestamp without time zone" => if (redshift.legacyTimestampHandling) TimestampType else TimestampNTZType
       case "timestamp with time zone" => TimestampType
       case "xid" => if (signed) { LongType } else { DecimalType(20, 0) }
       case "tid" => StringType
@@ -367,7 +369,7 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
       case "time" => TimestampType
       case "time with time zone" => TimestampType
       case "timetz" => TimestampType
-      case "timestamp" => TimestampType
+      case "timestamp" => if (redshift.legacyTimestampHandling) TimestampType else TimestampNTZType
       case "timestamptz" => TimestampType
       case "oidvector" => StringType
       case "super" => StringType

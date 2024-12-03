@@ -17,11 +17,7 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
-import io.github.spark_redshift_community.spark.redshift.data.QueryParameter
 import org.slf4j.LoggerFactory
-
-import java.sql.{Connection, PreparedStatement}
-import scala.collection.mutable.ArrayBuffer
 
 // scalastyle:off
 /**

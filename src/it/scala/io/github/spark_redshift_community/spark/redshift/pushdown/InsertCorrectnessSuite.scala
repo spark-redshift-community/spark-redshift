@@ -52,10 +52,10 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( CAST ( "SUBQUERY_1"."COL1" AS INTEGER ) ) AS "SUBQUERY_2_COL_0" ,
-           | ( CAST ( "SUBQUERY_1"."COL2" AS INTEGER ) ) AS "SUBQUERY_2_COL_1"
+           | SELECT ( CAST ( "SQ_1"."COL1" AS INTEGER ) ) AS "SQ_2_COL_0" ,
+           | ( CAST ( "SQ_1"."COL2" AS INTEGER ) ) AS "SQ_2_COL_1"
            | FROM ( ( (SELECT 1  AS "col1", 100  AS "col2")
-           | UNION ALL (SELECT 3  AS "col1", 2000  AS "col2") ) ) AS "SUBQUERY_1"""".stripMargin
+           | UNION ALL (SELECT 3  AS "col1", 2000  AS "col2") ) ) AS "SQ_1"""".stripMargin
       )
 
       val post = sqlContext.sql(s"SELECT * FROM ${tableName}").collect().map(row => row.toSeq).toSeq
@@ -78,10 +78,10 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( CAST ( "SUBQUERY_1"."COL1" AS INTEGER ) ) AS "SUBQUERY_2_COL_0" ,
-           | ( CAST ( "SUBQUERY_1"."COL2" AS INTEGER ) ) AS "SUBQUERY_2_COL_1" FROM
+           | SELECT ( CAST ( "SQ_1"."COL1" AS INTEGER ) ) AS "SQ_2_COL_0" ,
+           | ( CAST ( "SQ_1"."COL2" AS INTEGER ) ) AS "SQ_2_COL_1" FROM
            | ( ( (SELECT 1  AS "col1", 100  AS "col2") UNION ALL
-           | (SELECT 1  AS "col1", 100  AS "col2") ) ) AS "SUBQUERY_1"""".stripMargin
+           | (SELECT 1  AS "col1", 100  AS "col2") ) ) AS "SQ_1"""".stripMargin
       )
 
       val post = sqlContext.sql(s"SELECT * FROM ${tableName}").collect().map(row => row.toSeq).toSeq
@@ -104,11 +104,11 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( CAST ( "SUBQUERY_2"."SUBQUERY_2_COL_1" AS INTEGER ) ) AS "SUBQUERY_3_COL_0" ,
-           | ( CAST ( "SUBQUERY_2"."SUBQUERY_2_COL_0" AS INTEGER ) ) AS "SUBQUERY_3_COL_1"
-           | FROM ( SELECT ( "SUBQUERY_1"."COL1" ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."COL2" ) AS "SUBQUERY_2_COL_1"
+           | SELECT ( CAST ( "SQ_2"."SQ_2_COL_1" AS INTEGER ) ) AS "SQ_3_COL_0" ,
+           | ( CAST ( "SQ_2"."SQ_2_COL_0" AS INTEGER ) ) AS "SQ_3_COL_1"
+           | FROM ( SELECT ( "SQ_1"."COL1" ) AS "SQ_2_COL_0" , ( "SQ_1"."COL2" ) AS "SQ_2_COL_1"
            | FROM ( ( (SELECT 100  AS "col1", 1  AS "col2") UNION ALL
-           | (SELECT 2000  AS "col1", 3  AS "col2") ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2""""
+           | (SELECT 2000  AS "col1", 3  AS "col2") ) ) AS "SQ_1" ) AS "SQ_2""""
           .stripMargin
       )
 
@@ -132,11 +132,11 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( CAST ( "SUBQUERY_2"."SUBQUERY_2_COL_0" AS INTEGER ) ) AS "SUBQUERY_3_COL_0" ,
-           | ( NULL ) AS "SUBQUERY_3_COL_1" , ( CAST ( "SUBQUERY_2"."SUBQUERY_2_COL_1" AS VARCHAR ) ) AS "SUBQUERY_3_COL_2"
-           | FROM ( SELECT ( "SUBQUERY_1"."COL1" ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."COL2" ) AS "SUBQUERY_2_COL_1"
+           | SELECT ( CAST ( "SQ_2"."SQ_2_COL_0" AS INTEGER ) ) AS "SQ_3_COL_0" ,
+           | ( NULL ) AS "SQ_3_COL_1" , ( CAST ( "SQ_2"."SQ_2_COL_1" AS VARCHAR ) ) AS "SQ_3_COL_2"
+           | FROM ( SELECT ( "SQ_1"."COL1" ) AS "SQ_2_COL_0" , ( "SQ_1"."COL2" ) AS "SQ_2_COL_1"
            | FROM ( ( (SELECT 100  AS "col1", '1'  AS "col2") UNION ALL
-           | (SELECT 2000  AS "col1", '2'  AS "col2") ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2""""
+           | (SELECT 2000  AS "col1", '2'  AS "col2") ) ) AS "SQ_1" ) AS "SQ_2""""
           .stripMargin
       )
 
@@ -160,10 +160,10 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( CAST ( "SUBQUERY_1"."COL1" AS BIGINT ) ) AS "SUBQUERY_2_COL_0" ,
-           | ( CAST ( "SUBQUERY_1"."COL2" AS INTEGER ) ) AS "SUBQUERY_2_COL_1"
+           | SELECT ( CAST ( "SQ_1"."COL1" AS BIGINT ) ) AS "SQ_2_COL_0" ,
+           | ( CAST ( "SQ_1"."COL2" AS INTEGER ) ) AS "SQ_2_COL_1"
            | FROM ( ( (SELECT NULL AS "col1", NULL AS "col2") UNION ALL
-           | (SELECT NULL AS "col1", NULL AS "col2") ) ) AS "SUBQUERY_1""""
+           | (SELECT NULL AS "col1", NULL AS "col2") ) ) AS "SQ_1""""
           .stripMargin
       )
 
@@ -187,12 +187,12 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( CAST ( "SUBQUERY_1"."COL1" AS BIGINT ) ) AS "SUBQUERY_2_COL_0" ,
-           | ( CAST ( "SUBQUERY_1"."COL2" AS INTEGER ) ) AS "SUBQUERY_2_COL_1" ,
-           | ( CAST ( "SUBQUERY_1"."COL3" AS INTEGER ) ) AS "SUBQUERY_2_COL_2"
+           | SELECT ( CAST ( "SQ_1"."COL1" AS BIGINT ) ) AS "SQ_2_COL_0" ,
+           | ( CAST ( "SQ_1"."COL2" AS INTEGER ) ) AS "SQ_2_COL_1" ,
+           | ( CAST ( "SQ_1"."COL3" AS INTEGER ) ) AS "SQ_2_COL_2"
            | FROM ( ( (SELECT 1  AS "col1", NULL  AS "col2", 1000  AS "col3") UNION ALL
            | (SELECT 2  AS "col1", 2000  AS "col2", NULL  AS "col3") ) )
-           | AS "SUBQUERY_1""""
+           | AS "SQ_1""""
           .stripMargin
       )
 
@@ -218,11 +218,11 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( "SUBQUERY_3"."SUBQUERY_3_COL_0" ) AS "SUBQUERY_4_COL_0" ,
-           | ( NULL ) AS "SUBQUERY_4_COL_1" FROM ( SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_0"
-           | FROM ( SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0"
+           | SELECT ( "SQ_3"."SQ_3_COL_0" ) AS "SQ_4_COL_0" ,
+           | ( NULL ) AS "SQ_4_COL_1" FROM ( SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_0"
+           | FROM ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0"
            | FROM ( SELECT * FROM "PUBLIC"."$source_table"
-           | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" ) AS "SUBQUERY_3""""
+           | AS "RCQ_ALIAS" ) AS "SQ_1" ) AS "SQ_2" ) AS "SQ_3""""
           .stripMargin
       )
 
@@ -260,13 +260,13 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
         checkSqlStatement(
           s"""INSERT INTO "PUBLIC"."$tableName"
-             | SELECT ( "SUBQUERY_2"."ID" ) AS "SUBQUERY_3_COL_0" , ( "SUBQUERY_2"."VALUE" )
-             | AS "SUBQUERY_3_COL_1" FROM ( SELECT * FROM ( SELECT * FROM
-             | "PUBLIC"."$tableNameSource" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1"
-             | WHERE ( "SUBQUERY_1"."VALUE" ) IN ( SELECT ( "SUBQUERY_1"."VALUE" ) AS
-             | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-             | "PUBLIC"."$tableNameSource" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-             | WHERE ( "SUBQUERY_0"."VALUE" < 40 ) ) AS "SUBQUERY_1" ) ) AS "SUBQUERY_2""""
+             | SELECT ( "SQ_2"."ID" ) AS "SQ_3_COL_0" , ( "SQ_2"."VALUE" )
+             | AS "SQ_3_COL_1" FROM ( SELECT * FROM ( SELECT * FROM
+             | "PUBLIC"."$tableNameSource" AS "RCQ_ALIAS" ) AS "SQ_1"
+             | WHERE ( "SQ_1"."VALUE" ) IN ( SELECT ( "SQ_1"."VALUE" ) AS
+             | "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+             | "PUBLIC"."$tableNameSource" AS "RCQ_ALIAS" ) AS "SQ_0"
+             | WHERE ( "SQ_0"."VALUE" < 40 ) ) AS "SQ_1" ) ) AS "SQ_2""""
             .stripMargin
         )
 
@@ -305,16 +305,16 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
         checkSqlStatement(
           s"""INSERT INTO "PUBLIC"."$tableName"
-             | SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_0" ,
-             | ( "SUBQUERY_2"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_3_COL_1" ,
-             | ( CAST ( "SUBQUERY_2"."SUBQUERY_2_COL_2" AS INTEGER ) )
-             | AS "SUBQUERY_3_COL_2" FROM ( SELECT ( "SUBQUERY_1"."ID" ) AS "SUBQUERY_2_COL_0" ,
-             | ( "SUBQUERY_1"."VALUE" ) AS "SUBQUERY_2_COL_1" ,
-             | ( ( SELECT ( MAX ( "SUBQUERY_0"."NUM" ) ) AS "SUBQUERY_1_COL_0" FROM
-             | ( SELECT * FROM "PUBLIC"."$tableNameSource" AS "RS_CONNECTOR_QUERY_ALIAS" )
-             | AS "SUBQUERY_0" LIMIT 1 ) ) AS "SUBQUERY_2_COL_2" FROM ( SELECT *
-             | FROM "PUBLIC"."$tableNameSource" AS "RS_CONNECTOR_QUERY_ALIAS" )
-             |  AS "SUBQUERY_1" ) AS "SUBQUERY_2""""
+             | SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_0" ,
+             | ( "SQ_2"."SQ_2_COL_1" ) AS "SQ_3_COL_1" ,
+             | ( CAST ( "SQ_2"."SQ_2_COL_2" AS INTEGER ) )
+             | AS "SQ_3_COL_2" FROM ( SELECT ( "SQ_1"."ID" ) AS "SQ_2_COL_0" ,
+             | ( "SQ_1"."VALUE" ) AS "SQ_2_COL_1" ,
+             | ( ( SELECT ( MAX ( "SQ_0"."NUM" ) ) AS "SQ_1_COL_0" FROM
+             | ( SELECT * FROM "PUBLIC"."$tableNameSource" AS "RCQ_ALIAS" )
+             | AS "SQ_0" LIMIT 1 ) ) AS "SQ_2_COL_2" FROM ( SELECT *
+             | FROM "PUBLIC"."$tableNameSource" AS "RCQ_ALIAS" )
+             |  AS "SQ_1" ) AS "SQ_2""""
             .stripMargin
         )
 
@@ -351,12 +351,12 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
         checkSqlStatement(
           s"""INSERT INTO "PUBLIC"."$tableName"
-             | SELECT ( "SUBQUERY_3"."SUBQUERY_3_COL_1" ) AS "SUBQUERY_4_COL_0" , ( NULL ) AS "SUBQUERY_4_COL_1" ,
-             | ( "SUBQUERY_3"."SUBQUERY_3_COL_0" ) AS "SUBQUERY_4_COL_2" FROM ( SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" )
-             | AS "SUBQUERY_3_COL_0" , ( "SUBQUERY_2"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_3_COL_1"
-             | FROM ( SELECT ( "SUBQUERY_1"."QUANTITY" ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."ID" )
-             | AS "SUBQUERY_2_COL_1" FROM ( SELECT * FROM "PUBLIC"."$tableNameSource" AS
-             | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" ) AS "SUBQUERY_3""""
+             | SELECT ( "SQ_3"."SQ_3_COL_1" ) AS "SQ_4_COL_0" , ( NULL ) AS "SQ_4_COL_1" ,
+             | ( "SQ_3"."SQ_3_COL_0" ) AS "SQ_4_COL_2" FROM ( SELECT ( "SQ_2"."SQ_2_COL_0" )
+             | AS "SQ_3_COL_0" , ( "SQ_2"."SQ_2_COL_1" ) AS "SQ_3_COL_1"
+             | FROM ( SELECT ( "SQ_1"."QUANTITY" ) AS "SQ_2_COL_0" , ( "SQ_1"."ID" )
+             | AS "SQ_2_COL_1" FROM ( SELECT * FROM "PUBLIC"."$tableNameSource" AS
+             | "RCQ_ALIAS" ) AS "SQ_1" ) AS "SQ_2" ) AS "SQ_3""""
             .stripMargin
         )
 
@@ -392,7 +392,7 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
         checkSqlStatement(
           s"""INSERT INTO "PUBLIC"."$tableName"
-             | SELECT * FROM "PUBLIC"."$tableNameSource" AS "RS_CONNECTOR_QUERY_ALIAS""""
+             | SELECT * FROM "PUBLIC"."$tableNameSource" AS "RCQ_ALIAS""""
             .stripMargin
         )
 
@@ -420,12 +420,12 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_5_COL_0" ,
-           | ( NULL ) AS "SUBQUERY_5_COL_1" FROM ( SELECT ( "SUBQUERY_3"."SUBQUERY_3_COL_0" ) AS
-           | "SUBQUERY_4_COL_0" FROM ( SELECT ( "SUBQUERY_2"."TESTINT" ) AS "SUBQUERY_3_COL_0" FROM
-           | ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$source_table" AS "RS_CONNECTOR_QUERY_ALIAS" )
-           | AS "SUBQUERY_1" WHERE ( "SUBQUERY_1"."TESTINT" > 0 ) )
-           | AS "SUBQUERY_2" ) AS "SUBQUERY_3" ) AS "SUBQUERY_4""""
+           | SELECT ( "SQ_4"."SQ_4_COL_0" ) AS "SQ_5_COL_0" ,
+           | ( NULL ) AS "SQ_5_COL_1" FROM ( SELECT ( "SQ_3"."SQ_3_COL_0" ) AS
+           | "SQ_4_COL_0" FROM ( SELECT ( "SQ_2"."TESTINT" ) AS "SQ_3_COL_0" FROM
+           | ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$source_table" AS "RCQ_ALIAS" )
+           | AS "SQ_1" WHERE ( "SQ_1"."TESTINT" > 0 ) )
+           | AS "SQ_2" ) AS "SQ_3" ) AS "SQ_4""""
           .stripMargin
       )
 
@@ -453,14 +453,14 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( "SUBQUERY_3"."SUBQUERY_3_COL_0" ) AS "SUBQUERY_4_COL_0" FROM
-           | ( SELECT ( "SUBQUERY_2"."TESTINT" ) AS "SUBQUERY_3_COL_0" FROM ( SELECT
+           | SELECT ( "SQ_3"."SQ_3_COL_0" ) AS "SQ_4_COL_0" FROM
+           | ( SELECT ( "SQ_2"."TESTINT" ) AS "SQ_3_COL_0" FROM ( SELECT
            | * FROM ( SELECT * FROM "PUBLIC"."$source_table" AS
-           | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1" WHERE ( "SUBQUERY_1"."TESTINT" )
-           | IN ( SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0" FROM
+           | "RCQ_ALIAS" ) AS "SQ_1" WHERE ( "SQ_1"."TESTINT" )
+           | IN ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0" FROM
            | ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$source_table" AS
-           | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTINT" > 0 ) )
-           | AS "SUBQUERY_1" ) ) AS "SUBQUERY_2" ) AS "SUBQUERY_3""""
+           | "RCQ_ALIAS" ) AS "SQ_0" WHERE ( "SQ_0"."TESTINT" > 0 ) )
+           | AS "SQ_1" ) ) AS "SQ_2" ) AS "SQ_3""""
           .stripMargin
       )
 
@@ -486,11 +486,11 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( CAST ( "SUBQUERY_3"."SUBQUERY_3_COL_0" AS INTEGER ) ) AS "SUBQUERY_4_COL_0" ,
-           | ( NULL ) AS "SUBQUERY_4_COL_1" FROM ( SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_3_COL_0"
-           | FROM ( SELECT ( MIN ( "SUBQUERY_1"."TESTINT" ) ) AS "SUBQUERY_2_COL_0" FROM
-           | ( SELECT * FROM "PUBLIC"."$source_table" AS "RS_CONNECTOR_QUERY_ALIAS" )
-           | AS "SUBQUERY_1" LIMIT 1 ) AS "SUBQUERY_2" ) AS "SUBQUERY_3""""
+           | SELECT ( CAST ( "SQ_3"."SQ_3_COL_0" AS INTEGER ) ) AS "SQ_4_COL_0" ,
+           | ( NULL ) AS "SQ_4_COL_1" FROM ( SELECT ( "SQ_2"."SQ_2_COL_0" ) AS "SQ_3_COL_0"
+           | FROM ( SELECT ( MIN ( "SQ_1"."TESTINT" ) ) AS "SQ_2_COL_0" FROM
+           | ( SELECT * FROM "PUBLIC"."$source_table" AS "RCQ_ALIAS" )
+           | AS "SQ_1" LIMIT 1 ) AS "SQ_2" ) AS "SQ_3""""
           .stripMargin
       )
 
@@ -517,12 +517,12 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( NULL ) AS "SUBQUERY_5_COL_0" , ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_5_COL_1"
-           | FROM ( SELECT ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_4_COL_0" FROM
-           | ( SELECT * FROM ( SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0"
-           | FROM ( SELECT * FROM "PUBLIC"."$source_table" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1" )
-           | AS "SUBQUERY_2" ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" )
-           | ASC NULLS FIRST ) AS "SUBQUERY_3" ) AS "SUBQUERY_4""""
+           | SELECT ( NULL ) AS "SQ_5_COL_0" , ( "SQ_4"."SQ_4_COL_0" ) AS "SQ_5_COL_1"
+           | FROM ( SELECT ( "SQ_3"."SQ_2_COL_0" ) AS "SQ_4_COL_0" FROM
+           | ( SELECT * FROM ( SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0"
+           | FROM ( SELECT * FROM "PUBLIC"."$source_table" AS "RCQ_ALIAS" ) AS "SQ_1" )
+           | AS "SQ_2" ORDER BY ( "SQ_2"."SQ_2_COL_0" )
+           | ASC NULLS FIRST ) AS "SQ_3" ) AS "SQ_4""""
           .stripMargin
       )
 
@@ -579,14 +579,14 @@ trait NonPushDownInsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(
         s"""SELECT
-           |    (COUNT (1)) AS "SUBQUERY_1_COL_0"
+           |    (COUNT (1)) AS "SQ_1_COL_0"
            |FROM
            |    (
            |        SELECT
            |            *
            |        FROM
-           |            $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-           |    ) AS "SUBQUERY_0"
+           |            $testTableName AS "RCQ_ALIAS"
+           |    ) AS "SQ_0"
            |LIMIT
            |    1""".stripMargin
       )
@@ -618,14 +618,14 @@ trait NonPushDownInsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(
         s"""SELECT
-           |    (COUNT (1)) AS "SUBQUERY_1_COL_0"
+           |    (COUNT (1)) AS "SQ_1_COL_0"
            |FROM
            |    (
            |        SELECT
            |            *
            |        FROM
-           |            $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-           |    ) AS "SUBQUERY_0"
+           |            $testTableName AS "RCQ_ALIAS"
+           |    ) AS "SQ_0"
            |LIMIT
            |    1""".stripMargin
       )
@@ -669,12 +669,12 @@ trait NonPushDownInsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
                              |        SELECT
                              |            *
                              |        FROM
-                             |            $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-                             |    ) AS "SUBQUERY_0"
+                             |            $testTableName AS "RCQ_ALIAS"
+                             |    ) AS "SQ_0"
                              |WHERE
                              |    (
-                             |        ("SUBQUERY_0"."VALUE" IS NOT NULL)
-                             |        AND ("SUBQUERY_0"."VALUE" < 30)
+                             |        ("SQ_0"."VALUE" IS NOT NULL)
+                             |        AND ("SQ_0"."VALUE" < 30)
                              |    )""".stripMargin)
 
         val post = sqlContext.sql(s"SELECT * FROM $tableName").collect().map(row => row.toSeq).toSeq
@@ -706,14 +706,14 @@ trait NonPushDownInsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
       // Since this is not a push down, this is the SQL of the previous SQL query (pre).
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(s"""SELECT
-                           |    (COUNT (1)) AS "SUBQUERY_1_COL_0"
+                           |    (COUNT (1)) AS "SQ_1_COL_0"
                            |FROM
                            |    (
                            |        SELECT
                            |            *
                            |        FROM
-                           |            $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
-                           |    ) AS "SUBQUERY_0"
+                           |            $testTableName AS "RCQ_ALIAS"
+                           |    ) AS "SQ_0"
                            |LIMIT
                            |    1""".stripMargin)
 

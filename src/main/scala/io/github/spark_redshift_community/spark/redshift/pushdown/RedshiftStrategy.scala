@@ -30,7 +30,7 @@ import scala.collection.mutable.ArrayBuffer
 /**
  * Clean up the plan, then try to generate a query from it for Redshift.
  */
-class RedshiftStrategy(session: SparkSession) extends Strategy {
+case class RedshiftStrategy(session: SparkSession) extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     try {
       buildQueryRDD(plan.transform({
@@ -40,11 +40,11 @@ class RedshiftStrategy(session: SparkSession) extends Strategy {
     } catch {
 
       case t: UnsupportedOperationException =>
-        log.warn(s"Unsupported Operation:${t.getMessage}")
+        log.warn("Unsupported Operation: {}", t.getMessage)
         Nil
 
       case e: Exception =>
-        log.warn(s"Pushdown failed:${e.getMessage}", e)
+        log.warn("Pushdown failed: {}", e.getMessage)
         Nil
     }
   }

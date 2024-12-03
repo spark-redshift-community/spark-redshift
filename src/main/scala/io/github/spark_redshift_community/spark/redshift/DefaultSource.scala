@@ -65,7 +65,7 @@ class DefaultSource(s3ClientFactory: (AWSCredentialsProvider, MergedParameters) 
       enablePushdownSession(sqlContext.sparkSession)
     }
 
-    redshift.RedshiftRelation(
+    RedshiftRelation(
       RedshiftWrapperFactory(mergedParams),
       s3ClientFactory, mergedParams, Option(schema) )(sqlContext)
   }
@@ -131,7 +131,7 @@ class DefaultSource(s3ClientFactory: (AWSCredentialsProvider, MergedParameters) 
       s => s.isInstanceOf[RedshiftStrategy]
     )) {
       log.info("Enable auto pushdown.")
-      session.experimental.extraStrategies ++= Seq(new RedshiftStrategy(session))
+      session.experimental.extraStrategies ++= Seq(RedshiftStrategy(session))
     }
   }
 }

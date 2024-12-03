@@ -120,12 +120,12 @@ trait AggregateStddevSampCorrectnessSuite extends IntegrationPushdownSuiteBase {
         Seq(Row(true)))
 
       checkSqlStatement(
-        s"""SELECT ( ( ( STDDEV_SAMP ( CAST ( "SUBQUERY_1"."SUBQUERY_1_COL_0" AS FLOAT8 ) )
-           | >= ${lower} ) AND ( STDDEV_SAMP ( CAST ( "SUBQUERY_1"."SUBQUERY_1_COL_0" AS FLOAT8 ) )
-           | <= ${upper} ) ) ) AS "SUBQUERY_2_COL_0"
-           | FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-           | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( ( ( STDDEV_SAMP ( CAST ( "SQ_1"."SQ_1_COL_0" AS FLOAT8 ) )
+           | >= ${lower} ) AND ( STDDEV_SAMP ( CAST ( "SQ_1"."SQ_1_COL_0" AS FLOAT8 ) )
+           | <= ${upper} ) ) ) AS "SQ_2_COL_0"
+           | FROM ( SELECT ( "SQ_0"."$column_name" ) AS "SQ_1_COL_0"
+           | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+           | AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -232,13 +232,13 @@ trait AggregateStddevSampCorrectnessSuite extends IntegrationPushdownSuiteBase {
         Seq(Row(true)))
 
       checkSqlStatement(
-        s"""SELECT ( ( ( STDDEV ( DISTINCT CAST ( "SUBQUERY_1"."SUBQUERY_1_COL_0" AS FLOAT8 ) )
+        s"""SELECT ( ( ( STDDEV ( DISTINCT CAST ( "SQ_1"."SQ_1_COL_0" AS FLOAT8 ) )
            | >= ${lower} ) AND
-           | ( STDDEV ( DISTINCT CAST ( "SUBQUERY_1"."SUBQUERY_1_COL_0" AS FLOAT8 ) )
-           |  <= ${upper} ) ) ) AS "SUBQUERY_2_COL_0"
-           | FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-           | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+           | ( STDDEV ( DISTINCT CAST ( "SQ_1"."SQ_1_COL_0" AS FLOAT8 ) )
+           |  <= ${upper} ) ) ) AS "SQ_2_COL_0"
+           | FROM ( SELECT ( "SQ_0"."$column_name" ) AS "SQ_1_COL_0"
+           | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+           | AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -262,11 +262,11 @@ trait AggregateStddevSampCorrectnessSuite extends IntegrationPushdownSuiteBase {
         Seq(Row(expected_res)))
 
       checkSqlStatement(
-        s"""SELECT ( STDDEV_SAMP ("SUBQUERY_1"."SUBQUERY_1_COL_0") )
-           | AS "SUBQUERY_2_COL_0"
-           | FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-           | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( STDDEV_SAMP ("SQ_1"."SQ_1_COL_0") )
+           | AS "SQ_2_COL_0"
+           | FROM ( SELECT ( "SQ_0"."$column_name" ) AS "SQ_1_COL_0"
+           | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+           | AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -296,13 +296,13 @@ trait AggregateStddevSampCorrectnessSuite extends IntegrationPushdownSuiteBase {
         Seq(Row(true)))
 
       checkSqlStatement(
-        s"""SELECT ( ( ( STDDEV ( DISTINCT "SUBQUERY_1"."SUBQUERY_1_COL_0" )
+        s"""SELECT ( ( ( STDDEV ( DISTINCT "SQ_1"."SQ_1_COL_0" )
            | >= ${lower} )
-           | AND ( STDDEV ( DISTINCT "SUBQUERY_1"."SUBQUERY_1_COL_0" ) <= ${upper} ) ) )
-           | AS "SUBQUERY_2_COL_0"
-           | FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-           | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+           | AND ( STDDEV ( DISTINCT "SQ_1"."SQ_1_COL_0" ) <= ${upper} ) ) )
+           | AS "SQ_2_COL_0"
+           | FROM ( SELECT ( "SQ_0"."$column_name" ) AS "SQ_1_COL_0"
+           | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+           | AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 }

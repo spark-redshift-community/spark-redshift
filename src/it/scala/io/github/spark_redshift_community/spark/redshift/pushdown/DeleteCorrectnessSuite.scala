@@ -133,11 +133,11 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(
         s"""DELETE FROM $testTableName WHERE ( $testTableName."ID" ) IN
-           | ( SELECT ( "SUBQUERY_1"."ID" ) AS "SUBQUERY_2_COL_0" FROM
+           | ( SELECT ( "SQ_1"."ID" ) AS "SQ_2_COL_0" FROM
            | ( SELECT * FROM ( SELECT * FROM $testTableName AS
-           | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-           | ( ( "SUBQUERY_0"."VALUE" IS NOT NULL ) AND (
-           | "SUBQUERY_0"."VALUE" > 20 ) ) ) AS "SUBQUERY_1" )""".stripMargin
+           | "RCQ_ALIAS" ) AS "SQ_0" WHERE
+           | ( ( "SQ_0"."VALUE" IS NOT NULL ) AND (
+           | "SQ_0"."VALUE" > 20 ) ) ) AS "SQ_1" )""".stripMargin
       )
       // expect only row with id=3 to be deleted
       checkAnswer(
@@ -170,11 +170,11 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(
         s"""DELETE FROM $testTableName WHERE NOT ( ( $testTableName."ID" ) IN (
-           | SELECT ( "SUBQUERY_1"."ID" ) AS "SUBQUERY_2_COL_0" FROM (
+           | SELECT ( "SQ_1"."ID" ) AS "SQ_2_COL_0" FROM (
            | SELECT * FROM ( SELECT * FROM $testTableName AS
-           | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( (
-           | "SUBQUERY_0"."VALUE" IS NOT NULL ) AND (
-           | "SUBQUERY_0"."VALUE" > 20 ) ) ) AS "SUBQUERY_1" ) )""".stripMargin
+           | "RCQ_ALIAS" ) AS "SQ_0" WHERE ( (
+           | "SQ_0"."VALUE" IS NOT NULL ) AND (
+           | "SQ_0"."VALUE" > 20 ) ) ) AS "SQ_1" ) )""".stripMargin
       )
       // expect row with id=1, id=2 to be deleted
       checkAnswer(
@@ -210,12 +210,12 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(
         s"""DELETE FROM $testTableName WHERE ( $testTableName."ID" , $testTableName."VALUE" ) IN
-           |( SELECT ( "SUBQUERY_1"."ID" ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."VALUE" )
-           |AS "SUBQUERY_2_COL_1" FROM ( SELECT * FROM ( SELECT * FROM $testTableName
-           |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( ( "SUBQUERY_0"."ID"
-           |IS NOT NULL ) AND ( "SUBQUERY_0"."VALUE" IS NOT NULL ) ) AND
-           |( ( "SUBQUERY_0"."ID" != 2 ) AND ( "SUBQUERY_0"."VALUE" > 20 ) ) ) )
-           |AS "SUBQUERY_1" )""".stripMargin
+           |( SELECT ( "SQ_1"."ID" ) AS "SQ_2_COL_0" , ( "SQ_1"."VALUE" )
+           |AS "SQ_2_COL_1" FROM ( SELECT * FROM ( SELECT * FROM $testTableName
+           |AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( ( "SQ_0"."ID"
+           |IS NOT NULL ) AND ( "SQ_0"."VALUE" IS NOT NULL ) ) AND
+           |( ( "SQ_0"."ID" != 2 ) AND ( "SQ_0"."VALUE" > 20 ) ) ) )
+           |AS "SQ_1" )""".stripMargin
       )
       // expect only row with id=3 to be deleted
       checkAnswer(
@@ -251,13 +251,13 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(
         s"""DELETE FROM $testTableName WHERE NOT ( ( $testTableName."ID" ,
-           | $testTableName."VALUE" ) IN ( SELECT ( "SUBQUERY_1"."ID" ) AS
-           | "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."VALUE" ) AS "SUBQUERY_2_COL_1"
+           | $testTableName."VALUE" ) IN ( SELECT ( "SQ_1"."ID" ) AS
+           | "SQ_2_COL_0" , ( "SQ_1"."VALUE" ) AS "SQ_2_COL_1"
            | FROM ( SELECT * FROM ( SELECT * FROM $testTableName AS
-           | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( (
-           | "SUBQUERY_0"."ID" IS NOT NULL ) AND ( "SUBQUERY_0"."VALUE"
-           | IS NOT NULL ) ) AND ( ( "SUBQUERY_0"."ID" != 2 ) AND
-           | ( "SUBQUERY_0"."VALUE" > 20 ) ) ) ) AS "SUBQUERY_1" ) )""".stripMargin
+           | "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( (
+           | "SQ_0"."ID" IS NOT NULL ) AND ( "SQ_0"."VALUE"
+           | IS NOT NULL ) ) AND ( ( "SQ_0"."ID" != 2 ) AND
+           | ( "SQ_0"."VALUE" > 20 ) ) ) ) AS "SQ_1" ) )""".stripMargin
       )
       // expect rows with id 1 and 2 to be deleted
       checkAnswer(
@@ -376,7 +376,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
                |    $testTableName."ORDER_ID"
                |  ) IN (
                |    SELECT
-               |      ("SUBQUERY_3"."SUBQUERY_2_COL_0") AS "SUBQUERY_4_COL_0"
+               |      ("SQ_3"."SQ_2_COL_0") AS "SQ_4_COL_0"
                |    FROM
                |      (
                |        SELECT
@@ -384,26 +384,26 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
                |        FROM
                |          (
                |            SELECT
-               |              ("SUBQUERY_1"."SUBQUERY_1_COL_0") AS "SUBQUERY_2_COL_0",
-               |              (COUNT (1)) AS "SUBQUERY_2_COL_1"
+               |              ("SQ_1"."SQ_1_COL_0") AS "SQ_2_COL_0",
+               |              (COUNT (1)) AS "SQ_2_COL_1"
                |            FROM
                |              (
                |                SELECT
-               |                  ("SUBQUERY_0"."ORDER_ID") AS "SUBQUERY_1_COL_0"
+               |                  ("SQ_0"."ORDER_ID") AS "SQ_1_COL_0"
                |                FROM
                |                  (
                |                    SELECT
                |                      *
                |                    FROM
-               |                      $testTableName2 AS "RS_CONNECTOR_QUERY_ALIAS"
-               |                  ) AS "SUBQUERY_0"
-               |              ) AS "SUBQUERY_1"
+               |                      $testTableName2 AS "RCQ_ALIAS"
+               |                  ) AS "SQ_0"
+               |              ) AS "SQ_1"
                |            GROUP BY
-               |              "SUBQUERY_1"."SUBQUERY_1_COL_0"
-               |          ) AS "SUBQUERY_2"
+               |              "SQ_1"."SQ_1_COL_0"
+               |          ) AS "SQ_2"
                |        WHERE
-               |          ("SUBQUERY_2"."SUBQUERY_2_COL_1" > 3)
-               |      ) AS "SUBQUERY_3"
+               |          ("SQ_2"."SQ_2_COL_1" > 3)
+               |      ) AS "SQ_3"
                |  )""".stripMargin
           )
         )
@@ -467,12 +467,12 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
              |""".stripMargin,
             Seq(Row()),
             s"""DELETE FROM "PUBLIC"."$tableName" WHERE EXISTS ( SELECT (
-               | "SUBQUERY_1"."ORDER_ID" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM (
+               | "SQ_1"."ORDER_ID" ) AS "SQ_2_COL_0" FROM ( SELECT * FROM (
                |  SELECT * FROM "PUBLIC"."$tableName2" AS
-               |   "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( (
-               |    "SUBQUERY_0"."PRODUCT_ID" IS NOT NULL ) AND (
-               |     "SUBQUERY_0"."PRODUCT_ID" = 'pen11' ) ) ) AS "SUBQUERY_1" WHERE
-               |      ( "PUBLIC"."$tableName"."ORDER_ID" = "SUBQUERY_2_COL_0"
+               |   "RCQ_ALIAS" ) AS "SQ_0" WHERE ( (
+               |    "SQ_0"."PRODUCT_ID" IS NOT NULL ) AND (
+               |     "SQ_0"."PRODUCT_ID" = 'pen11' ) ) ) AS "SQ_1" WHERE
+               |      ( "PUBLIC"."$tableName"."ORDER_ID" = "SQ_2_COL_0"
                |       ) )""".stripMargin
           )
         )
@@ -534,11 +534,11 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
              |""".stripMargin,
             Seq(Row()),
             s"""DELETE FROM "PUBLIC"."$tableName" WHERE NOT ( EXISTS ( SELECT ( 1 ) AS
-               | "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."ORDER_ID" ) AS "SUBQUERY_2_COL_1" FROM
-               |  ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$tableName2" AS "RS_CONNECTOR_QUERY_ALIAS"
-               |   ) AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."PRODUCT_ID" IS NOT NULL ) AND
-               |    ( "SUBQUERY_0"."PRODUCT_ID" = 'pen11' ) ) ) AS "SUBQUERY_1" WHERE (
-               |    "PUBLIC"."$tableName"."ORDER_ID" = "SUBQUERY_2_COL_1" ) ) )""".stripMargin
+               | "SQ_2_COL_0" , ( "SQ_1"."ORDER_ID" ) AS "SQ_2_COL_1" FROM
+               |  ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$tableName2" AS "RCQ_ALIAS"
+               |   ) AS "SQ_0" WHERE ( ( "SQ_0"."PRODUCT_ID" IS NOT NULL ) AND
+               |    ( "SQ_0"."PRODUCT_ID" = 'pen11' ) ) ) AS "SQ_1" WHERE (
+               |    "PUBLIC"."$tableName"."ORDER_ID" = "SQ_2_COL_1" ) ) )""".stripMargin
           )
         )
         // expect the row with product_id='car1' or 'pen111' to be deleted
@@ -629,9 +629,9 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
             Seq(Row()),
             s"""DELETE FROM "PUBLIC"."$targetTable" WHERE
                | ( "PUBLIC"."$targetTable"."ID" ) IN ( SELECT * FROM ( SELECT * FROM
-               |  "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
-               |   "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."ID" IS NOT NULL ) AND (
-               |    "SUBQUERY_0"."ID" > 3 ) ) )""".stripMargin
+               |  "PUBLIC"."$sourceTable" AS "RCQ_ALIAS" ) AS
+               |   "SQ_0" WHERE ( ( "SQ_0"."ID" IS NOT NULL ) AND (
+               |    "SQ_0"."ID" > 3 ) ) )""".stripMargin
           )
         )
 
@@ -673,9 +673,9 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
             Seq(Row()),
             s"""DELETE FROM "PUBLIC"."$targetTable" WHERE NOT (
                | ( "PUBLIC"."$targetTable"."ID" ) IN ( SELECT * FROM ( SELECT * FROM
-               |  "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
-               |   "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."ID" IS NOT NULL ) AND (
-               |    "SUBQUERY_0"."ID" > 3 ) ) ))""".stripMargin
+               |  "PUBLIC"."$sourceTable" AS "RCQ_ALIAS" ) AS
+               |   "SQ_0" WHERE ( ( "SQ_0"."ID" IS NOT NULL ) AND (
+               |    "SQ_0"."ID" > 3 ) ) ))""".stripMargin
           )
         )
 
@@ -719,10 +719,10 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
              |""".stripMargin)
 
         checkSqlStatement(
-          s"""DELETE FROM "PUBLIC"."$table1" WHERE EXISTS ( SELECT ( 1 ) AS "SUBQUERY_1_COL_0" ,
-             |  ( "SUBQUERY_0"."T1_ID" ) AS "SUBQUERY_1_COL_1" FROM ( SELECT * FROM "PUBLIC"."$table2"
-             |  AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-             |  WHERE ( "SUBQUERY_1_COL_1" = "PUBLIC"."$table1"."ID" ) )"""
+          s"""DELETE FROM "PUBLIC"."$table1" WHERE EXISTS ( SELECT ( 1 ) AS "SQ_1_COL_0" ,
+             |  ( "SQ_0"."T1_ID" ) AS "SQ_1_COL_1" FROM ( SELECT * FROM "PUBLIC"."$table2"
+             |  AS "RCQ_ALIAS" ) AS "SQ_0"
+             |  WHERE ( "SQ_1_COL_1" = "PUBLIC"."$table1"."ID" ) )"""
             .stripMargin
         )
 

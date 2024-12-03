@@ -21,6 +21,7 @@ package io.github.spark_redshift_community.spark.redshift
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.github.spark_redshift_community.spark.redshift
 import io.github.spark_redshift_community.spark.redshift.Conversions.parquetDataTypeConvert
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_OVERRIDE_NULLABLE}
 import io.github.spark_redshift_community.spark.redshift.RedshiftRelation.schemaTypesMatch
@@ -55,7 +56,7 @@ private[redshift] case class RedshiftRelation(
     with InsertableRelation
     with Logging {
 
-  if (sqlContext != null) {
+  if (params.checkS3BucketUsage && (sqlContext != null)) {
     Utils.assertThatFileSystemIsNotS3BlockFileSystem(
       new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
   }
@@ -468,6 +469,7 @@ private[redshift] case class RedshiftRelation(
           field.metadata.contains("redshift_type") &&
             Seq("super", "bpchar").contains(field.metadata.getString("redshift_type"))
         case TimestampType | ShortType | ByteType => true
+        case TimestampNTZType if !redshift.legacyTimestampHandling => true
         case _ => false
       }
     }) || overrideNullable || schemasDoNotMatch
@@ -541,7 +543,7 @@ private[redshift] case class RedshiftRelation(
       // If manifest doesn't exist, likely it is because the result set is empty.
       // For empty result set, Redshift sometimes doesn't create any files. So return empty Seq.
       // An unlikely scenario is the result files are removed from S3.
-      log.debug(s"${manifestPath} not found")
+      log.debug("Manifest path not found")
       Seq.empty[String]
     }
   }

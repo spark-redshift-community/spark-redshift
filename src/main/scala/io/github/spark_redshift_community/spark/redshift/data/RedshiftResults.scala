@@ -17,7 +17,7 @@ package io.github.spark_redshift_community.spark.redshift.data
 
 import com.amazonaws.services.redshiftdataapi.model.{Field, GetStatementResultResult}
 
-import java.sql.{ResultSet}
+import java.sql.ResultSet
 import scala.collection.JavaConverters._
 
 private[redshift] abstract class RedshiftResults() {

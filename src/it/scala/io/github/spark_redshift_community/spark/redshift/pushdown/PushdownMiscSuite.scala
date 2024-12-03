@@ -30,10 +30,10 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       Seq(Row("true")))
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTBOOL" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM (
-         | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-         | ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND "SUBQUERY_0"."TESTBOOL" ) ) AS
-         | "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( "SQ_1"."TESTBOOL" ) AS "SQ_2_COL_0" FROM ( SELECT * FROM (
+         | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" WHERE
+         | ( ( "SQ_0"."TESTBOOL" IS NOT NULL ) AND "SQ_0"."TESTBOOL" ) ) AS
+         | "SQ_1"""".stripMargin
     )
   }
 
@@ -44,11 +44,11 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       Seq(Row("true")))
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
-         | WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0" FROM
-         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND
-         | "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin
+      s"""SELECT * FROM ( SELECT ( CASE "SQ_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
+         | WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SQ_2_COL_0" FROM
+         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         | AS "SQ_0" WHERE ( ( "SQ_0"."TESTBOOL" IS NOT NULL ) AND
+         | "SQ_0"."TESTBOOL" ) ) AS "SQ_1" ) AS "SQ_2" LIMIT 1""".stripMargin
     )
   }
 
@@ -59,11 +59,11 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       Seq(Row("false")))
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
-         | WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0" FROM
-         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND NOT
-         | ( "SUBQUERY_0"."TESTBOOL" ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin
+      s"""SELECT * FROM ( SELECT ( CASE "SQ_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
+         | WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SQ_2_COL_0" FROM
+         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         | AS "SQ_0" WHERE ( ( "SQ_0"."TESTBOOL" IS NOT NULL ) AND NOT
+         | ( "SQ_0"."TESTBOOL" ) ) ) AS "SQ_1" ) AS "SQ_2" LIMIT 1""".stripMargin
     )
   }
 
@@ -74,10 +74,10 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       Seq(Row(null)))
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE
-        | THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-        | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTBOOL"
-        | IS NULL ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin
+      s"""SELECT * FROM ( SELECT ( CASE "SQ_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE
+        | THEN \\'false\\' ELSE null END ) AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+        | $test_table AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( "SQ_0"."TESTBOOL"
+        | IS NULL ) ) AS "SQ_1" ) AS "SQ_2" LIMIT 1""".stripMargin
     )
   }
 
@@ -88,10 +88,10 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       Seq(Row("true")))
 
     checkSqlStatement(
-      s"""SELECT ( CASE ( CAST ( "SUBQUERY_1"."TESTINT" AS FLOAT4 ) > "SUBQUERY_1"."TESTFLOAT" )
-         | WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0"
-         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         | WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( CASE ( CAST ( "SQ_1"."TESTINT" AS FLOAT4 ) > "SQ_1"."TESTFLOAT" )
+         | WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SQ_2_COL_0"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0"
+         | WHERE ( ( "SQ_0"."TESTBOOL" IS NOT NULL ) AND "SQ_0"."TESTBOOL" ) ) AS "SQ_1"""".stripMargin
     )
   }
 
@@ -116,11 +116,11 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
         Seq(Row(result)))
 
       checkSqlStatement(
-        s"""SELECT ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR ) )
-           | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
-           | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( (
-           | "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND "SUBQUERY_0"."TESTBOOL" ) )
-           | AS "SUBQUERY_1"""".stripMargin
+        s"""SELECT ( CAST ( "SQ_1"."${column.toUpperCase}" AS VARCHAR ) )
+           | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+           | AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( (
+           | "SQ_0"."TESTBOOL" IS NOT NULL ) AND "SQ_0"."TESTBOOL" ) )
+           | AS "SQ_1"""".stripMargin
       )
     })
   }
@@ -137,11 +137,11 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT
-         | * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |  AS "SUBQUERY_0" WHERE "SUBQUERY_0"."TESTINT" IN
+      s"""SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT
+         | * FROM $test_table AS "RCQ_ALIAS" )
+         |  AS "SQ_0" WHERE "SQ_0"."TESTINT" IN
          | ( 4 , 13 , 8 , 9 , 10 , 7 , 2 , 42 , 11 , 1 , 4141214 , 12 , 5 ) )
-         |  AS "SUBQUERY_1"""".stripMargin)
+         |  AS "SQ_1"""".stripMargin)
   }
 
   test("Test basic CreateNamedStruct") {
@@ -160,12 +160,12 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       expectedRow)
 
     checkSqlStatement(
-      s"""SELECT ( OBJECT( \\'a\\', "SUBQUERY_1" . "TESTSTRING",
-         |                 \\'b\\', "SUBQUERY_1" . "TESTINT" ) )
-         | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0" .
-         | "TESTINT" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTINT" = 4141214 ) ) )
-         | AS "SUBQUERY_1"""".stripMargin)
+      s"""SELECT ( OBJECT( \\'a\\', "SQ_1" . "TESTSTRING",
+         |                 \\'b\\', "SQ_1" . "TESTINT" ) )
+         | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+         | AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( "SQ_0" .
+         | "TESTINT" IS NOT NULL ) AND ( "SQ_0"."TESTINT" = 4141214 ) ) )
+         | AS "SQ_1"""".stripMargin)
   }
 
   test("Test basic CreateNamedStruct All types except DATE and TIMESTAMP") {
@@ -197,14 +197,14 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       expectedRow)
 
     checkSqlStatement(
-      s"""SELECT ( OBJECT( \\'a\\' , "SUBQUERY_1"."TESTBYTE" , \\'b\\' , "SUBQUERY_1"."TESTBOOL",
-         | \\'d\\' , "SUBQUERY_1"."TESTDOUBLE" , \\'e\\' , "SUBQUERY_1"."TESTFLOAT" ,
-         | \\'f\\' , "SUBQUERY_1"."TESTINT" , \\'g\\' , "SUBQUERY_1"."TESTLONG" ,
-         | \\'h\\' , "SUBQUERY_1"."TESTSHORT" , \\'i\\' , "SUBQUERY_1"."TESTSTRING" ) )
-         |  AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |  AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE (
-         |  ( "SUBQUERY_0"."TESTINT" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTINT" = 4141214 ) ) )
-         |   AS "SUBQUERY_1"""".stripMargin)
+      s"""SELECT ( OBJECT( \\'a\\' , "SQ_1"."TESTBYTE" , \\'b\\' , "SQ_1"."TESTBOOL",
+         | \\'d\\' , "SQ_1"."TESTDOUBLE" , \\'e\\' , "SQ_1"."TESTFLOAT" ,
+         | \\'f\\' , "SQ_1"."TESTINT" , \\'g\\' , "SQ_1"."TESTLONG" ,
+         | \\'h\\' , "SQ_1"."TESTSHORT" , \\'i\\' , "SQ_1"."TESTSTRING" ) )
+         |  AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+         |  AS "RCQ_ALIAS" ) AS "SQ_0" WHERE (
+         |  ( "SQ_0"."TESTINT" IS NOT NULL ) AND ( "SQ_0"."TESTINT" = 4141214 ) ) )
+         |   AS "SQ_1"""".stripMargin)
   }
 
   test("Negative Test CreateNamedStruct: DATE type not convertible to super") {
@@ -273,13 +273,13 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       expectedRows)
 
     checkSqlStatement(
-      s"""SELECT ( OBJECT( \\'a\\' , "SUBQUERY_0"."TESTSTRING" ,
-         |                 \\'b\\' , ( SELECT ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_0" )
-         | ) AS "SUBQUERY_2_COL_0" FROM ( SELECT ( "SUBQUERY_0"."TESTSHORT" )
-         | AS "SUBQUERY_1_COL_0" FROM ( SELECT * FROM $test_table AS
-         | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS "SUBQUERY_1" LIMIT 1 ) ) )
-         | AS "SUBQUERY_1_COL_0" FROM ( SELECT * FROM $test_table AS
-         | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"""".stripMargin)
+      s"""SELECT ( OBJECT( \\'a\\' , "SQ_0"."TESTSTRING" ,
+         |                 \\'b\\' , ( SELECT ( MAX ( "SQ_1"."SQ_1_COL_0" )
+         | ) AS "SQ_2_COL_0" FROM ( SELECT ( "SQ_0"."TESTSHORT" )
+         | AS "SQ_1_COL_0" FROM ( SELECT * FROM $test_table AS
+         | "RCQ_ALIAS" ) AS "SQ_0" ) AS "SQ_1" LIMIT 1 ) ) )
+         | AS "SQ_1_COL_0" FROM ( SELECT * FROM $test_table AS
+         | "RCQ_ALIAS" ) AS "SQ_0"""".stripMargin)
   }
 
   test("Test nested CreateNamedStructs") {
@@ -305,15 +305,15 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       expectedRow)
 
     checkSqlStatement(
-      s"""SELECT ( OBJECT( \\'a\\' , "SUBQUERY_1"."TESTSTRING" ,
-         |                 \\'b\\' , ( SELECT ( OBJECT( \\'c\\' , "SUBQUERY_1"."TESTINT" ) )
-         | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-         | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( (
-         | "SUBQUERY_0"."TESTINT" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTINT" = 4141214 ) ) )
-         | AS "SUBQUERY_1" ) ) ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-         | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( (
-         | "SUBQUERY_0"."TESTSHORT" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTSHORT" = -13 ) ) )
-         | AS "SUBQUERY_1"""".stripMargin)
+      s"""SELECT ( OBJECT( \\'a\\' , "SQ_1"."TESTSTRING" ,
+         |                 \\'b\\' , ( SELECT ( OBJECT( \\'c\\' , "SQ_1"."TESTINT" ) )
+         | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+         | $test_table AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( (
+         | "SQ_0"."TESTINT" IS NOT NULL ) AND ( "SQ_0"."TESTINT" = 4141214 ) ) )
+         | AS "SQ_1" ) ) ) AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+         | $test_table AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( (
+         | "SQ_0"."TESTSHORT" IS NOT NULL ) AND ( "SQ_0"."TESTSHORT" = -13 ) ) )
+         | AS "SQ_1"""".stripMargin)
   }
 }
 

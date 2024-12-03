@@ -23,6 +23,11 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 
 package object redshift {
 
+  private val LEGACY_TIMESTAMP_HANDLING_KEY =
+    "spark.datasource.redshift.community.legacy_timestamp_handling"
+  lazy val legacyTimestampHandling =
+    Utils.getSparkConfigValue(LEGACY_TIMESTAMP_HANDLING_KEY, "true").toBoolean
+
   /**
    * Wrapper of SQLContext that provide `redshiftFile` method.
    */

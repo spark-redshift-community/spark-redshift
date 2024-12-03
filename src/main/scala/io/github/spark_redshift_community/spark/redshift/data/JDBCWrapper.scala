@@ -77,7 +77,7 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
         statement.cancel()
       } catch {
         case e: Throwable =>
-          log.error("Exception occurred while cancelling statement", e)
+          log.error("Exception occurred while cancelling statement: {}", e.getMessage)
       }
     }
   }
@@ -106,7 +106,7 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
           throw e
         } catch {
           case s: SQLException =>
-            log.error("Exception occurred while cancelling query", s)
+            log.error("Exception occurred while cancelling query: {}", s.getMessage)
             throw e
         }
     }
@@ -250,11 +250,10 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
       executeInterruptibly(conn, s"""set query_group to '${queryGroup}'""")
       conn
     } catch {
-      case e: Throwable => {
-        log.debug(s"Unable to set query group: $e")
+      case e: Throwable =>
+        log.debug(s"Unable to set query group: ${e.getMessage}")
         conn.close()
         getConnector(params)
-      }
     }
   }
 

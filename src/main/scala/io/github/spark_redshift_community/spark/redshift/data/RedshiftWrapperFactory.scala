@@ -26,8 +26,8 @@ private[redshift] object RedshiftWrapperType extends Enumeration {
 
 private[redshift] object RedshiftWrapperFactory {
   private val log = LoggerFactory.getLogger(getClass)
-  private val jdbcSingleton = RedshiftWrapperFactory(JDBC)
-  private val dataAPISingleton = RedshiftWrapperFactory(DataAPI)
+  private val jdbcSingleton = RedshiftWrapperFactory(RedshiftWrapperType.JDBC)
+  private val dataAPISingleton = RedshiftWrapperFactory(RedshiftWrapperType.DataAPI)
 
   def apply(params: MergedParameters): RedshiftWrapper = {
     if (params.dataAPICreds) {

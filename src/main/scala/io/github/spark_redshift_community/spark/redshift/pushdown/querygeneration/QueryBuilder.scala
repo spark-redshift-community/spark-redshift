@@ -41,15 +41,13 @@ import scala.reflect.ClassTag
  * to avoid building the query from the get-go without tryBuild().
  * TODO: Is laziness actually helpful?
  */
-private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
-  import QueryBuilder.convertProjections
-
+class QueryBuilder(plan: LogicalPlan) {
   private val LOG = LoggerFactory.getLogger(getClass)
 
   /** This iterator automatically increments every time it is used,
    * and is for aliasing subqueries.
    */
-  private final val alias = Iterator.from(0).map(n => s"SUBQUERY_$n")
+  private final val alias = Iterator.from(0).map(n => s"SQ_$n")
 
   /** RDD of [InternalRow] to be used by RedshiftPlan. */
   lazy val rdd: RDD[InternalRow] = toRDD[InternalRow]

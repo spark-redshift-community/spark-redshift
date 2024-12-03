@@ -122,11 +122,11 @@ private[redshift] class DeprecatedJDBCWrapper extends Serializable {
   sys.addShutdownHook {
     cancellationMap.forEach { (statement, jdbcSmtNum) =>
       try {
-        log.info(s"Cancelling pending JDBC call {}", jdbcSmtNum)
+        log.info("Cancelling pending JDBC call {}", jdbcSmtNum)
         statement.cancel()
       } catch {
         case e: Throwable =>
-          log.error("Exception occurred while cancelling statement", e)
+          log.error("Exception occurred while cancelling statement: {}", e.getMessage)
       }
     }
   }
@@ -189,7 +189,7 @@ private[redshift] class DeprecatedJDBCWrapper extends Serializable {
           throw e
         } catch {
           case s: SQLException =>
-            log.error("Exception occurred while cancelling query", s)
+            log.error("Exception occurred while cancelling query: {}", s.getMessage)
             throw e
         }
     }
@@ -298,7 +298,7 @@ private[redshift] class DeprecatedJDBCWrapper extends Serializable {
       conn
     } catch {
       case e: Throwable => {
-        log.debug(s"Unable to set query group: $e")
+        log.debug("Unable to set query group: {}", e.getMessage)
         conn.close()
         getConnector(userProvidedDriverClass, url, params)
       }

@@ -17,6 +17,7 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
+import io.github.spark_redshift_community.spark.redshift
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
 import io.github.spark_redshift_community.spark.redshift.pushdown._
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, BinaryOperator, BitwiseAnd, BitwiseNot, BitwiseOr, BitwiseXor, EqualNullSafe, Expression, Literal, Or}
@@ -88,7 +89,11 @@ private[querygeneration] object BasicStatement {
               Option(l.value).map(_.asInstanceOf[Int])
             ) +
               ", TO_DATE('1970-01-01', 'YYYY-MM-DD'))"
+          case TimestampType if redshift.legacyTimestampHandling =>
+            StringVariable(Option(l.toString)) + "::TIMESTAMP"
           case TimestampType =>
+            StringVariable(Option(l.toString)) + "::TIMESTAMPTZ"
+          case TimestampNTZType if !redshift.legacyTimestampHandling =>
             StringVariable(Option(l.toString)) + "::TIMESTAMP"
           case _: StructType | _: MapType | _: ArrayType =>
             throw new RedshiftPushdownUnsupportedException(

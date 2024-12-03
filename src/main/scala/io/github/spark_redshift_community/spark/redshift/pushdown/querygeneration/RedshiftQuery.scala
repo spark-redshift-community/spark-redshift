@@ -62,7 +62,7 @@ private[querygeneration] abstract sealed class RedshiftQuery {
     * @return SQL statement for this query.
     */
   def getStatement(useAlias: Boolean = false): RedshiftSQLStatement = {
-    log.debug(s"""Generating a query of type: ${getClass.getSimpleName}""")
+    log.debug("Generating a query of type: {}", getClass.getSimpleName)
 
     def getCols = {
       val cols = helper.columns
@@ -140,7 +140,7 @@ case class SourceQuery(relation: RedshiftRelation,
       relation.params.query
         .map(ConstantString("(") + _ + ")") // user input query, don't parse
         .getOrElse(relation.params.table.get.toConstantString !),
-      "rs_connector_query_alias"
+      "RCQ_ALIAS"
     )
   )
 
@@ -177,7 +177,7 @@ case class LocalQuery(relation: LocalRelation,
     )
 
   override def getStatement(useAlias: Boolean = false): RedshiftSQLStatement = {
-    log.debug(s"""Generating a query of type: ${getClass.getSimpleName}""")
+    log.debug("Generating a query of type: {}", getClass.getSimpleName)
     val stmt = generateSelectStatement(relation)
     if (useAlias) {
       blockStatement(stmt, helper.alias)

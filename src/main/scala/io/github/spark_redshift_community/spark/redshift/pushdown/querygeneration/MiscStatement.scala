@@ -62,8 +62,8 @@ private[querygeneration] object MiscStatement {
             // For known unsupported data conversion, raise exception to break the
             // pushdown process.
             (child.dataType, t) match {
-              case (_: DateType | _: TimestampType,
-              _: IntegerType | _: LongType | _: FloatType | _: DoubleType | _: DecimalType) =>
+              case (_: DateType | _: TimestampType | _: TimestampNTZType,
+                    _: IntegerType | _: LongType | _: FloatType | _: DoubleType | _: DecimalType) =>
                 // This exception will not break the connector. It will be caught in
                 // QueryBuilder.treeRoot.
                 throw new RedshiftPushdownUnsupportedException(

@@ -29,8 +29,7 @@ class QueryGroupIntegrationSuite extends IntegrationSuiteBase {
       val mergedParams = Parameters.mergeParameters(params)
       val conn = TestJdbcWrapper.getConnectorWithQueryGroup(mergedParams, invalidQueryGroup)
       verify(TestJdbcWrapper.getLogger).debug("Unable to set query group: " +
-        "com.amazon.redshift.util.RedshiftException: Unterminated string literal " +
-        "started at position 21 in SQL set query_group to '''. Expected  char")
+        "Unterminated string literal started at position 21 in SQL set query_group to '''. Expected  char")
       try {
         val results = TestJdbcWrapper.executeQueryInterruptibly(conn, "select 1")
         assert(results.next())

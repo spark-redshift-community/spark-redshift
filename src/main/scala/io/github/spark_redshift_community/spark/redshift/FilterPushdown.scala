@@ -17,9 +17,13 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
+import io.github.spark_redshift_community.spark.redshift
+
 import java.sql.{Date, Timestamp}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
+
+import java.time.LocalDateTime
 
 /**
  * Helper methods for pushing filters into Redshift queries.
@@ -76,6 +80,12 @@ private[redshift] object FilterPushdown {
               s"''${value.asInstanceOf[Timestamp]}''"
             } else {
               s"'${value.asInstanceOf[Timestamp]}'"
+            }
+          case TimestampNTZType if !redshift.legacyTimestampHandling =>
+            if (escapeQuote) {
+              s"''${value.asInstanceOf[LocalDateTime]}''"
+            } else {
+              s"'${value.asInstanceOf[LocalDateTime]}'"
             }
           case _ if value.isInstanceOf[Float] => s"$value::float4"
           case _ => value.toString

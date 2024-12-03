@@ -48,27 +48,27 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |    );""".stripMargin,
     Seq(Row()),
     """DELETE FROM "PUBLIC"."catalog_sales" WHERE ( ( "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" >=
-      | ( SELECT ( "SUBQUERY_4_COL_0" . "MIN(D_DATE_SK)" ::INTEGER ) FROM ( SELECT (
-      | OBJECT( 'min(d_date_sk)' , "SUBQUERY_3"."SUBQUERY_3_COL_0" , 'max(d_date_sk)' ,
-      | "SUBQUERY_3"."SUBQUERY_3_COL_1" ) ) AS "SUBQUERY_4_COL_0" FROM ( SELECT ( MIN (
-      | "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ) AS "SUBQUERY_3_COL_0" , ( MAX (
-      | "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ) AS "SUBQUERY_3_COL_1" FROM ( SELECT (
-      | "SUBQUERY_1"."D_DATE_SK" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-      | "PUBLIC"."date_dim" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( (
-      | "SUBQUERY_0"."D_DATE" IS NOT NULL ) AND ( ( "SUBQUERY_0"."D_DATE" >= DATEADD(day, 19723 ,
-      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) AND ( "SUBQUERY_0"."D_DATE" <= DATEADD(day, 19727 ,
-      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1 )
-      | AS "SUBQUERY_3" ) ) ) AND ( "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" <= ( SELECT (
-      | "SUBQUERY_4_COL_0" . "MAX(D_DATE_SK)" ::INTEGER ) FROM ( SELECT ( OBJECT( 'min(d_date_sk)'
-      | , "SUBQUERY_3"."SUBQUERY_3_COL_0" , 'max(d_date_sk)' , "SUBQUERY_3"."SUBQUERY_3_COL_1" ) )
-      | AS "SUBQUERY_4_COL_0" FROM ( SELECT ( MIN ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ) AS
-      | "SUBQUERY_3_COL_0" , ( MAX ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ) AS "SUBQUERY_3_COL_1"
-      | FROM ( SELECT ( "SUBQUERY_1"."D_DATE_SK" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM (
-      | SELECT * FROM "PUBLIC"."date_dim" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE (
-      | ( "SUBQUERY_0"."D_DATE" IS NOT NULL ) AND ( ( "SUBQUERY_0"."D_DATE" >= DATEADD(day, 19723 ,
-      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) AND ( "SUBQUERY_0"."D_DATE" <= DATEADD(day, 19727 ,
-      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1 )
-      | AS "SUBQUERY_3" ) ) ) )""".stripMargin)
+      | ( SELECT ( "SQ_4_COL_0" . "MIN(D_DATE_SK)" ::INTEGER ) FROM ( SELECT (
+      | OBJECT( 'min(d_date_sk)' , "SQ_3"."SQ_3_COL_0" , 'max(d_date_sk)' ,
+      | "SQ_3"."SQ_3_COL_1" ) ) AS "SQ_4_COL_0" FROM ( SELECT ( MIN (
+      | "SQ_2"."SQ_2_COL_0" ) ) AS "SQ_3_COL_0" , ( MAX (
+      | "SQ_2"."SQ_2_COL_0" ) ) AS "SQ_3_COL_1" FROM ( SELECT (
+      | "SQ_1"."D_DATE_SK" ) AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+      | "PUBLIC"."date_dim" AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( (
+      | "SQ_0"."D_DATE" IS NOT NULL ) AND ( ( "SQ_0"."D_DATE" >= DATEADD(day, 19723 ,
+      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) AND ( "SQ_0"."D_DATE" <= DATEADD(day, 19727 ,
+      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) ) ) ) AS "SQ_1" ) AS "SQ_2" LIMIT 1 )
+      | AS "SQ_3" ) ) ) AND ( "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" <= ( SELECT (
+      | "SQ_4_COL_0" . "MAX(D_DATE_SK)" ::INTEGER ) FROM ( SELECT ( OBJECT( 'min(d_date_sk)'
+      | , "SQ_3"."SQ_3_COL_0" , 'max(d_date_sk)' , "SQ_3"."SQ_3_COL_1" ) )
+      | AS "SQ_4_COL_0" FROM ( SELECT ( MIN ( "SQ_2"."SQ_2_COL_0" ) ) AS
+      | "SQ_3_COL_0" , ( MAX ( "SQ_2"."SQ_2_COL_0" ) ) AS "SQ_3_COL_1"
+      | FROM ( SELECT ( "SQ_1"."D_DATE_SK" ) AS "SQ_2_COL_0" FROM ( SELECT * FROM (
+      | SELECT * FROM "PUBLIC"."date_dim" AS "RCQ_ALIAS" ) AS "SQ_0" WHERE (
+      | ( "SQ_0"."D_DATE" IS NOT NULL ) AND ( ( "SQ_0"."D_DATE" >= DATEADD(day, 19723 ,
+      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) AND ( "SQ_0"."D_DATE" <= DATEADD(day, 19727 ,
+      | TO_DATE('1970-01-01', 'YYYY-MM-DD')) ) ) ) ) AS "SQ_1" ) AS "SQ_2" LIMIT 1 )
+      | AS "SQ_3" ) ) ) )""".stripMargin)
 
   test("LST-Delete-1") {
     read.option("dbtable", s"catalog_sales").load()
@@ -119,18 +119,18 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |WHERE
        |  ("PUBLIC"."CATALOG_RETURNS"."CR_ORDER_NUMBER") IN (
        |  SELECT
-       |    ("SUBQUERY_6"."SUBQUERY_6_COL_0") AS "SUBQUERY_7_COL_0"
+       |    ("SQ_6"."SQ_6_COL_0") AS "SQ_7_COL_0"
        |  FROM
        |    (
        |    SELECT
-       |      ("SUBQUERY_2"."SUBQUERY_2_COL_0") AS "SUBQUERY_6_COL_0",
-       |      ("SUBQUERY_2"."SUBQUERY_2_COL_1") AS "SUBQUERY_6_COL_1",
-       |      ("SUBQUERY_5"."SUBQUERY_5_COL_0") AS "SUBQUERY_6_COL_2"
+       |      ("SQ_2"."SQ_2_COL_0") AS "SQ_6_COL_0",
+       |      ("SQ_2"."SQ_2_COL_1") AS "SQ_6_COL_1",
+       |      ("SQ_5"."SQ_5_COL_0") AS "SQ_6_COL_2"
        |    FROM
        |      (
        |      SELECT
-       |        ("SUBQUERY_1"."CS_ORDER_NUMBER") AS "SUBQUERY_2_COL_0",
-       |        ("SUBQUERY_1"."CS_SOLD_DATE_SK") AS "SUBQUERY_2_COL_1"
+       |        ("SQ_1"."CS_ORDER_NUMBER") AS "SQ_2_COL_0",
+       |        ("SQ_1"."CS_SOLD_DATE_SK") AS "SQ_2_COL_1"
        |      FROM
        |        (
        |        SELECT
@@ -140,15 +140,15 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |          SELECT
        |            *
        |          FROM
-       |            "PUBLIC"."catalog_sales" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |          ) AS "SUBQUERY_0"
+       |            "PUBLIC"."catalog_sales" AS "RCQ_ALIAS"
+       |          ) AS "SQ_0"
        |        WHERE
-       |          ("SUBQUERY_0"."CS_SOLD_DATE_SK" IS NOT NULL)
-       |        ) AS "SUBQUERY_1"
-       |      ) AS "SUBQUERY_2"
+       |          ("SQ_0"."CS_SOLD_DATE_SK" IS NOT NULL)
+       |        ) AS "SQ_1"
+       |      ) AS "SQ_2"
        |      INNER JOIN (
        |      SELECT
-       |        ("SUBQUERY_4"."D_DATE_SK") AS "SUBQUERY_5_COL_0"
+       |        ("SQ_4"."D_DATE_SK") AS "SQ_5_COL_0"
        |      FROM
        |        (
        |        SELECT
@@ -158,34 +158,34 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |          SELECT
        |            *
        |          FROM
-       |            "PUBLIC"."date_dim" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |          ) AS "SUBQUERY_3"
+       |            "PUBLIC"."date_dim" AS "RCQ_ALIAS"
+       |          ) AS "SQ_3"
        |        WHERE
        |          (
        |          (
-       |            ("SUBQUERY_3"."D_DATE" IS NOT NULL)
+       |            ("SQ_3"."D_DATE" IS NOT NULL)
        |            AND (
        |            (
-       |              "SUBQUERY_3"."D_DATE" >= DATEADD(
+       |              "SQ_3"."D_DATE" >= DATEADD(
        |              day,
        |              19723,
        |              TO_DATE('1970-01-01', 'YYYY-MM-DD')
        |              )
        |            )
        |            AND (
-       |              "SUBQUERY_3"."D_DATE" <= DATEADD(day, 19732, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
+       |              "SQ_3"."D_DATE" <= DATEADD(day, 19732, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
        |            )
        |            )
        |          )
        |          AND (
-       |            "SUBQUERY_3"."D_DATE_SK" IS NOT NULL
+       |            "SQ_3"."D_DATE_SK" IS NOT NULL
        |          )
        |          )
-       |        ) AS "SUBQUERY_4"
-       |      ) AS "SUBQUERY_5" ON (
-       |      "SUBQUERY_2"."SUBQUERY_2_COL_1" = "SUBQUERY_5"."SUBQUERY_5_COL_0"
+       |        ) AS "SQ_4"
+       |      ) AS "SQ_5" ON (
+       |      "SQ_2"."SQ_2_COL_1" = "SQ_5"."SQ_5_COL_0"
        |      )
-       |    ) AS "SUBQUERY_6"
+       |    ) AS "SQ_6"
        |  )""".stripMargin)
 
   test("LST-Delete-2") {
@@ -228,32 +228,32 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |    "PUBLIC"."inventory_copy"
        |SELECT
        |    (
-       |        CAST ("SUBQUERY_2"."SUBQUERY_2_COL_0" AS INTEGER)
-       |    ) AS "SUBQUERY_3_COL_0",
+       |        CAST ("SQ_2"."SQ_2_COL_0" AS INTEGER)
+       |    ) AS "SQ_3_COL_0",
        |    (
-       |        CAST ("SUBQUERY_2"."SUBQUERY_2_COL_1" AS INTEGER)
-       |    ) AS "SUBQUERY_3_COL_1",
+       |        CAST ("SQ_2"."SQ_2_COL_1" AS INTEGER)
+       |    ) AS "SQ_3_COL_1",
        |    (
-       |        CAST ("SUBQUERY_2"."SUBQUERY_2_COL_2" AS INTEGER)
-       |    ) AS "SUBQUERY_3_COL_2",
+       |        CAST ("SQ_2"."SQ_2_COL_2" AS INTEGER)
+       |    ) AS "SQ_3_COL_2",
        |    (
-       |        CAST ("SUBQUERY_2"."SUBQUERY_2_COL_3" AS INTEGER)
-       |    ) AS "SUBQUERY_3_COL_3"
+       |        CAST ("SQ_2"."SQ_2_COL_3" AS INTEGER)
+       |    ) AS "SQ_3_COL_3"
        |FROM
        |    (
        |        SELECT
-       |            ("SUBQUERY_1"."INV_ITEM_SK") AS "SUBQUERY_2_COL_0",
-       |            ("SUBQUERY_1"."INV_WAREHOUSE_SK") AS "SUBQUERY_2_COL_1",
-       |            ("SUBQUERY_1"."INV_QUANTITY_ON_HAND") AS "SUBQUERY_2_COL_2",
-       |            ("SUBQUERY_1"."INV_DATE_SK") AS "SUBQUERY_2_COL_3"
+       |            ("SQ_1"."INV_ITEM_SK") AS "SQ_2_COL_0",
+       |            ("SQ_1"."INV_WAREHOUSE_SK") AS "SQ_2_COL_1",
+       |            ("SQ_1"."INV_QUANTITY_ON_HAND") AS "SQ_2_COL_2",
+       |            ("SQ_1"."INV_DATE_SK") AS "SQ_2_COL_3"
        |        FROM
        |            (
        |                SELECT
        |                    *
        |                FROM
-       |                    "PUBLIC"."inventory" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |            ) AS "SUBQUERY_1"
-       |    ) AS "SUBQUERY_2"""".stripMargin)
+       |                    "PUBLIC"."inventory" AS "RCQ_ALIAS"
+       |            ) AS "SQ_1"
+       |    ) AS "SQ_2"""".stripMargin)
 
   test("LST-Insert-1") {
     read
@@ -291,18 +291,18 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
     s"""DELETE FROM
        |  "PUBLIC"."catalog_returns" USING (
        |    SELECT
-       |      ("SUBQUERY_7"."SUBQUERY_7_COL_0") AS "SUBQUERY_8_COL_0"
+       |      ("SQ_7"."SQ_7_COL_0") AS "SQ_8_COL_0"
        |    FROM
        |      (
        |        SELECT
-       |          ("SUBQUERY_3"."SUBQUERY_3_COL_0") AS "SUBQUERY_7_COL_0",
-       |          ("SUBQUERY_3"."SUBQUERY_3_COL_1") AS "SUBQUERY_7_COL_1",
-       |          ("SUBQUERY_6"."SUBQUERY_6_COL_0") AS "SUBQUERY_7_COL_2"
+       |          ("SQ_3"."SQ_3_COL_0") AS "SQ_7_COL_0",
+       |          ("SQ_3"."SQ_3_COL_1") AS "SQ_7_COL_1",
+       |          ("SQ_6"."SQ_6_COL_0") AS "SQ_7_COL_2"
        |        FROM
        |          (
        |            SELECT
-       |              ("SUBQUERY_2"."CS_ORDER_NUMBER") AS "SUBQUERY_3_COL_0",
-       |              ("SUBQUERY_2"."CS_SOLD_DATE_SK") AS "SUBQUERY_3_COL_1"
+       |              ("SQ_2"."CS_ORDER_NUMBER") AS "SQ_3_COL_0",
+       |              ("SQ_2"."CS_SOLD_DATE_SK") AS "SQ_3_COL_1"
        |            FROM
        |              (
        |                SELECT
@@ -312,15 +312,15 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |                    SELECT
        |                      *
        |                    FROM
-       |                      "PUBLIC"."catalog_sales" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |                  ) AS "SUBQUERY_1"
+       |                      "PUBLIC"."catalog_sales" AS "RCQ_ALIAS"
+       |                  ) AS "SQ_1"
        |                WHERE
-       |                  ("SUBQUERY_1"."CS_SOLD_DATE_SK" IS NOT NULL)
-       |              ) AS "SUBQUERY_2"
-       |          ) AS "SUBQUERY_3"
+       |                  ("SQ_1"."CS_SOLD_DATE_SK" IS NOT NULL)
+       |              ) AS "SQ_2"
+       |          ) AS "SQ_3"
        |          INNER JOIN (
        |            SELECT
-       |              ("SUBQUERY_5"."D_DATE_SK") AS "SUBQUERY_6_COL_0"
+       |              ("SQ_5"."D_DATE_SK") AS "SQ_6_COL_0"
        |            FROM
        |              (
        |                SELECT
@@ -330,32 +330,32 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |                    SELECT
        |                      *
        |                    FROM
-       |                      "PUBLIC"."date_dim" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |                  ) AS "SUBQUERY_4"
+       |                      "PUBLIC"."date_dim" AS "RCQ_ALIAS"
+       |                  ) AS "SQ_4"
        |                WHERE
        |                  (
        |                    (
-       |                      ("SUBQUERY_4"."D_DATE" IS NOT NULL)
+       |                      ("SQ_4"."D_DATE" IS NOT NULL)
        |                      AND (
        |                        (
-       |                          "SUBQUERY_4"."D_DATE" >= DATEADD(day, 19723, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
+       |                          "SQ_4"."D_DATE" >= DATEADD(day, 19723, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
        |                        )
        |                        AND (
-       |                          "SUBQUERY_4"."D_DATE" <= DATEADD(day, 19743, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
+       |                          "SQ_4"."D_DATE" <= DATEADD(day, 19743, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
        |                        )
        |                      )
        |                    )
-       |                    AND ("SUBQUERY_4"."D_DATE_SK" IS NOT NULL)
+       |                    AND ("SQ_4"."D_DATE_SK" IS NOT NULL)
        |                  )
-       |              ) AS "SUBQUERY_5"
-       |          ) AS "SUBQUERY_6" ON (
-       |            "SUBQUERY_3"."SUBQUERY_3_COL_1" = "SUBQUERY_6"."SUBQUERY_6_COL_0"
+       |              ) AS "SQ_5"
+       |          ) AS "SQ_6" ON (
+       |            "SQ_3"."SQ_3_COL_1" = "SQ_6"."SQ_6_COL_0"
        |          )
-       |      ) AS "SUBQUERY_7"
-       |  ) AS "SUBQUERY_8"
+       |      ) AS "SQ_7"
+       |  ) AS "SQ_8"
        |WHERE
        |  (
-       |    "PUBLIC"."CATALOG_RETURNS"."CR_ORDER_NUMBER" = "SUBQUERY_8"."SUBQUERY_8_COL_0"
+       |    "PUBLIC"."CATALOG_RETURNS"."CR_ORDER_NUMBER" = "SQ_8"."SQ_8_COL_0"
        |  )""".stripMargin)
 
   test("LST-Merge-1") {
@@ -410,16 +410,16 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
     s"""DELETE FROM
        |  "PUBLIC"."catalog_sales" USING (
        |    SELECT
-       |      ("SUBQUERY_4"."SUBQUERY_4_COL_0") AS "SUBQUERY_9_COL_0",
-       |      ("SUBQUERY_8"."SUBQUERY_8_COL_0") AS "SUBQUERY_9_COL_1"
+       |      ("SQ_4"."SQ_4_COL_0") AS "SQ_9_COL_0",
+       |      ("SQ_8"."SQ_8_COL_0") AS "SQ_9_COL_1"
        |    FROM
        |      (
        |        SELECT
-       |          (MIN ("SUBQUERY_3"."SUBQUERY_3_COL_0")) AS "SUBQUERY_4_COL_0"
+       |          (MIN ("SQ_3"."SQ_3_COL_0")) AS "SQ_4_COL_0"
        |        FROM
        |          (
        |            SELECT
-       |              ("SUBQUERY_2"."D_DATE_SK") AS "SUBQUERY_3_COL_0"
+       |              ("SQ_2"."D_DATE_SK") AS "SQ_3_COL_0"
        |            FROM
        |              (
        |                SELECT
@@ -429,32 +429,32 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |                    SELECT
        |                      *
        |                    FROM
-       |                      "PUBLIC"."date_dim" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |                  ) AS "SUBQUERY_1"
+       |                      "PUBLIC"."date_dim" AS "RCQ_ALIAS"
+       |                  ) AS "SQ_1"
        |                WHERE
        |                  (
-       |                    ("SUBQUERY_1"."D_DATE" IS NOT NULL)
+       |                    ("SQ_1"."D_DATE" IS NOT NULL)
        |                    AND (
        |                      (
-       |                        "SUBQUERY_1"."D_DATE" >= DATEADD(day, 19723, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
+       |                        "SQ_1"."D_DATE" >= DATEADD(day, 19723, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
        |                      )
        |                      AND (
-       |                        "SUBQUERY_1"."D_DATE" <= DATEADD(day, 19743, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
+       |                        "SQ_1"."D_DATE" <= DATEADD(day, 19743, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
        |                      )
        |                    )
        |                  )
-       |              ) AS "SUBQUERY_2"
-       |          ) AS "SUBQUERY_3"
+       |              ) AS "SQ_2"
+       |          ) AS "SQ_3"
        |        LIMIT
        |          1
-       |      ) AS "SUBQUERY_4"
+       |      ) AS "SQ_4"
        |      CROSS JOIN (
        |        SELECT
-       |          (MAX ("SUBQUERY_7"."SUBQUERY_7_COL_0")) AS "SUBQUERY_8_COL_0"
+       |          (MAX ("SQ_7"."SQ_7_COL_0")) AS "SQ_8_COL_0"
        |        FROM
        |          (
        |            SELECT
-       |              ("SUBQUERY_6"."D_DATE_SK") AS "SUBQUERY_7_COL_0"
+       |              ("SQ_6"."D_DATE_SK") AS "SQ_7_COL_0"
        |            FROM
        |              (
        |                SELECT
@@ -464,33 +464,33 @@ class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |                    SELECT
        |                      *
        |                    FROM
-       |                      "PUBLIC"."date_dim" AS "RS_CONNECTOR_QUERY_ALIAS"
-       |                  ) AS "SUBQUERY_5"
+       |                      "PUBLIC"."date_dim" AS "RCQ_ALIAS"
+       |                  ) AS "SQ_5"
        |                WHERE
        |                  (
-       |                    ("SUBQUERY_5"."D_DATE" IS NOT NULL)
+       |                    ("SQ_5"."D_DATE" IS NOT NULL)
        |                    AND (
        |                      (
-       |                        "SUBQUERY_5"."D_DATE" >= DATEADD(day, 19723, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
+       |                        "SQ_5"."D_DATE" >= DATEADD(day, 19723, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
        |                      )
        |                      AND (
-       |                        "SUBQUERY_5"."D_DATE" <= DATEADD(day, 19743, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
+       |                        "SQ_5"."D_DATE" <= DATEADD(day, 19743, TO_DATE('1970-01-01', 'YYYY-MM-DD'))
        |                      )
        |                    )
        |                  )
-       |              ) AS "SUBQUERY_6"
-       |          ) AS "SUBQUERY_7"
+       |              ) AS "SQ_6"
+       |          ) AS "SQ_7"
        |        LIMIT
        |          1
-       |      ) AS "SUBQUERY_8"
-       |  ) AS "SUBQUERY_9"
+       |      ) AS "SQ_8"
+       |  ) AS "SQ_9"
        |WHERE
        |  (
        |    (
-       |      "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" >= "SUBQUERY_9"."SUBQUERY_9_COL_0"
+       |      "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" >= "SQ_9"."SQ_9_COL_0"
        |    )
        |    AND (
-       |      "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" <= "SUBQUERY_9"."SUBQUERY_9_COL_1"
+       |      "PUBLIC"."CATALOG_SALES"."CS_SOLD_DATE_SK" <= "SQ_9"."SQ_9_COL_1"
        |    )
        |  )""".stripMargin)
 

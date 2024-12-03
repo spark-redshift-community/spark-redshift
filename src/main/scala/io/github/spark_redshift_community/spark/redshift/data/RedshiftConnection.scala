@@ -20,7 +20,7 @@ import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParame
 import java.sql.Connection
 import scala.collection.mutable.ArrayBuffer
 
-private[redshift] abstract class RedshiftConnection() {
+private[redshift] abstract class RedshiftConnection {
   def getAutoCommit(): Boolean
   def setAutoCommit(autoCommit: Boolean): Unit
   def close(): Unit
@@ -42,7 +42,7 @@ private[redshift] case class JDBCConnection(conn: Connection) extends RedshiftCo
 
 private[redshift] case class DataAPIConnection(params: MergedParameters,
                                                queryGroup: Option[String] = None
-  ) extends RedshiftConnection {
+                                              ) extends RedshiftConnection {
   val bufferedCommands: ArrayBuffer[String] = ArrayBuffer.empty
   var autoCommit: Boolean = true
 
