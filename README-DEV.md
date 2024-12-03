@@ -3,6 +3,6 @@
 ## Prerequisite
 
 * JDK 11 (since sbt currently supports to JDK 11)
-* sbt script version: 1.9.4
+* sbt script version: 1.9.2
 * Python 3 (to use pre-commit) 
 * pre-commit 3.4.0

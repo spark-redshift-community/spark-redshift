@@ -556,7 +556,7 @@ private[redshift] object Parameters {
     }
 
     /**
-     * Whether to skip S3 bucket checks.
+     * Whether to perform S3 bucket checks.
      */
     def checkS3BucketUsage: Boolean = parameters(PARAM_CHECK_S3_BUCKET_USAGE).toBoolean
 
