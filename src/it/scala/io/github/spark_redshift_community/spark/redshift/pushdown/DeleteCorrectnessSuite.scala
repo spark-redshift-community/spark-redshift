@@ -178,8 +178,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
       )
       // expect row with id=1, id=2 to be deleted
       checkAnswer(
-        sqlContext.sql(s"select id from $tableName where id NOT IN" +
-          s" (SELECT id FROM $tableName WHERE value <= 20) order by id asc"),
+        sqlContext.sql(s"select id from $tableName"),
         Seq(Row(3))
       )
     }
