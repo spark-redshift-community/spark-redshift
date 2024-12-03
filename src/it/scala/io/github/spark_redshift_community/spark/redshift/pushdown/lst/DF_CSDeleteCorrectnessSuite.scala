@@ -39,7 +39,8 @@ trait DF_CSDeleteCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
       |            AND d_date BETWEEN '2024-01-01' AND '2024-01-10'
       |    );""".stripMargin,
     Seq(Row()),
-    s"""DELETE FROM "PUBLIC"."catalog_returns" WHERE "PUBLIC"."CATALOG_RETURNS"."CR_ORDER_NUMBER"
+    s"""DELETE FROM "PUBLIC"."catalog_returns" WHERE
+       | ( "PUBLIC"."CATALOG_RETURNS"."CR_ORDER_NUMBER" )
        | IN ( SELECT ( "SUBQUERY_6"."SUBQUERY_6_COL_0" ) AS "SUBQUERY_7_COL_0" FROM ( SELECT (
        |  "SUBQUERY_2"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_6_COL_0" , (
        |   "SUBQUERY_2"."SUBQUERY_2_COL_1" ) AS "SUBQUERY_6_COL_1" , (
@@ -110,7 +111,8 @@ trait DF_CSDeleteCorrectnessSuite extends LSTIntegrationPushdownSuiteBase {
        |      WHERE t.cr_order_number = s.cs_order_number OR
        |       t.cr_item_sk = s.cs_item_sk)""".stripMargin,
     Seq(Row()),
-    s"""DELETE FROM "PUBLIC"."catalog_returns" WHERE "PUBLIC"."CATALOG_RETURNS"."CR_ORDER_NUMBER"
+    s"""DELETE FROM "PUBLIC"."catalog_returns" WHERE
+       | ( "PUBLIC"."CATALOG_RETURNS"."CR_ORDER_NUMBER" )
        | IN ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_1" ) AS "SUBQUERY_5_COL_0" FROM ( SELECT (
        |  "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_4_COL_0" , (
        |   "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_4_COL_1" , (

@@ -123,9 +123,10 @@ private[querygeneration] object MiscStatement {
       case ScalarSubqueryExtractor(subquery, _, _, joinCond) if joinCond.isEmpty =>
         blockStatement(new QueryBuilder(subquery).statement)
 
-      case InSubquery(values, subQuery) if values.size == 1 =>
-        convertStatement(values.head, fields) + ConstantString("IN") +
-          convertSubQuery(fields, subQuery.plan, subQuery.joinCond)
+      case InSubquery(values, subQuery) =>
+        blockStatement(
+          mkStatement(values.map(convertStatement(_, fields)), ", ")
+        ) + ConstantString("IN") + convertSubQuery(fields, subQuery.plan, subQuery.joinCond)
 
       case Exists(subQuery, _, _, joinCond, _) =>
         ConstantString("EXISTS").toStatement + convertSubQuery(fields, subQuery, joinCond)

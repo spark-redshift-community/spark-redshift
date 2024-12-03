@@ -508,7 +508,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         checkSqlStatement(
           s""" UPDATE "PUBLIC"."$targetTable"
              | SET "VALUE" = 0
-             | WHERE NOT ( "PUBLIC"."$targetTable"."ID" IN ( SELECT ( "SUBQUERY_1"."ID" )
+             | WHERE NOT ( ( "PUBLIC"."$targetTable"."ID" ) IN ( SELECT ( "SUBQUERY_1"."ID" )
              |  AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
              |    ( SELECT * FROM "PUBLIC"."$conditionTable" AS "RS_CONNECTOR_QUERY_ALIAS" )
              |     AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."VALUE" IS NOT NULL ) AND
@@ -602,7 +602,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         checkSqlStatement(
           s""" UPDATE "PUBLIC"."$targetTable"
              | SET "VALUE" = 0
-             | WHERE "PUBLIC"."$targetTable"."ID" IN ( SELECT ( "SUBQUERY_1"."ID" )
+             | WHERE ( "PUBLIC"."$targetTable"."ID" ) IN ( SELECT ( "SUBQUERY_1"."ID" )
              |  AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
              |    "PUBLIC"."$conditionTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
              |     "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."VALUE" IS NOT NULL ) AND

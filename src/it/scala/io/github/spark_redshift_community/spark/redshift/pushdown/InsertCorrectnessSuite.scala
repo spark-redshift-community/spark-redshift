@@ -260,10 +260,11 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
         checkSqlStatement(
           s"""INSERT INTO "PUBLIC"."$tableName"
-             | SELECT ( "SUBQUERY_2"."ID" ) AS "SUBQUERY_3_COL_0" , ( "SUBQUERY_2"."VALUE" ) AS "SUBQUERY_3_COL_1"
-             | FROM ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$tableNameSource" AS
-             | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1" WHERE "SUBQUERY_1"."VALUE" IN
-             | ( SELECT ( "SUBQUERY_1"."VALUE" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+             | SELECT ( "SUBQUERY_2"."ID" ) AS "SUBQUERY_3_COL_0" , ( "SUBQUERY_2"."VALUE" )
+             | AS "SUBQUERY_3_COL_1" FROM ( SELECT * FROM ( SELECT * FROM
+             | "PUBLIC"."$tableNameSource" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1"
+             | WHERE ( "SUBQUERY_1"."VALUE" ) IN ( SELECT ( "SUBQUERY_1"."VALUE" ) AS
+             | "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
              | "PUBLIC"."$tableNameSource" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
              | WHERE ( "SUBQUERY_0"."VALUE" < 40 ) ) AS "SUBQUERY_1" ) ) AS "SUBQUERY_2""""
             .stripMargin
@@ -452,11 +453,12 @@ class InsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       checkSqlStatement(
         s"""INSERT INTO "PUBLIC"."$tableName"
-           | SELECT ( "SUBQUERY_3"."SUBQUERY_3_COL_0" ) AS "SUBQUERY_4_COL_0" FROM ( SELECT ( "SUBQUERY_2"."TESTINT" )
-           | AS "SUBQUERY_3_COL_0" FROM ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$source_table"
-           | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1"
-           | WHERE "SUBQUERY_1"."TESTINT" IN ( SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0"
-           | FROM ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$source_table" AS
+           | SELECT ( "SUBQUERY_3"."SUBQUERY_3_COL_0" ) AS "SUBQUERY_4_COL_0" FROM
+           | ( SELECT ( "SUBQUERY_2"."TESTINT" ) AS "SUBQUERY_3_COL_0" FROM ( SELECT
+           | * FROM ( SELECT * FROM "PUBLIC"."$source_table" AS
+           | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_1" WHERE ( "SUBQUERY_1"."TESTINT" )
+           | IN ( SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0" FROM
+           | ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$source_table" AS
            | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTINT" > 0 ) )
            | AS "SUBQUERY_1" ) ) AS "SUBQUERY_2" ) AS "SUBQUERY_3""""
           .stripMargin

@@ -50,7 +50,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("delete from removes selected rows from table") {
-    withTempRedshiftTable("updateTable") { tableName =>
+    withTempRedshiftTable("deleteTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
       )
@@ -81,7 +81,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("delete from removes rows in table with an alias for tablename") {
-    withTempRedshiftTable("updateTable") { tableName =>
+    withTempRedshiftTable("deleteTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
       )
@@ -111,8 +111,8 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Delete_rows_using_a_subquery_IN") {
-    withTempRedshiftTable("updateTable") { tableName =>
+  test("Delete rows using a subquery IN") {
+    withTempRedshiftTable("deleteTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"CREATE TABLE $tableName (id INT, value INT)"
       )
@@ -132,7 +132,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(
-        s"""DELETE FROM $testTableName WHERE $testTableName."ID" IN
+        s"""DELETE FROM $testTableName WHERE ( $testTableName."ID" ) IN
            | ( SELECT ( "SUBQUERY_1"."ID" ) AS "SUBQUERY_2_COL_0" FROM
            | ( SELECT * FROM ( SELECT * FROM $testTableName AS
            | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
@@ -147,8 +147,8 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Delete_rows_using_a_subquery_NOT_IN") {
-    withTempRedshiftTable("updateTable") { tableName =>
+  test("Delete rows using a subquery NOT IN") {
+    withTempRedshiftTable("deleteTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"CREATE TABLE $tableName (id INT, value INT)"
       )
@@ -169,7 +169,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
       val testTableName = s""""PUBLIC"."${tableName}""""
       checkSqlStatement(
-        s"""DELETE FROM $testTableName WHERE NOT ( $testTableName."ID" IN (
+        s"""DELETE FROM $testTableName WHERE NOT ( ( $testTableName."ID" ) IN (
            | SELECT ( "SUBQUERY_1"."ID" ) AS "SUBQUERY_2_COL_0" FROM (
            | SELECT * FROM ( SELECT * FROM $testTableName AS
            | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( (
@@ -184,7 +184,90 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  ignore("Delete_rows_using_a_nested_subquery_IN_CASE") {
+  test("Delete rows using a subquery IN with two values") {
+    withTempRedshiftTable("deleteTable") { tableName =>
+      redshiftWrapper.executeUpdate(conn,
+        s"CREATE TABLE $tableName (id INT, value INT, name VARCHAR(50))"
+      )
+      read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+
+      val initialData = Seq((1, 10, "a"), (2, 20, "b"), (3, 30, "c"))
+      val schema = List("id", "value", "name")
+      val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
+      write(df).option("dbtable", tableName).mode("append").save()
+
+      checkAnswer(
+        sqlContext.sql(s"select count(*) from $tableName"),
+        Seq(Row(3))
+      )
+      val query =
+        s"""DELETE FROM $tableName
+           |WHERE (id, value) IN
+           | (SELECT id, value FROM $tableName WHERE id != 2 AND value > 20)
+           |""".stripMargin
+      sqlContext.sql(query)
+
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(
+        s"""DELETE FROM $testTableName WHERE ( $testTableName."ID" , $testTableName."VALUE" ) IN
+           |( SELECT ( "SUBQUERY_1"."ID" ) AS "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."VALUE" )
+           |AS "SUBQUERY_2_COL_1" FROM ( SELECT * FROM ( SELECT * FROM $testTableName
+           |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( ( "SUBQUERY_0"."ID"
+           |IS NOT NULL ) AND ( "SUBQUERY_0"."VALUE" IS NOT NULL ) ) AND
+           |( ( "SUBQUERY_0"."ID" != 2 ) AND ( "SUBQUERY_0"."VALUE" > 20 ) ) ) )
+           |AS "SUBQUERY_1" )""".stripMargin
+      )
+      // expect only row with id=3 to be deleted
+      checkAnswer(
+        sqlContext.sql(s"select id from $tableName order by id asc"),
+        Seq(Row(1), Row(2))
+      )
+    }
+  }
+
+  test("Delete rows using a subquery NOT IN with two values") {
+    withTempRedshiftTable("deleteTable") { tableName =>
+      redshiftWrapper.executeUpdate(conn,
+        s"CREATE TABLE $tableName (id INT, value INT, name VARCHAR(50))"
+      )
+      read.option("dbtable", tableName).load.createOrReplaceTempView(tableName)
+
+      val initialData = Seq((1, 10, "a"), (2, 20, "b"), (3, 30, "c"))
+      val schema = List("id", "value", "name")
+      val df = sqlContext.createDataFrame(initialData).toDF(schema: _*)
+      write(df).option("dbtable", tableName).mode("append").save()
+
+      checkAnswer(
+        sqlContext.sql(s"select count(*) from $tableName"),
+        Seq(Row(3))
+      )
+      val query =
+        s"""DELETE FROM $tableName
+           |WHERE (id, value) NOT IN
+           | (SELECT id, value FROM $tableName WHERE id != 2 AND value > 20)
+           |""".stripMargin
+      sqlContext.sql(query)
+
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(
+        s"""DELETE FROM $testTableName WHERE NOT ( ( $testTableName."ID" ,
+           | $testTableName."VALUE" ) IN ( SELECT ( "SUBQUERY_1"."ID" ) AS
+           | "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."VALUE" ) AS "SUBQUERY_2_COL_1"
+           | FROM ( SELECT * FROM ( SELECT * FROM $testTableName AS
+           | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( (
+           | "SUBQUERY_0"."ID" IS NOT NULL ) AND ( "SUBQUERY_0"."VALUE"
+           | IS NOT NULL ) ) AND ( ( "SUBQUERY_0"."ID" != 2 ) AND
+           | ( "SUBQUERY_0"."VALUE" > 20 ) ) ) ) AS "SUBQUERY_1" ) )""".stripMargin
+      )
+      // expect rows with id 1 and 2 to be deleted
+      checkAnswer(
+        sqlContext.sql(s"select id from $tableName order by id asc"),
+        Seq(Row(3))
+      )
+    }
+  }
+
+  ignore("Delete rows using a nested subquery IN CASE") {
     withTempRedshiftTable("orders") { tableName =>
 
       val createQuery =
@@ -228,7 +311,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Delete_rows_using_a_nested_subquery_HAVING") {
+  test("Delete rows using a nested subquery HAVING") {
     withTempRedshiftTable("orders") { tableName =>
       withTempRedshiftTable("order_details") { tableName2 =>
         redshiftWrapper.executeUpdate(conn,
@@ -271,7 +354,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
                |SELECT order_id FROM $tableName2 GROUP BY order_id HAVING COUNT(*) > 3)
                |""".stripMargin,
             Seq(Row()),
-            s"""DELETE FROM "PUBLIC"."$tableName" WHERE "PUBLIC"."$tableName"."ORDER_ID" IN
+            s"""DELETE FROM "PUBLIC"."$tableName" WHERE ( "PUBLIC"."$tableName"."ORDER_ID" ) IN
                | ( SELECT ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_4_COL_0" FROM (
                |  SELECT * FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS
                |   "SUBQUERY_2_COL_0" , ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_1" FROM ( SELECT
@@ -292,7 +375,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Delete_rows_using_a_nested_subquery_EXISTS") {
+  test("Delete rows using a nested subquery EXISTS") {
     withTempRedshiftTable("orders") { tableName =>
       withTempRedshiftTable("order_details") { tableName2 =>
         redshiftWrapper.executeUpdate(conn,
@@ -352,7 +435,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Delete_rows_using_a_nested_subquery_NOT_EXISTS") {
+  test("Delete rows using a nested subquery NOT EXISTS") {
     withTempRedshiftTable("orders") { tableName =>
       withTempRedshiftTable("order_details") { tableName2 =>
         redshiftWrapper.executeUpdate(conn,
@@ -410,8 +493,8 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  ignore("Delete_rows_using_WITH") {
-    withTempRedshiftTable("updateTable") { tableName =>
+  ignore("Delete rows using WITH") {
+    withTempRedshiftTable("deleteTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
       )
@@ -483,7 +566,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
               s" (select id from $sourceTable where id > 3)",
             Seq(Row()),
             s"""DELETE FROM "PUBLIC"."$targetTable" WHERE
-               | "PUBLIC"."$targetTable"."ID" IN ( SELECT * FROM ( SELECT * FROM
+               | ( "PUBLIC"."$targetTable"."ID" ) IN ( SELECT * FROM ( SELECT * FROM
                |  "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
                |   "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."ID" IS NOT NULL ) AND (
                |    "SUBQUERY_0"."ID" > 3 ) ) )""".stripMargin
@@ -527,7 +610,7 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
               s" not in (select id from $sourceTable where id > 3)",
             Seq(Row()),
             s"""DELETE FROM "PUBLIC"."$targetTable" WHERE NOT (
-               | "PUBLIC"."$targetTable"."ID" IN ( SELECT * FROM ( SELECT * FROM
+               | ( "PUBLIC"."$targetTable"."ID" ) IN ( SELECT * FROM ( SELECT * FROM
                |  "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
                |   "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."ID" IS NOT NULL ) AND (
                |    "SUBQUERY_0"."ID" > 3 ) ) ))""".stripMargin
@@ -544,8 +627,8 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
   }
 
   test("Test where exist clause with nested join") {
-    withTempRedshiftTable("table1") { table1 =>
-      withTempRedshiftTable("table2") { table2 =>
+    withTempRedshiftTable("deleteTable1") { table1 =>
+      withTempRedshiftTable("deleteTable2") { table2 =>
         redshiftWrapper.executeUpdate(conn, s"create table $table1 (id int, name VARCHAR)" )
         redshiftWrapper.executeUpdate(conn, s"create table $table2 (id int, t1_id int, name VARCHAR)" )
 
