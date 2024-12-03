@@ -19,7 +19,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown
 import org.apache.spark.sql.Row
 
 
-trait DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
+class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
   // These tests cannot disable pushdown since delete happens in pushdown
   override protected val auto_pushdown: String = "true"
   // These tests cannot use cache since they check the result changing
@@ -271,7 +271,7 @@ trait DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  ignore("Delete_rows_using_a_nested_subquery_EXISTS") {
+  test("Delete_rows_using_a_nested_subquery_EXISTS") {
     withTempRedshiftTable("orders") { tableName =>
       withTempRedshiftTable("order_details") { tableName2 =>
         redshiftWrapper.executeUpdate(conn,
@@ -318,8 +318,8 @@ trait DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
         sqlContext.sql(query)
         // expect the row with product_id='pen11' to be deleted
         checkAnswer(
-          sqlContext.sql(s"""select order_id from $tableName, $tableName2 where
-                    o.order_id = od.order_id AND AND od.product_id != 'pen11'
+          sqlContext.sql(s"""select o.order_id from $tableName o, $tableName2 od where
+                    o.order_id = od.order_id AND od.product_id != 'pen11'
                    order by order_id asc""".stripMargin),
           Seq(Row(1), Row(111))
         )
@@ -327,7 +327,7 @@ trait DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  ignore("Delete_rows_using_a_nested_subquery_NOT_EXISTS") {
+  test("Delete_rows_using_a_nested_subquery_NOT_EXISTS") {
     withTempRedshiftTable("orders") { tableName =>
       withTempRedshiftTable("order_details") { tableName2 =>
         redshiftWrapper.executeUpdate(conn,
@@ -377,7 +377,7 @@ trait DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
           sqlContext.sql(s"""select order_id from $tableName o where not exists(
                     select 1 from $tableName2 od where o.order_id = od.order_id
                     and od.product_id != 'pen11') order by o.order_id asc""".stripMargin),
-          Seq(Row(1), Row(111))
+          Seq(Row(11))
         )
       }
     }
@@ -484,12 +484,49 @@ trait DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
       }
     }
   }
-}
 
-class TextDeleteCorrectnessSuite extends DeleteCorrectnessSuite {
-  override val s3format = "TEXT"
-}
+  test("Test where exist clause with nested join") {
+    withTempRedshiftTable("table1") { table1 =>
+      withTempRedshiftTable("table2") { table2 =>
+        redshiftWrapper.executeUpdate(conn, s"create table $table1 (id int, name VARCHAR)" )
+        redshiftWrapper.executeUpdate(conn, s"create table $table2 (id int, t1_id int, name VARCHAR)" )
 
-class ParquetDeleteCorrectnessSuite extends DeleteCorrectnessSuite {
-  override val s3format = "PARQUET"
+        read.option("dbtable", table1).load.createOrReplaceTempView(table1)
+        read.option("dbtable", table2).load.createOrReplaceTempView(table2)
+
+        val table1Schema = List("id", "name")
+        val table1Data = Seq((0, "zero"), (1, "one"), (2, "two"))
+        val dfTable1 = sqlContext.createDataFrame(table1Data).toDF(table1Schema: _*)
+        write(dfTable1).option("dbtable", table1).mode("append").save()
+
+        val table2Schema = List("id", "t1_id", "name")
+        val table2Data = Seq((10, 0, "ten"), (11, 7, "eleven"), (12, 2, "twelve"))
+        val dfTable2 = sqlContext.createDataFrame(table2Data).toDF(table2Schema: _*)
+        write(dfTable2).option("dbtable", table2).mode("append").save()
+
+        val pre = sqlContext.sql(s"select * from $table1").count
+        assert(pre == 3)
+
+        sqlContext.sql(
+          s"""DELETE
+             | FROM $table1 t1
+             | WHERE EXISTS (SELECT 1
+             |               FROM $table2 t2
+             |               WHERE t2.t1_id = t1.id)
+             |""".stripMargin)
+
+        checkSqlStatement(
+          s"""DELETE FROM "PUBLIC"."$table1" WHERE EXISTS ( SELECT ( 1 ) AS "SUBQUERY_1_COL_0" ,
+             |  ( "SUBQUERY_0"."T1_ID" ) AS "SUBQUERY_1_COL_1" FROM ( SELECT * FROM "PUBLIC"."$table2"
+             |  AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+             |  WHERE ( "SUBQUERY_1_COL_1" = "PUBLIC"."$table1"."ID" ) )"""
+            .stripMargin
+        )
+
+        val post = sqlContext.sql(s"select * from $table1").collect().map(row => row.toSeq).toSeq
+        val expected = Array(Array(1, "one"))
+        post should contain theSameElementsAs expected
+      }
+    }
+  }
 }

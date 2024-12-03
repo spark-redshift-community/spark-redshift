@@ -26,7 +26,7 @@ import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
-import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.{InsertIntoDataSourceCommand, LogicalRelation}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.slf4j.LoggerFactory
 
@@ -149,10 +149,52 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
     plan match {
       case l @ LogicalRelation(rsRelation: RedshiftRelation, _, _, _) =>
         Some(SourceQuery(rsRelation, l.output, alias.next))
+      case l @ LocalRelation(output: Seq[Attribute], _, _) =>
+        Some(LocalQuery(l, output, alias.next))
       case DeleteFromTable(l @ LogicalRelation(relation: RedshiftRelation, _, _, _), condition) =>
         Some(DeleteQuery(SourceQuery(relation, l.output, alias.next()), condition))
       case UpdateTable(l @ LogicalRelation(r: RedshiftRelation, _, _, _), assignments, condition) =>
         Some(UpdateQuery(SourceQuery(r, l.output, alias.next()), assignments, condition))
+      case InsertIntoDataSourceCommand(l@LogicalRelation(relation: RedshiftRelation, _, _, _),
+      plan, overwrite) =>
+        Some(InsertQuery(SourceQuery(relation, l.output, alias.next()),
+          generateQueries(EliminateSubqueryAliasesAndView(plan)), overwrite))
+      case MergeIntoTable(targetTable@LogicalRelation(target: RedshiftRelation, _, _, _),
+        sourcePlan,
+        mergeCondition, matchedActions, notMatchedActions, notMatchedBySourceActions) =>
+        // If there is only matched action
+        if (notMatchedActions.isEmpty && matchedActions.size == 1
+                && notMatchedBySourceActions.isEmpty) {
+          matchedActions.head match {
+            case DeleteAction(None) =>
+              return Some(DeleteQuery(SourceQuery(target, targetTable.output, alias.next()),
+                                mergeCondition, generateQueries(sourcePlan)))
+            case UpdateAction(condition, assignments) =>
+              // TODO: Only UPDATE in matched Action
+              throw new NotImplementedError()
+            case _ =>
+              throw new RedshiftPushdownUnsupportedException(
+                RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
+                s"${plan.nodeName} unsupported match actions=$matchedActions",
+                plan.getClass.getName,
+                true
+              )
+          }
+        }
+        sourcePlan match {
+          case LogicalRelation(source: RedshiftRelation, _, _, _) =>
+            Some(MergeQuery(SourceQuery(target, targetTable.output, alias.next()),
+              SourceQuery(source, sourcePlan.output, alias.next()),
+              mergeCondition, matchedActions, notMatchedActions, notMatchedBySourceActions))
+          case _ =>
+            throw new RedshiftPushdownUnsupportedException(
+            RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
+            s"${plan.nodeName} Sub-query for source unsupported",
+            plan.getClass.getName,
+            true
+          )
+        }
+
       case UnaryOp(child) =>
         generateQueries(child) map { subQuery =>
           plan match {
@@ -243,6 +285,24 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
         )
     }
   }
+
+  /**
+   * Recursively applies transformations to a LogicalPlan to remove unnecessary nodes.
+   *
+   * The method continues to apply transformations until the
+   * LogicalPlan no longer changes, ensuring that all applicable nodes are fully
+   * removed, even if they are nested.
+   *
+   * @param plan The initial LogicalPlan to be simplified.
+   * @return A simplified LogicalPlan with SubqueryAlias, and View nodes removed.
+   */
+  private def EliminateSubqueryAliasesAndView(plan: LogicalPlan): LogicalPlan = {
+    val transformed = plan.transformWithSubqueries {
+      case SubqueryAlias(_, child) => child
+      case View(_, _, child) => child
+    }
+    if (transformed != plan) EliminateSubqueryAliasesAndView(transformed) else transformed
+  }
 }
 
 /** QueryBuilder object that serves as an external interface for building queries.
@@ -266,7 +326,7 @@ private[redshift] object QueryBuilder {
 
     qb.tryBuild.map { executedBuilder =>
       executedBuilder.treeRoot match {
-        case _: DeleteQuery | _: UpdateQuery => {
+        case _: DeleteQuery | _: UpdateQuery | _: InsertQuery | _: MergeQuery => {
           val command = RedshiftDMLExec(executedBuilder.statement, executedBuilder.source.relation)
           Seq(ExecutedCommandExec(command))
         }

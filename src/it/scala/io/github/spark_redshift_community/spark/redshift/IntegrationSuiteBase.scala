@@ -258,6 +258,18 @@ trait IntegrationSuiteBase
     }
   }
 
+  protected def withTwoTempRedshiftTables[T](namePrefix1: String, namePrefix2: String)
+                                           (body: (String, String) => T): T = {
+    val tableName1 = s"$namePrefix1$randomSuffix"
+    val tableName2 = s"$namePrefix2$randomSuffix"
+    try {
+      body(tableName1, tableName2)
+    } finally {
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName1")
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName2")
+    }
+  }
+
   /**
    * Save the given DataFrame to Redshift, then load the results back into a DataFrame and check
    * that the returned DataFrame matches the one that we saved.

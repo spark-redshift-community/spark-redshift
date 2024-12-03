@@ -50,6 +50,7 @@ object RedshiftFailMessage {
   final val FAIL_PUSHDOWN_UNSUPPORTED_CONVERSION = "pushdown failed for unsupported conversion"
   final val FAIL_PUSHDOWN_UNSUPPORTED_JOIN = "pushdown failed for unsupported join"
   final val FAIL_PUSHDOWN_UNSUPPORTED_UNION = "pushdown failed for Spark feature: UNION by name"
+  final val FAIL_PUSHDOWN_UNSUPPORTED_MERGE = "pushdown failed for Spark feature: MERGE"
 }
 
 class RedshiftPushdownException(message: String)

@@ -276,7 +276,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Join with Non-redshift table - partial pushdown", P0Test, P1Test) {
+  test("Join with local table - full pushdown", P0Test, P1Test) {
     val spark = SparkSession.getActiveSession.get
     import spark.implicits._
 
@@ -298,11 +298,18 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
       Seq(Row("asdf", "lang1"), Row("f", "lang2"))
     )
 
-    // ORDER BY is not pushed down
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" FROM
+      s"""SELECT * FROM ( SELECT ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) AS "SUBQUERY_5_COL_0" ,
+         |( "SUBQUERY_4"."SUBQUERY_4_COL_2" ) AS "SUBQUERY_5_COL_1" FROM ( SELECT ( "SUBQUERY_2"."SUBQUERY_2_COL_0" )
+         |AS "SUBQUERY_4_COL_0" , ( "SUBQUERY_3"."NAME" ) AS "SUBQUERY_4_COL_1" , ( "SUBQUERY_3"."LANGUAGE" )
+         |AS "SUBQUERY_4_COL_2" FROM ( SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" FROM
          |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1"
+         |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2"
+         |INNER JOIN ( ( (SELECT \\'asdf\\'  AS "name", \\'lang1\\'  AS "language") UNION ALL
+         |(SELECT \\'f\\'  AS "name", \\'lang2\\'  AS "language") UNION ALL
+         |(SELECT \\'notexist\\'  AS "name", \\'lang3\\'  AS "language") ) ) AS "SUBQUERY_3" ON
+         |( "SUBQUERY_2"."SUBQUERY_2_COL_0" = "SUBQUERY_3"."NAME" ) ) AS "SUBQUERY_4" )
+         |AS "SUBQUERY_5" ORDER BY ( "SUBQUERY_5"."SUBQUERY_5_COL_0" ) ASC NULLS FIRST
          |""".stripMargin
     )
   }
@@ -370,7 +377,7 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
     )
   }
 
-  test("Use option query join with Non-redshift table - partial pushdown", P0Test, P1Test) {
+  test("Use option query join with local table - full pushdown", P0Test, P1Test) {
     val spark = SparkSession.getActiveSession.get
     import spark.implicits._
 
@@ -402,13 +409,19 @@ abstract class PushdownSqlClauseSuite extends IntegrationPushdownSuiteBase {
       Seq(Row("asdf", "lang1"))
     )
 
-    // ORDER BY is not pushed down
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT * FROM ( SELECT teststring FROM
-         |$test_table WHERE testlong > 0 AND teststring = \\'asdf\\'
-         |Limit 1)
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+      s"""SELECT * FROM ( SELECT ( "SUBQUERY_3"."SUBQUERY_3_COL_0" ) AS "SUBQUERY_4_COL_0" ,
+         |( "SUBQUERY_3"."SUBQUERY_3_COL_2" ) AS "SUBQUERY_4_COL_1" FROM ( SELECT ( "SUBQUERY_1"."TESTSTRING" )
+         |AS "SUBQUERY_3_COL_0" , ( "SUBQUERY_2"."NAME" ) AS "SUBQUERY_3_COL_1" ,
+         |( "SUBQUERY_2"."LANGUAGE" ) AS "SUBQUERY_3_COL_2" FROM ( SELECT * FROM ( SELECT * FROM (
+         |SELECT teststring FROM $test_table WHERE testlong > 0 AND teststring = \\'asdf\\' Limit 1
+         |) AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+         |WHERE ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) ) AS "SUBQUERY_1" INNER JOIN
+         |( ( (SELECT \\'asdf\\'  AS "name", \\'lang1\\'  AS "language") UNION ALL
+         |(SELECT \\'f\\'  AS "name", \\'lang2\\'  AS "language")
+         |UNION ALL (SELECT \\'notexist\\'  AS "name", \\'lang3\\'  AS "language") ) ) AS "SUBQUERY_2" ON
+         |( "SUBQUERY_1"."TESTSTRING" = "SUBQUERY_2"."NAME" ) ) AS "SUBQUERY_3" )
+         |AS "SUBQUERY_4" ORDER BY ( "SUBQUERY_4"."SUBQUERY_4_COL_0" ) ASC NULLS FIRST
          |""".stripMargin
     )
   }

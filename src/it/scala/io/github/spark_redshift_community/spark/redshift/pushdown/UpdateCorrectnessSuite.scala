@@ -370,7 +370,7 @@ trait UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  ignore("Test EXISTS subquery in condition ") { // FAIL: EXISTS pushdown.
+  test("Test EXISTS subquery in condition ") {
     withTempRedshiftTable("target") { targetTable =>
       withTempRedshiftTable("condition") { conditionTable =>
 
@@ -679,7 +679,7 @@ trait UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  ignore("Update_with_tablename_alias_without_AS") { // FAIL: InSubquery Join Condition
+  test("Update_with_tablename_alias_without_AS") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -708,7 +708,7 @@ trait UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  ignore("Update_with_tablename_alias_AS") { // FAIL: InSubquery Join Condition
+  test("Update_with_tablename_alias_AS") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -737,7 +737,7 @@ trait UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  ignore("Update_with_nested_query_EXISTS") { // FAIL: EXISTS pushdown and Join condition
+  test("Update_with_nested_query_EXISTS") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -766,7 +766,7 @@ trait UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  ignore("Update_with_nested_query_NOT_EXISTS") { // FAIL: EXISTS pushdown and Join condition
+  test("Update_with_nested_query_NOT_EXISTS") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -795,7 +795,7 @@ trait UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  ignore("Update_with_WITH") { // FAIL: EXISTS pushdown and Join condition
+  ignore("Update_with_WITH") { // FAIL: WITH
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"

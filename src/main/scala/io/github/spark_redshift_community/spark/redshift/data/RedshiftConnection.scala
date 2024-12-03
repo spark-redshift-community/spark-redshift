@@ -39,18 +39,18 @@ private[redshift] case class JDBCConnection(conn: Connection) extends RedshiftCo
 }
 
 private[redshift] case class DataAPIConnection(
-  region: Option[String],
-  database: String, // Mandatory Redshift database name or Glue catalog ARN
-  dbUser: Option[String],
-  clusterIdentifier: Option[String],
-  workgroup: Option[String],
-  retryDelayMin: Double,
-  retryDelayMax: Double,
-  retryDelayMult: Double,
-  skipDSWWorkaround: Boolean,
-  secretId: Option[String] = None,
-  queryGroup: Option[String] = None) extends RedshiftConnection {
-
+    region: Option[String],
+    database: String, // Mandatory Redshift database name or Glue catalog ARN
+    dbUser: Option[String],
+    clusterIdentifier: Option[String],
+    workgroup: Option[String],
+    retryDelayMin: Double,
+    retryDelayMax: Double,
+    retryDelayMult: Double,
+    skipDSWWorkaround: Boolean,
+    secretId: Option[String] = None,
+    queryGroup: Option[String] = None
+  ) extends RedshiftConnection {
   val bufferedCommands: ArrayBuffer[String] = ArrayBuffer.empty
   var autoCommit: Boolean = true
 
