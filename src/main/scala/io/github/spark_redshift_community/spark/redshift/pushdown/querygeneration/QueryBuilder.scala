@@ -266,7 +266,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
             RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_INTERSECT_ALL,
             s"${plan.nodeName} INTERSECT ALL",
             plan.getClass.getName,
-            false
+            true
           )
         } else {
           Some(SetQuery(Seq(left, right), alias.next, "INTERSECT"))
@@ -283,7 +283,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
             RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_UNION,
             s"${plan.nodeName} with byName=$byName allowMissingCol=$allowMissingCol",
             plan.getClass.getName,
-            false
+            true
           )
         } else {
           Some(SetQuery(children, alias.next, "UNION ALL"))
