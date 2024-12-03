@@ -49,7 +49,6 @@ private[redshift] object Parameters {
   val PARAM_TEMPORARY_AWS_SECRET_ACCESS_KEY = "temporary_aws_secret_access_key"
   val PARAM_TEMPORARY_AWS_SESSION_TOKEN = "temporary_aws_session_token"
   val PARAM_LEGACY_MAPPING_SHORT_TO_INT: String = "legacy_mapping_short_to_int"
-  val PARAM_IS_DELETE: String = "is_delete"
   val PARAM_CHECK_S3_BUCKET_USAGE: String = "check_s3_bucket_usage"
   val PARAM_HOST_CONNECTOR: String = "host_connector"
 
@@ -80,7 +79,6 @@ private[redshift] object Parameters {
     PARAM_LEGACY_TRIM_CSV_WRITES -> "false",
     PARAM_TEMPDIR_REGION -> "",
     PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false",
-    PARAM_IS_DELETE -> "false",
     PARAM_CHECK_S3_BUCKET_USAGE -> "true"
   )
 
@@ -566,11 +564,6 @@ private[redshift] object Parameters {
         "DataAPI:Managed" // DataAPI-managed compute
       }
     }
- 
-    /**
-     * Delete support
-     */
-    def isDelete: Boolean = parameters(PARAM_IS_DELETE).toBoolean
 
     /**
      * Whether to skip S3 bucket checks.

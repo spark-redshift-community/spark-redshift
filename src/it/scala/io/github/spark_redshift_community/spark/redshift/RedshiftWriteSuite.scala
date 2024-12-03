@@ -48,117 +48,6 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
     }
   }
 
- test("save, delete, and load non-null data") {
-    val tableName = s"roundtrip_save_and_load_nonnull_$randomSuffix"
-    val (rowToDelete, rowToKeep) = TestUtils.nonNullExpectedData.splitAt(2)
-    try {
-      write(
-        sqlContext.createDataFrame(sc.parallelize(TestUtils.nonNullExpectedData),
-          TestUtils.testSchema))
-        .option("dbtable", tableName)
-        .mode(SaveMode.ErrorIfExists)
-        .save()
-
-      assert(redshiftWrapper.tableExists(conn, tableName))
-      checkAnswer(read.option("dbtable", tableName).load(), TestUtils.nonNullExpectedData)
-
-      write(
-        sqlContext.createDataFrame(sc.parallelize(rowToDelete),
-          TestUtils.testSchema))
-        .option("dbtable", tableName)
-        .option("is_delete", value = true)
-        .mode(SaveMode.Overwrite)
-        .save()
-
-      checkAnswer(read.option("dbtable", tableName).load(), rowToKeep)
-    } finally {
-      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
-    }
-  }
-
-  test("delete data row with null entries") {
-    val tableName = s"roundtrip_null_delete_$randomSuffix"
-    val rowWithNullEntry = Seq(2, 3, 4).map(TestUtils.expectedData);
-    try {
-      write(
-        sqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData),
-          TestUtils.testSchema))
-        .option("dbtable", tableName)
-        .mode(SaveMode.ErrorIfExists)
-        .save()
-
-      assert(redshiftWrapper.tableExists(conn, tableName))
-      checkAnswer(read.option("dbtable", tableName).load(), TestUtils.expectedData)
-
-      write(
-        sqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData),
-          TestUtils.testSchema))
-        .option("dbtable", tableName)
-        .option("is_delete", value = true)
-        .mode(SaveMode.Overwrite)
-        .save()
-
-      // Rows with null entries will not match, hence only rows with null entries are left.
-      checkAnswer(read.option("dbtable", tableName).load(), rowWithNullEntry)
-    } finally {
-      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
-    }
-  }
-
-  test("delete partially-matched data row") {
-    val matchTestSchema: StructType = {
-      // These column names need to be lowercase; see #51
-      StructType(Seq(
-        StructField("col1", IntegerType),
-        StructField("col2", IntegerType),
-        StructField("col3", IntegerType),
-        StructField("col4", IntegerType),
-        StructField("col5", IntegerType),
-        StructField("col6", IntegerType)))
-    }
-    val matchTestData: Seq[Row] = Seq(
-      Row(1, 2, 3, 4, 5, 6),
-      Row(1, 2, 4, 8, 16, 32),
-      Row(1, 2, 3, 5, 8, 13),
-      Row(3, 1, 4, 1, 5, 9),
-      Row(2, 3, 5, 7, 11, 13))
-    val partialSchema: StructType = {
-      StructType(Seq(
-        StructField("col1", IntegerType),
-        StructField("col3", IntegerType)
-      ))
-    }
-    val partialDataToDelete: Seq[Row] = Seq(
-      Row(1, 3)
-    )
-    val partialDataLeft: Seq[Row] = Seq(
-      Row(1, 2, 4, 8, 16, 32),
-      Row(3, 1, 4, 1, 5, 9),
-      Row(2, 3, 5, 7, 11, 13))
-
-    val tableName = s"matching_test_$randomSuffix"
-    try {
-      write(
-        sqlContext.createDataFrame(sc.parallelize(matchTestData), matchTestSchema))
-        .option("dbtable", tableName)
-        .mode(SaveMode.ErrorIfExists)
-        .save()
-
-      assert(redshiftWrapper.tableExists(conn, tableName))
-
-      write(
-        sqlContext.createDataFrame(sc.parallelize(partialDataToDelete), partialSchema))
-        .option("dbtable", tableName)
-        .option("is_delete", value = true)
-        .mode(SaveMode.Overwrite)
-        .save()
-
-      checkAnswer(read.option("dbtable", tableName).load(), partialDataLeft)
-    } finally {
-      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
-    }
-  }
-
   test("roundtrip save and load with uppercase column names") {
     testRoundtripSaveAndLoad(
       s"roundtrip_write_and_read_with_uppercase_column_names_$randomSuffix",
@@ -348,46 +237,13 @@ class AvroRedshiftWriteSuite extends BaseRedshiftWriteSuite {
   }
 }
 
-trait NonAvroRedshiftWriteSuite extends IntegrationSuiteBase{
+trait NonAvroRedshiftWriteSuite extends IntegrationSuiteBase {
   test("save with column names that contain spaces (#84)") {
     testRoundtripSaveAndLoad(
       s"save_with_column_names_that_contain_spaces_$randomSuffix",
       sqlContext.createDataFrame(sc.parallelize(Seq(Row(1))),
         StructType(StructField("column name with spaces", IntegerType, true,
           new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)))
-  }
-
-  test("delete with column name that contain spaces") {
-    val namingTestSchema: StructType = {
-      StructType(Seq(
-        StructField("col space", IntegerType) ))
-    }
-    val namingTestData: Seq[Row] = Seq(
-      Row(Int.MaxValue))
-    val namingTestDataLeft: Seq[Row] = Seq.empty[Row]
-
-    val tableName = s"naming_test_$randomSuffix"
-    try {
-      write(
-        sqlContext.createDataFrame(sc.parallelize(namingTestData), namingTestSchema))
-        .option("dbtable", tableName)
-        .mode(SaveMode.ErrorIfExists)
-        .save()
-
-      assert(redshiftWrapper.tableExists(conn, tableName))
-      
-      write(
-        sqlContext.createDataFrame(sc.parallelize(namingTestData), namingTestSchema))
-        .option("dbtable", tableName)
-        .option("is_delete", value = true)
-        .mode(SaveMode.Overwrite)
-        .save()
-
-      // delete all table: read an empty table
-      checkAnswer(read.option("dbtable", tableName).load(), namingTestDataLeft)
-    } finally {
-      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
-    }
   }
 }
 
