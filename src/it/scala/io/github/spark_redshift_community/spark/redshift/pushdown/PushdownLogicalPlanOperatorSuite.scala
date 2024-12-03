@@ -22,11 +22,16 @@ import java.sql.{Date, Timestamp}
 
 abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuiteBase {
   private val test_table_2: String = s""""PUBLIC"."pushdown_suite_test_table2_$randomSuffix""""
+  private val test_table_3: String = s""""PUBLIC"."pushdown_suite_test_table3_$randomSuffix""""
   override def beforeAll(): Unit = {
     super.beforeAll()
     if (!preloaded_data.toBoolean) {
       redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table_2")
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table_3")
       createMoreDataInRedshift(test_table_2)
+      createMoreDataInRedshift(test_table_3,
+        extraRows = Some(",(37, true, '2024-07-04', 1299952.12312498, 17.0," +
+          " 119, 1239112341923917, 237, 'ggwp', '2024-07-01 00:00:00.001')"))
     }
   }
 
@@ -34,6 +39,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     try {
       if (!preloaded_data.toBoolean) {
         redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table_2")
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table_3")
       }
     } finally {
       super.afterAll()
@@ -46,9 +52,15 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       .option("dbtable", test_table_2)
       .load()
       .createOrReplaceTempView("test_table_2")
+
+    read
+      .option("dbtable", test_table_3)
+      .load()
+      .createOrReplaceTempView("test_table_3")
   }
 
-  protected def createMoreDataInRedshift(tableName: String): Unit = {
+  protected def createMoreDataInRedshift(tableName: String,
+                                         extraRows: Option[String] = None): Unit = {
     redshiftWrapper.executeUpdate(conn,
       s"""
          |create table $tableName (
@@ -76,7 +88,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
          |(2, false, '2015-07-03', 1.1, 0.0, 42, 1239012341823715, -13, 'asdf', '2015-07-02 00:00:00.000'),
          |(42, true, '2015-07-05', 2.2, 5.0, 45, 1239012341823718, 23, 'acbdef', '2015-07-03 12:34:56.000'),
          |(3, true, '2015-07-04', 1234152.12312498, 2.0, 42, 1239012341823717, 23, 'Unicode''s樂趣', '2015-07-01 00:00:00.001')
-         """.stripMargin
+         """.stripMargin + extraRows.getOrElse("").stripMargin
     )
     // scalastyle:on
   }
@@ -1283,6 +1295,141 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     })
   }
 
+  // push down for except distinct
+  test("Test EXCEPT logical plan operator with table distinct") {
+    // "Column name" and result set
+    val input = List(
+      ("testbyte", Seq(Row(2), Row(3), Row(42))),
+      ("testbool", Seq()),
+      ("testdate", Seq(Row(Date.valueOf("2015-07-04")), Row(Date.valueOf("2015-07-05")))),
+      ("testint", Seq(Row(45), Row(216), Row(365))),
+      ("testlong", Seq(Row(54321), Row(1239012341823715L),
+        Row(1239012341823716L), Row(1239012341823717L), Row(1239012341823718L))),
+      ("testshort", Seq(Row(56))),
+      ("teststring", Seq(Row("_____"), Row("acbdef"))),
+      ("testtimestamp", Seq(Row(Timestamp.valueOf("2016-07-07 07:07:07"))))
+    )
+    input.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT DISTINCT test_table_2.$column_name FROM test_table_2 EXCEPT
+             | SELECT DISTINCT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT * FROM ( ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" )
+           | AS "SUBQUERY_2_COL_0" FROM ( SELECT ( "SUBQUERY_0"."$column_name" )
+           | AS "SUBQUERY_1_COL_0" FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0" ) AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" )
+           | EXCEPT
+           | ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0" FROM
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" ) )
+           | AS "SUBQUERY_0" ORDER BY ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+           | """.stripMargin)
+    })
+
+    val decimalInput = List(
+            ("testdouble", Seq(Row(1.1), Row(2.2), Row(12345.12345678))),
+            ("testfloat", Seq(Row(2.0.toFloat), Row(5.0.toFloat), Row(55.12.toFloat),
+              Row(100.0.toFloat))),
+    )
+
+    decimalInput.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT DISTINCT test_table_2.$column_name FROM test_table_2 EXCEPT
+             | SELECT DISTINCT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0" FROM
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"
+           | """.stripMargin)
+    })
+  }
+
+  test("Test EXCEPT logical plan operator multiple tables with distinct") {
+    // "Column name" and result set
+    val input = List(
+      ("testbyte", Seq(Row(37))),
+      ("testbool", Seq()),
+      ("testdate", Seq(Row(Date.valueOf("2024-07-04")))),
+      ("testint", Seq(Row(119))),
+      ("testlong", Seq(Row(1239112341923917L))),
+      ("testshort", Seq(Row(237))),
+      ("teststring", Seq(Row("ggwp"))),
+      ("testtimestamp", Seq(Row(Timestamp.valueOf("2024-07-01 00:00:00.001"))))
+    )
+    input.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT DISTINCT test_table_3.$column_name FROM test_table_3 EXCEPT
+             | SELECT DISTINCT test_table_2.$column_name FROM test_table_2 EXCEPT
+             | SELECT DISTINCT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT * FROM ( ( ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS
+           | "SUBQUERY_2_COL_0" FROM ( SELECT ( "SUBQUERY_0"."$column_name" )
+           | AS "SUBQUERY_1_COL_0" FROM ( SELECT * FROM $test_table_3 AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0" ) AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" )
+           | EXCEPT
+           | ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0" FROM
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
+           | "SUBQUERY_0" ) AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" ) )
+           | EXCEPT
+           | ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0" FROM
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" ) )
+           | AS "SUBQUERY_0" ORDER BY ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+           | """.stripMargin)
+    })
+
+    val decimalInput = List(
+      ("testdouble", Seq(Row(1299952.12312498))),
+      ("testfloat", Seq(Row(17.0.toFloat))),
+    )
+
+    // no pushdown for decimals
+    decimalInput.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT DISTINCT test_table_3.$column_name FROM test_table_3 EXCEPT
+             | SELECT DISTINCT test_table_2.$column_name FROM test_table_2 EXCEPT
+             | SELECT DISTINCT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0" FROM
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
+           | "SUBQUERY_0" ) AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"
+           | """.stripMargin)
+    })
+  }
+
   test("Test EXCEPT ALL logical plan operator") {
     // "Column name" and result set
     val input = List(
@@ -1615,7 +1762,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     doTest(sqlContext, testMinus13)
   }
 
-  // No push down for intersect
+  // push down for intersect
   test("Test INTERSECT logical plan operator") {
     // "Column name" and result set
     val input = List(
@@ -1623,9 +1770,6 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       ("testbool", Seq(Row(null), Row(false), Row(true))),
       ("testdate", Seq(Row(null), Row(Date.valueOf("2015-07-01")),
         Row(Date.valueOf("2015-07-02")), Row(Date.valueOf("2015-07-03")))),
-      ("testdouble", Seq(Row(null), Row(-1234152.12312498), Row(0.0),
-        Row(1234152.12312498))),
-      ("testfloat", Seq(Row(null), Row(-1.0.toFloat), Row(0.0.toFloat))),
       ("testint", Seq(Row(null), Row(42))),
       ("testlong", Seq(Row(null), Row(1239012341823719L))),
       ("testshort", Seq(Row(null), Row(-13), Row(23), Row(24))),
@@ -1647,13 +1791,44 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         expected_res)
 
       checkSqlStatement(
-        s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+        s"""SELECT * FROM ( ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0" FROM
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" )
+           | INTERSECT
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) )
+           | AS "SUBQUERY_0" ORDER BY ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
            | """.stripMargin)
     })
+
+    val decimalInput = List(
+            ("testdouble", Seq(Row(null), Row(-1234152.12312498), Row(0.0),
+              Row(1234152.12312498))),
+            ("testfloat", Seq(Row(null), Row(-1.0.toFloat), Row(0.0.toFloat))),
+    )
+
+    // No pushdown for decimals
+    decimalInput.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT test_table_2.$column_name FROM test_table_2 INTERSECT
+             | SELECT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+          s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+             | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+             | """.stripMargin)
+    })
+
   }
 
-  // No push down for intersect distinct
+  // push down for intersect distinct
   test("Test INTERSECT DISTINCT logical plan operator") {
     // "Column name" and result set
     val input = List(
@@ -1661,9 +1836,6 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       ("testbool", Seq(Row(null), Row(false), Row(true))),
       ("testdate", Seq(Row(null), Row(Date.valueOf("2015-07-01")),
         Row(Date.valueOf("2015-07-02")), Row(Date.valueOf("2015-07-03")))),
-      ("testdouble", Seq(Row(null), Row(-1234152.12312498), Row(0.0),
-        Row(1234152.12312498))),
-      ("testfloat", Seq(Row(null), Row(-1.0.toFloat), Row(0.0.toFloat))),
       ("testint", Seq(Row(null), Row(42))),
       ("testlong", Seq(Row(null), Row(1239012341823719L))),
       ("testshort", Seq(Row(null), Row(-13), Row(23), Row(24))),
@@ -1685,11 +1857,248 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
         expected_res)
 
       checkSqlStatement(
+        s"""SELECT * FROM ( ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS
+           | "SUBQUERY_2_COL_0" FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+           | FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" )
+           | INTERSECT
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) )
+           | AS "SUBQUERY_0" ORDER BY ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+           | """.stripMargin)
+    })
+
+    val decimalInput = List(
+      ("testdouble", Seq(Row(null), Row(-1234152.12312498), Row(0.0),
+        Row(1234152.12312498))),
+      ("testfloat", Seq(Row(null), Row(-1.0.toFloat), Row(0.0.toFloat))),
+    )
+
+    // No pushdown for decimals
+    decimalInput.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT test_table_2.$column_name FROM test_table_2 INTERSECT DISTINCT
+             | SELECT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
         s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
            | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
            | """.stripMargin)
     })
   }
+
+  // push down for intersect distinct
+  test("Test INTERSECT logical plan operator with table DISTINCT") {
+    // "Column name" and result set
+    val input = List(
+      ("testbyte", Seq(Row(null), Row(0), Row(1))),
+      ("testbool", Seq(Row(null), Row(false), Row(true))),
+      ("testdate", Seq(Row(null), Row(Date.valueOf("2015-07-01")),
+        Row(Date.valueOf("2015-07-02")), Row(Date.valueOf("2015-07-03")))),
+      ("testint", Seq(Row(null), Row(42))),
+      ("testlong", Seq(Row(null), Row(1239012341823719L))),
+      ("testshort", Seq(Row(null), Row(-13), Row(23), Row(24))),
+      ("teststring", Seq(Row(null), Row("Unicode's樂趣"), Row("___|_123"),
+        Row("asdf"), Row("f"))),
+      ("testtimestamp", Seq(Row(null), Row(Timestamp.valueOf("2015-07-01 00:00:00.001")),
+        Row(Timestamp.valueOf("2015-07-02 00:00:00")),
+        Row(Timestamp.valueOf("2015-07-03 12:34:56"))))
+    )
+    input.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT DISTINCT test_table_2.$column_name FROM test_table_2 INTERSECT
+             | SELECT DISTINCT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT * FROM ( ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS
+           | "SUBQUERY_2_COL_0" FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
+           | FROM ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" )
+           | INTERSECT
+           | ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0" FROM
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_0"
+           | ORDER BY ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+           | """.stripMargin)
+    })
+
+    val decimalInput = List(
+            ("testdouble", Seq(Row(null), Row(-1234152.12312498), Row(0.0),
+              Row(1234152.12312498))),
+            ("testfloat", Seq(Row(null), Row(-1.0.toFloat), Row(0.0.toFloat))),
+    )
+
+    // No pushdown for decimals
+    decimalInput.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT DISTINCT test_table_2.$column_name FROM test_table_2 INTERSECT
+             | SELECT DISTINCT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0" FROM
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"
+           | """.stripMargin)
+    })
+
+  }
+
+  // push down for intersect distinct
+  test("Test INTERSECT logical plan operator with table DISTINCT only on left") {
+    // "Column name" and result set
+    val input = List(
+      ("testbyte", Seq(Row(null), Row(0), Row(1))),
+      ("testbool", Seq(Row(null), Row(false), Row(true))),
+      ("testdate", Seq(Row(null), Row(Date.valueOf("2015-07-01")),
+        Row(Date.valueOf("2015-07-02")), Row(Date.valueOf("2015-07-03")))),
+      ("testint", Seq(Row(null), Row(42))),
+      ("testlong", Seq(Row(null), Row(1239012341823719L))),
+      ("testshort", Seq(Row(null), Row(-13), Row(23), Row(24))),
+      ("teststring", Seq(Row(null), Row("Unicode's樂趣"), Row("___|_123"),
+        Row("asdf"), Row("f"))),
+      ("testtimestamp", Seq(Row(null), Row(Timestamp.valueOf("2015-07-01 00:00:00.001")),
+        Row(Timestamp.valueOf("2015-07-02 00:00:00")),
+        Row(Timestamp.valueOf("2015-07-03 12:34:56"))))
+    )
+    input.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT DISTINCT test_table_2.$column_name FROM test_table_2 INTERSECT
+             | SELECT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT * FROM ( ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0"
+           | FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+           | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" )
+           | INTERSECT
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) )
+           | AS "SUBQUERY_0" ORDER BY ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+           | """.stripMargin)
+    })
+
+    val decimalInput = List(
+      ("testdouble", Seq(Row(null), Row(-1234152.12312498), Row(0.0),
+        Row(1234152.12312498))),
+      ("testfloat", Seq(Row(null), Row(-1.0.toFloat), Row(0.0.toFloat))),
+    )
+
+    // No pushdown for decimals
+    decimalInput.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT DISTINCT test_table_2.$column_name FROM test_table_2 INTERSECT
+             | SELECT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           | """.stripMargin)
+    })
+
+  }
+
+  // Pushdown for multiple intersect
+  test("Test INTERSECT logical plan operator multiple tables") {
+    val input = List(
+      ("testbyte", Seq(Row(null), Row(0), Row(1))),
+      ("testbool", Seq(Row(null), Row(false), Row(true))),
+      ("testdate", Seq(Row(null), Row(Date.valueOf("2015-07-01")),
+        Row(Date.valueOf("2015-07-02")), Row(Date.valueOf("2015-07-03")))),
+      ("testint", Seq(Row(null), Row(42))),
+      ("testlong", Seq(Row(null), Row(1239012341823719L))),
+      ("testshort", Seq(Row(null), Row(-13), Row(23), Row(24))),
+      ("teststring", Seq(Row(null), Row("Unicode's樂趣"), Row("___|_123"),
+        Row("asdf"), Row("f"))),
+      ("testtimestamp", Seq(Row(null), Row(Timestamp.valueOf("2015-07-01 00:00:00.001")),
+        Row(Timestamp.valueOf("2015-07-02 00:00:00")),
+        Row(Timestamp.valueOf("2015-07-03 12:34:56"))))
+    )
+    input.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT test_table_3.$column_name FROM test_table_3 INTERSECT
+             | SELECT test_table_2.$column_name FROM test_table_2 INTERSECT
+             | SELECT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT * FROM ( ( ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS
+           | "SUBQUERY_2_COL_0" FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS
+           | "SUBQUERY_1_COL_0" FROM ( SELECT * FROM $test_table_3 AS "RS_CONNECTOR_QUERY_ALIAS" )
+           | AS "SUBQUERY_0" ) AS "SUBQUERY_1" )
+           | INTERSECT
+           | ( SELECT ( "SUBQUERY_0"."$column_name" )
+           | AS "SUBQUERY_1_COL_0" FROM ( SELECT * FROM $test_table_2
+           | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) )
+           | INTERSECT
+           | ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) )
+           | AS "SUBQUERY_0" ORDER BY ( "SUBQUERY_0"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+           | """.stripMargin)
+    })
+
+    val decimalInput = List(
+      ("testdouble", Seq(Row(null), Row(-1234152.12312498), Row(0.0),
+        Row(1234152.12312498))),
+      ("testfloat", Seq(Row(null), Row(-1.0.toFloat), Row(0.0.toFloat))),
+    )
+
+    // No pushdown for decimals
+    decimalInput.par.foreach(test_case => {
+      val column_name = test_case._1.toUpperCase
+      val expected_res = test_case._2
+
+      checkAnswer(
+        sqlContext.sql(
+          s"""SELECT test_table_3.$column_name FROM test_table_3 INTERSECT
+             | SELECT test_table_2.$column_name FROM test_table_2 INTERSECT
+             | SELECT test_table.$column_name FROM test_table
+             | ORDER BY 1""".stripMargin),
+        expected_res)
+
+      checkSqlStatement(
+        s"""SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0" FROM
+           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+           | """.stripMargin)
+    })
+  }
+
 
   test("Test INTERSECT ALL logical plan operator") {
     // "Column name" and result set
@@ -1747,8 +2156,13 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       | SELECT test_table.testint FROM test_table
       | ORDER BY 1""".stripMargin,
     Seq(Row(null), Row(42)),
-    s"""SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+    s"""SELECT * FROM ( ( SELECT ( CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER ) )
+       | AS "SUBQUERY_1_COL_0" FROM
+       | ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+       | INTERSECT
+       | ( SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0" FROM
+       | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) )
+       | AS "SUBQUERY_0" ORDER BY ( "SUBQUERY_0"."SUBQUERY_1_COL_0" ) ASC NULLS FIRST
        | """.stripMargin
   )
 
@@ -1757,8 +2171,13 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       | SELECT test_table.testint FROM test_table
       | ORDER BY 1""".stripMargin,
     Seq(Row(null), Row(42)),
-    s"""SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0"
-       | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
+    s"""SELECT * FROM ( ( SELECT ( CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER ) )
+       | AS "SUBQUERY_1_COL_0" FROM
+       | ( SELECT * FROM $test_table_2 AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
+       | INTERSECT
+       | ( SELECT ( "SUBQUERY_0"."TESTINT" ) AS "SUBQUERY_1_COL_0" FROM
+       | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) )
+       | AS "SUBQUERY_0" ORDER BY ( "SUBQUERY_0"."SUBQUERY_1_COL_0" ) ASC NULLS FIRST
        | """.stripMargin
   )
 

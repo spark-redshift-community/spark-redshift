@@ -19,6 +19,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown.querygenerati
 
 import org.apache.spark.sql.catalyst.plans.logical._
 
+
 /** Extractor for supported unary operations. */
 private[querygeneration] object UnaryOp {
 

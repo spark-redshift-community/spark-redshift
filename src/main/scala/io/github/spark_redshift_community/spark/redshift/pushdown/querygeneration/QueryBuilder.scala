@@ -19,6 +19,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown.querygenerati
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftDMLExec, RedshiftPlan, RedshiftSQLStatement, RedshiftScanExec, RedshiftStrategy}
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownException, RedshiftPushdownUnsupportedException, RedshiftRelation}
+import io.github.spark_redshift_community.spark.redshift.pushdown.optimizers.LeftSemiAntiJoinOptimizations.{isDistinctAggregate, isPassThroughProjection, isSetOperation, pullUpLeftSemiJoinOverProjectAndInnerJoin}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, NamedExpression}
@@ -34,26 +35,26 @@ import java.io.{PrintWriter, StringWriter}
 import scala.reflect.ClassTag
 
 /** This class takes a Spark LogicalPlan and attempts to generate
-  * a query for Redshift using tryBuild(). Here we use lazy instantiation
-  * to avoid building the query from the get-go without tryBuild().
-  * TODO: Is laziness actually helpful?
-  */
+ * a query for Redshift using tryBuild(). Here we use lazy instantiation
+ * to avoid building the query from the get-go without tryBuild().
+ * TODO: Is laziness actually helpful?
+ */
 private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
   import QueryBuilder.convertProjections
 
   private val LOG = LoggerFactory.getLogger(getClass)
 
   /** This iterator automatically increments every time it is used,
-    * and is for aliasing subqueries.
-    */
+   * and is for aliasing subqueries.
+   */
   private final val alias = Iterator.from(0).map(n => s"SUBQUERY_$n")
 
   /** RDD of [InternalRow] to be used by RedshiftPlan. */
   lazy val rdd: RDD[InternalRow] = toRDD[InternalRow]
 
   /** When referenced, attempts to translate the Spark plan to a SQL query that can be executed
-    * by Redshift. It will be null if this fails.
-    */
+   * by Redshift. It will be null if this fails.
+   */
   lazy val tryBuild: Option[QueryBuilder] =
     if (treeRoot == null) None else Some(this)
 
@@ -99,7 +100,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
   private[redshift] lazy val treeRoot: RedshiftQuery = {
     try {
       log.debug("Begin query generation.")
-      generateQueries(plan).get
+      generateQueries(pullUpLeftSemiJoinOverProjectAndInnerJoin(plan)).get
     } catch {
       // Qualify the exception with whether the plan applies to Redshift. Note that it
       // isn't necessarily a problem even when there are redshift tables in the query plan.
@@ -139,12 +140,12 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
   }
 
   /** Attempts to generate the query from the LogicalPlan. The queries are constructed from
-    * the bottom up, but the validation of supported nodes for translation happens on the way down.
-    *
-    * @param plan The LogicalPlan to be processed.
-    * @return An object of type Option[RedshiftQuery], which is None if the plan contains an
-    *         unsupported node type.
-    */
+   * the bottom up, but the validation of supported nodes for translation happens on the way down.
+   *
+   * @param plan The LogicalPlan to be processed.
+   * @return An object of type Option[RedshiftQuery], which is None if the plan contains an
+   *         unsupported node type.
+   */
   private def generateQueries(plan: LogicalPlan): Option[RedshiftQuery] = {
     plan match {
       case l @ LogicalRelation(rsRelation: RedshiftRelation, _, _, _) =>
@@ -197,6 +198,31 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
         }
 
       case UnaryOp(child) =>
+
+        if (isDistinctAggregate(plan) && isSetOperation(child, LeftSemi, checkDistinct = false)) {
+          child match {
+            case BinaryOp(left, right) =>
+              return Some(SetQuery(Seq(left, right), alias.next, "INTERSECT"))
+            case _ =>
+          }
+        }
+
+        plan match {
+          case Aggregate(_, _, project: Project) if isDistinctAggregate(plan) =>
+            // Check if the project is a pass-through projection
+            if (isPassThroughProjection(project.projectList, project.child)
+              && isSetOperation(project.child, LeftSemi, checkDistinct = false)) {
+              project.child match {
+                case BinaryOp(left, right) =>
+                  return Some(ProjectQuery(project.projectList,
+                    SetQuery(Seq(left, right), alias.next, "INTERSECT"), alias.next))
+                case _ =>
+              }
+            }
+
+          case _ =>
+        }
+
         generateQueries(child) map { subQuery =>
           plan match {
             case Filter(condition, _) =>
@@ -240,6 +266,15 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
         }
 
       case BinaryOp(left, right) =>
+
+        if (isSetOperation(plan, LeftSemi, checkDistinct = true)) {
+          return Some(SetQuery(Seq(left, right), alias.next, "INTERSECT"))
+        }
+
+        if (isSetOperation(plan, LeftAnti, checkDistinct = true)) {
+          return Some(SetQuery(Seq(left, right), alias.next, "EXCEPT"))
+        }
+
         generateQueries(left).flatMap { l =>
           generateQueries(right) map { r =>
             plan match {
@@ -333,8 +368,8 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
 }
 
 /** QueryBuilder object that serves as an external interface for building queries.
-  * Right now, this is merely a wrapper around the QueryBuilder class.
-  */
+ * Right now, this is merely a wrapper around the QueryBuilder class.
+ */
 private[redshift] object QueryBuilder {
 
   final def convertProjections(projections: Seq[Expression],
