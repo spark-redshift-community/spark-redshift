@@ -278,7 +278,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
             RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_EXCEPT_ALL,
             s"${plan.nodeName} EXCEPT ALL",
             plan.getClass.getName,
-            false
+            true
           )
         } else {
           Some(SetQuery(Seq(left, right), alias.next, "EXCEPT"))
