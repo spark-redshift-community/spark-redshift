@@ -21,8 +21,8 @@ import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, R
 import io.github.spark_redshift_community.spark.redshift.pushdown._
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, BinaryOperator, BitwiseAnd, BitwiseNot, BitwiseOr, BitwiseXor, EqualNullSafe, Expression, Literal, Or}
 import org.apache.spark.sql.types._
-
 import scala.language.postfixOps
+import org.apache.spark.sql.catalyst.plans.logical.Assignment
 
 /**
   * Extractor for basic (attributes and literals) expressions.
@@ -47,6 +47,8 @@ private[querygeneration] object BasicStatement {
 
     Option(expr match {
       case a: Attribute => addAttributeStatement(a, fields)
+      case Assignment(key, value) =>
+          convertStatement(key, fields) + "=" + convertStatement(value, fields)
       case And(left, right) =>
         blockStatement(
           convertStatement(left, fields) + "AND" + convertStatement(

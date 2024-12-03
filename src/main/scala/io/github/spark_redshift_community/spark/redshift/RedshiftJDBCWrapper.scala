@@ -21,7 +21,7 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
-import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, Identifier, RedshiftSQLStatement}
+import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, RedshiftSQLStatement}
 import org.apache.spark.SPARK_VERSION
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.types._
@@ -39,13 +39,11 @@ import scala.language.postfixOps
 import scala.util.Try
 import scala.util.control.NonFatal
 
-
-
 /**
  * Shim which exposes some JDBC helper functions. Most of this code is copied from Spark SQL, with
  * minor modifications for Redshift-specific features and limitations.
  */
-private[redshift] class JDBCWrapper extends Serializable {
+private[redshift] class DeprecatedJDBCWrapper extends Serializable {
 
   protected val log = LoggerFactory.getLogger(getClass)
 
@@ -156,6 +154,16 @@ private[redshift] class JDBCWrapper extends Serializable {
     executeInterruptibly(statement, _.executeQuery())
   }
 
+  /**
+   * Execute the given SQL statement while supporting interruption.
+   * If InterruptedException is caught, then the statement will be cancelled if it is running.
+   * @param statement
+   * @return number of affected rows
+   */
+  def executeUpdateInterruptibly(statement: PreparedStatement): Long = {
+    executeInterruptibly(statement, _.executeLargeUpdate())
+  }
+
   private def executeInterruptibly[T](
       statement: PreparedStatement,
       op: PreparedStatement => T): T = {
@@ -242,7 +250,7 @@ private[redshift] class JDBCWrapper extends Serializable {
     }
   }
 
-  def resolveTableFromMeta(conn: Connection,
+  protected def resolveTableFromMeta(conn: Connection,
                            rsmd: ResultSetMetaData,
                            params: MergedParameters): StructType = {
     val ncols = rsmd.getColumnCount
@@ -274,7 +282,7 @@ private[redshift] class JDBCWrapper extends Serializable {
    * Returns the default application name.
    */
   def defaultAppName: String = Utils.connectorServiceName.
-    map(name => s"${Utils.DEFAULT_APP_NAME}_$name").getOrElse(Utils.DEFAULT_APP_NAME)
+    map(name => s"${Utils.DEFAULT_APP_NAME}$name").getOrElse(Utils.DEFAULT_APP_NAME)
 
   /**
    * The same as get connector but after connection attempt to set the query group.
@@ -491,7 +499,7 @@ private[redshift] class JDBCWrapper extends Serializable {
 }
 
 private[redshift] object DefaultJDBCWrapper
-  extends JDBCWrapper
+  extends DeprecatedJDBCWrapper
   with Serializable {
 
   private val LOGGER = LoggerFactory.getLogger(getClass.getName)
@@ -511,6 +519,7 @@ private[redshift] object DefaultJDBCWrapper
      * @param overwrite use "create or replace" if true,
      *                  otherwise, use "create if not exists"
      */
+    /*
     def createTable(name: String,
                     schema: StructType,
                     params: MergedParameters,
@@ -572,20 +581,28 @@ private[redshift] object DefaultJDBCWrapper
           .execute(bindVariableEnabled)(connection)
       }.isSuccess
 
-    def tableMetaData(name: String): ResultSetMetaData =
+    def tableMetaData(name: String): ResultSetMetaData = {
       tableMetaDataFromStatement(ConstantString(name) !)
+    }
+    */
 
-    def tableMetaDataFromStatement(
+      /*
+    private def tableMetaDataFromStatement(
                                     statement: RedshiftSQLStatement,
                                     bindVariableEnabled: Boolean = true
                                   ): ResultSetMetaData =
       (ConstantString("select * from") + statement + "where 1 = 0")
-        .prepareStatement(bindVariableEnabled)(connection)
+        .prepareStatementJDBC(bindVariableEnabled)(connection)
         .getMetaData
 
+       */
+
+    /*
     def tableSchema(name: String, params: Option[MergedParameters]): StructType =
       resolveTable(connection, name, params)
+     */
 
+    /*
     def tableSchema(statement: RedshiftSQLStatement,
                     params: MergedParameters): StructType =
       resolveTableFromMeta(
@@ -594,9 +611,13 @@ private[redshift] object DefaultJDBCWrapper
         params
       )
 
+     */
+
+/*
     def execute(statement: RedshiftSQLStatement,
                 bindVariableEnabled: Boolean = true): Unit =
       statement.execute(bindVariableEnabled)(connection)
-  }
 
+ */
+  }
 }

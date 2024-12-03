@@ -1,3 +1,64 @@
+** TPC-DS; version v3.2.0 -- https://www.tpc.org/
+The TPC-DS subcommittee would like to acknowledge the contributions made by the
+many members during the
+development of the benchmark specification. It has taken the dedicated efforts
+of people across many companies,
+often in addition to their regular duties. The list of significant contributors
+to this version includes Susanne
+Englert, Mary Meredith, Sreenivas Gukal, Doug Johnson 1+2, Lubor Kollar, Murali
+Krishna, Bob Lane, Larry
+Lutz, Juergen Mueller, Bob Murphy, Doug Nelson, Ernie Ostic, Raghunath Othayoth
+Nambiar, Meikel Poess,
+Haider Rizvi, Bryan Smith, Eric Speed, Cadambi Sriram, Jack Stephens, John
+Susag, Tricia Thomas, Dave
+Walrath, Shirley Wang, Guogen Zhang, Torsten Grabs, Charles Levine, Mike
+Nikolaiev, Alain Crolotte,
+Francois Raab, Yeye He, Margaret McCarthy, Indira Patel, Daniel Pol, John
+Galloway, Jerry Lohr, Jerry
+Buggert, Michael Brey, Nicholas Wakou, Vince Carbone, Wayne Smith, Dave
+Steinhoff, Dave Rorke, Dileep
+Kumar, Yanpei Chen, John Poelman, and Seetha Lakshmi.
+
+Legal Notice
+The TPC reserves all right, title, and interest to this document and associated
+source code as provided under U.S.
+and international laws, including without limitation all patent and trademark
+rights therein.
+Permission to copy without fee all or part of this document is granted provided
+that the TPC copyright notice, the
+title of the publication, and its date appear, and notice is given that copying
+is by permission of the Transaction
+Processing Performance Council. To copy otherwise requires specific permission.
+No Warranty
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE INFORMATION CONTAINED
+HEREIN IS PROVIDED “AS IS” AND WITH ALL FAULTS, AND THE AUTHORS AND DEVELOPERS
+OF THE WORK HEREBY DISCLAIM ALL OTHER WARRANTIES AND CONDITIONS, EITHER
+EXPRESS, IMPLIED OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, ANY (IF ANY)
+IMPLIED
+WARRANTIES, DUTIES OR CONDITIONS OF MERCHANTABILITY, OF FITNESS FOR A
+PARTICULAR PURPOSE, OF ACCURACY OR COMPLETENESS OF RESPONSES, OF RESULTS, OF
+WORKMANLIKE EFFORT, OF LACK OF VIRUSES, AND OF LACK OF NEGLIGENCE. ALSO, THERE
+IS NO WARRANTY OR CONDITION OF TITLE, QUIET ENJOYMENT, QUIET POSSESSION,
+CORRESPONDENCE TO DESCRIPTION OR NON-INFRINGEMENT WITH REGARD TO THE WORK.
+IN NO EVENT WILL ANY AUTHOR OR DEVELOPER OF THE WORK BE LIABLE TO ANY OTHER
+PARTY FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO THE COST OF PROCURING
+SUBSTITUTE GOODS OR SERVICES, LOST PROFITS, LOSS OF USE, LOSS OF DATA, OR ANY
+INCIDENTAL, CONSEQUENTIAL, DIRECT, INDIRECT, OR SPECIAL DAMAGES WHETHER UNDER
+CONTRACT, TORT, WARRANTY, OR OTHERWISE, ARISING IN ANY WAY OUT OF THIS OR ANY
+OTHER AGREEMENT RELATING TO THE WORK, WHETHER OR NOT SUCH AUTHOR OR
+DEVELOPER HAD ADVANCE NOTICE OF THE POSSIBILITY OF SUCH DAMAGES.
+Trademarks
+TPC Benchmark, TPC-DS and QphDS are trademarks of the Transaction Processing
+Performance Council.
+Acknowledgments
+Developing a TPC benchmark for a new environment requires a huge effort to
+conceptualize research, specify,
+review, prototype, and verify the benchmark. The TPC acknowledges the work and
+contributions of the TPC-DS
+subcommittee member companies in developing the TPC-DS specification.
+
+------
+
 ** Apache Accumulo; version 2.1.0 -- https://accumulo.apache.org/
 
                                  Apache License
@@ -353,7 +414,8 @@ al/datatables/**/*
 ** Apache Software License, Version 2.0; version 2.0 -- https://mvnrepository.com/artifact/org.apache.commons/commons-compress/1.20
 ** spark-snowflake; version 2.9.1 -- https://github.com/snowflakedb/spark-snowflake
 ** Databricks spark-redshift connector; version 3.0.0 -- https://github.com/databricks/spark-redshift
-** Apache Spark; version 3.5.1 -- https://spark.apache.org/
+** Apache Spark; version 3.5.0 -- https://spark.apache.org/
+** lst-bench; version N/A -- https://github.com/microsoft/lst-bench/
 
 Apache License
 Version 2.0, January 2004
@@ -801,3 +863,17 @@ the network between
         Expert Group and released to the public domain, as explained at
         http://creativecommons.org/publicdomain/zero/1.0/
 
+* For lst-bench see also this required NOTICE:
+    @article{2024lstbench,
+        author = {Jes{\'u}s Camacho-Rodr{\'i}guez and Ashvin Agrawal and Anja
+Gruenheid and
+                Ashit Gosalia and Cristian Petculescu and Josep Aguilar-Saborit
+and
+                Avrilia Floratou and Carlo Curino and Raghu Ramakrishnan},
+        title = {LST-Bench: Benchmarking Log-Structured Tables in the Cloud},
+        journal = {Proc. ACM Manag. Data},
+        volume = {2},
+        number = {1},
+        year = {2024},
+        url = {https://doi.org/10.1145/3639314}
+    }

@@ -34,7 +34,7 @@ class SaveModeIntegrationSuite extends IntegrationSuiteBase {
         .option("dbtable", tableName)
         .mode(SaveMode.ErrorIfExists)
         .save()
-      assert(DefaultJDBCWrapper.tableExists(conn, s"PUBLIC.$tableName"))
+      assert(redshiftWrapper.tableExists(conn, s"PUBLIC.$tableName"))
       // Try overwriting that table while using the schema-qualified table name:
       write(df)
         .option("dbtable", s"PUBLIC.$tableName")
@@ -61,7 +61,7 @@ class SaveModeIntegrationSuite extends IntegrationSuiteBase {
         .option("dbtable", tableName)
         .mode(SaveMode.ErrorIfExists)
         .save()
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
 
       val overwritingDf =
         sqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testSchema)
@@ -70,7 +70,7 @@ class SaveModeIntegrationSuite extends IntegrationSuiteBase {
         .mode(SaveMode.Overwrite)
         .save()
 
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(read.option("dbtable", tableName).load(), TestUtils.expectedData)
     }
   }

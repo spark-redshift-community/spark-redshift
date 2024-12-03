@@ -16,6 +16,7 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
+import io.github.spark_redshift_community.spark.redshift.data.{JDBCConnection, JDBCWrapper, RedshiftWrapperFactory}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 
@@ -23,18 +24,24 @@ import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
   * Basic integration tests with the Postgres JDBC driver.
   */
 class PostgresDriverIntegrationSuite extends IntegrationSuiteBase {
-
   override def jdbcUrl: String = {
     super.jdbcUrl.replace("jdbc:redshift", "jdbc:postgresql")
   }
 
   // TODO (luca|issue #9) Fix tests when using postgresql driver
   ignore("postgresql driver takes precedence for jdbc:postgresql:// URIs") {
-    val conn = DefaultJDBCWrapper.getConnector(None, jdbcUrl, None)
-    try {
-      assert(conn.getClass.getName === "org.postgresql.jdbc4.Jdbc4Connection")
-    } finally {
-      conn.close()
+    // This test is only for JDBC-based credentials
+    if (redshiftWrapper.isInstanceOf[JDBCWrapper]) {
+      val params: Map[String, String] = defaultOptions() +
+        ("dbtable" -> "fake_table") + ("url" -> jdbcUrl)
+      val mergedParams = Parameters.mergeParameters(params)
+      val conn = redshiftWrapper.getConnector(mergedParams)
+      val jdbcConn = conn.asInstanceOf[JDBCConnection]
+      try {
+        assert(jdbcConn.conn.getClass.getName === "org.postgresql.jdbc4.Jdbc4Connection")
+      } finally {
+        conn.close()
+      }
     }
   }
 

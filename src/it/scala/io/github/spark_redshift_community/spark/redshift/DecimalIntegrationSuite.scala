@@ -36,17 +36,17 @@ class DecimalIntegrationSuite extends IntegrationSuiteBase {
         }
       }
       try {
-        conn.createStatement().executeUpdate(
-          s"CREATE TABLE $tableName (x DECIMAL($precision, $scale))")
+        redshiftWrapper.executeUpdate(
+          conn, s"CREATE TABLE $tableName (x DECIMAL($precision, $scale))")
         for (x <- decimalStrings) {
-          conn.createStatement().executeUpdate(s"INSERT INTO $tableName VALUES ($x)")
+          redshiftWrapper.executeUpdate(conn, s"INSERT INTO $tableName VALUES ($x)")
         }
-        assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+        assert(redshiftWrapper.tableExists(conn, tableName))
         val loadedDf = read.option("dbtable", tableName).load()
         checkAnswer(loadedDf, expectedRows)
         checkAnswer(loadedDf.selectExpr("x + 0"), expectedRows)
       } finally {
-        conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
       }
     }
   }
@@ -79,9 +79,9 @@ class DecimalIntegrationSuite extends IntegrationSuiteBase {
 
   test("Decimal precision is preserved when reading from query (regression test for issue #203)") {
     withTempRedshiftTable("issue203") { tableName =>
-      conn.createStatement().executeUpdate(s"CREATE TABLE $tableName (foo BIGINT)")
-      conn.createStatement().executeUpdate(s"INSERT INTO $tableName VALUES (91593373)")
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      redshiftWrapper.executeUpdate(conn, s"CREATE TABLE $tableName (foo BIGINT)")
+      redshiftWrapper.executeUpdate(conn, s"INSERT INTO $tableName VALUES (91593373)")
+      assert(redshiftWrapper.tableExists(conn, tableName))
       val df = read
         .option("query", s"select foo / 1000000.0 from $tableName limit 1")
         .load()

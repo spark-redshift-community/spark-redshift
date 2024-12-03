@@ -19,17 +19,21 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.regions.Regions
+import com.amazonaws.services.glue.{AWSGlue, AWSGlueClient}
+import com.amazonaws.services.identitymanagement.{AmazonIdentityManagement, AmazonIdentityManagementClientBuilder}
+import com.amazonaws.services.redshiftdataapi.{AWSRedshiftDataAPI, AWSRedshiftDataAPIClient}
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3URI}
+import com.amazonaws.services.securitytoken.{AWSSecurityTokenService, AWSSecurityTokenServiceClientBuilder}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
-import java.sql.Timestamp
 import java.util.{Properties, UUID}
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -156,10 +160,10 @@ private[redshift] object Utils {
    *                   false if an error prevent the check (useful for testing).
    */
   def checkThatBucketHasObjectLifecycleConfiguration(
-      tempDir: String,
+      params: MergedParameters,
       s3Client: AmazonS3): Boolean = {
     try {
-      val s3URI = createS3URI(Utils.fixS3Url(tempDir))
+      val s3URI = createS3URI(Utils.fixS3Url(params.rootTempDir))
       val bucket = s3URI.getBucket
       assert(bucket != null, "Could not get bucket from S3 URI")
       val key = Option(s3URI.getKey).getOrElse("")
@@ -208,12 +212,20 @@ private[redshift] object Utils {
     }
   }
 
+  /*
+   * Gets the resource name for an IAM ARN.
+   * See: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html
+   */
+  def getResourceIdForARN(arn: String): String = {
+      arn.split(Array('/', ':')).last
+  }
+
   /**
    * Attempts to retrieve the region of the S3 bucket.
    */
-  def getRegionForS3Bucket(tempDir: String, s3Client: AmazonS3): Option[String] = {
+  def getRegionForS3Bucket(params: MergedParameters, s3Client: AmazonS3): Option[String] = {
     try {
-      val s3URI = createS3URI(Utils.fixS3Url(tempDir))
+      val s3URI = createS3URI(Utils.fixS3Url(params.rootTempDir))
       val bucket = s3URI.getBucket
       assert(bucket != null, "Could not get bucket from S3 URI")
       val region = s3Client.headBucket(new HeadBucketRequest(bucket)).getBucketRegion match {
@@ -242,10 +254,24 @@ private[redshift] object Utils {
     }
   }
 
+  /**
+   * Attempts to determine the region of a Redshift cluster based on its URL. It may not be possible
+   * to determine the region in some cases, such as when the Redshift cluster is placed behind a
+   * proxy.
+   */
+  def getRegionForRedshiftCluster(params: MergedParameters): Option[String] = {
+    if (params.jdbcUrl.isDefined) {
+      getRegionForRedshiftCluster(params.jdbcUrl.get)
+    }
+    else {
+      params.dataApiRegion
+    }
+  }
+
   def checkRedshiftAndS3OnSameRegion(params: MergedParameters, s3Client: AmazonS3): Unit = {
     for (
-      redshiftRegion <- Utils.getRegionForRedshiftCluster(params.jdbcUrl);
-      s3Region <- Utils.getRegionForS3Bucket(params.rootTempDir, s3Client)
+      redshiftRegion <- Utils.getRegionForRedshiftCluster(params);
+      s3Region <- Utils.getRegionForS3Bucket(params, s3Client)
     ) {
       if ((redshiftRegion != s3Region) && params.tempDirRegion.isEmpty) {
         log.error("The Redshift cluster and S3 bucket are in different regions " +
@@ -266,13 +292,13 @@ private[redshift] object Utils {
    */
   def checkRedshiftAndS3OnSameRegionParquetWrite
   (params: MergedParameters, s3Client: AmazonS3): Unit = {
-    val redshiftRegion = Utils.getRegionForRedshiftCluster(params.jdbcUrl)
+    val redshiftRegion = Utils.getRegionForRedshiftCluster(params)
     if (redshiftRegion.isEmpty) {
       log.warn("Unable to determine region for redshift cluster, copy may fail if " +
         "S3 bucket region does not match redshift cluster region.")
       return
     }
-    val s3Region = Utils.getRegionForS3Bucket(params.rootTempDir, s3Client)
+    val s3Region = Utils.getRegionForS3Bucket(params, s3Client)
     if (s3Region.isEmpty) {
       log.warn("Unable to determine region for S3 bucket, copy may fail if redshift cluster" +
         " region does not match S3 bucket region.")
@@ -287,10 +313,7 @@ private[redshift] object Utils {
     }
   }
 
-  def getDefaultTempDirRegion(tempDirRegion: Option[String]): String = {
-    // If the user provided a region, use it above everything else.
-    if (tempDirRegion.isDefined) return tempDirRegion.get
-
+  def getDefaultRegion(): String = {
     // Either the user didn't provide a region or its malformed. Try to use the
     // connector's region as the tempdir region since they are usually collocated.
     // If they aren't, S3's default provider chain will help resolve the difference.
@@ -312,6 +335,15 @@ private[redshift] object Utils {
     if (currRegion != null) currRegion.getName else Regions.US_EAST_1.getName
   }
 
+  def getDefaultTempDirRegion(tempDirRegion: Option[String]): String = {
+    // If the user provided a region, use it above everything else.
+    if (tempDirRegion.isDefined) {
+      tempDirRegion.get
+    } else {
+      getDefaultRegion()
+    }
+  }
+
   def s3ClientBuilder: (AWSCredentialsProvider, MergedParameters) => AmazonS3 =
     (awsCredentials, mergedParameters) => {
       AmazonS3Client.builder()
@@ -319,6 +351,67 @@ private[redshift] object Utils {
         .withForceGlobalBucketAccessEnabled(true)
         .withCredentials(awsCredentials)
         .build()
+  }
+
+  def createIAMClient(region: Option[String] = None): AmazonIdentityManagement = {
+    val tempRegion = region.getOrElse(getDefaultRegion())
+    AmazonIdentityManagementClientBuilder.standard
+      .withRegion(tempRegion)
+      .build()
+  }
+
+  def createSTSClient(region: Option[String] = None): AWSSecurityTokenService = {
+    val tempRegion = region.getOrElse(getDefaultRegion())
+    AWSSecurityTokenServiceClientBuilder.standard
+      .withRegion(tempRegion)
+      .build()
+  }
+
+  val CONNECTOR_GLUE_ENDPOINT = "spark.datasource.redshift.community.glue_endpoint"
+  def createGlueClient(region: Option[String] = None): AWSGlue = {
+    val tempRegion = region.getOrElse(getDefaultRegion())
+    val spark = SparkSession.getActiveSession
+    val endpoint = if (spark.isDefined) {
+      spark.get.conf.get(CONNECTOR_GLUE_ENDPOINT, "").trim
+    } else ""
+
+    // Set the endpoint or the region (since we can't set both).
+    // We assume the endpoint is in the same region as the connector.
+    var client = AWSGlueClient.builder
+    if (endpoint.nonEmpty) {
+      client = client.withEndpointConfiguration(new EndpointConfiguration(endpoint, tempRegion))
+    } else {
+      client = client.withRegion(tempRegion)
+    }
+
+    client.build()
+  }
+
+  val CONNECTOR_DATA_API_ENDPOINT = "spark.datasource.redshift.community.data_api_endpoint"
+  def createDataApiClient(region: Option[String] = None,
+                          creds: Option[AWSCredentialsProvider] = None): AWSRedshiftDataAPI = {
+    // Set the region
+    val tempRegion = region.getOrElse(getDefaultRegion())
+    val spark = SparkSession.getActiveSession
+    val endpoint = if (spark.isDefined) {
+      spark.get.conf.get(CONNECTOR_DATA_API_ENDPOINT, "").trim
+    } else ""
+
+    // Set the credentials
+    var client = AWSRedshiftDataAPIClient.builder
+    if (creds.isDefined) {
+      client = client.withCredentials(creds.get)
+    }
+
+    // Set the endpoint or the region (since we can't set both).
+    // We assume the endpoint is in the same region as the connector.
+    if (endpoint.nonEmpty) {
+      client = client.withEndpointConfiguration(new EndpointConfiguration(endpoint, tempRegion))
+    } else {
+      client = client.withRegion(tempRegion)
+    }
+
+    client.build()
   }
 
   def collectMetrics(params: MergedParameters, logger: Option[Logger] = None): Unit = {
@@ -342,7 +435,8 @@ private[redshift] object Utils {
     }
   }
 
-  val DEFAULT_APP_NAME = "spark-redshift-connector"
+  // Note: The default app name _must_ only contain alpha characters to be accepted by Data API.
+  val DEFAULT_APP_NAME = "SparkRedshiftConnector"
   private val CONNECTOR_SERVICE_NAME_ENV_VAR = "AWS_SPARK_REDSHIFT_CONNECTOR_SERVICE_NAME"
 
   /**
@@ -404,7 +498,7 @@ private[redshift] object Utils {
     val trimmedSvcName = svcName.substring(0, math.min(svcName.length, MAX_SVC_LENGTH))
     val trimmedLabel = label.substring(0, math.min(label.length, MAX_LBL_LENGTH))
     val trimmedTID = tid.substring(0, math.min(tid.length, MAX_TID_LENGTH))
-    s"""{"${DEFAULT_APP_NAME}":{"svc":"${trimmedSvcName}",""" +
+    s"""{"spark-redshift-connector":{"svc":"${trimmedSvcName}",""" +
       s""""ver":"${BuildInfo.version}","op":"${operation}","lbl":"$trimmedLabel",""" +
       s""""tid":"${trimmedTID}"}}""".stripMargin
   }

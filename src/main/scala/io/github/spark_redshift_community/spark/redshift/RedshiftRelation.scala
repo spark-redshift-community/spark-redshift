@@ -21,11 +21,10 @@ package io.github.spark_redshift_community.spark.redshift
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import io.github.spark_redshift_community.spark.redshift.Conversions.parquetDataTypeConvert
-import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper.DataBaseOperations
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_OVERRIDE_NULLABLE}
 import io.github.spark_redshift_community.spark.redshift.RedshiftRelation.schemaTypesMatch
+import io.github.spark_redshift_community.spark.redshift.data.{RedshiftConnection, RedshiftWrapper}
 import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftSQLStatement, SqlToS3TempCache}
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
@@ -38,14 +37,13 @@ import org.apache.spark.sql.{Column, DataFrame, Row, SQLContext, SaveMode}
 
 import java.io.InputStreamReader
 import java.net.URI
-import java.sql.Connection
 import scala.collection.JavaConverters._
 
 /**
  * Data Source API implementation for Amazon Redshift database tables
  */
 private[redshift] case class RedshiftRelation(
-    jdbcWrapper: JDBCWrapper,
+    redshiftWrapper: RedshiftWrapper,
     s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3,
     params: MergedParameters,
     userSchema: Option[StructType])
@@ -67,9 +65,10 @@ private[redshift] case class RedshiftRelation(
     userSchema.getOrElse {
       val tableNameOrSubquery =
         params.query.map(q => s"($q)").orElse(params.table.map(_.toString)).get
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
+
+      val conn = redshiftWrapper.getConnector(params)
       try {
-        jdbcWrapper.resolveTable(conn, tableNameOrSubquery, Some(params))
+        redshiftWrapper.resolveTable(conn, tableNameOrSubquery, Some(params))
       } finally {
         conn.close()
       }
@@ -84,7 +83,7 @@ private[redshift] case class RedshiftRelation(
     } else {
       SaveMode.Append
     }
-    val writer = new RedshiftWriter(jdbcWrapper, s3ClientFactory)
+    val writer = new RedshiftWriter(redshiftWrapper, s3ClientFactory)
     writer.saveToRedshift(sqlContext, data, saveMode, params)
   }
 
@@ -97,7 +96,7 @@ private[redshift] case class RedshiftRelation(
     Utils.checkRedshiftAndS3OnSameRegion(params, s3Client)
 
     // Make sure that the bucket has a lifecycle configuration set to automatically clean-up.
-    Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3Client)
+    Utils.checkThatBucketHasObjectLifecycleConfiguration(params, s3Client)
   }
 
   override def buildScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[Row] = {
@@ -111,11 +110,10 @@ private[redshift] case class RedshiftRelation(
       // rather than unloading data.
       val whereClause = FilterPushdown.buildWhereClause(schema, filters)
       val countQuery = s"SELECT count(*) FROM $tableNameOrSubquery $whereClause"
-      val conn = jdbcWrapper.getConnectorWithQueryGroup(
-        params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
+      val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
       try {
         log.info("Getting number of rows from Redshift")
-        val results = jdbcWrapper.executeQueryInterruptibly(conn.prepareStatement(countQuery))
+        val results = redshiftWrapper.executeQueryInterruptibly(conn, countQuery)
         if (results.next()) {
           val numRows = results.getLong(1)
           log.info("Number of rows is {}", numRows)
@@ -134,13 +132,12 @@ private[redshift] case class RedshiftRelation(
       }
     } else {
       // Unload data from Redshift into a temporary directory in S3:
-      val tempDir = params.createPerQueryTempDir()
+      val tempDir = params.createPerQueryTempDir(true)
       val unloadSql = buildUnloadStmt(requiredColumns, filters, tempDir, creds, params.sseKmsKey)
-      val conn = jdbcWrapper.getConnectorWithQueryGroup(
-        params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
+      val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
       try {
         log.info("Unloading data from Redshift")
-        jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
+        redshiftWrapper.executeInterruptibly(conn, unloadSql)
       } finally {
         conn.close()
       }
@@ -160,11 +157,11 @@ private[redshift] case class RedshiftRelation(
   override def needConversion: Boolean = false
 
   private def buildUnloadStmt(
-      requiredColumns: Array[String],
-      filters: Array[Filter],
-      tempDir: String,
-      creds: AWSCredentialsProvider,
-      sseKmsKey: Option[String]): String = {
+                               requiredColumns: Array[String],
+                               filters: Array[Filter],
+                               tempDir: String,
+                               creds: AWSCredentialsProvider,
+                               sseKmsKey: Option[String]): String = {
     assert(!requiredColumns.isEmpty)
     // Always quote column names:
     val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
@@ -253,8 +250,7 @@ private[redshift] case class RedshiftRelation(
                             schema: Option[StructType],
                             threadName: String = Thread.currentThread.getName): RDD[Row] = {
     val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
-    val conn = jdbcWrapper.getConnectorWithQueryGroup(
-      params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
+    val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
 
     val (resultSchema, tempDir) = try {
@@ -284,9 +280,25 @@ private[redshift] case class RedshiftRelation(
     }
   }
 
+  def runDMLFromSQL(statement: RedshiftSQLStatement): Seq[Row] = {
+    val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
+    val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
+    val statementStr = statement.statementString
+
+    // Save the last query so it can be inspected
+    Utils.lastBuildStmt(Thread.currentThread.getName) = statementStr
+
+    try {
+      val affectedRows = redshiftWrapper.executeUpdateInterruptibly(conn, statementStr)
+      Seq(Row(affectedRows))
+    } finally {
+      conn.close()
+    }
+  }
+
   // Return cached s3 query path (if exists)
   private def GetCachedS3QueryPath(statement: RedshiftSQLStatement,
-                                    threadName: String): Option[String] = {
+                                   threadName: String): Option[String] = {
     // If we are not using the cache, abort.
     if (!params.pushdownS3ResultCache) {
       return None
@@ -312,20 +324,20 @@ private[redshift] case class RedshiftRelation(
   // managing connection lies to the caller. closing connection here
   // leads to failure if caller method perform another operation on it
   private def UnloadDataToS3(statement: RedshiftSQLStatement,
-                                  conn: Connection,
-                                  resultSchema: StructType,
-                                  creds: AWSCredentialsProvider,
+                             conn: RedshiftConnection,
+                             resultSchema: StructType,
+                             creds: AWSCredentialsProvider,
                              threadName: String): Option[String] = {
 
-    val newTempDir = params.createPerQueryTempDir()
+    val newTempDir = params.createPerQueryTempDir(true)
     val unloadSql = buildUnloadStmt(statement,
-                                    resultSchema,
-                                    newTempDir,
-                                    creds,
-                                    params.sseKmsKey,
-                                    threadName)
+      resultSchema,
+      newTempDir,
+      creds,
+      params.sseKmsKey,
+      threadName)
     log.info("Unloading data from Redshift")
-    jdbcWrapper.executeInterruptibly(conn.prepareStatement(unloadSql))
+    redshiftWrapper.executeInterruptibly(conn, unloadSql)
     SqlToS3TempCache.setS3Path(statement.statementString, newTempDir)
 
     Some(newTempDir)
@@ -334,6 +346,7 @@ private[redshift] case class RedshiftRelation(
   /**
    * Copy the inputSchema but replace any fields of StructType, ArrayType, or MapType
    * with otherwise identical fields that are of StringType. Retains name, nullability and metadata.
+   *
    * @param inputSchema schema to modify
    * @return Copied schema with complex types replaced with string types
    */
@@ -350,15 +363,17 @@ private[redshift] case class RedshiftRelation(
    * the same name passed to the from_json function along with its datatype for fields of
    * StructType, ArrayType, or MapType. This mapping can be passed to dataframe.withColumns
    * to add these projections as columns to the dataframe.
+   *
    * @param inputSchema schema to convert to a mapping
    * @return A mapping of column names to their projection
    */
   private def mapComplexTypesToJson(inputSchema: StructType): Map[String, Column] = {
-    inputSchema.fields.filter({field => field.dataType match {
-        case _ : StructType | _: ArrayType | _: MapType => true
+    inputSchema.fields.filter({ field =>
+      field.dataType match {
+        case _: StructType | _: ArrayType | _: MapType => true
         case _ => false
       }
-    }).map({field => (field.name -> from_json(col(field.name), field.dataType))}).toMap
+    }).map({ field => (field.name -> from_json(col(field.name), field.dataType)) }).toMap
   }
 
   private def readRDD[T](resultSchema: StructType, filesToRead: Seq[String]): RDD[T] = {
@@ -386,7 +401,6 @@ private[redshift] case class RedshiftRelation(
       dataFrame.queryExecution.executedPlan.execute().asInstanceOf[RDD[T]]
     }
   }
-
 
 
   private def readRDDFromParquet[T](resultSchema: StructType, filesToRead: Seq[String]): RDD[T] = {
@@ -420,13 +434,15 @@ private[redshift] case class RedshiftRelation(
     val schemasDoNotMatch = !schemaTypesMatch(resultSchema, jsonLoadedSchema)
 
     // determine if conversion is needed
-    val conversionNeeded = resultSchema.fields.exists({field: StructField => field.dataType match {
-      case StringType =>
-        field.metadata.contains("redshift_type") &&
-          Seq("super", "bpchar").contains(field.metadata.getString("redshift_type"))
-      case TimestampType | ShortType | ByteType => true
-      case _ => false
-    }}) || overrideNullable || schemasDoNotMatch
+    val conversionNeeded = resultSchema.fields.exists({ field: StructField =>
+      field.dataType match {
+        case StringType =>
+          field.metadata.contains("redshift_type") &&
+            Seq("super", "bpchar").contains(field.metadata.getString("redshift_type"))
+        case TimestampType | ShortType | ByteType => true
+        case _ => false
+      }
+    }) || overrideNullable || schemasDoNotMatch
 
     if (schemasDoNotMatch) {
       log.warn("Expected schema does not match schema of loaded parquet")
@@ -461,12 +477,11 @@ private[redshift] case class RedshiftRelation(
     val s3URI = Utils.createS3URI(cleanedTempDirUri)
     val s3Client = s3ClientFactory(creds, params)
 
-    if(s3Client.doesObjectExist(s3URI.getBucket, s3URI.getKey + "manifest")) {
+    if (s3Client.doesObjectExist(s3URI.getBucket, s3URI.getKey + "manifest")) {
       val is = s3Client.getObject(s3URI.getBucket, s3URI.getKey + "manifest").getObjectContent
       val s3Files = try {
         log.info("Begin finding S3 files to read")
         val mapper = new ObjectMapper
-        mapper.registerModule(DefaultScalaModule)
         val entries = mapper.readTree(new InputStreamReader(is)).get("entries")
         val results = entries.iterator().asScala.map(_.get("url").asText()).toSeq
         log.info("Found {} S3 file(s)", results.length)
@@ -496,10 +511,10 @@ private[redshift] case class RedshiftRelation(
   // The connection is managed by the caller method.
   private def getResultSchema(statement: RedshiftSQLStatement,
                               schema: Option[StructType],
-                              conn: Connection): StructType = {
+                              conn: RedshiftConnection): StructType = {
     val resultSchema = schema.getOrElse(
-        conn.tableSchema(statement, params)
-      )
+      redshiftWrapper.tableSchema(conn, statement, params)
+    )
 
     if (resultSchema.isEmpty) {
       throw new Exception("resultSchema isEmpty for " + statement.statementString)

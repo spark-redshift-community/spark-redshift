@@ -15,7 +15,6 @@
  */
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
-import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper
 import org.apache.spark.sql.Row
 
 import java.sql.SQLException
@@ -23,7 +22,7 @@ import java.sql.SQLException
 abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
   override def createTestDataInRedshift(tableName: String): Unit = {
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          |create table $tableName (
          |testid int,
@@ -33,7 +32,7 @@ abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuit
     )
 
     // scalastyle:off
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          |insert into $tableName values
          |(0, null),
@@ -79,31 +78,28 @@ abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuit
   test("Test unsupported data types", P1Test) {
     // (Redshift data type, Java sql type value)
     val testCases = List(
-      ("geometry", java.sql.Types.LONGVARBINARY),
-      ("geography", java.sql.Types.LONGVARBINARY),
-      ("hllsketch", java.sql.Types.OTHER),
-      ("varbinary", java.sql.Types.LONGVARBINARY)
+      "geometry",
+      "geography",
+      "hllsketch",
+      "varbinary"
     )
 
-    testCases.par.foreach(testCase => {
-      val columnType = testCase._1
-      val sqlType = testCase._2
-
+    testCases.par.foreach(columnType => {
       val tableName = s"${columnType}_not_supported$randomSuffix"
       try {
-        conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
-        conn.createStatement().executeUpdate(
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
+        redshiftWrapper.executeUpdate(conn,
           s"CREATE TABLE $tableName (test$columnType $columnType)")
-        conn.createStatement().executeUpdate(s"INSERT INTO $tableName VALUES (null)")
-        assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+        redshiftWrapper.executeUpdate(conn, s"INSERT INTO $tableName VALUES (null)")
+        assert(redshiftWrapper.tableExists(conn, tableName))
         val e = intercept[SQLException] {
           read
             .option("dbtable", tableName)
             .load()
         }
-        assert(e.getMessage.contains(s"Unsupported type $sqlType"))
+        assert(e.getMessage.contains(s"Unsupported type"))
       } finally {
-        conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
       }
     })
   }

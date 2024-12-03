@@ -21,7 +21,7 @@ import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantStrin
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException, RedshiftRelation}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Assignment, LogicalPlan}
 
 import scala.language.postfixOps
 
@@ -149,11 +149,96 @@ case class SourceQuery(relation: RedshiftRelation,
     * to be this strict.
     */
   val cluster: (String, Option[String], String) = (
-    relation.params.jdbcUrl, None, ""
+    relation.params.uniqueClusterName, None, ""
   )
 
   override def find[T](query: PartialFunction[RedshiftQuery, T]): Option[T] =
     query.lift(this)
+}
+
+case class DeleteQuery (relation: SourceQuery, condition: Expression) extends RedshiftQuery {
+  override val helper: QueryHelper = relation.helper
+  override def find[T](query: PartialFunction[RedshiftQuery, T]): Option[T] = relation.find(query)
+
+  override def getStatement(useAlias: Boolean): RedshiftSQLStatement = {
+    if (relation.relation.params.table.isEmpty) {
+      throw new RedshiftPushdownUnsupportedException(
+        "Unable to pushdown delete query for relation without dbtable",
+        "delete from",
+        "No table to delete from",
+        true
+      )
+    }
+
+    val tableName = relation.relation.params.table.get
+    // tableName string contains surrounding quotes that will be duplicated
+    // when used as a qualifier, this substring removes them
+    val tableNameStr = tableName.toString
+    val qualifierName = tableNameStr.substring(1, tableNameStr.length - 1)
+
+    // Redshift does not support using aliases in delete from statements like
+    // delete from table as t where t.id = 1. In order to account for this, any
+    // attribute references like t.id must have their qualifiers replaced like table.id
+    // Any attribute references in the logical plan that have a matching exprId to
+    // a column in the relation that is being deleted from with have its qualifier replaced
+    // in this way.
+    val transformedCondition = condition.transform({
+      case a: AttributeReference
+        if relation.refColumns.exists(_.exprId == a.exprId) => a.withQualifier(Seq(qualifierName))
+    })
+
+    ConstantString("DELETE FROM") + tableName.toStatement + "WHERE" +
+      expressionToStatement(transformedCondition)
+  }
+}
+
+case class UpdateQuery(sourceQuery: SourceQuery,
+                       assignments: Seq[Assignment],
+                       condition: Option[Expression])
+  extends RedshiftQuery {
+  override val helper: QueryHelper = sourceQuery.helper
+
+  override def find[T](query: PartialFunction[RedshiftQuery, T])
+  : Option[T] = sourceQuery.find(query)
+
+  override def getStatement(useAlias: Boolean): RedshiftSQLStatement = {
+    if (sourceQuery.relation.params.table.isEmpty) {
+      throw new RedshiftPushdownUnsupportedException(
+        "Unable to pushdown update query for relation without dbtable",
+        "UPDATE table",
+        "No table to update",
+        true
+      )
+    }
+    val tableName = sourceQuery.relation.params.table.get
+    val tableNameStr = tableName.toString
+    val qualifierName = tableNameStr.substring(1, tableNameStr.length - 1)
+
+    val assignmentsStatement = assignments.map{ assignment =>
+      // There should be only column name, but not table name (qualifier) in assignment statement
+      val transformedAssignment = assignment.transform({
+        case a: AttributeReference
+          if sourceQuery.refColumns.exists(_.exprId == a.exprId) => a.withQualifier(Seq())
+      })
+      expressionToStatement(transformedAssignment)
+    }.mkString(", ")
+
+    val res = ConstantString("UPDATE") + tableName.toStatement +
+      ConstantString("SET") + assignmentsStatement
+    val suffix : RedshiftSQLStatement = condition match {
+      case Some(value) =>
+        val conditionStmt = expressionToStatement(
+          value.transform({
+          case a: AttributeReference
+            if sourceQuery.refColumns.
+              exists(_.exprId == a.exprId) => a.withQualifier(Seq(qualifierName))
+          })
+        )
+        ConstantString("WHERE") + conditionStmt
+      case None => EmptyRedshiftSQLStatement()
+    }
+    res + suffix
+  }
 }
 
 /** The query for a filter operation.

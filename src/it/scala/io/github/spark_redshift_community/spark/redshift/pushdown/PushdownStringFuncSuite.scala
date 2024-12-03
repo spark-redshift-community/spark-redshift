@@ -14,10 +14,137 @@
  * limitations under the License.
  */
 package io.github.spark_redshift_community.spark.redshift.pushdown
+import io.github.spark_redshift_community.spark.redshift.TestUtils
+import org.apache.spark.sql.{Row, SaveMode}
 
-import org.apache.spark.sql.Row
+import scala.collection.immutable.Seq
 
 abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
+
+  /*
+  test("Test GDC V1 Read") {
+    sqlContext.sparkSession.sql(
+//      "set spark.datasource.redshift.community.glue_endpoint = https://glue-gamma.us-east-1.amazonaws.com"
+      "set spark.datasource.redshift.community.glue_endpoint = https://glue.us-east-1.amazonaws.com"
+    )
+
+    sqlContext.read
+      .format("io.github.spark_redshift_community.spark.redshift")
+      .option("glue_database", "bsharifi-test-glue-db")
+//      .option("glue_database", "bsharifi-test-empty-glue-db")
+      .option("dbtable", "table1")
+      .load()
+      .show()
+  }
+
+  test("Test GDC V1 Read2") {
+    sqlContext.sparkSession.sql(
+      //      "set spark.datasource.redshift.community.glue_endpoint = https://glue-gamma.us-east-1.amazonaws.com"
+      "set spark.datasource.redshift.community.glue_endpoint = https://glue.us-east-1.amazonaws.com"
+    )
+
+    sqlContext.read
+      .format("io.github.spark_redshift_community.spark.redshift")
+      .option("glue_database", "bsharifi-test-glue-db")
+      //      .option("glue_database", "bsharifi-test-empty-glue-db")
+      .option("dbtable", "table1")
+      .load()
+      .show()
+  }
+
+  test("Test GDC V1 Write") {
+    // This test can be simplified once #98 is fixed.
+    val tableName = s"roundtrip_save_and_load_$randomSuffix"
+    try {
+      val df = sqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testSchema)
+      df.write
+        .format("io.github.spark_redshift_community.spark.redshift")
+        .option("glue_database", "bsharifi-test-glue-db")
+        .option("dbtable", tableName)
+        .mode(SaveMode.ErrorIfExists)
+        .save()
+
+      assert(redshiftWrapper.tableExists(conn, tableName))
+      checkAnswer(sqlContext.read
+        .format("io.github.spark_redshift_community.spark.redshift")
+        .option("glue_database", "bsharifi-test-glue-db")
+        .option("dbtable", tableName).load(), TestUtils.expectedData)
+    } finally {
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
+    }
+  }
+  */
+
+  /*
+  test ("Tahoe public schema") {
+    val df1 = read.option("dbtable", "awsdatacatalog.tahoe_db.\"public.table1\"").load()
+    df1.createOrReplaceTempView("temp1")
+    sqlContext.sql("select * from temp1").show()
+
+    val df2 = read.option("dbtable", "awsdatacatalog.tahoe_db.\"test_schema.table2\"").load()
+    df2.createOrReplaceTempView("temp2")
+    sqlContext.sql("select * from temp2").show()
+  }
+
+
+  test ("three part table name") {
+    val df1 = read.option("dbtable", "cons_data_share.public.table1").load()
+    df1.createOrReplaceTempView("temp1")
+    sqlContext.sql("select * from temp1").show()
+
+    val df2 = read.option("dbtable", "cons_data_share.test_schema.table2").load()
+    df2.createOrReplaceTempView("temp2")
+    sqlContext.sql("select * from temp2").show()
+  }
+
+  test ("three part query name") {
+    val df1 = read.option("query", "select * from cons_data_share.public.table1").load()
+    df1.createOrReplaceTempView("temp1")
+    sqlContext.sql("select * from temp1").show()
+
+    val df2 = read.option("query", "select * from cons_data_share.test_schema.table2").load()
+    df2.createOrReplaceTempView("temp2")
+    sqlContext.sql("select * from temp2").show()
+  }
+
+  test("DataAPI - basic serverless test") {
+      read.option("query", "select * from foo").load().show()
+    }
+
+  test("MixedCase-dbtable") {
+    sqlContext.sql("set spark.sql.caseSensitive=true")
+
+    val simple_df = read
+      .option("dbtable", "MixedCaseSchema.MixedCaseTable")
+      .load()
+      .createOrReplaceTempView("MixedCaseTable")
+
+    sqlContext.sql("select * from MixedCaseTable").show()
+  }
+
+  test("MixedCase-query") {
+    sqlContext.sql("set spark.sql.caseSensitive=true")
+
+    val simple_df = read
+      .option("query", """select "mIXEDcASEcOLUMN" from "MixedCaseSchema"."mIXEDcASEtABLE"""")
+      .load()
+      .createOrReplaceTempView("MixedCaseTable")
+
+    sqlContext.sql("select * from MixedCaseTable").show()
+  }
+
+  test("MixedCase-Alias") {
+    sqlContext.sql("set spark.sql.caseSensitive=true")
+
+    val simple_df = read
+      .option("dbtable", """"MixedCaseSchema"."mIXEDcASEtABLE"""")
+      .load()
+      .createOrReplaceTempView("MixedCaseTable")
+
+    sqlContext.sql("SELECT FooBar FROM (select MixedCaseColumn AS FooBar from MixedCaseTable)").show()
+  }
+  */
+
   test("Upper pushdown", P0Test, P1Test) {
     checkAnswer(
       sqlContext.sql("""SELECT UPPER(testString) FROM test_table WHERE testString='asdf'"""),
@@ -26,11 +153,11 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( UPPER ( "SUBQUERY_1"."TESTSTRING" ) )
-      |AS "SUBQUERY_2_COL_0"
-      |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-      |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-      |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-      |AS "SUBQUERY_1"""".stripMargin
+         |AS "SUBQUERY_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SUBQUERY_1"""".stripMargin
     )
   }
 
@@ -42,17 +169,17 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( LOWER ( "SUBQUERY_1"."TESTSTRING" ) )
-      |AS "SUBQUERY_2_COL_0"
-      |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-      |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
-      |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
-      |""".stripMargin,
+         |AS "SUBQUERY_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
+         |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
+         |""".stripMargin,
       s"""SELECT ( LOWER ( "SUBQUERY_1"."TESTSTRING" ) )
-      |AS "SUBQUERY_2_COL_0"
-      |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-      |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
-      |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
-      |""".stripMargin
+         |AS "SUBQUERY_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
+         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
+         |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
+         |""".stripMargin
     )
   }
 

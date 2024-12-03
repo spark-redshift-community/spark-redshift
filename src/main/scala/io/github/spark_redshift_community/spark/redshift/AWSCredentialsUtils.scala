@@ -18,7 +18,6 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import java.net.URI
-
 import com.amazonaws.auth._
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import org.apache.hadoop.conf.Configuration
@@ -43,6 +42,7 @@ private[redshift] object AWSCredentialsUtils {
             s"aws_secret_access_key=${creds.getAWSSecretKey}"
       }
     }
+
     if (params.iamRole.isDefined) {
       s"aws_iam_role=${params.iamRole.get}"
     } else if (params.temporaryAWSCredentials.isDefined) {
@@ -53,7 +53,6 @@ private[redshift] object AWSCredentialsUtils {
       throw new IllegalStateException("No Redshift S3 authentication mechanism was specified")
     }
   }
-
   def staticCredentialsProvider(credentials: AWSCredentials): AWSCredentialsProvider = {
     new AWSCredentialsProvider {
       override def getCredentials: AWSCredentials = credentials
@@ -62,6 +61,7 @@ private[redshift] object AWSCredentialsUtils {
   }
 
   def load(params: MergedParameters, hadoopConfiguration: Configuration): AWSCredentialsProvider = {
+    // Load the credentials.
     params.temporaryAWSCredentials.getOrElse(loadFromURI(params.rootTempDir, hadoopConfiguration))
   }
 

@@ -17,13 +17,15 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
-import io.github.spark_redshift_community.spark.redshift.pushdown.RedshiftSQLStatement
+import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftDMLExec, RedshiftPlan, RedshiftSQLStatement, RedshiftScanExec, RedshiftStrategy}
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownException, RedshiftPushdownUnsupportedException, RedshiftRelation}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.slf4j.LoggerFactory
@@ -147,7 +149,10 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
     plan match {
       case l @ LogicalRelation(rsRelation: RedshiftRelation, _, _, _) =>
         Some(SourceQuery(rsRelation, l.output, alias.next))
-
+      case DeleteFromTable(l @ LogicalRelation(relation: RedshiftRelation, _, _, _), condition) =>
+        Some(DeleteQuery(SourceQuery(relation, l.output, alias.next()), condition))
+      case UpdateTable(l @ LogicalRelation(r: RedshiftRelation, _, _, _), assignments, condition) =>
+        Some(UpdateQuery(SourceQuery(r, l.output, alias.next()), assignments, condition))
       case UnaryOp(child) =>
         generateQueries(child) map { subQuery =>
           plan match {
@@ -255,24 +260,26 @@ private[redshift] object QueryBuilder {
     }
   }
 
-  def getRDDFromPlan(
-    plan: LogicalPlan
-  ): Option[(Seq[Attribute], RDD[InternalRow])] = {
+  def getSparkPlanFromLogicalPlan(plan: LogicalPlan, isLazy: Boolean):
+  Option[Seq[SparkPlan]] = {
     val qb = new QueryBuilder(plan)
 
     qb.tryBuild.map { executedBuilder =>
-      (executedBuilder.getOutput, executedBuilder.rdd)
-    }
-  }
-
-  def getQueryFromPlan(plan: LogicalPlan):
-  Option[(Seq[Attribute], RedshiftSQLStatement, RedshiftRelation)] = {
-    val qb = new QueryBuilder(plan)
-
-    qb.tryBuild.map { executedBuilder =>
-      (executedBuilder.getOutput,
-        executedBuilder.statement,
-        executedBuilder.source.relation)
+      executedBuilder.treeRoot match {
+        case _: DeleteQuery | _: UpdateQuery => {
+          val command = RedshiftDMLExec(executedBuilder.statement, executedBuilder.source.relation)
+          Seq(ExecutedCommandExec(command))
+        }
+        case _ if isLazy =>
+          log.info("Using lazy mode for redshift query push down")
+          Seq(RedshiftScanExec(executedBuilder.getOutput,
+          executedBuilder.statement, executedBuilder.source.relation))
+        case _ =>
+          log.warn("Using eager mode for redshift query push down. " +
+          "To improve performance please run " +
+          s"`SET ${RedshiftStrategy.LAZY_CONF_KEY}=true`")
+          Seq(RedshiftPlan(executedBuilder.getOutput, executedBuilder.rdd))
+      }
     }
   }
 }

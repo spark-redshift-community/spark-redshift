@@ -33,10 +33,10 @@ val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.
 lazy val IntegrationTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
-val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.3")
+val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.6")
 val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.29")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
-val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.1033")
+val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.12.705")
 // access tokens for aws/shared and our own internal CodeArtifacts repo
 // these are retrieved during CodeBuild steps
 val awsSharedRepoPass = sys.props.get("ci.internalCentralMvnPassword").getOrElse("")
@@ -44,6 +44,7 @@ val internalReleaseRepoPass = sys.props.get("ci.internalTeamMvnPassword").getOrE
 // remove the PATCH portion of the spark version number for use in release binary
 // e.g. MAJOR.MINOR.PATCH => MAJOR.MINOR
 val releaseSparkVersion = testSparkVersion.substring(0, testSparkVersion.lastIndexOf("."))
+val releaseScalaVersion = buildScalaVersion.substring(0, buildScalaVersion.lastIndexOf("."))
 
 def incompatibleSparkVersions(): FileFilter = {
   val versionArray = releaseSparkVersion.split("""\.""").map(Integer.parseInt)
@@ -51,7 +52,7 @@ def incompatibleSparkVersions(): FileFilter = {
   val minor = versionArray(1)
 
   new FileFilter {
-    def accept(f: File) = f.getPath.containsSlice("_spark_") && !f.getPath.containsSlice(s"_spark_${major}_${minor}_")
+    def accept(f: File): Boolean = f.getPath.containsSlice("_spark_") && !f.getPath.containsSlice(s"_spark_${major}_${minor}_")
   }
 }
 
@@ -90,10 +91,11 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
   else Seq(
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value)
+      if (isSnapshot.value) {
         Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
+      } else {
         Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+      }
     },
     // Add publishing to spark packages as another step.
     releaseProcess := Seq[ReleaseStep](
@@ -129,16 +131,14 @@ lazy val root = Project("spark-redshift", file("."))
     scalacOptions ++= Seq("-target:jvm-1.8"),
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api" % "2.0.7",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.1",
-
+      "org.slf4j" % "slf4j-api" % "2.0.7" % "provided",
       "com.google.guava" % "guava" % "32.1.2-jre" % "test",
       "org.scalatest" %% "scalatest" % "3.2.16" % "test",
       "org.scalatestplus" %% "mockito-4-6" % "3.2.15.0" % "test",
       "com.amazon.redshift" % "redshift-jdbc42" % testJDBCVersion % "provided",
 
       "com.amazonaws.secretsmanager" % "aws-secretsmanager-jdbc" % "1.0.12" % "provided" excludeAll
-      (ExclusionRule(organization = "com.fasterxml.jackson.core")),
+        (ExclusionRule(organization = "com.fasterxml.jackson.core")),
 
       "com.amazonaws" % "aws-java-sdk" % testAWSJavaSDKVersion % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core")),
@@ -147,7 +147,7 @@ lazy val root = Project("spark-redshift", file("."))
       "org.apache.hadoop" % "hadoop-common" % testHadoopVersion % "provided" exclude("javax.servlet", "servlet-api") force(),
       "org.apache.hadoop" % "hadoop-common" % testHadoopVersion % "provided" classifier "tests" force(),
 
-      "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion excludeAll
+      "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core"))
         exclude("org.apache.hadoop", "hadoop-common")
         exclude("com.amazonaws", "aws-java-sdk-s3")  force()

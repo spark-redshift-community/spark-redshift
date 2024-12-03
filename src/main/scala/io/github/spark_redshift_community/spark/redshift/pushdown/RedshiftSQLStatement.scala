@@ -17,10 +17,11 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
-import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper
+import io.github.spark_redshift_community.spark.redshift.data.QueryParameter
 import org.slf4j.LoggerFactory
 
-import java.sql.{Connection, PreparedStatement, ResultSet}
+import java.sql.{Connection, PreparedStatement}
+import scala.collection.mutable.ArrayBuffer
 
 // scalastyle:off
 /**
@@ -47,124 +48,6 @@ private[redshift] class RedshiftSQLStatement(val numOfVar: Int = 0,
   def +(str: String): RedshiftSQLStatement = this + ConstantString(str)
 
   def isEmpty: Boolean = list.isEmpty
-
-  def execute(
-               bindVariableEnabled: Boolean
-             )(implicit conn: Connection): ResultSet = {
-    val statement = prepareStatement(bindVariableEnabled)
-    try {
-      val rs = DefaultJDBCWrapper.executeQueryInterruptibly(statement)
-      rs
-    } catch {
-      case th: Throwable => {
-        throw th
-      }
-    }
-  }
-
-  private[redshift] def prepareStatement(
-                                           bindVariableEnabled: Boolean
-                                         )(implicit conn: Connection): PreparedStatement =
-    if (bindVariableEnabled) prepareWithBindVariable(conn)
-    else parepareWithoutBindVariable(conn)
-
-  private def parepareWithoutBindVariable(conn: Connection): PreparedStatement = {
-    val sql = list.reverse
-    val query = sql
-      .foldLeft(new StringBuilder) {
-        case (buffer, statement) =>
-          buffer.append(
-            if (statement.isInstanceOf[ConstantString]) statement
-            else statement.sql
-          )
-          buffer.append(" ")
-      }
-      .toString()
-
-    val logPrefix = s"""${MASTER_LOG_PREFIX}:
-                       | execute query without bind variable:
-                       |""".stripMargin.filter(_ >= ' ')
-
-    conn.prepareStatement(query)
-  }
-
-  private def prepareWithBindVariable(conn: Connection): PreparedStatement = {
-    val sql = list.reverse
-    val varArray: Array[StatementElement] =
-      new Array[StatementElement](numOfVar)
-    var indexOfVar: Int = 0
-    val buffer = new StringBuilder
-
-    sql.foreach(element => {
-      buffer.append(element)
-      if (!element.isInstanceOf[ConstantString]) {
-        varArray(indexOfVar) = element
-        indexOfVar += 1
-      }
-      buffer.append(" ")
-    })
-
-    val query: String = buffer.toString
-
-    val logPrefix = s"""${MASTER_LOG_PREFIX}:
-                       | execute query with bind variable:
-                       |""".stripMargin.filter(_ >= ' ')
-
-    val statement = conn.prepareStatement(query)
-    varArray.zipWithIndex.foreach {
-      case (element, index) =>
-        element match {
-          case ele: StringVariable =>
-            if (ele.variable.isDefined)
-              statement.setString(index + 1, ele.variable.get)
-            else
-              statement.setNull(index + 1, java.sql.Types.VARCHAR)
-          case ele: Identifier =>
-            statement.setString(index + 1, ele.variable.get)
-          case ele: IntVariable =>
-            if (ele.variable.isDefined)
-              statement.setInt(index + 1, ele.variable.get)
-            else
-              statement.setNull(index + 1, java.sql.Types.INTEGER)
-          case ele: LongVariable =>
-            if (ele.variable.isDefined)
-              statement.setLong(index + 1, ele.variable.get)
-            else
-              statement.setNull(index + 1, java.sql.Types.BIGINT)
-          case ele: ShortVariable =>
-            if (ele.variable.isDefined)
-              statement.setShort(index + 1, ele.variable.get)
-            else
-              statement.setNull(index + 1, java.sql.Types.SMALLINT)
-          case ele: FloatVariable =>
-            if (ele.variable.isDefined)
-              statement.setFloat(index + 1, ele.variable.get)
-            else
-              statement.setNull(index + 1, java.sql.Types.FLOAT)
-          case ele: DoubleVariable =>
-            if (ele.variable.isDefined)
-              statement.setDouble(index + 1, ele.variable.get)
-            else
-              statement.setNull(index + 1, java.sql.Types.DOUBLE)
-          case ele: BooleanVariable =>
-            if (ele.variable.isDefined)
-              statement.setBoolean(index + 1, ele.variable.get)
-            else
-              statement.setNull(index + 1, java.sql.Types.BOOLEAN)
-          case ele: ByteVariable =>
-            if (ele.variable.isDefined)
-              statement.setByte(index + 1, ele.variable.get)
-            else
-              statement.setNull(index + 1, java.sql.Types.TINYINT)
-          case _ =>
-            throw new IllegalArgumentException(
-              "Unexpected Element Type: " + element.getClass.getName
-            )
-        }
-    }
-
-    statement
-  }
 
   override def equals(obj: scala.Any): Boolean =
     obj match {

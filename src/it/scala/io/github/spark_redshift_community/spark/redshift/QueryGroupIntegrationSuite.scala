@@ -15,24 +15,30 @@
  */
 package io.github.spark_redshift_community.spark.redshift
 
+import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper
 import org.mockito.Mockito.verify
 import org.scalatestplus.mockito.MockitoSugar.mock
 import org.slf4j.Logger
 
 class QueryGroupIntegrationSuite extends IntegrationSuiteBase {
   test("getConnectorWithQueryGroup returns a working connection when setting query group fails") {
-    val invalidQueryGroup = "'"
-    val conn = TestJdbcWrapper.getConnectorWithQueryGroup(None, jdbcUrl, None, invalidQueryGroup)
-    verify(TestJdbcWrapper.getLogger).debug("Unable to set query group: " +
+    // This test is only valid for JDBC-based connections
+    if (redshiftWrapper.isInstanceOf[JDBCWrapper]) {
+      val invalidQueryGroup = "'"
+      val params: Map[String, String] = defaultOptions() + ("dbtable" -> "fake_table")
+      val mergedParams = Parameters.mergeParameters(params)
+      val conn = TestJdbcWrapper.getConnectorWithQueryGroup(mergedParams, invalidQueryGroup)
+      verify(TestJdbcWrapper.getLogger).debug("Unable to set query group: " +
         "com.amazon.redshift.util.RedshiftException: Unterminated string literal " +
         "started at position 21 in SQL set query_group to '''. Expected  char")
-    try {
-      val results = TestJdbcWrapper.executeQueryInterruptibly(conn.prepareStatement("select 1"))
-      assert(results.next())
-      assert(results.getInt(1) == 1)
-      assert(!results.next())
-    } finally {
-      conn.close()
+      try {
+        val results = TestJdbcWrapper.executeQueryInterruptibly(conn, "select 1")
+        assert(results.next())
+        assert(results.getInt(1) == 1)
+        assert(!results.next())
+      } finally {
+        conn.close()
+      }
     }
   }
 }

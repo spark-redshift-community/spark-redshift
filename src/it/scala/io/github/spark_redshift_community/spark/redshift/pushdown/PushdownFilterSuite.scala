@@ -330,9 +330,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
 
   test("Filter EqualNullSafe not supported: operator <=>", P0Test, P1Test) {
 
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s""" create table $test_table_safe_null(c1 varchar, c2 varchar)""")
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"insert into $test_table_safe_null values(null, null), ('a', null), ('a', 'a')")
 
     read

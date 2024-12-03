@@ -36,8 +36,8 @@ class ParametersSuite extends AnyFunSuite with Matchers {
     val mergedParams = Parameters.mergeParameters(params)
 
     mergedParams.rootTempDir should startWith(params("tempdir"))
-    mergedParams.createPerQueryTempDir() should startWith(params("tempdir"))
-    mergedParams.jdbcUrl shouldBe params("url")
+    mergedParams.createPerQueryTempDir(true) should startWith(params("tempdir"))
+    mergedParams.jdbcUrl.get shouldBe params("url")
     mergedParams.table shouldBe Some(TableName("", "test_schema", "test_table"))
     assert(mergedParams.forwardSparkS3Credentials)
     assert(mergedParams.includeColumnList)
@@ -62,7 +62,8 @@ class ParametersSuite extends AnyFunSuite with Matchers {
 
     val mergedParams = Parameters.mergeParameters(params)
 
-    mergedParams.createPerQueryTempDir() should not equal mergedParams.createPerQueryTempDir()
+    mergedParams.createPerQueryTempDir(true) should not equal
+      mergedParams.createPerQueryTempDir(true)
   }
 
   test("Errors are thrown when mandatory parameters are not provided") {

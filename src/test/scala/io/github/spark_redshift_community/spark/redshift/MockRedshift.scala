@@ -18,6 +18,7 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.data.RedshiftWrapper
 
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import org.apache.spark.sql.types.StructType
@@ -44,7 +45,8 @@ class MockRedshift(
 
   private[this] val jdbcConnections: mutable.Buffer[Connection] = mutable.Buffer.empty
 
-  val jdbcWrapper: JDBCWrapper = spy(new JDBCWrapper)
+  val jdbcWrapper: DeprecatedJDBCWrapper = spy(new DeprecatedJDBCWrapper)
+  val redshiftWrapper: RedshiftWrapper = spy(new RedshiftWrapper)
 
   private def createMockConnection(): Connection = {
     val conn = mock(classOf[Connection], RETURNS_SMART_NULLS)

@@ -112,7 +112,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
         new Rule().withStatus(BucketLifecycleConfiguration.DISABLED)
       ))
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
+      MergedParameters(fakeCredentials), mockS3Client) === true)
   }
 
   test("checkThatBucketHasObjectLifecycleConfiguration when rule with prefix") {
@@ -124,7 +124,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
         new Rule().withPrefix("/path/").withStatus(BucketLifecycleConfiguration.ENABLED)
       ))
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
+      MergedParameters(fakeCredentials), mockS3Client) === true)
   }
 
   test("checkThatBucketHasObjectLifecycleConfiguration when rule without prefix") {
@@ -136,7 +136,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
         new Rule().withStatus(BucketLifecycleConfiguration.ENABLED)
       ))
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
+      MergedParameters(fakeCredentials), mockS3Client) === true)
   }
 
   test("checkThatBucketHasObjectLifecycleConfiguration when error in checking") {
@@ -146,7 +146,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
     when(mockS3Client.getBucketLifecycleConfiguration(anyString()))
       .thenThrow(new NullPointerException())
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      "s3a://bucket/path/to/temp/dir", mockS3Client) === false)
+      MergedParameters(fakeCredentials), mockS3Client) === false)
   }
 
   test("retry calls block correct number of times with correct delay") {
@@ -173,7 +173,9 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
      Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
      Parameters.PARAM_LEGACY_TRIM_CSV_WRITES -> "false",
      Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false",
-     Parameters.PARAM_OVERRIDE_NULLABLE -> "false")
+     Parameters.PARAM_OVERRIDE_NULLABLE -> "false",
+     "tempdir" -> "s3a://bucket/path/to/temp/dir",
+     "url" -> "jdbc:redshift://redshift/database")
 
   test("collectMetrics logs buildinfo to INFO") {
     val mockLogger = mock[Logger]
@@ -297,5 +299,22 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
     val defaultRegion = Utils.getDefaultTempDirRegion(None)
     assert(defaultRegion.isEmpty == false)
+  }
+
+  /*
+   * Validate Utils.getResourceIdForARN()
+   * See: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html
+   */
+  test("Verify splitting resource identifiers from ARNs") {
+    assert(Utils.getResourceIdForARN(
+      "arn:partition:service:region:account-id:resource-id") == "resource-id")
+    assert(Utils.getResourceIdForARN(
+      "arn:partition:service:region:account-id:resource-type/resource-id") == "resource-id")
+    assert(Utils.getResourceIdForARN(
+      "arn:partition:service:region:account-id:resource-type:resource-id") == "resource-id")
+  }
+
+  test("Ensure default app name is non empty and only alpha characters") {
+    assert(Utils.DEFAULT_APP_NAME.matches("^[a-zA-Z]+$"))
   }
 }

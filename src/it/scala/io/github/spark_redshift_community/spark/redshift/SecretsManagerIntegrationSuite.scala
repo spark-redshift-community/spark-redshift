@@ -19,9 +19,12 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.services.secretsmanager._
 import com.amazonaws.services.secretsmanager.model.{CreateSecretRequest, DeleteSecretRequest}
-import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_SECRET_ID, PARAM_SECRET_REGION}
+import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_DATA_API_USER, PARAM_SECRET_ID, PARAM_SECRET_REGION, PARAM_TEMPDIR_REGION}
+import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper
 import org.apache.spark.sql.types.{IntegerType, MetadataBuilder, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
+
+import scala.collection.mutable
 import scala.util.Random
 
 /**
@@ -42,11 +45,11 @@ class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     createNewSecret
-    conn.prepareStatement(s"CREATE USER $redshiftUsr PASSWORD '$redshiftPwd'").execute()
+    redshiftWrapper.executeUpdate(conn, s"CREATE USER $redshiftUsr PASSWORD '$redshiftPwd'")
   }
 
   override def afterAll(): Unit = {
-    conn.prepareStatement(s"DROP USER $redshiftUsr").execute()
+    redshiftWrapper.executeUpdate(conn, s"DROP USER $redshiftUsr")
     deleteSecret()
     super.afterAll()
   }
@@ -75,24 +78,40 @@ class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
     secretResponse.getARN
   }
 
-  test("roundtrip save and load") {
+  protected def getDefaultCredentials(): Map[String, String] = {
+    val options: mutable.HashMap[String, String] = new mutable.HashMap[String, String]()
+    options ++= super.defaultOptions()
+    options.remove(PARAM_DATA_API_USER)
+    options.toMap
+  }
+  private def getOptions(): Map[String, String] = {
+    val options: mutable.HashMap[String, String] = new mutable.HashMap[String, String]()
+    options += (PARAM_SECRET_ID -> secretName)
+    if (redshiftWrapper.isInstanceOf[JDBCWrapper]) {
+      options += ("url" -> jdbcUrlNoUserPassword)
+      options += (PARAM_SECRET_REGION -> secretRegion)
+    }
+    options.toMap
+  }
+
+  test("Secret manager roundtrip save and load") {
     withTempRedshiftTable("secretsmanager_roundtrip_save_and_load") { tableName =>
       val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row(1)), 1),
         StructType(StructField("foo", IntegerType, true,
           new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
 
-      write(df)
-        .option("url", jdbcUrlNoUserPassword)
-        .option(PARAM_SECRET_ID, secretName)
-        .option(PARAM_SECRET_REGION, secretRegion)
+      df.write
+        .format("io.github.spark_redshift_community.spark.redshift")
+        .options(getDefaultCredentials())
+        .options(getOptions())
         .option("dbtable", tableName)
         .mode(SaveMode.ErrorIfExists)
         .save()
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
-      val loadedDf = read
-        .option("url", jdbcUrlNoUserPassword)
-        .option(PARAM_SECRET_ID, secretName)
-        .option(PARAM_SECRET_REGION, secretRegion)
+      assert(redshiftWrapper.tableExists(conn, tableName))
+      val loadedDf = sqlContext.read
+        .format("io.github.spark_redshift_community.spark.redshift")
+        .options(getDefaultCredentials())
+        .options(getOptions())
         .option("dbtable", tableName)
         .load()
       assert(loadedDf.schema === df.schema)

@@ -61,10 +61,10 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
           superSchema))
 
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (a super)"
       )
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (
            |json_parse('{
            | "string": "a",
@@ -92,11 +92,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
 
   test("Unload super as ArrayType") {
     withTempRedshiftTable("superArray") { tableName =>
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (a super);"
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('[1, 2, 3]'));"""
       )
 
@@ -114,10 +114,10 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
 
   test("Unload super as MapType") {
     withTempRedshiftTable("superMap") { tableName =>
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (a super)"
       )
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"hello":"world", "foo":"bar"}'))"""
       )
 
@@ -139,11 +139,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val secondString = """{"nested":"value"}"""
       val expectedRows = Seq(Row(firstString), Row(secondString))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            | (json_parse('{"hello": "$firstString"}')),
            | (json_parse('{"hello": $secondString}'))""".stripMargin
@@ -165,11 +165,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val secondString = """{"nested":"value"}"""
       val expectedRows = Seq(Row(secondString))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            | (json_parse('{"hello": "$firstString"}')),
            | (json_parse('{"hello": $secondString}'))""".stripMargin
@@ -191,11 +191,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val byte: Byte = 1
       val expectedRow = Seq(Row(byte))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"byte":1}'))"""
       )
 
@@ -214,11 +214,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val byte: Byte = 1
       val expectedRow = Seq(Row(byte))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            | (json_parse('{"byte":1}')),
            | (json_parse('{"byte":2}'))""".stripMargin
@@ -240,11 +240,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val short: Short = 1
       val expectedRow = Seq(Row(short))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"short": 1}'))"""
       )
 
@@ -263,11 +263,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val short: Short = 1
       val expectedRow = Seq(Row(short))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"short": 1}')),
            |(json_parse('{"short": 2}'))""".stripMargin
@@ -288,11 +288,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithInt") { tableName =>
       val expectedRow = Seq(Row(1))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"int": 1}'))"""
       )
 
@@ -311,11 +311,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val int = 1
       val expectedRow = Seq(Row(int))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"int": 1}')),
            |(json_parse('{"int": 2}'))""".stripMargin
@@ -336,11 +336,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithLong") { tableName =>
       val expectedRow = Seq(Row(1L))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"long": 1}'))"""
       )
 
@@ -358,11 +358,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithLong") { tableName =>
       val expectedRow = Seq(Row(1L))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"long": 1}')),
            |(json_parse('{"long": 2}'))""".stripMargin
@@ -383,11 +383,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithFloat") { tableName =>
       val expectedRow = Seq(Row(2.2f))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"float": 2.2}'))"""
       )
 
@@ -406,11 +406,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithFloat") { tableName =>
       val expectedRow = Seq(Row(2.2f))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"float": 2.2}')),
            |(json_parse('{"float": 3.3}'))""".stripMargin
@@ -431,11 +431,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithDouble") { tableName =>
       val expectedRow = Seq(Row(2.2))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"double":2.2}'))"""
       )
 
@@ -453,11 +453,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithDouble") { tableName =>
       val expectedRow = Seq(Row(2.2))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"double":2.2}')),
            |(json_parse('{"double":3.3}'))""".stripMargin
@@ -478,11 +478,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithDecimal") { tableName =>
       val expectedRow = Seq(Row(new java.math.BigDecimal("2.2")))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"decimal": "2.2"}'))"""
       )
 
@@ -501,11 +501,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val expectedDecimal = new java.math.BigDecimal("2.2")
       val expectedRow = Seq(Row(expectedDecimal))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"decimal": "2.2"}')),
            |(json_parse('{"decimal": "3.3"}'))""".stripMargin
@@ -526,11 +526,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithBoolean") { tableName =>
       val expectedRow = Seq(Row(true))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"boolean": true}'))"""
       )
 
@@ -548,11 +548,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithBoolean") { tableName =>
       val expectedRow = Seq(Row(true))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"boolean": true}')),
            |(json_parse('{"boolean": false}'))""".stripMargin
@@ -574,11 +574,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val date: Date = Date.valueOf("1970-01-01")
       val expectedRow = Seq(Row(date))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"date": "$date"}'))"""
       )
 
@@ -598,11 +598,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val otherDate: Date = Date.valueOf("1975-01-01")
       val expectedRow = Seq(Row(date))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"date": "$date"}')),
            |(json_parse('{"date": "$otherDate"}'))""".stripMargin
@@ -624,10 +624,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val timestamp = Timestamp.valueOf("2019-07-01 12:01:19.000")
       val expectedRow = Seq(Row(timestamp))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
-      conn.createStatement().executeUpdate(
+
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"timestamp":"2019-07-01 12:01:19.000"}'))"""
       )
 
@@ -647,10 +648,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val timestamp = Timestamp.valueOf("2019-07-01 12:01:19.000")
       val expectedRow = Seq(Row(timestamp))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
-      conn.createStatement().executeUpdate(
+
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"timestamp":"2019-07-01 12:01:19.000"}')),
            |(json_parse('{"timestamp":"2020-07-01 12:01:19.000"}'))""".stripMargin
@@ -672,11 +674,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithMap") { tableName =>
       val expectedRow = Seq(Row(Map("key" -> "value")))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"map":{"key":"value"}}'))"""
       )
 
@@ -694,11 +696,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithArray") { tableName =>
       val expectedRow = Seq(Row(mutable.WrappedArray.make(Array(1, 2, 3))))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"array": [1,2,3]}'))"""
       )
 
@@ -717,11 +719,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithArray") { tableName =>
       val expectedRow = Seq(Row(mutable.WrappedArray.make(Array(1, 2, 3))))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"array": [1,2,3]}'))"""
       )
 
@@ -740,11 +742,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithStruct") { tableName =>
       val expectedRow = Seq(Row(Row("one", 2)))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"struct": {"first":"one", "second":2}}'))""".stripMargin
       )
@@ -765,11 +767,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithStructInWhere") { tableName =>
       val expectedRow = Seq(Row(Row("one", 2)))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"struct": {"first":"one", "second":2}}')),
            |(json_parse('{"struct": {"first":"notone", "second":2}}'))""".stripMargin
@@ -791,11 +793,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
     withTempRedshiftTable("superStructWithNestedStructField") { tableName =>
       val expectedRow = Seq(Row("one"))
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""create table $tableName (a super)"""
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values
            |(json_parse('{"struct": {"first":"one"}}'))""".stripMargin
       )
@@ -817,11 +819,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
       val shortIndex: Short = 1;
       val intIndex: Int = 1;
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (a super);"
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('[1, 2, 3]'));"""
       )
 
@@ -852,11 +854,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
 
   test("GetArrayItem with integer expression") {
     withTempRedshiftTable("getArrayItemWithExpression") { tableName =>
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (a super);"
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('[1, 2, 3]'));"""
       )
 
@@ -875,11 +877,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
 
   test("GetArrayItem in where"){
     withTempRedshiftTable("getArrayItemWithExpression") { tableName =>
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (a super);"
       )
 
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('[1, 2, 3]'));"""
       )
 
@@ -898,10 +900,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
 
   test("GetMapValue with literal") {
     withTempRedshiftTable("getMapValueLiteral") { tableName =>
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (a super);"
       )
-      conn.createStatement().executeUpdate(
+
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"hello": "world"}'));"""
       )
 
@@ -920,10 +923,11 @@ abstract class ComplexTypesSuite extends IntegrationPushdownSuiteBase {
 
   test("GetMapValue in where") {
     withTempRedshiftTable("getMapValueInWhere") { tableName =>
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (a super);"
       )
-      conn.createStatement().executeUpdate(
+
+      redshiftWrapper.executeUpdate(conn,
         s"""insert into $tableName values (json_parse('{"hello": "world"}'));"""
       )
 

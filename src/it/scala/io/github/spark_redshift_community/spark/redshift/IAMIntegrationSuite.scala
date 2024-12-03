@@ -41,7 +41,7 @@ class IAMIntegrationSuite extends IntegrationSuiteBase {
         .mode(SaveMode.ErrorIfExists)
         .save()
 
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       val loadedDf = read
         .option("dbtable", tableName)
         .option("forward_spark_s3_credentials", "false")
@@ -51,7 +51,7 @@ class IAMIntegrationSuite extends IntegrationSuiteBase {
       assert(loadedDf.columns === Seq("a"))
       checkAnswer(loadedDf, Seq(Row(1)))
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 
@@ -70,7 +70,7 @@ class IAMIntegrationSuite extends IntegrationSuiteBase {
       }
       assert(err.getCause.getMessage.contains("is not authorized to assume IAM Role"))
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 }

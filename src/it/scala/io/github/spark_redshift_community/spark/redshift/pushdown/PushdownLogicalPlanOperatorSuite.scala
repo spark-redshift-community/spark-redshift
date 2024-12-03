@@ -25,7 +25,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
   override def beforeAll(): Unit = {
     super.beforeAll()
     if (!preloaded_data.toBoolean) {
-      conn.prepareStatement(s"drop table if exists $test_table_2").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table_2")
       createMoreDataInRedshift(test_table_2)
     }
   }
@@ -33,7 +33,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
   override def afterAll(): Unit = {
     try {
       if (!preloaded_data.toBoolean) {
-        conn.prepareStatement(s"drop table if exists $test_table_2").executeUpdate()
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table_2")
       }
     } finally {
       super.afterAll()
@@ -49,7 +49,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
   }
 
   protected def createMoreDataInRedshift(tableName: String): Unit = {
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          |create table $tableName (
          |testbyte int2,
@@ -66,7 +66,7 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
       """.stripMargin
     )
     // scalastyle:off
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          |insert into $tableName values
          |(null, null, null, null, null, null, null, null, null, null),

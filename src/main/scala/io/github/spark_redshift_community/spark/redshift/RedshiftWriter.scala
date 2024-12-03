@@ -20,6 +20,7 @@ package io.github.spark_redshift_community.spark.redshift
 import com.amazonaws.auth.AWSCredentialsProvider
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_COPY_DELAY}
 import com.amazonaws.services.s3.AmazonS3
+import io.github.spark_redshift_community.spark.redshift.data.{RedshiftConnection, RedshiftWrapper}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
@@ -30,8 +31,9 @@ import org.apache.spark.sql.functions.{col, to_json}
 import org.slf4j.LoggerFactory
 
 import java.net.URI
-import java.sql.{Connection, Date, SQLException, Timestamp}
+import java.sql.{Date, SQLException, Timestamp}
 import java.time.ZoneId
+import java.util.UUID
 import scala.util.control.NonFatal
 
 /**
@@ -58,8 +60,8 @@ import scala.util.control.NonFatal
  *     the Avro data into the appropriate table.
  */
 private[redshift] class RedshiftWriter(
-    jdbcWrapper: JDBCWrapper,
-    s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3) {
+   redshiftWrapper: RedshiftWrapper,
+   s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3) {
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -68,7 +70,7 @@ private[redshift] class RedshiftWriter(
    */
   // Visible for testing.
   private[redshift] def createTableSql(data: DataFrame, params: MergedParameters): String = {
-    val schemaSql = jdbcWrapper.schemaString(data.schema, Some(params))
+    val schemaSql = redshiftWrapper.schemaString(data.schema, Some(params))
     val distStyleDef = params.distStyle match {
       case Some(style) => s"DISTSTYLE $style"
       case None => ""
@@ -83,15 +85,25 @@ private[redshift] class RedshiftWriter(
     s"CREATE TABLE IF NOT EXISTS $table ($schemaSql) $distStyleDef $distKeyDef $sortKeyDef"
   }
 
+  private def copySql(
+     sqlContext: SQLContext,
+     schema: StructType,
+     params: MergedParameters,
+     creds: AWSCredentialsProvider,
+     manifestUrl: String): String = {
+    copySqlToTable(sqlContext, schema, params, creds, manifestUrl, params.table.get)
+  }
+
   /**
    * Generate the COPY SQL command
    */
-  private def copySql(
+  private def copySqlToTable(
       sqlContext: SQLContext,
       schema: StructType,
       params: MergedParameters,
       creds: AWSCredentialsProvider,
-      manifestUrl: String): String = {
+      manifestUrl: String,
+      tableName: TableName): String = {
     val credsString: String =
       AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.getCredentials)
     val fixedUrl = Utils.fixS3Url(manifestUrl)
@@ -114,7 +126,7 @@ private[redshift] class RedshiftWriter(
     // Parquet needs this to handle complex data types
     val serializeToJSON = if (format == "PARQUET") {"SERIALIZETOJSON"} else ""
 
-    val copySqlStatement = s"COPY ${params.table.get} ${columns}FROM '$fixedUrl'" +
+    val copySqlStatement = s"COPY $tableName ${columns}FROM '$fixedUrl'" +
       s" FORMAT AS ${format} ${serializeToJSON} manifest" +
       s" $regionClause" +
       s" ${params.extraCopyOptions}"
@@ -138,7 +150,7 @@ private[redshift] class RedshiftWriter(
    * Perform the Redshift load by issuing a COPY statement.
    */
   private def doRedshiftLoad(
-      conn: Connection,
+      conn: RedshiftConnection,
       data: DataFrame,
       params: MergedParameters,
       creds: AWSCredentialsProvider,
@@ -147,14 +159,14 @@ private[redshift] class RedshiftWriter(
     // If the table doesn't exist, we need to create it first, using JDBC to infer column types
     val createStatement = createTableSql(data, params)
     log.info("Creating table within Redshift: {}", params.table.get)
-    jdbcWrapper.executeInterruptibly(conn.prepareStatement(createStatement))
+    redshiftWrapper.executeInterruptibly(conn, createStatement)
 
     val preActions = commentActions(params.description, data.schema) ++ params.preActions
 
     // Execute preActions
     preActions.foreach { action =>
       val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
-      jdbcWrapper.executeInterruptibly(conn.prepareStatement(actionSql))
+      redshiftWrapper.executeInterruptibly(conn, actionSql)
     }
 
     manifestUrl.foreach { manifestUrl =>
@@ -162,14 +174,14 @@ private[redshift] class RedshiftWriter(
       val copyStatement = copySql(data.sqlContext, data.schema, params, creds, manifestUrl)
 
       try {
-        jdbcWrapper.executeInterruptibly(conn.prepareStatement(copyStatement))
+        redshiftWrapper.executeInterruptibly(conn, copyStatement)
       } catch {
         case e: SQLException =>
           log.error("SQLException thrown while running COPY query; will attempt to retrieve " +
             "more information by querying the STL_LOAD_ERRORS table", e)
           // Try to query Redshift's STL_LOAD_ERRORS table to figure out why the load failed.
           // See http://docs.aws.amazon.com/redshift/latest/dg/r_STL_LOAD_ERRORS.html for details.
-          conn.rollback()
+          redshiftWrapper.rollback(conn)
           val errorLookupQuery =
             """
               | SELECT *
@@ -177,8 +189,9 @@ private[redshift] class RedshiftWriter(
               | WHERE query = pg_last_query_id()
             """.stripMargin
           val detailedException: Option[SQLException] = try {
-            val results =
-              jdbcWrapper.executeQueryInterruptibly(conn.prepareStatement(errorLookupQuery))
+            val results = {
+              redshiftWrapper.executeQueryInterruptibly(conn, errorLookupQuery)
+            }
             if (results.next()) {
               val errCode = results.getInt("err_code")
               val errReason = results.getString("err_reason").trim
@@ -213,7 +226,114 @@ private[redshift] class RedshiftWriter(
     // Execute postActions
     params.postActions.foreach { action =>
       val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
-      jdbcWrapper.executeInterruptibly(conn.prepareStatement(actionSql))
+      redshiftWrapper.executeInterruptibly(conn, actionSql)
+    }
+  }
+  private[redshift] def createStagingTableSql(data: DataFrame,
+                                              params: MergedParameters): (TableName, String) = {
+    val staging_table_name = TableName(params.table.get.unescapedDatabaseName,
+      params.table.get.unescapedSchemaName,
+      "staging_" + UUID.randomUUID().toString.replace("-", ""))
+    val schemaSql = redshiftWrapper.schemaString(data.schema)
+    (staging_table_name, s"CREATE TABLE $staging_table_name ($schemaSql)")
+}
+  /**
+   * Perform the Redshift delete by:
+   *  1. create a staging table
+   *  2. copy data to delete into a staging table
+   *  3. delete source table using the staging table
+   *  4. drop the staging table
+   */
+  private def doRedshiftDelete(
+                              conn: RedshiftConnection,
+                              data: DataFrame,
+                              params: MergedParameters,
+                              creds: AWSCredentialsProvider,
+                              manifestUrl: Option[String]): Unit = {
+
+    val (staging_table_name, createStatement) = createStagingTableSql( data , params)
+    log.info("Creating staging table for delete within Redshift: {}", staging_table_name.toString())
+     redshiftWrapper.executeInterruptibly(conn, createStatement)
+
+    // Execute preActions
+    params.preActions.foreach { action =>
+      val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
+      redshiftWrapper.executeInterruptibly(conn, actionSql)
+    }
+    manifestUrl.foreach { manifestUrl =>
+      // Load the temporary data into the new file
+      val copyStatement = copySqlToTable(data.sqlContext, data.schema, params, creds,
+        manifestUrl, staging_table_name)
+
+      try {
+        redshiftWrapper.executeInterruptibly(conn, copyStatement)
+      } catch {
+        case e: SQLException =>
+          log.error("SQLException thrown while running COPY query; will attempt to retrieve " +
+            "more information by querying the STL_LOAD_ERRORS table", e)
+          // Try to query Redshift's STL_LOAD_ERRORS table to figure out why the load failed.
+          // See http://docs.aws.amazon.com/redshift/latest/dg/r_STL_LOAD_ERRORS.html for details.
+          redshiftWrapper.rollback(conn)
+          val errorLookupQuery =
+            """
+              | SELECT *
+              | FROM stl_load_errors
+              | WHERE query = pg_last_query_id()
+            """.stripMargin
+          val detailedException: Option[SQLException] = try {
+            val results = {
+              redshiftWrapper.executeQueryInterruptibly(conn, errorLookupQuery)
+            }
+            if (results.next()) {
+              val errCode = results.getInt("err_code")
+              val errReason = results.getString("err_reason").trim
+              val columnLength: String =
+                Option(results.getString("col_length"))
+                  .map(_.trim)
+                  .filter(_.nonEmpty)
+                  .map(n => s"($n)")
+                  .getOrElse("")
+              val exceptionMessage =
+                s"""
+                   |Error (code $errCode) while loading data into Redshift: "$errReason"
+                   |Table name: ${params.table.get}
+                   |Column name: ${results.getString("colname").trim}
+                   |Column type: ${results.getString("type").trim}$columnLength
+                   |Raw line: ${results.getString("raw_line")}
+                   |Raw field value: ${results.getString("raw_field_value")}
+                  """.stripMargin
+              Some(new SQLException(exceptionMessage, e))
+            } else {
+              None
+            }
+          } catch {
+            case NonFatal(e2) =>
+              log.error("Error occurred while querying STL_LOAD_ERRORS", e2)
+              None
+          }
+          throw detailedException.getOrElse(e)
+      }
+    }
+    val target_table_name = params.table.get
+    val deleteCondition = data.schema.fields.
+      map(f => s"""${target_table_name}."${f.name}"=${staging_table_name}."${f.name}"""").mkString(" AND ")
+
+    val deleteSql = s"""
+         |DELETE FROM ${target_table_name}
+         |USING ${staging_table_name}
+         |WHERE $deleteCondition
+         |""".stripMargin
+    log.info("Execute deleteSql")
+    redshiftWrapper.executeInterruptibly(conn, deleteSql)
+
+    val deleteStagingTableSql = s"DROP TABLE $staging_table_name"
+    log.info("Drop staging table: {}", deleteStagingTableSql)
+    redshiftWrapper.executeInterruptibly(conn, deleteStagingTableSql)
+
+    // Execute postActions
+    params.postActions.foreach { action =>
+      val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
+      redshiftWrapper.executeInterruptibly(conn, actionSql)
     }
   }
 
@@ -440,6 +560,11 @@ private[redshift] class RedshiftWriter(
         "https://github.com/databricks/spark-redshift/pull/157")
     }
 
+    if(saveMode != SaveMode.Overwrite && params.isDelete){
+      throw new IllegalArgumentException(
+        "For delete operations you must assign saveMode as SaveMode.Overwrite")
+    }
+
     val creds: AWSCredentialsProvider =
       AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
 
@@ -472,14 +597,14 @@ private[redshift] class RedshiftWriter(
       new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
 
     Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      params.rootTempDir, s3ClientFactory(creds, params))
+      params, s3ClientFactory(creds, params))
     Utils.collectMetrics(params)
 
     // Save the table's rows to S3:
     val manifestUrl = unloadData(
       sqlContext,
       data,
-      tempDir = params.createPerQueryTempDir(),
+      tempDir = params.createPerQueryTempDir(false),
       tempFormat = params.tempFormat,
       nullString = params.nullString,
       trimCSV = params.legacyTrimCSVWrites)
@@ -491,32 +616,39 @@ private[redshift] class RedshiftWriter(
       Thread.sleep(params.copyDelay)
     }
     val queryGroup = Utils.queryGroupInfo(Utils.Write, params.user_query_group_label, sqlContext)
-
     Utils.retry(params.copyRetryCount, params.copyDelay) {
-      val conn = jdbcWrapper.getConnectorWithQueryGroup(
-        params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
-      conn.setAutoCommit(false)
+      val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
+
+      redshiftWrapper.setAutoCommit(conn, false)
       try {
         val table: TableName = params.table.get
-        if (saveMode == SaveMode.Overwrite) {
+        if (saveMode == SaveMode.Overwrite && !params.isDelete) {
           // Overwrites must drop the table in case there has been a schema update
           log.info("Dropping table within Redshift: {}", table)
-          jdbcWrapper.executeInterruptibly(conn.prepareStatement(s"DROP TABLE IF EXISTS $table;"))
+          redshiftWrapper.executeInterruptibly(conn, s"DROP TABLE IF EXISTS $table;")
           if (!params.useStagingTable) {
             // If we're not using a staging table, commit now so that Redshift doesn't have to
             // maintain a snapshot of the old table during the COPY; this sacrifices atomicity for
             // performance.
-            conn.commit()
+            redshiftWrapper.commit(conn)
           }
         }
-        log.info("Loading new Redshift data to: {}", table)
-        doRedshiftLoad(conn, data, params, creds, manifestUrl)
-        conn.commit()
+        if (params.isDelete) {
+          log.info("Deleting Redshift data from : {}", table)
+          log.info(" - matching columns: {}",
+            data.schema.fields.map(f => s""""${f.name}"""").mkString(", "))
+          doRedshiftDelete(conn, data, params, creds, manifestUrl)
+        } else {
+          log.info("Loading new Redshift data to: {}", table)
+          doRedshiftLoad(conn, data, params, creds, manifestUrl)
+        }
+
+        redshiftWrapper.commit(conn)
       } catch {
         case NonFatal(e) =>
           try {
             log.error("Exception thrown during Redshift load; will roll back transaction", e)
-            conn.rollback()
+            redshiftWrapper.rollback(conn)
           } catch {
             case NonFatal(e2) =>
               log.error("Exception while rolling back transaction", e2)
@@ -529,4 +661,5 @@ private[redshift] class RedshiftWriter(
   }
 }
 
-object DefaultRedshiftWriter extends RedshiftWriter(DefaultJDBCWrapper, Utils.s3ClientBuilder)
+object DefaultRedshiftWriter extends
+  RedshiftWriter(new RedshiftWrapper(), Utils.s3ClientBuilder)

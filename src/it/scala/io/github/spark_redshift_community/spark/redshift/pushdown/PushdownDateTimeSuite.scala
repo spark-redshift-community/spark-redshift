@@ -26,7 +26,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     if (!preloaded_data.toBoolean) {
-      conn.prepareStatement(s"drop table if exists $test_tz_table").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_tz_table")
       createDateTimeTZDataInRedshift(test_tz_table)
     }
   }
@@ -34,7 +34,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
   override def afterAll(): Unit = {
     try {
       if (!preloaded_data.toBoolean) {
-        conn.prepareStatement(s"drop table if exists $test_tz_table").executeUpdate()
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_tz_table")
       }
     } finally {
       super.afterAll()
@@ -51,7 +51,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
   }
 
   protected def createDateTimeTZDataInRedshift(tableName: String): Unit = {
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""CREATE TABLE $tableName (
          | testid int,
          | testtimestamp timestamp,
@@ -59,7 +59,7 @@ abstract class PushdownDateTimeSuite extends IntegrationPushdownSuiteBase {
          | )""".stripMargin
     )
     // scalastyle:off
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""INSERT INTO $tableName VALUES
          | (null, null, null),
          | (0, 'Jun 1,2018 09:59:59', 'Jun 1,2018 09:59:59 EDT'),

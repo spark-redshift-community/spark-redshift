@@ -19,7 +19,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown.querygenerati
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, IntVariable, RedshiftSQLStatement}
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Coalesce, Descending, Expression, If, In, InSet, Literal, MakeDecimal, NullsFirst, NullsLast, SortOrder, UnscaledValue}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Coalesce, Descending, Expression, If, In, InSet, InSubquery, Literal, MakeDecimal, NullsFirst, NullsLast, SortOrder, UnscaledValue}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -122,6 +122,10 @@ private[querygeneration] object MiscStatement {
       //      case ScalarSubquery(subquery, _, _) =>
       case ScalarSubqueryExtractor(subquery, _, _, joinCond) if joinCond.isEmpty =>
         blockStatement(new QueryBuilder(subquery).statement)
+
+      case InSubquery(values, query) if values.size == 1 && query.joinCond.isEmpty =>
+        convertStatement(values.head, fields) + ConstantString("IN") +
+          blockStatement(new QueryBuilder(query.plan).statement)
 
       case UnscaledValue(child) =>
         child.dataType match {
