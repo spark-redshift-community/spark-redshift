@@ -106,6 +106,168 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
+  test("MERGE with redundant unmatched condition") {
+    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+      initialMergeTestData(sourceTable, targetTable)
+      sqlContext.sql(
+        s"""
+           |MERGE INTO $targetTable USING
+           | $sourceTable ON
+           | $targetTable.id = $sourceTable.new_id
+           | WHEN MATCHED AND $sourceTable.new_id <= 3 THEN DELETE
+           | WHEN MATCHED THEN DELETE
+           | WHEN NOT MATCHED AND $sourceTable.new_id > 3 THEN INSERT (id, status, name) VALUES
+           |    ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)
+           | WHEN NOT MATCHED THEN INSERT (id, status, name) VALUES
+           |    ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)
+           |""".stripMargin)
+
+      checkSqlStatement(
+        s"""
+           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           | WHEN MATCHED THEN DELETE
+           | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME") VALUES
+           |     ("PUBLIC"."$sourceTable"."NEW_ID", "PUBLIC"."$sourceTable"."STATUS",
+           |     "PUBLIC"."$sourceTable"."NAME" )
+           |""".stripMargin)
+
+      checkAnswer(
+        sqlContext.sql(s"select * from $targetTable"),
+        Seq( Row(1, 400, "john"),
+          Row(3, 402, "mike"),
+          Row(5, 405, "victor"),
+          Row(6, 503, "pam"))
+      )
+    }
+  }
+
+  test("negative test: MERGE with all unmatched action conditioned") {
+    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+      initialMergeTestData(sourceTable, targetTable)
+      try {
+        sqlContext.sql(
+          s"""
+             |MERGE INTO $targetTable USING
+             | $sourceTable ON
+             | $targetTable.id = $sourceTable.new_id
+             | WHEN MATCHED THEN DELETE
+             | WHEN NOT MATCHED AND $sourceTable.new_id > 3 THEN INSERT (id, status, name) VALUES
+             |    ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)
+             | WHEN NOT MATCHED AND $sourceTable.new_id <= 3 THEN INSERT (id, status, name) VALUES
+             |    ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)
+             |""".stripMargin)
+      } catch {
+        case e: Throwable =>
+          assert(e.getMessage.equals("MERGE INTO TABLE is not supported temporarily."))
+      }
+    }
+  }
+
+  test("MERGE with different ordering of unmatched action") {
+    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+      initialMergeTestData(sourceTable, targetTable)
+      sqlContext.sql(
+        s"""
+           |MERGE INTO $targetTable USING
+           | $sourceTable ON
+           | $targetTable.id = $sourceTable.new_id
+           | WHEN MATCHED AND $sourceTable.new_id <= 3 THEN DELETE
+           | WHEN MATCHED THEN DELETE
+           | WHEN NOT MATCHED AND $sourceTable.new_id > 3 THEN INSERT (id, status, name) VALUES
+           |    ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)
+           | WHEN NOT MATCHED THEN INSERT (status, name, id) VALUES
+           |    ($sourceTable.status, $sourceTable.name, $sourceTable.new_id)
+           |""".stripMargin)
+
+      checkSqlStatement(
+        s"""
+           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           | WHEN MATCHED THEN DELETE
+           | WHEN NOT MATCHED THEN INSERT ("STATUS", "NAME", "ID") VALUES
+           |     ("PUBLIC"."$sourceTable"."STATUS", "PUBLIC"."$sourceTable"."NAME",
+           |     "PUBLIC"."$sourceTable"."NEW_ID" )
+           |""".stripMargin)
+
+      checkAnswer(
+        sqlContext.sql(s"select * from $targetTable"),
+        Seq( Row(1, 400, "john"),
+          Row(3, 402, "mike"),
+          Row(5, 405, "victor"),
+          Row(6, 503, "pam"))
+      )
+    }
+  }
+
+  test("MERGE with complex redundant INSERT") {
+    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+      initialMergeTestData(sourceTable, targetTable)
+      sqlContext.sql(
+        s"""
+           |MERGE INTO $targetTable USING
+           | $sourceTable ON
+           | $targetTable.id = $sourceTable.new_id
+           | WHEN MATCHED AND $sourceTable.new_id <= 3 THEN DELETE
+           | WHEN MATCHED THEN DELETE
+           | WHEN NOT MATCHED AND $sourceTable.new_id > 3 THEN INSERT (id, status, name) VALUES
+           |    ( $sourceTable.new_id + 10,
+           |      CASE WHEN $sourceTable.status % 2 = 1 THEN 999 ELSE 888 END ,
+           |      CONCAT($sourceTable.name,' JR'))
+           | WHEN NOT MATCHED THEN INSERT (status, name, id) VALUES
+           |    ( CASE WHEN $sourceTable.status % 2 = 1 THEN 999 ELSE 888 END ,
+           |      CONCAT($sourceTable.name,' JR') ,
+           |      $sourceTable.new_id + 10)
+           |""".stripMargin)
+
+      checkSqlStatement(
+        s"""
+           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           | WHEN MATCHED THEN DELETE
+           | WHEN NOT MATCHED THEN INSERT ("STATUS", "NAME", "ID") VALUES
+           |  ( CASE WHEN ( ( "PUBLIC"."$sourceTable"."STATUS" % 2 ) = 1 ) THEN 999 ELSE 888 END,
+           |    CONCAT ( "PUBLIC"."$sourceTable"."NAME" , ' JR' ),
+           |    CAST ( ( CAST ( "PUBLIC"."$sourceTable"."NEW_ID" AS INTEGER ) + 10 ) AS SMALLINT))
+           |""".stripMargin)
+
+      checkAnswer(
+        sqlContext.sql(s"select * from $targetTable"),
+        Seq( Row(1, 400, "john"),
+          Row(3, 402, "mike"),
+          Row(5, 405, "victor"),
+          Row(16, 999, "pam JR"))
+      )
+    }
+  }
+
+  test("negative test: MERGE with complex irredundant INSERT") {
+    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+      initialMergeTestData(sourceTable, targetTable)
+      try {
+        sqlContext.sql(
+          s"""
+             |MERGE INTO $targetTable USING
+             | $sourceTable ON
+             | $targetTable.id = $sourceTable.new_id
+             | WHEN MATCHED AND $sourceTable.new_id <= 3 THEN DELETE
+             | WHEN MATCHED THEN DELETE
+             | WHEN NOT MATCHED AND $sourceTable.new_id > 3 THEN INSERT (id, status, name) VALUES
+             |    ( $sourceTable.new_id + 10,
+             |      CASE WHEN $sourceTable.status % 2 = 1 THEN 999 ELSE 888 END ,
+             |      CONCAT($sourceTable.name,' JR.'))
+             | WHEN NOT MATCHED THEN INSERT (status, name, id) VALUES
+             |    ( CASE WHEN $sourceTable.status % 2 = 1 THEN 999 ELSE 888 END ,
+             |      CONCAT($sourceTable.name,' JR') ,
+             |      $sourceTable.new_id + 10)
+             |""".stripMargin)
+      } catch {
+        case e: Throwable =>
+          assert(e.getMessage.equals("MERGE INTO TABLE is not supported temporarily."))
+      }
+    }
+  }
+
   test("MERGE with DELETE and INSERT from source and constant") {
     withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
       initialMergeTestData(sourceTable, targetTable)
@@ -278,6 +440,174 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
+  test("Basic Merge with redundant UPDATE") {
+    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+      initialMergeTestData(sourceTable, targetTable)
+      val query = s"""MERGE INTO $targetTable
+                     |USING $sourceTable
+                     |ON $targetTable.id = $sourceTable.new_id
+                     |WHEN MATCHED AND $sourceTable.new_id < 3 THEN
+                     |    UPDATE SET $targetTable.name = $sourceTable.name
+                     |WHEN MATCHED THEN
+                     |    UPDATE SET $targetTable.name = $sourceTable.name
+                     |WHEN NOT MATCHED THEN
+                     |    INSERT (id, status, name) VALUES
+                     |    ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)"""
+        .stripMargin
+      sqlContext.sql(query)
+
+      checkSqlStatement(
+        s"""
+           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           | WHEN MATCHED THEN
+           |     UPDATE SET "NAME" = "PUBLIC"."$sourceTable"."NAME"
+           | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME") VALUES
+           |     ("PUBLIC"."$sourceTable"."NEW_ID", "PUBLIC"."$sourceTable"."STATUS",
+           |     "PUBLIC"."$sourceTable"."NAME" )
+           |""".stripMargin)
+
+      checkAnswer(
+        sqlContext.sql(s"select * from $targetTable"),
+        Seq( Row(1, 400, "john"),
+          Row(2, 401, "emily"),
+          Row(3, 402, "mike"),
+          Row(4, 403, "emma"),
+          Row(5, 405, "victor"),
+          Row(6, 503, "pam"))
+      )
+    }
+  }
+
+  test("MERGE with complex redundant UPDATE") {
+    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+      initialMergeTestData(sourceTable, targetTable)
+      sqlContext.sql(
+        s"""
+           |MERGE INTO $targetTable USING
+           | $sourceTable ON
+           | $targetTable.id = $sourceTable.new_id
+           | WHEN MATCHED AND $sourceTable.new_id < 3 THEN
+           | UPDATE SET
+           |    $targetTable.id = $sourceTable.new_id + 10,
+           |    $targetTable.name = CONCAT($sourceTable.name,' II'),
+           |    $targetTable.status = CASE WHEN $sourceTable.status % 2 = 1 THEN 999 ELSE 888 END
+           | WHEN MATCHED THEN
+           | UPDATE SET
+           |    $targetTable.name = CONCAT($sourceTable.name,' II'),
+           |    $targetTable.status = CASE WHEN $sourceTable.status % 2 = 1 THEN 999 ELSE 888 END,
+           |    $targetTable.id = $sourceTable.new_id + 10
+           | WHEN NOT MATCHED THEN INSERT (ID, STATUS, NAME) VALUES
+           |     ($sourceTable.new_id, $sourceTable.status, $sourceTable.name )
+           """.stripMargin)
+
+      checkSqlStatement(
+        s"""
+           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           | WHEN MATCHED THEN UPDATE SET
+           |  "NAME" = CONCAT ( "PUBLIC"."$sourceTable"."NAME" , ' II' ),
+           |  "STATUS" = CASE WHEN ( ( "PUBLIC"."$sourceTable"."STATUS" % 2 ) = 1 )
+           |      THEN 999 ELSE 888 END,
+           |  "ID" = CAST ( ( CAST ( "PUBLIC"."$sourceTable"."NEW_ID" AS INTEGER ) + 10 )
+           |      AS SMALLINT )
+           | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME")VALUES
+           |    ("PUBLIC"."$sourceTable"."NEW_ID",
+           |     "PUBLIC"."$sourceTable"."STATUS",
+           |     "PUBLIC"."$sourceTable"."NAME" )
+           |""".stripMargin)
+
+      checkAnswer(
+        sqlContext.sql(s"select * from $targetTable"),
+        Seq( Row(1, 400, "john"),
+          Row(12, 999, "emily II"),
+          Row(3, 402, "mike"),
+          Row(14, 888, "emma II"),
+          Row(5, 405, "victor"),
+          Row(6, 503, "pam"))
+      )
+    }
+  }
+
+  test("negative test: MERGE with complex irredundant UPDATE") {
+    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+      initialMergeTestData(sourceTable, targetTable)
+      try {
+        sqlContext.sql(
+          s"""
+             |MERGE INTO $targetTable USING
+             | $sourceTable ON
+             | $targetTable.id = $sourceTable.new_id
+             | WHEN MATCHED AND $sourceTable.new_id < 3 THEN
+             | UPDATE SET
+             |    $targetTable.id = $sourceTable.new_id + 10,
+             |    $targetTable.name = CONCAT($sourceTable.name,' II'),
+             |    $targetTable.status = CASE WHEN $sourceTable.status % 2 = 1 THEN 999 ELSE 888 END
+             | WHEN MATCHED THEN
+             | UPDATE SET
+             |    $targetTable.name = CONCAT($sourceTable.name,' II'),
+             |    $targetTable.status = CASE WHEN $sourceTable.status % 2 = 0 THEN 999 ELSE 888 END,
+             |    $targetTable.id = $sourceTable.new_id + 10
+             | WHEN NOT MATCHED THEN INSERT (ID, STATUS, NAME) VALUES
+             |     ($sourceTable.new_id, $sourceTable.status, $sourceTable.name )
+           """.stripMargin)
+      } catch {
+        case e: Throwable =>
+          assert(e.getMessage.equals("MERGE INTO TABLE is not supported temporarily."))
+      }
+    }
+  }
+
+  test("MERGE with alias complex redundant UPDATE") {
+    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+      initialMergeTestData(sourceTable, targetTable)
+      sqlContext.sql(
+        s"""
+           |MERGE INTO $targetTable USING
+           | $sourceTable st ON
+           | $targetTable.id = st.new_id
+           | WHEN MATCHED AND st.new_id < 3 THEN
+           | UPDATE SET
+           |    $targetTable.id = st.new_id + 10,
+           |    $targetTable.name = CONCAT(st.name,' II'),
+           |    $targetTable.status = CASE WHEN st.status % 2 = 1 THEN 999 ELSE 888 END
+           | WHEN MATCHED THEN
+           | UPDATE SET
+           |    $targetTable.name = CONCAT(st.name,' II'),
+           |    $targetTable.status = CASE WHEN st.status % 2 = 1 THEN 999 ELSE 888 END,
+           |    $targetTable.id = st.new_id + 10
+           | WHEN NOT MATCHED THEN INSERT (ID, STATUS, NAME) VALUES
+           |     (st.new_id, st.status, st.name )
+           """.stripMargin)
+
+      checkSqlStatement(
+        s"""
+           |MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           | WHEN MATCHED THEN UPDATE SET
+           |  "NAME" = CONCAT ( "PUBLIC"."$sourceTable"."NAME" , ' II' ),
+           |  "STATUS" = CASE WHEN ( ( "PUBLIC"."$sourceTable"."STATUS" % 2 ) = 1 )
+           |      THEN 999 ELSE 888 END,
+           |  "ID" = CAST ( ( CAST ( "PUBLIC"."$sourceTable"."NEW_ID" AS INTEGER ) + 10 )
+           |      AS SMALLINT )
+           | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME")VALUES
+           |    ("PUBLIC"."$sourceTable"."NEW_ID",
+           |     "PUBLIC"."$sourceTable"."STATUS",
+           |     "PUBLIC"."$sourceTable"."NAME" )
+           |""".stripMargin)
+
+      checkAnswer(
+        sqlContext.sql(s"select * from $targetTable"),
+        Seq( Row(1, 400, "john"),
+          Row(12, 999, "emily II"),
+          Row(3, 402, "mike"),
+          Row(14, 888, "emma II"),
+          Row(5, 405, "victor"),
+          Row(6, 503, "pam"))
+      )
+    }
+  }
+
   test("Basic_Merge with alias") {
     withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
       initialMergeTestData(sourceTable, targetTable)
@@ -352,7 +682,6 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
       )
     }
   }
-
 
   test("Basic_Merge with mixed source and target column in UPDATE") {
     withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>

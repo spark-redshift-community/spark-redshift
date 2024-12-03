@@ -310,8 +310,48 @@ case class MergeQuery(targetQuery: SourceQuery,
       )
     }
 
+    def checkIdenticalAction(action1: MergeAction, action2: MergeAction)
+        : Boolean = {
+      implicit object AssignmentOrdering extends Ordering[Assignment] {
+        def compare(a1: Assignment, a2: Assignment): Int =
+          a1.toString().compareTo(a2.toString())
+      }
+      (action1, action2) match {
+        case (DeleteAction(_), DeleteAction(_)) =>
+          true
+        case (InsertAction(_, assignments1), InsertAction(_, assignments2)) =>
+          assignments1.sorted(AssignmentOrdering) == assignments2.sorted(AssignmentOrdering)
+        case (UpdateAction(_, assignments1), UpdateAction(_, assignments2)) =>
+          assignments1.sorted(AssignmentOrdering) == assignments2.sorted(AssignmentOrdering)
+        case _ =>
+          false
+      }
+    }
+
+    def removeRedundantMergeActions(mergeActions: Seq[MergeAction]) : Seq[MergeAction] = {
+      // Redundant unmatched condition occurs when:
+      // 1. There are multiple matched/unmatched action
+      // 2. One of the condition is empty (unconditioned)
+      // 3. All actions are identical
+      val unconditionedAction = mergeActions.find(action => action.condition.isEmpty)
+      val identicalAction = if (unconditionedAction.nonEmpty) {
+        mergeActions.forall(checkIdenticalAction(_, unconditionedAction.get))
+      } else {
+        false
+      }
+
+      if (identicalAction) {
+        Seq(unconditionedAction.get)
+      } else {
+        mergeActions
+      }
+    }
+
+    val localNotMatchedActions = removeRedundantMergeActions(notMatchedActions)
+    val localMatchedActions = removeRedundantMergeActions(matchedActions)
+
     // Early Rejection invalid syntax
-    if( !(matchedActions.size <= 1 && notMatchedActions.size == 1 &&
+    if( !(localMatchedActions.size <= 1 && localNotMatchedActions.size == 1 &&
       notMatchedBySourceActions.isEmpty) ) {
       throw new RedshiftPushdownUnsupportedException(
         RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
@@ -323,8 +363,8 @@ case class MergeQuery(targetQuery: SourceQuery,
     }
 
     // Reject AND in conditional matched/unmatched action
-    if (matchedActions.nonEmpty && matchedActions.head.condition.nonEmpty ||
-        notMatchedActions.head.condition.nonEmpty  ) {
+    if (localMatchedActions.nonEmpty && localMatchedActions.head.condition.nonEmpty ||
+        localNotMatchedActions.head.condition.nonEmpty  ) {
       // the "AND condition" in matched/unmatched action is not supported by Redshift
       throw new RedshiftPushdownUnsupportedException(
         RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
@@ -373,7 +413,7 @@ case class MergeQuery(targetQuery: SourceQuery,
         replaceAttributeQualifier(targetTableNameStrQualifier, sourceTableNameStrQualifier, a)
     })
 
-    val matchedExpression = matchedActions.headOption match {
+    val matchedExpression = localMatchedActions.headOption match {
       case Some(UpdateAction(_, assignments)) =>
         val assignmentsStatement = assignments.map { assignment =>
           val assignmentExpr = setAssignmentQualifier(assignment)
@@ -388,7 +428,7 @@ case class MergeQuery(targetQuery: SourceQuery,
           cols.withQualifier(targetTableNameStrQualifier))
         "UPDATE SET " + expressionToStatement(nopAssignment)
       case _ =>
-        val errStmt = expressionToStatement(matchedActions.head).toString
+        val errStmt = expressionToStatement(localMatchedActions.head).toString
         throw new RedshiftPushdownUnsupportedException(
           RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
           s"Unsupported UNMATCHED Action of MERGE $errStmt. Only UPDATE and DELETE.",
@@ -397,7 +437,7 @@ case class MergeQuery(targetQuery: SourceQuery,
         )
     }
 
-    val unMatchedExpression = notMatchedActions.head match {
+    val unMatchedExpression = localNotMatchedActions.head match {
       case InsertAction(_, assignments) =>
         val pairs = assignments.map { assignment =>
           val assignmentExpr = setAssignmentQualifier(assignment)
@@ -408,7 +448,7 @@ case class MergeQuery(targetQuery: SourceQuery,
         "(" + pairs.map(_._1).mkString(", ") + ") " +
           "VALUES (" + pairs.map(_._2).mkString(", ") + " )"
        case _ =>
-         val errStmt = expressionToStatement(notMatchedActions.head).toString
+         val errStmt = expressionToStatement(localNotMatchedActions.head).toString
          throw new RedshiftPushdownUnsupportedException(
            RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
            s"Unsupported UNMATCHED Action of MERGE $errStmt. Only INSERT is supported.",
