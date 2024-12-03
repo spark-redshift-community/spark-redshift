@@ -36,32 +36,32 @@ class DataApiCommand(connection: DataAPIConnection,
   private val STATUS_FAILED = "FAILED"
 
   def execute(sql: String): Boolean = {
-    // Execute and wait for the command to complete.
-    executeAndWait(sql)
+    // Validate, execute and wait for the command to complete.
+    checkExecuteAndWait(Seq(sql))
 
     // Return whether there are results.
     hasResults()
   }
 
   def executeUpdate(sql: String): Long = {
-    // Execute and wait for the command to complete.
-    executeAndWait(sql)
+    // Validate, execute and wait for the command to complete.
+    checkExecuteAndWait(Seq(sql))
 
     // Get the number of result rows
     getResultRows()
   }
 
   def executeQueryInterruptibly(sql: String): RedshiftResults = {
-    // Execute and wait for the command to complete.
-    executeAndWait(sql)
+    // Validate, execute and wait for the command to complete.
+    checkExecuteAndWait(Seq(sql))
 
     // Get the results
     getResults()
   }
 
   def executeBatch(sqls: Seq[String]): Boolean = {
-    // Execute and wait for the commands to complete.
-    batchExecuteAndWait(sqls)
+    // Validate, execute and wait for the command to complete.
+    checkExecuteAndWait(sqls)
 
     // Return whether there are results.
     hasResults()
@@ -82,10 +82,44 @@ class DataApiCommand(connection: DataAPIConnection,
       .getOrElse(s"Client:${Utils.DEFAULT_APP_NAME}")
 
   /**
+   * Primary entry point for executing commands using the Data API. All public methods should
+   * use this method to federate their calls to Data API.
+   * @param sqls The set of commands to execute.
+   */
+  private def checkExecuteAndWait(sqls: Seq[String]): Unit = {
+    // Make sure the input is not empty.
+    if (sqls == null || sqls.isEmpty || sqls.exists(_.isEmpty)) {
+      throw new IllegalArgumentException("Data API cannot execute missing or empty commands!")
+    }
+
+    // Prepend setting the query group as a separate command if it's requested.
+    val updatedSqls = if (connection.queryGroup.isDefined) {
+      val strQG = s"""set query_group to '${connection.queryGroup.get}'"""
+      ArrayBuffer(strQG) ++= sqls
+    } else {
+      sqls
+    }
+
+    // Make sure there are not parameters being used with multiple commands or the query group
+    // since Data API does not support this.
+    if (params.isDefined && (updatedSqls.length > 1)) {
+      throw new IllegalArgumentException(
+        "Data API parameters require a single command with no query group specified!")
+    }
+
+    // Check whether we should do a single or batch execution.
+    if (updatedSqls.length == 1) {
+      singleExecuteAndWait(updatedSqls.head)
+    } else {
+      batchExecuteAndWait(updatedSqls)
+    }
+  }
+
+  /**
    * Executes a single statement. Note that multi-part statements are not permitted by DataAPI.
    * @param sql The command to execute.
    */
-  private def executeAndWait(sql: String): Unit = {
+  private def singleExecuteAndWait(sql: String): Unit = {
     // Make sure the input is not empty.
     if (sql == null || sql.isEmpty) {
       throw new IllegalArgumentException("Cannot execute null or empty command!")
@@ -185,19 +219,40 @@ class DataApiCommand(connection: DataAPIConnection,
     client = Utils.createDataApiClient(connection.region)
   }
 
+  val DATA_API_RETRY_DELAY_MIN_KEY = "spark.datasource.redshift.community.data_api_retry_delay_min"
+  val DATA_API_RETRY_DELAY_MAX_KEY = "spark.datasource.redshift.community.data_api_retry_delay_max"
+  val DATA_API_RETRY_DELAY_MULT_KEY = "spark.datasource.redshift.community.data_api_retry_delay_mult"
+  val DATA_API_RETRY_DELAY_MIN_DEFAULT = "100.0" // milliseconds
+  val DATA_API_RETRY_DELAY_MAX_DEFAULT = "250.0" // milliseconds
+  val DATA_API_RETRY_DELAY_MULT_DEFAULT = "1.25" // Multiplier
+  private def getDataApiDelayParams(): (Double, Double, Double) = {
+    // Get the delay parameters
+    val retryDelayMin = Utils.getSparkConfigValue(
+      DATA_API_RETRY_DELAY_MIN_KEY, DATA_API_RETRY_DELAY_MIN_DEFAULT).toDouble
+    val retryDelayMax = Utils.getSparkConfigValue(
+      DATA_API_RETRY_DELAY_MAX_KEY, DATA_API_RETRY_DELAY_MAX_DEFAULT).toDouble
+    val retryDelayMult = Utils.getSparkConfigValue(
+      DATA_API_RETRY_DELAY_MULT_KEY, DATA_API_RETRY_DELAY_MULT_DEFAULT).toDouble
+
+    (retryDelayMin, retryDelayMax, retryDelayMult)
+  }
+
   private def awaitCompletion(): Unit = {
     // Check the status of the result.
     val describeStatementRequest = new DescribeStatementRequest()
     describeStatementRequest.setId(requestId)
     var describeResult: DescribeStatementResult = null
 
+    // Get the retry delays.
+    val (retryDelayMin, retryDelayMax, retryDelayMult) = getDataApiDelayParams()
+
     // Poll until the result is ready.
-    var period = connection.retryDelayMin
+    var period = retryDelayMin
     do {
       // Use an exponential-backoff and wait policy
       Thread.sleep(period.toLong)
-      period *= connection.retryDelayMult
-      period = Math.min(period, connection.retryDelayMax)
+      period *= retryDelayMult
+      period = Math.min(period, retryDelayMax)
 
       // Check if the command is complete.
       describeResult = client.describeStatement(describeStatementRequest)
@@ -229,8 +284,21 @@ class DataApiCommand(connection: DataAPIConnection,
   }
 
   private def getResults(): DataApiResults = {
+    val describeStatementRequest = new DescribeStatementRequest()
+    describeStatementRequest.setId(requestId)
+    val describeResults = client.describeStatement(describeStatementRequest)
+
+    // Check if we have sub-statement results. If so, use the last one since we
+    // can prefix sqls with the setting of the query group.
+    val resultId = if ((describeResults.getSubStatements == null) ||
+                       describeResults.getSubStatements.asScala.isEmpty) {
+      requestId
+    } else {
+      describeResults.getSubStatements.asScala.last.getId
+    }
+
     val statementResultRequest = new GetStatementResultRequest()
-    statementResultRequest.setId(requestId)
+    statementResultRequest.setId(resultId)
     val results = client.getStatementResult(statementResultRequest)
     DataApiResults(results)
   }
@@ -239,7 +307,15 @@ class DataApiCommand(connection: DataAPIConnection,
     val describeStatementRequest = new DescribeStatementRequest()
     describeStatementRequest.setId(requestId)
     val describeResults = client.describeStatement(describeStatementRequest)
-    describeResults.getResultRows
+
+    // Check if we have sub-statement results. If so, use the last one since we
+    // can prefix sqls with the setting of the query group.
+    if ((describeResults.getSubStatements == null) ||
+        describeResults.getSubStatements.asScala.isEmpty) {
+      describeResults.getResultRows
+    } else {
+      describeResults.getSubStatements.asScala.last.getResultRows
+    }
   }
 
   private def cancelRequest(): Boolean = {

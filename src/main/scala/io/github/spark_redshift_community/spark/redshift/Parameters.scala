@@ -44,15 +44,11 @@ private[redshift] object Parameters {
   val PARAM_DATA_API_USER: String = "data_api_user"
   val PARAM_DATA_API_CLUSTER: String = "data_api_cluster"
   val PARAM_DATA_API_WORKGROUP: String = "data_api_workgroup"
-  val PARAM_DATA_API_RETRY_DELAY_MIN = "data_api_retry_delay_min"
-  val PARAM_DATA_API_RETRY_DELAY_MAX = "data_api_retry_delay_max"
-  val PARAM_DATA_API_RETRY_DELAY_MULT = "data_api_retry_delay_mult"
   val PARAM_TEMPDIR_WRITE_ONLY = "tempdir_write_only"
   val PARAM_TEMPORARY_AWS_ACCESS_KEY_ID = "temporary_aws_access_key_id"
   val PARAM_TEMPORARY_AWS_SECRET_ACCESS_KEY = "temporary_aws_secret_access_key"
   val PARAM_TEMPORARY_AWS_SESSION_TOKEN = "temporary_aws_session_token"
   val PARAM_LEGACY_MAPPING_SHORT_TO_INT: String = "legacy_mapping_short_to_int"
-  val PARAM_SKIP_DSW_WORKAROUND = "skip_dsw_workaround"
   val PARAM_IS_DELETE: String = "is_delete"
   val PARAM_CHECK_S3_BUCKET_USAGE: String = "check_s3_bucket_usage"
 
@@ -83,12 +79,8 @@ private[redshift] object Parameters {
     PARAM_LEGACY_TRIM_CSV_WRITES -> "false",
     PARAM_TEMPDIR_REGION -> "",
     PARAM_USER_QUERY_GROUP_LABEL -> "",
-    PARAM_DATA_API_RETRY_DELAY_MIN -> "100.0", // milliseconds
-    PARAM_DATA_API_RETRY_DELAY_MAX -> "250.0", // milliseconds
-    PARAM_DATA_API_RETRY_DELAY_MULT -> "1.25",  // Multiplier
     PARAM_USER_QUERY_GROUP_LABEL -> "",
     PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false",
-    PARAM_SKIP_DSW_WORKAROUND -> "false",
     PARAM_IS_DELETE -> "false",
     PARAM_CHECK_S3_BUCKET_USAGE -> "true"
   )
@@ -543,9 +535,6 @@ private[redshift] object Parameters {
     def dataApiUser: Option[String] = parameters.get(PARAM_DATA_API_USER)
     def dataApiCluster: Option[String] = parameters.get(PARAM_DATA_API_CLUSTER)
     def dataApiWorkgroup: Option[String] = parameters.get(PARAM_DATA_API_WORKGROUP)
-    def dataApiRetryDelayMin: Double = parameters(PARAM_DATA_API_RETRY_DELAY_MIN).toDouble
-    def dataApiRetryDelayMax: Double = parameters(PARAM_DATA_API_RETRY_DELAY_MAX).toDouble
-    def dataApiRetryDelayMult: Double = parameters(PARAM_DATA_API_RETRY_DELAY_MULT).toDouble
 
     /*
      * Whether we are using DataAPI-based connections or not.
@@ -554,9 +543,6 @@ private[redshift] object Parameters {
       dataApiRegion.isDefined || dataApiDatabase.isDefined || dataApiUser.isDefined ||
       dataApiCluster.isDefined || dataApiWorkgroup.isDefined
     }
-
-    def skipDSWWorkaround: Boolean
-      = parameters.getOrElse(PARAM_SKIP_DSW_WORKAROUND, "false").toBoolean
 
     /*
      * Gets a unique cluster name based upon the available parameters.

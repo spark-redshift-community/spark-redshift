@@ -170,7 +170,6 @@ trait IntegrationSuiteBase
     options += ("tempdir" -> tempDir)
     options += (PARAM_TEMPDIR_REGION -> AWS_S3_SCRATCH_SPACE_REGION)
     options += (PARAM_AUTO_PUSHDOWN -> auto_pushdown)
-    options += (PARAM_SKIP_DSW_WORKAROUND -> "true")
 
     // Add the Redshift interface-specific options
     if ((AWS_REDSHIFT_INTERFACE == null) || (AWS_REDSHIFT_INTERFACE == JDBC_INTERFACE)) {

@@ -262,27 +262,30 @@ private[redshift] case class RedshiftRelation(
   def buildScanFromSQL[Row](statement: RedshiftSQLStatement,
                             schema: Option[StructType],
                             threadName: String = Thread.currentThread.getName): RDD[Row] = {
+    // We must use a connection without a query group for retrieving the schema because
+    // Data API only supports parameters with single statement executions and setting
+    // the query group requires a batch execution.
+    val conn = redshiftWrapper.getConnector(params)
+    val resultSchema: StructType = try {
+      getResultSchema(statement, schema, conn)
+    } finally {
+      conn.close()
+    }
+
+    val credsProvider =
+      AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
     val queryGroup = Utils.queryGroupInfo(Utils.Read, params.user_query_group_label, sqlContext)
-    val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
-    val credsProvider = AWSCredentialsUtils.load(
-      params, sqlContext.sparkContext.hadoopConfiguration)
-
-    val (resultSchema, tempDir) = try {
-
-      val resultSchema: StructType = getResultSchema(statement, schema, conn)
-
+    val connWithQG = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
+    val tempDir: Option[String] = try {
       checkS3BucketUsage(params, credsProvider)
-
       Utils.collectMetrics(params)
 
       // If the same query was run before, get the result s3 path from the cache.
       // Otherwise, unload the data.
-      val tempDir = GetCachedS3QueryPath(statement, threadName)
-        .orElse(unloadDataToS3(statement, conn, resultSchema, credsProvider, threadName))
-
-      (resultSchema, tempDir)
+      GetCachedS3QueryPath(statement, threadName)
+        .orElse(unloadDataToS3(statement, connWithQG, resultSchema, credsProvider, threadName))
     } finally {
-      conn.close()
+      connWithQG.close()
     }
 
     val filesToRead: Seq[String] = getFilesToRead(tempDir.get, sqlContext.sparkContext)

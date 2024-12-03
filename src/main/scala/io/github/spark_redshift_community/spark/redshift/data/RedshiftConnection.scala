@@ -44,10 +44,6 @@ private[redshift] case class DataAPIConnection(
     dbUser: Option[String],
     clusterIdentifier: Option[String],
     workgroup: Option[String],
-    retryDelayMin: Double,
-    retryDelayMax: Double,
-    retryDelayMult: Double,
-    skipDSWWorkaround: Boolean,
     secretId: Option[String] = None,
     queryGroup: Option[String] = None
   ) extends RedshiftConnection {

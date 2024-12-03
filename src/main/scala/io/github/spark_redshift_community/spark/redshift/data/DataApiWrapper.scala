@@ -245,10 +245,6 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
       params.dataApiUser,
       params.dataApiCluster,
       params.dataApiWorkgroup,
-      params.dataApiRetryDelayMin,
-      params.dataApiRetryDelayMax,
-      params.dataApiRetryDelayMult,
-      params.skipDSWWorkaround,
       params.secretId)
   }
 
@@ -261,10 +257,6 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
       params.dataApiUser,
       params.dataApiCluster,
       params.dataApiWorkgroup,
-      params.dataApiRetryDelayMin,
-      params.dataApiRetryDelayMax,
-      params.dataApiRetryDelayMult,
-      params.skipDSWWorkaround,
       params.secretId,
       Option(queryGroup))
   }

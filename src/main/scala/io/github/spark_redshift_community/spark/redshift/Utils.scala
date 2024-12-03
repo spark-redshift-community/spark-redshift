@@ -354,38 +354,14 @@ private[redshift] object Utils {
         .build()
   }
 
-  def createIAMClient(region: Option[String] = None): AmazonIdentityManagement = {
-    val tempRegion = region.getOrElse(getDefaultRegion())
-    AmazonIdentityManagementClientBuilder.standard
-      .withRegion(tempRegion)
-      .build()
-  }
-
-  def createSTSClient(region: Option[String] = None): AWSSecurityTokenService = {
-    val tempRegion = region.getOrElse(getDefaultRegion())
-    AWSSecurityTokenServiceClientBuilder.standard
-      .withRegion(tempRegion)
-      .build()
-  }
-
-  val CONNECTOR_GLUE_ENDPOINT = "spark.datasource.redshift.community.glue_endpoint"
-  def createGlueClient(region: Option[String] = None): AWSGlue = {
-    val tempRegion = region.getOrElse(getDefaultRegion())
-    val spark = SparkSession.getActiveSession
-    val endpoint = if (spark.isDefined) {
-      spark.get.conf.get(CONNECTOR_GLUE_ENDPOINT, "").trim
-    } else ""
-
-    // Set the endpoint or the region (since we can't set both).
-    // We assume the endpoint is in the same region as the connector.
-    var client = AWSGlueClient.builder
-    if (endpoint.nonEmpty) {
-      client = client.withEndpointConfiguration(new EndpointConfiguration(endpoint, tempRegion))
+  def getSparkConfigValue(key: String, default: String): String = {
+    val sparkSession = SparkSession.getActiveSession.getOrElse(
+      SparkSession.getDefaultSession.orNull)
+    if (sparkSession == null) {
+      default
     } else {
-      client = client.withRegion(tempRegion)
+      sparkSession.conf.get(key, default)
     }
-
-    client.build()
   }
 
   val CONNECTOR_DATA_API_ENDPOINT = "spark.datasource.redshift.community.data_api_endpoint"
@@ -393,10 +369,6 @@ private[redshift] object Utils {
                           creds: Option[AWSCredentialsProvider] = None): AWSRedshiftDataAPI = {
     // Set the region
     val tempRegion = region.getOrElse(getDefaultRegion())
-    val spark = SparkSession.getActiveSession
-    val endpoint = if (spark.isDefined) {
-      spark.get.conf.get(CONNECTOR_DATA_API_ENDPOINT, "").trim
-    } else ""
 
     // Set the credentials
     var client = AWSRedshiftDataAPIClient.builder
@@ -406,6 +378,7 @@ private[redshift] object Utils {
 
     // Set the endpoint or the region (since we can't set both).
     // We assume the endpoint is in the same region as the connector.
+    val endpoint = getSparkConfigValue(CONNECTOR_DATA_API_ENDPOINT, "")
     if (endpoint.nonEmpty) {
       client = client.withEndpointConfiguration(new EndpointConfiguration(endpoint, tempRegion))
     } else {
