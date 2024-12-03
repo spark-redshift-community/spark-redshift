@@ -573,7 +573,6 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-
   test("IN Subquery condition") {
     withTempRedshiftTable("target") { targetTable =>
       withTempRedshiftTable("condition") { conditionTable =>
@@ -599,14 +598,36 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         sqlContext.sql(s"update $targetTable set value = 0 where " +
           s" id IN (select id from $conditionTable where value = -1) ")
 
+        val testTableName = s""""PUBLIC"."${targetTable}""""
+        val testTableName2 = s""""PUBLIC"."${conditionTable}""""
         checkSqlStatement(
-          s""" UPDATE "PUBLIC"."$targetTable"
-             | SET "VALUE" = 0
-             | WHERE ( "PUBLIC"."$targetTable"."ID" ) IN ( SELECT ( "SUBQUERY_1"."ID" )
-             |  AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-             |    "PUBLIC"."$conditionTable" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS
-             |     "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."VALUE" IS NOT NULL ) AND
-             |     ( "SUBQUERY_0"."VALUE" = -1 ) ) ) AS "SUBQUERY_1" )""".stripMargin)
+          s"""UPDATE
+             |  $testTableName
+             |SET
+             |  "VALUE" = 0
+             |WHERE
+             |  ($testTableName."ID") IN (
+             |    SELECT
+             |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+             |    FROM
+             |      (
+             |        SELECT
+             |          *
+             |        FROM
+             |          (
+             |            SELECT
+             |              *
+             |            FROM
+             |              $testTableName2 AS "RS_CONNECTOR_QUERY_ALIAS"
+             |          ) AS "SUBQUERY_0"
+             |        WHERE
+             |          (
+             |            ("SUBQUERY_0"."VALUE" IS NOT NULL)
+             |            AND ("SUBQUERY_0"."VALUE" = -1)
+             |          )
+             |      ) AS "SUBQUERY_1"
+             |  )""".stripMargin)
+
 
         checkAnswer(
           sqlContext.sql(s"select * from $targetTable"),
@@ -616,7 +637,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Basic_Update") {
+  test("Basic Update") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -631,7 +652,12 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val updateCountValue = 20
       sqlContext.sql(s"UPDATE $tableName SET id = $updateIdValue, value = $updateCountValue")
 
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(
+        s"""UPDATE $testTableName SET "ID" = 20, "VALUE" = 20""".stripMargin)
+
       val post = sqlContext.sql(s"select * from $tableName")
+      checkAnswer( post, Seq( Row(20, 20), Row(20, 20), Row(20, 20) ) )
       val filteredIdDf = post.filter(col("id") === updateIdValue).count()
       val filteredCountDf = post.filter(col("value") === updateIdValue).count()
 
@@ -640,7 +666,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Basic_Update_WHERE") {
+  test("Basic Update with WHERE") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -656,6 +682,22 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
       sqlContext.sql(s"UPDATE $tableName SET id = $updateIdValue, value = $updateCountValue " +
         s"WHERE id=1 AND value=10")
 
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(s"""UPDATE
+                           |    $testTableName
+                           |SET
+                           |    "ID" = $updateIdValue,
+                           |    "VALUE" = $updateCountValue
+                           |WHERE
+                           |    (
+                           |        (
+                           |            $testTableName."ID" = 1
+                           |        )
+                           |        AND (
+                           |            $testTableName."VALUE" = 10
+                           |        )
+                           |    )""".stripMargin)
+
       val post = sqlContext.sql(s"select * from $tableName")
       val filteredIdDf = post.filter(col("id") === updateIdValue).count()
       val filteredCountDf = post.filter(col("value") === updateIdValue).count()
@@ -665,7 +707,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Update_with_nested_query") {
+  test("Update with nested query") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -685,6 +727,37 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |WHERE value < (SELECT value FROM $tableName WHERE value = $updateCountValue)
            |""".stripMargin)
 
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(s"""UPDATE
+                           | $testTableName
+                           |SET
+                           | "ID" = $updateIdValue,
+                           | "VALUE" = $updateCountValue
+                           |WHERE
+                           | (
+                           |  $testTableName."VALUE" < (
+                           |   SELECT
+                           |    ("SUBQUERY_1"."VALUE") AS "SUBQUERY_2_COL_0"
+                           |   FROM
+                           |    (
+                           |     SELECT
+                           |      *
+                           |     FROM
+                           |      (
+                           |       SELECT
+                           |        *
+                           |       FROM
+                           |        $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+                           |      ) AS "SUBQUERY_0"
+                           |     WHERE
+                           |      (
+                           |       ("SUBQUERY_0"."VALUE" IS NOT NULL)
+                           |       AND ("SUBQUERY_0"."VALUE" = 20)
+                           |      )
+                           |    ) AS "SUBQUERY_1"
+                           |  )
+                           | )""".stripMargin)
+
       val post = sqlContext.sql(s"select * from $tableName")
       val filteredIdDf = post.filter(col("id") === updateIdValue).count()
       val filteredCountDf = post.filter(col("value") === updateIdValue).count()
@@ -694,7 +767,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Update_with_nested_query_IN") {
+  test("Update with nested query IN") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -714,6 +787,41 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |WHERE id IN (SELECT id FROM $tableName WHERE id = 1 AND value = 10)
            |""".stripMargin)
 
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(s"""UPDATE
+                           |  $testTableName
+                           |SET
+                           |  "ID" = 20,
+                           |  "VALUE" = 20
+                           |WHERE
+                           |  ($testTableName."ID") IN (
+                           |    SELECT
+                           |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |    FROM
+                           |      (
+                           |        SELECT
+                           |          *
+                           |        FROM
+                           |          (
+                           |            SELECT
+                           |              *
+                           |            FROM
+                           |              $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+                           |          ) AS "SUBQUERY_0"
+                           |        WHERE
+                           |          (
+                           |            (
+                           |              ("SUBQUERY_0"."ID" IS NOT NULL)
+                           |              AND ("SUBQUERY_0"."VALUE" IS NOT NULL)
+                           |            )
+                           |            AND (
+                           |              ("SUBQUERY_0"."ID" = 1)
+                           |              AND ("SUBQUERY_0"."VALUE" = 10)
+                           |            )
+                           |          )
+                           |      ) AS "SUBQUERY_1"
+                           |  )""".stripMargin)
+
       val post = sqlContext.sql(s"select * from $tableName")
       val filteredIdDf = post.filter(col("id") === updateIdValue).count()
       val filteredCountDf = post.filter(col("value") === updateIdValue).count()
@@ -723,7 +831,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Update_with_nested_query_NOT_IN") {
+  test("Update with nested query NOT IN") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -743,6 +851,43 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |WHERE id NOT IN (SELECT id FROM $tableName WHERE id = 1 AND value = 10)
            |""".stripMargin)
 
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(s"""UPDATE
+                           |  $testTableName
+                           |SET
+                           |  "ID" = 20,
+                           |  "VALUE" = 20
+                           |WHERE
+                           |  NOT (
+                           |    ($testTableName."ID") IN (
+                           |      SELECT
+                           |        ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |      FROM
+                           |        (
+                           |          SELECT
+                           |            *
+                           |          FROM
+                           |            (
+                           |              SELECT
+                           |                *
+                           |              FROM
+                           |                $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+                           |            ) AS "SUBQUERY_0"
+                           |          WHERE
+                           |            (
+                           |              (
+                           |                ("SUBQUERY_0"."ID" IS NOT NULL)
+                           |                AND ("SUBQUERY_0"."VALUE" IS NOT NULL)
+                           |              )
+                           |              AND (
+                           |                ("SUBQUERY_0"."ID" = 1)
+                           |                AND ("SUBQUERY_0"."VALUE" = 10)
+                           |              )
+                           |            )
+                           |        ) AS "SUBQUERY_1"
+                           |    )
+                           |  )""".stripMargin)
+
       val post = sqlContext.sql(s"select * from $tableName")
       val filteredIdDf = post.filter(col("id") === updateIdValue).count()
       val filteredCountDf = post.filter(col("value") === updateIdValue).count()
@@ -752,7 +897,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Update_with_tablename_alias_without_AS") {
+  test("Update with tablename alias without AS") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -772,6 +917,39 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |WHERE id IN (SELECT id FROM $tableName WHERE t1.id = id AND value = 10)
            |""".stripMargin)
 
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(s"""UPDATE
+                           |  $testTableName
+                           |SET
+                           |  "ID" = 20,
+                           |  "VALUE" = 20
+                           |WHERE
+                           |  ($testTableName."ID") IN (
+                           |    SELECT
+                           |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |    FROM
+                           |      (
+                           |        SELECT
+                           |          *
+                           |        FROM
+                           |          (
+                           |            SELECT
+                           |              *
+                           |            FROM
+                           |              $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+                           |          ) AS "SUBQUERY_0"
+                           |        WHERE
+                           |          (
+                           |            ("SUBQUERY_0"."VALUE" IS NOT NULL)
+                           |            AND ("SUBQUERY_0"."VALUE" = 10)
+                           |          )
+                           |      ) AS "SUBQUERY_1"
+                           |    WHERE
+                           |      (
+                           |        $testTableName."ID" = "SUBQUERY_2_COL_0"
+                           |      )
+                           |  )""".stripMargin)
+
       val post = sqlContext.sql(s"select * from $tableName")
       val filteredIdDf = post.filter(col("id") === updateIdValue).count()
       val filteredCountDf = post.filter(col("value") === updateIdValue).count()
@@ -781,7 +959,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Update_with_tablename_alias_AS") {
+  test("Update with tablename alias AS") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -801,6 +979,39 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |WHERE id IN (SELECT id FROM $tableName WHERE t1.id = id AND value = 10)
            |""".stripMargin)
 
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(s"""UPDATE
+                           |  $testTableName
+                           |SET
+                           |  "ID" = 20,
+                           |  "VALUE" = 20
+                           |WHERE
+                           |  ($testTableName."ID") IN (
+                           |    SELECT
+                           |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |    FROM
+                           |      (
+                           |        SELECT
+                           |          *
+                           |        FROM
+                           |          (
+                           |            SELECT
+                           |              *
+                           |            FROM
+                           |              $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+                           |          ) AS "SUBQUERY_0"
+                           |        WHERE
+                           |          (
+                           |            ("SUBQUERY_0"."VALUE" IS NOT NULL)
+                           |            AND ("SUBQUERY_0"."VALUE" = 10)
+                           |          )
+                           |      ) AS "SUBQUERY_1"
+                           |    WHERE
+                           |      (
+                           |        $testTableName."ID" = "SUBQUERY_2_COL_0"
+                           |      )
+                           |  )""".stripMargin)
+
       val post = sqlContext.sql(s"select * from $tableName")
       val filteredIdDf = post.filter(col("id") === updateIdValue).count()
       val filteredCountDf = post.filter(col("value") === updateIdValue).count()
@@ -810,7 +1021,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Update_with_nested_query_EXISTS") {
+  test("Update with nested query EXISTS") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -830,6 +1041,39 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |WHERE EXISTS (SELECT id FROM $tableName WHERE id = t1.id AND value = 10)
            |""".stripMargin)
 
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(s"""UPDATE
+                           |  $testTableName
+                           |SET
+                           |  "ID" = 20,
+                           |  "VALUE" = 20
+                           |WHERE
+                           |  EXISTS (
+                           |    SELECT
+                           |      ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |    FROM
+                           |      (
+                           |        SELECT
+                           |          *
+                           |        FROM
+                           |          (
+                           |            SELECT
+                           |              *
+                           |            FROM
+                           |              $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+                           |          ) AS "SUBQUERY_0"
+                           |        WHERE
+                           |          (
+                           |            ("SUBQUERY_0"."VALUE" IS NOT NULL)
+                           |            AND ("SUBQUERY_0"."VALUE" = 10)
+                           |          )
+                           |      ) AS "SUBQUERY_1"
+                           |    WHERE
+                           |      (
+                           |        "SUBQUERY_2_COL_0" = $testTableName."ID"
+                           |      )
+                           |  )""".stripMargin)
+
       val post = sqlContext.sql(s"select * from $tableName")
       val filteredIdDf = post.filter(col("id") === updateIdValue).count()
       val filteredCountDf = post.filter(col("value") === updateIdValue).count()
@@ -839,7 +1083,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
     }
   }
 
-  test("Update_with_nested_query_NOT_EXISTS") {
+  test("Update with nested query NOT EXISTS") {
     withTempRedshiftTable("updateTable") { tableName =>
       redshiftWrapper.executeUpdate(conn,
         s"create table $tableName (id int, value int)"
@@ -858,6 +1102,41 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |SET id = $updateIdValue, value = $updateCountValue
            |WHERE NOT EXISTS (SELECT id FROM $tableName WHERE id = t1.id AND value = 10)
            |""".stripMargin)
+
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(s"""UPDATE
+                           |  $testTableName
+                           |SET
+                           |  "ID" = 20,
+                           |  "VALUE" = 20
+                           |WHERE
+                           |  NOT (
+                           |    EXISTS (
+                           |      SELECT
+                           |        ("SUBQUERY_1"."ID") AS "SUBQUERY_2_COL_0"
+                           |      FROM
+                           |        (
+                           |          SELECT
+                           |            *
+                           |          FROM
+                           |            (
+                           |              SELECT
+                           |                *
+                           |              FROM
+                           |                $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+                           |            ) AS "SUBQUERY_0"
+                           |          WHERE
+                           |            (
+                           |              ("SUBQUERY_0"."VALUE" IS NOT NULL)
+                           |              AND ("SUBQUERY_0"."VALUE" = 10)
+                           |            )
+                           |        ) AS "SUBQUERY_1"
+                           |      WHERE
+                           |        (
+                           |          "SUBQUERY_2_COL_0" = $testTableName."ID"
+                           |        )
+                           |    )
+                           |  )""".stripMargin)
 
       val post = sqlContext.sql(s"select * from $tableName")
       val filteredIdDf = post.filter(col("id") === updateIdValue).count()
@@ -887,6 +1166,9 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |SET id = 20, value = 20
            |WHERE EXISTS(SELECT id FROM t2 WHERE id = t2.id AND value = 10);
            |""".stripMargin)
+
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(s"""TBD""".stripMargin)
 
       val post = sqlContext.sql(s"select * from $tableName")
       val filteredIdDf = post.filter(col("id") === updateIdValue).count()

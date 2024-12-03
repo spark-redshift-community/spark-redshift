@@ -303,6 +303,12 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
       The following fails possibly because of the missing equalnullsafe (<=>) operator
       */
       sqlContext.sql(query)
+
+
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(
+        s"""DELETE FROM $testTableName TBD""".stripMargin
+      )
       // expect row with id=1 to be deleted
       checkAnswer(
         sqlContext.sql(s"select id from $tableName where value != 'car' order by id asc"),
@@ -347,21 +353,58 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
           Seq(Row(3))
         )
 
+
+        val testTableName = s""""PUBLIC"."${tableName}""""
+        val testTableName2 = s""""PUBLIC"."${tableName2}""""
         doTest(
           sqlContext,
           TestCase(
-            s"""DELETE FROM $tableName WHERE order_id IN (
-               |SELECT order_id FROM $tableName2 GROUP BY order_id HAVING COUNT(*) > 3)
-               |""".stripMargin,
+            s"""
+             |DELETE FROM $tableName
+             |WHERE order_id IN (
+             |  SELECT order_id
+             |  FROM $tableName2
+             |  GROUP BY order_id
+             |  HAVING COUNT(*) > 3
+             |)
+             |""".stripMargin,
             Seq(Row()),
-            s"""DELETE FROM "PUBLIC"."$tableName" WHERE ( "PUBLIC"."$tableName"."ORDER_ID" ) IN
-               | ( SELECT ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) AS "SUBQUERY_4_COL_0" FROM (
-               |  SELECT * FROM ( SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS
-               |   "SUBQUERY_2_COL_0" , ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_1" FROM ( SELECT
-               |    ( "SUBQUERY_0"."ORDER_ID" ) AS "SUBQUERY_1_COL_0" FROM ( SELECT * FROM
-               |     "PUBLIC"."$tableName2" AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" ) AS
-               |      "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2" WHERE
-               |       ( "SUBQUERY_2"."SUBQUERY_2_COL_1" > 3 ) ) AS "SUBQUERY_3" )""".stripMargin
+            s"""DELETE FROM
+               |  $testTableName
+               |WHERE
+               |  (
+               |    $testTableName."ORDER_ID"
+               |  ) IN (
+               |    SELECT
+               |      ("SUBQUERY_3"."SUBQUERY_2_COL_0") AS "SUBQUERY_4_COL_0"
+               |    FROM
+               |      (
+               |        SELECT
+               |          *
+               |        FROM
+               |          (
+               |            SELECT
+               |              ("SUBQUERY_1"."SUBQUERY_1_COL_0") AS "SUBQUERY_2_COL_0",
+               |              (COUNT (1)) AS "SUBQUERY_2_COL_1"
+               |            FROM
+               |              (
+               |                SELECT
+               |                  ("SUBQUERY_0"."ORDER_ID") AS "SUBQUERY_1_COL_0"
+               |                FROM
+               |                  (
+               |                    SELECT
+               |                      *
+               |                    FROM
+               |                      $testTableName2 AS "RS_CONNECTOR_QUERY_ALIAS"
+               |                  ) AS "SUBQUERY_0"
+               |              ) AS "SUBQUERY_1"
+               |            GROUP BY
+               |              "SUBQUERY_1"."SUBQUERY_1_COL_0"
+               |          ) AS "SUBQUERY_2"
+               |        WHERE
+               |          ("SUBQUERY_2"."SUBQUERY_2_COL_1" > 3)
+               |      ) AS "SUBQUERY_3"
+               |  )""".stripMargin
           )
         )
 
@@ -413,8 +456,15 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
         doTest(
           sqlContext,
           TestCase(
-            s"""DELETE FROM $tableName AS o WHERE EXISTS ( SELECT order_id FROM $tableName2 WHERE
-               | o.order_id = order_id AND product_id = 'pen11') """.stripMargin,
+            s"""
+             |DELETE FROM $tableName o
+             |WHERE EXISTS (
+             |  SELECT order_id
+             |  FROM $tableName2 od
+             |  WHERE o.order_id = od.order_id
+             |  AND od.product_id = 'pen11'
+             |)
+             |""".stripMargin,
             Seq(Row()),
             s"""DELETE FROM "PUBLIC"."$tableName" WHERE EXISTS ( SELECT (
                | "SUBQUERY_1"."ORDER_ID" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM (
@@ -473,8 +523,15 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
         doTest(
           sqlContext,
           TestCase(
-            s"""DELETE FROM $tableName o WHERE NOT EXISTS ( SELECT 1 FROM $tableName2 od WHERE
-               | o.order_id = od.order_id AND od.product_id = 'pen11')""".stripMargin,
+            s"""
+             |DELETE FROM $tableName o
+             |WHERE NOT EXISTS (
+             |  SELECT 1
+             |  FROM $tableName2 od
+             |  WHERE o.order_id = od.order_id
+             |  AND od.product_id = 'pen11'
+             |)
+             |""".stripMargin,
             Seq(Row()),
             s"""DELETE FROM "PUBLIC"."$tableName" WHERE NOT ( EXISTS ( SELECT ( 1 ) AS
                | "SUBQUERY_2_COL_0" , ( "SUBQUERY_1"."ORDER_ID" ) AS "SUBQUERY_2_COL_1" FROM
@@ -515,6 +572,11 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |DELETE FROM $tableName
            |WHERE id IN (SELECT id FROM t2)
            |""".stripMargin)
+
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(
+        s"""TBD""".stripMargin
+      )
 
       // expect the row with id=1 to be deleted
       checkAnswer(

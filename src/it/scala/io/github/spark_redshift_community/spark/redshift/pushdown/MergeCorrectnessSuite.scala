@@ -87,14 +87,21 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |    ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)
            |""".stripMargin)
 
-      checkSqlStatement(
-        s""" MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
-           | WHEN MATCHED THEN DELETE
-           | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME")
-           | VALUES ("PUBLIC"."$sourceTable"."NEW_ID",
-           |         "PUBLIC"."$sourceTable"."STATUS",
-           |         "PUBLIC"."$sourceTable"."NAME" ) """.stripMargin)
+      val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
+      val testTargetTableName = s""""PUBLIC"."${targetTable}""""
+      checkSqlStatement(s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
+                           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+                           |)
+                           |WHEN MATCHED THEN DELETE
+                           |WHEN NOT MATCHED THEN
+                           |INSERT
+                           |    ("ID", "STATUS", "NAME")
+                           |VALUES
+                           |    (
+                           |        $testSourceTableName."NEW_ID",
+                           |        $testSourceTableName."STATUS",
+                           |        $testSourceTableName."NAME"
+                           |    )""".stripMargin)
 
       checkAnswer(
        sqlContext.sql(s"select * from $targetTable"),
@@ -280,12 +287,21 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
            | WHEN NOT MATCHED THEN INSERT (id,status,name) values ($sourceTable.new_id, -1, \'N/A\')
            |""".stripMargin)
 
-      checkSqlStatement(
-        s""" MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
-           | WHEN MATCHED THEN DELETE
-           | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME")
-           | VALUES ("PUBLIC"."$sourceTable"."NEW_ID", -1, 'N/A' ) """.stripMargin)
+      val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
+      val testTargetTableName = s""""PUBLIC"."${targetTable}""""
+      checkSqlStatement(s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
+                           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+                           |)
+                           |WHEN MATCHED THEN DELETE
+                           |WHEN NOT MATCHED THEN
+                           |INSERT
+                           |    ("ID", "STATUS", "NAME")
+                           |VALUES
+                           |    (
+                           |        $testSourceTableName."NEW_ID",
+                           |        -1,
+                           |        'N/A'
+                           |    )""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),
@@ -308,11 +324,14 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
            | WHEN MATCHED THEN DELETE
            |""".stripMargin)
 
-      checkSqlStatement(
-        s""" DELETE FROM "PUBLIC"."$targetTable"
-           | USING "PUBLIC"."$sourceTable"
-           | WHERE ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
-           | """.stripMargin)
+      val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
+      val testTargetTableName = s""""PUBLIC"."${targetTable}""""
+      checkSqlStatement(s"""DELETE FROM
+                           |    $testTargetTableName USING $testSourceTableName
+                           |WHERE
+                           |    (
+                           |        $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+                           |    )""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),
@@ -337,6 +356,10 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |            $targetTable.name = $sourceTable.name
            |""".stripMargin)
 
+      val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
+      val testTargetTableName = s""""PUBLIC"."${targetTable}""""
+      checkSqlStatement(s"""TBD""".stripMargin)
+
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),
         Seq( Row(1, 400, "john"),
@@ -359,14 +382,35 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
            | WHEN MATCHED THEN DELETE
            |""".stripMargin)
 
+      val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
+      val testTargetTableName = s""""PUBLIC"."${targetTable}""""
       checkSqlStatement(
-        s""" DELETE FROM "PUBLIC"."$targetTable"
-           | USING ( SELECT ( "SUBQUERY_2"."NEW_ID" ) AS "SUBQUERY_3_COL_0" FROM
-           |  ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$sourceTable" AS "RS_CONNECTOR_QUERY_ALIAS"
-           |   ) AS "SUBQUERY_1" WHERE ( ( "SUBQUERY_1"."NEW_ID" IS NOT NULL ) AND
-           |   ( "SUBQUERY_1"."NEW_ID" > 3 ) ) ) AS "SUBQUERY_2" ) AS "SUBQUERY_3"
-           |  WHERE ( "PUBLIC"."$targetTable"."ID" = "SUBQUERY_3"."SUBQUERY_3_COL_0" )
-           | """.stripMargin)
+        s"""DELETE FROM
+           | $testTargetTableName USING (
+           |  SELECT
+           |   ("SUBQUERY_2"."NEW_ID") AS "SUBQUERY_3_COL_0"
+           |  FROM
+           |   (
+           |    SELECT
+           |     *
+           |    FROM
+           |     (
+           |      SELECT
+           |       *
+           |      FROM
+           |       $testSourceTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+           |     ) AS "SUBQUERY_1"
+           |    WHERE
+           |     (
+           |      ("SUBQUERY_1"."NEW_ID" IS NOT NULL)
+           |      AND ("SUBQUERY_1"."NEW_ID" > 3)
+           |     )
+           |   ) AS "SUBQUERY_2"
+           | ) AS "SUBQUERY_3"
+           |WHERE
+           | (
+           |  $testTargetTableName."ID" = "SUBQUERY_3"."SUBQUERY_3_COL_0"
+           | )""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),
@@ -419,14 +463,25 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
         .stripMargin
       sqlContext.sql(query)
 
+      val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
+      val testTargetTableName = s""""PUBLIC"."${targetTable}""""
       checkSqlStatement(
-        s""" MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
-           | WHEN MATCHED THEN UPDATE SET "NAME" = "PUBLIC"."$sourceTable"."NAME"
-           | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME")
-           | VALUES ("PUBLIC"."$sourceTable"."NEW_ID",
-           |         "PUBLIC"."$sourceTable"."STATUS",
-           |         "PUBLIC"."$sourceTable"."NAME" ) """.stripMargin)
+        s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
+           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+           |)
+           |WHEN MATCHED THEN
+           |UPDATE
+           |SET
+           |    "NAME" = $testSourceTableName."NAME"
+           |    WHEN NOT MATCHED THEN
+           |INSERT
+           |    ("ID", "STATUS", "NAME")
+           |VALUES
+           |    (
+           |        $testSourceTableName."NEW_ID",
+           |        $testSourceTableName."STATUS",
+           |        $testSourceTableName."NAME"
+           |    )""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),
@@ -620,17 +675,26 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
                        |    INSERT (id, status, name)
                        |    VALUES (st.new_id, st.status, st.name)""".stripMargin
       sqlContext.sql(query)
-
+      val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
+      val testTargetTableName = s""""PUBLIC"."${targetTable}""""
       checkSqlStatement(
-        s""" MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
-           | WHEN MATCHED THEN UPDATE
-           |    SET "STATUS" = "PUBLIC"."$sourceTable"."STATUS",
-           |        "NAME" = "PUBLIC"."$sourceTable"."NAME"
-           | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME")
-           | VALUES ("PUBLIC"."$sourceTable"."NEW_ID",
-           |         "PUBLIC"."$sourceTable"."STATUS",
-           |         "PUBLIC"."$sourceTable"."NAME" ) """.stripMargin)
+        s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
+           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+           |)
+           |WHEN MATCHED THEN
+           |UPDATE
+           |SET
+           |    "STATUS" = $testSourceTableName."STATUS",
+           |    "NAME" = $testSourceTableName."NAME"
+           |    WHEN NOT MATCHED THEN
+           |INSERT
+           |    ("ID", "STATUS", "NAME")
+           |VALUES
+           |    (
+           |        $testSourceTableName."NEW_ID",
+           |        $testSourceTableName."STATUS",
+           |        $testSourceTableName."NAME"
+           |    )""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),
@@ -740,16 +804,26 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
            |     ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)""".stripMargin
       sqlContext.sql(query)
 
+      val testSourceTableName = s""""PUBLIC"."${sourceTable}""""
+      val testTargetTableName = s""""PUBLIC"."${targetTable}""""
       checkSqlStatement(
-        s""" MERGE INTO "PUBLIC"."$targetTable" USING "PUBLIC"."$sourceTable"
-           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
-           | WHEN MATCHED THEN UPDATE
-           |    SET "STATUS" = "PUBLIC"."$sourceTable"."STATUS",
-           |        "NAME" = "PUBLIC"."$sourceTable"."NAME"
-           | WHEN NOT MATCHED THEN INSERT ("ID", "STATUS", "NAME")
-           | VALUES ("PUBLIC"."$sourceTable"."NEW_ID",
-           |         "PUBLIC"."$sourceTable"."STATUS",
-           |         "PUBLIC"."$sourceTable"."NAME" ) """.stripMargin)
+        s"""MERGE INTO $testTargetTableName USING $testSourceTableName ON (
+           |    $testTargetTableName."ID" = $testSourceTableName."NEW_ID"
+           |)
+           |WHEN MATCHED THEN
+           |UPDATE
+           |SET
+           |    "STATUS" = $testSourceTableName."STATUS",
+           |    "NAME" = $testSourceTableName."NAME"
+           |    WHEN NOT MATCHED THEN
+           |INSERT
+           |    ("ID", "STATUS", "NAME")
+           |VALUES
+           |    (
+           |        $testSourceTableName."NEW_ID",
+           |        $testSourceTableName."STATUS",
+           |        $testSourceTableName."NAME"
+           |    )""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"select * from $targetTable"),

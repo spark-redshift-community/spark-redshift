@@ -575,6 +575,21 @@ trait NonPushDownInsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val pre = sqlContext.sql(s"SELECT * FROM $tableName").count()
 
       sqlContext.sql(s"INSERT INTO ${tableName} SELECT 1 as id, 10 as value")
+      // Since this is not a push down, this is the SQL of the previous SQL query (pre).
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(
+        s"""SELECT
+           |    (COUNT (1)) AS "SUBQUERY_1_COL_0"
+           |FROM
+           |    (
+           |        SELECT
+           |            *
+           |        FROM
+           |            $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+           |    ) AS "SUBQUERY_0"
+           |LIMIT
+           |    1""".stripMargin
+      )
 
       val post = sqlContext.sql(s"SELECT * FROM $tableName").collect().map(row => row.toSeq).toSeq
 
@@ -598,6 +613,22 @@ trait NonPushDownInsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
           s"SELECT 1 as id, 10 as value UNION " +
           s"SELECT 2 as id, 20 as value UNION " +
           s"SELECT 3 as id, 30 as value")
+
+      // Since this is not a push down, this is the SQL of the previous SQL query (pre).
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(
+        s"""SELECT
+           |    (COUNT (1)) AS "SUBQUERY_1_COL_0"
+           |FROM
+           |    (
+           |        SELECT
+           |            *
+           |        FROM
+           |            $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+           |    ) AS "SUBQUERY_0"
+           |LIMIT
+           |    1""".stripMargin
+      )
 
       val post = sqlContext.sql(s"SELECT * FROM $tableName").collect().map(row => row.toSeq).toSeq
 
@@ -628,6 +659,23 @@ trait NonPushDownInsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
         sqlContext.sql(s"INSERT INTO ${tableName} " +
           s"SELECT * FROM $tableNameSource WHERE value < 30 UNION SELECT 3 as id, 30 as value")
+        // Since this is a partial push down,
+        // this is the mixed SQL of the previous SQL query (pre) and the actual insert query.
+        val testTableName = s""""PUBLIC"."${tableNameSource}""""
+        checkSqlStatement(s"""SELECT
+                             |    *
+                             |FROM
+                             |    (
+                             |        SELECT
+                             |            *
+                             |        FROM
+                             |            $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+                             |    ) AS "SUBQUERY_0"
+                             |WHERE
+                             |    (
+                             |        ("SUBQUERY_0"."VALUE" IS NOT NULL)
+                             |        AND ("SUBQUERY_0"."VALUE" < 30)
+                             |    )""".stripMargin)
 
         val post = sqlContext.sql(s"SELECT * FROM $tableName").collect().map(row => row.toSeq).toSeq
 
@@ -654,6 +702,20 @@ trait NonPushDownInsertCorrectnessSuite extends IntegrationPushdownSuiteBase {
       val pre = sqlContext.sql(s"SELECT * FROM ${tableName}").count
 
       sqlContext.sql(s"INSERT OVERWRITE ${tableName} VALUES (100L, '1'), (2000,'3')")
+
+      // Since this is not a push down, this is the SQL of the previous SQL query (pre).
+      val testTableName = s""""PUBLIC"."${tableName}""""
+      checkSqlStatement(s"""SELECT
+                           |    (COUNT (1)) AS "SUBQUERY_1_COL_0"
+                           |FROM
+                           |    (
+                           |        SELECT
+                           |            *
+                           |        FROM
+                           |            $testTableName AS "RS_CONNECTOR_QUERY_ALIAS"
+                           |    ) AS "SUBQUERY_0"
+                           |LIMIT
+                           |    1""".stripMargin)
 
       val post = sqlContext.sql(s"select * from ${tableName}").collect().map(row => row.toSeq).toSeq
 
