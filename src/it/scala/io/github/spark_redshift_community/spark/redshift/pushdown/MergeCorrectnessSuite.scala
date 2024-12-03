@@ -41,6 +41,39 @@ class MergeCorrectnessSuite extends IntegrationPushdownSuiteBase {
     write(sourceDf).option("dbtable", sourceTable).mode("append").save()
   }
 
+  test("MERGE with MATCHED No-Op and UNMATCHED INSERT") {
+    withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
+      initialMergeTestData(sourceTable, targetTable)
+      sqlContext.sql(
+        s"""
+           |MERGE INTO $targetTable USING
+           | $sourceTable ON
+           | $targetTable.id = $sourceTable.new_id
+           | WHEN NOT MATCHED THEN INSERT (id, status, name) VALUES
+           |    ($sourceTable.new_id, $sourceTable.status, $sourceTable.name)
+           |""".stripMargin)
+
+      checkSqlStatement(
+        s""" MERGE INTO "PUBLIC"."$targetTable"
+           | USING "PUBLIC"."$sourceTable"
+           | ON ( "PUBLIC"."$targetTable"."ID" = "PUBLIC"."$sourceTable"."NEW_ID" )
+           | WHEN MATCHED THEN UPDATE SET "ID" = "PUBLIC"."$targetTable"."ID"
+           | WHEN NOT MATCHED THEN INSERT (ID, STATUS, NAME) VALUES
+           | ("PUBLIC"."$sourceTable"."NEW_ID", "PUBLIC"."$sourceTable"."STATUS",
+           |  "PUBLIC"."$sourceTable"."NAME" ) """.stripMargin)
+
+      checkAnswer(
+        sqlContext.sql(s"select * from $targetTable"),
+        Seq( Row(1, 400, "john"),
+          Row(2, 401, "sean"),
+          Row(3, 402, "mike"),
+          Row(4, 403, "nathan"),
+          Row(5, 405, "victor"),
+          Row(6, 503, "pam"))
+      )
+    }
+  }
+
  test("MERGE with DELETE and INSERT") {
     withTwoTempRedshiftTables("sourceTable", "targetTable") { (sourceTable, targetTable) =>
       initialMergeTestData(sourceTable, targetTable)

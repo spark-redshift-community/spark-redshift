@@ -21,7 +21,7 @@ import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantStrin
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException, RedshiftRelation}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, Expression, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, MergeAction, UpdateAction, DeleteAction, InsertAction, Assignment, LocalRelation}
+import org.apache.spark.sql.catalyst.plans.logical.{Assignment, DeleteAction, InsertAction, LocalRelation, LogicalPlan, MergeAction, UpdateAction}
 
 import scala.language.postfixOps
 
@@ -311,19 +311,19 @@ case class MergeQuery(targetQuery: SourceQuery,
     }
 
     // Early Rejection invalid syntax
-    if( !(matchedActions.size == 1 && notMatchedActions.size == 1 &&
+    if( !(matchedActions.size <= 1 && notMatchedActions.size == 1 &&
       notMatchedBySourceActions.isEmpty) ) {
       throw new RedshiftPushdownUnsupportedException(
         RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
         "UNSUPPORTED MERGE SYNTAX for Redshift",
-        "There should be only one matched action, one unmatched action," +
+        "There should be no more than one matched action, one unmatched action," +
           "and no unmatched BY SOURCE action.",
         true
       )
     }
 
     // Reject AND in conditional matched/unmatched action
-    if (matchedActions.head.condition.nonEmpty ||
+    if (matchedActions.nonEmpty && matchedActions.head.condition.nonEmpty ||
         notMatchedActions.head.condition.nonEmpty  ) {
       // the "AND condition" in matched/unmatched action is not supported by Redshift
       throw new RedshiftPushdownUnsupportedException(
@@ -374,14 +374,20 @@ case class MergeQuery(targetQuery: SourceQuery,
         replaceAttributeQualifier(targetQuery, sourceQuery, targetQualifier, sourceQualifier, a)
     })
 
-    val matchedExpression = matchedActions.head match {
-      case UpdateAction(_, assignments) =>
+    val matchedExpression = matchedActions.headOption match {
+      case Some(UpdateAction(_, assignments)) =>
         val assignmentsStatement = assignments.map { assignment =>
           val assignmentExpr = replaceAliasQualifier(targetQuery, sourceQuery, assignment)
           expressionToStatement(assignmentExpr)
         }.mkString(", ")
         s"UPDATE SET $assignmentsStatement"
-      case DeleteAction(_) => "DELETE"
+      case Some(DeleteAction(_)) =>
+        "DELETE"
+      case None => // No-Op equivalent operation when no matchedAction
+        val cols = targetQuery.refColumns.head
+        val nopAssignment = Assignment(cols,
+          cols.withQualifier(Seq(targetTableNameStr.drop(1).dropRight(1))))
+        "UPDATE SET " + expressionToStatement(nopAssignment)
       case _ =>
         val errStmt = expressionToStatement(matchedActions.head).toString
         throw new RedshiftPushdownUnsupportedException(
