@@ -236,7 +236,8 @@ private[redshift] class RedshiftWriter(
       "staging_" + UUID.randomUUID().toString.replace("-", ""))
     val schemaSql = redshiftWrapper.schemaString(data.schema)
     (staging_table_name, s"CREATE TABLE $staging_table_name ($schemaSql)")
-}
+  }
+
   /**
    * Perform the Redshift delete by:
    *  1. create a staging table
@@ -615,6 +616,13 @@ private[redshift] class RedshiftWriter(
       redshiftWrapper.setAutoCommit(conn, false)
       try {
         val table: TableName = params.table.get
+
+        // Check if we are writing to a data share. If so, set the database context.
+        if (table.unescapedDatabaseName.nonEmpty) {
+          val useDbStr = s"""use ${table.escapedDatabaseName}"""
+          redshiftWrapper.executeInterruptibly(conn, useDbStr)
+        }
+
         if (saveMode == SaveMode.Overwrite && !params.isDelete) {
           // Overwrites must drop the table in case there has been a schema update
           log.info("Dropping table within Redshift: {}", table)
@@ -624,8 +632,16 @@ private[redshift] class RedshiftWriter(
             // maintain a snapshot of the old table during the COPY; this sacrifices atomicity for
             // performance.
             redshiftWrapper.commit(conn)
+
+            // Check if we are writing to a data share. If so, we must set the
+            // database context again since we are starting a new transaction.
+            if (table.unescapedDatabaseName.nonEmpty) {
+              val useDbStr = s"""use ${table.escapedDatabaseName}"""
+              redshiftWrapper.executeInterruptibly(conn, useDbStr)
+            }
           }
         }
+
         if (params.isDelete) {
           log.info("Deleting Redshift data from : {}", table)
           log.info(" - matching columns: {}",

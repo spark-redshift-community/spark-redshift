@@ -297,21 +297,29 @@ private[redshift] case class RedshiftRelation(
   }
 
   def runDMLFromSQL(statement: RedshiftSQLStatement): Seq[Row] = {
-    /*
-     * TODO - Temporarily disable usage of query groups to avoid USE <db> issue for DML operations.
-    val queryGroup = Utils.queryGroupInfo(Utils.Write, params.user_query_group_label, sqlContext)
-    val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
-    */
-    val conn = redshiftWrapper.getConnector(params)
+    // Generate the DML string.
     val statementStr = statement.statementString
 
     // Save the last query so it can be inspected
     Utils.lastBuildStmt(Thread.currentThread.getName) = statementStr
 
+    // Setup the connection.
+    val queryGroup = Utils.queryGroupInfo(Utils.Write, params, sqlContext)
+    val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
+    redshiftWrapper.setAutoCommit(conn, false)
     try {
-      val affectedRows = redshiftWrapper.executeUpdateInterruptibly(conn, statementStr)
+      // If the client is writing to a data share, set the database context for data sharing writes.
+      if (params.table.isDefined && params.table.get.unescapedDatabaseName.nonEmpty) {
+        val useDbStr = s"""use ${params.table.get.escapedDatabaseName}"""
+        redshiftWrapper.executeInterruptibly(conn, useDbStr)
+      }
+
+      // Execute the DML statement
+      val affectedRows = redshiftWrapper.executeUpdate(conn, statementStr)
+      redshiftWrapper.commit(conn)
       Seq(Row(affectedRows))
-    } finally {
+    }
+    finally {
       conn.close()
     }
   }

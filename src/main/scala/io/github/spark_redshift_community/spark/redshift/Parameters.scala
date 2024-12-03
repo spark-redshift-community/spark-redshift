@@ -237,7 +237,7 @@ private[redshift] object Parameters {
     require(Seq(
       jdbcUrl.isDefined,
       dataApiCluster.isDefined,
-      dataApiWorkgroup.isDefined).count(_ == true) == 1,
+      dataApiWorkgroup.isDefined).count(_ == true) <= 1,
       "The url, data_api_cluster, and data_api_workgroup options are" +
         " mutually-exclusive; please specify only one.")
 
