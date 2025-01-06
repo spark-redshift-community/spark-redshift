@@ -833,7 +833,7 @@ license, which is reproduced here as well:
 ** Apache Software License, Version 2.0; version 2.0 -- https://mvnrepository.com/artifact/org.apache.commons/commons-compress/1.20
 ** spark-snowflake; version 2.9.1 -- https://github.com/snowflakedb/spark-snowflake
 ** Databricks spark-redshift connector; version 3.0.0 -- https://github.com/databricks/spark-redshift
-** Apache Spark; version 3.5.3 -- https://spark.apache.org/
+** Apache Spark; version 3.5.4 -- https://spark.apache.org/
 ** lst-bench; version N/A -- https://github.com/microsoft/lst-bench/
 
 Apache License
