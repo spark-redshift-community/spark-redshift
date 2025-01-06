@@ -45,7 +45,7 @@ import scala.collection.JavaConverters._
 /**
  * Data Source API implementation for Amazon Redshift database tables
  */
-private[redshift] case class RedshiftRelation(
+case class RedshiftRelation(
     redshiftWrapper: RedshiftWrapper,
     s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3,
     params: MergedParameters,
