@@ -1225,6 +1225,47 @@ abstract class PushdownLogicalPlanOperatorSuite extends IntegrationPushdownSuite
     doTest(sqlContext, testUnion13)
   }
 
+  test("Test UNION ALL attribute nullability") {
+    withTwoTempRedshiftTables("tableA", "tableB") { (tableA, tableB) =>
+      redshiftWrapper.executeUpdate(conn,
+        s"create table $tableA (id INT not null, category varchar(50))")
+      redshiftWrapper.executeUpdate(conn,
+        s"create table $tableB (id INT, category varchar(50))")
+
+      redshiftWrapper.executeUpdate(conn,
+        s"insert into $tableA VALUES (1, 'A'), (1, 'B'), (2, 'A')")
+      redshiftWrapper.executeUpdate(conn,
+        s"insert into $tableB VALUES (1, 'C'), (1, 'D'), (NULL, 'A')")
+
+      read.option("dbtable", tableA).load.createOrReplaceTempView(tableA)
+      read.option("dbtable", tableB).load.createOrReplaceTempView(tableB)
+
+      val strQuery =
+        s"select id, count(*) as cnt from " +
+        s"(select id, category from $tableA union all select id, category from $tableB) " +
+        s"group by rollup (id) order by id, cnt"
+
+      // If the nullability is wrong, the connector will return a row of (0, 1) instead of (null, 1)
+      // because Spark will misapply the non-nullability of the first table to the second table and
+      // convert the null column value into a zero [Redshift-87788]
+      checkAnswer(
+        sqlContext.sql(strQuery),
+        Seq(Row(null, 1),
+            Row(null, 6),
+            Row(1, 4),
+            Row(2, 1))
+      )
+
+      // We don't expect the group by rollup expression to be pushed down.
+      checkSqlStatement(
+        s"""( SELECT ( "SQ_0"."ID" ) AS "SQ_1_COL_0" FROM
+          | ( SELECT * FROM "PUBLIC"."$tableA" AS "RCQ_ALIAS" ) AS "SQ_0" ) UNION ALL
+          | ( SELECT ( "SQ_0"."ID" ) AS "SQ_1_COL_0" FROM
+          | ( SELECT * FROM "PUBLIC"."$tableB" AS "RCQ_ALIAS" ) AS "SQ_0" )""".stripMargin
+      )
+    }
+  }
+
   // No push down for except
   test("Test EXCEPT logical plan operator") {
     // "Column name" and result set

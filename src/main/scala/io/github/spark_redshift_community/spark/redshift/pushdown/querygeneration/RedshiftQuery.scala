@@ -789,17 +789,53 @@ case class SetQuery(children: Seq[LogicalPlan],
     new QueryBuilder(child).treeRoot
   }
 
-  if(queries.contains(null)) {
+  if (queries.contains(null)) {
     throw new RedshiftPushdownUnsupportedException(
       RedshiftFailMessage.FAIL_PUSHDOWN_STATEMENT,
       setOperation,
       "Not all " + setOperation + " children query supported",
       false)
   }
+
+  private val childrenOutputs: Seq[Seq[Attribute]] = queries.map(_.helper.output)
+
+  private val resolvedAttributes: Seq[Attribute] = setOperation match {
+    case "UNION ALL" =>
+      // For UNION ALL: resolved nullable = OR of all child nullabilities
+      childrenOutputs.head.indices.map { i =>
+        val childNullabilities = childrenOutputs.map(_.apply(i).nullable)
+        val resolvedNullable = childNullabilities.contains(true)
+        val baseAttr = childrenOutputs.head(i)
+        baseAttr.withNullability(resolvedNullable)
+      }
+
+    case "EXCEPT" =>
+      // For EXCEPT: resolved nullability = from the first query
+      childrenOutputs.head
+
+    case "INTERSECT" =>
+      // For INTERSECT: resolved nullable = AND of all child nullabilities
+      // If any child is non-nullable (false), resolved is non-nullable (false).
+      childrenOutputs.head.indices.map { i =>
+        val childNullabilities = childrenOutputs.map(_.apply(i).nullable)
+        val resolvedNullable = childNullabilities.forall(_ == true)
+        val baseAttr = childrenOutputs.head(i)
+        baseAttr.withNullability(resolvedNullable)
+      }
+
+    case other =>
+      throw new RedshiftPushdownUnsupportedException(
+        "Unsupported set query pushdown",
+        other,
+        "Only UNION ALL, INTERSECT and EXCEPT are supported",
+        true
+      )
+  }
+
   override val helper: QueryHelper =
     QueryHelper(
       children = queries,
-      outputAttributes = Some(queries.head.helper.output),
+      outputAttributes = Some(resolvedAttributes),
       alias = alias,
       visibleAttributeOverride =
         Some(queries.foldLeft(Seq.empty[Attribute])((x, y) => x ++ y.helper.output).map(
