@@ -200,6 +200,14 @@ private[redshift] object Parameters {
         throw new IllegalArgumentException(
           "The parameters 'data_api_cluster' and 'data_api_workgroup' are mutually-exclusive.")
       }
+
+      if (userParameters.contains(PARAM_DATA_API_WORKGROUP) &&
+        userParameters.contains(PARAM_DATA_API_USER)) {
+        throw new IllegalArgumentException(
+          "You cannot use 'data_api_user' when connecting to a serverless workgroup using " +
+            "'data_api_workgroup'"
+        )
+      }
     }
   }
 

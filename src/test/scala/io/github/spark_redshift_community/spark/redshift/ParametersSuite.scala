@@ -241,4 +241,19 @@ class ParametersSuite extends AnyFunSuite with Matchers {
 
     assert(mergedParams.tempDirRegion.get == "pre-ga-region")
   }
+
+  test("Cannot specify both 'data_api_workgroup' and 'data_api_user' simultaneously") {
+    val e = intercept[IllegalArgumentException] {
+      Parameters.mergeParameters(Map(
+        "tempdir" -> "s3://foo/bar",
+        "dbtable" -> "test_schema.test_table",
+        "data_api_database" -> "test_schema.test_table",
+        "data_api_workgroup" -> "my_workgroup",
+        "data_api_user" -> "my_user",
+        "forward_spark_s3_credentials" -> "true",
+        "aws_iam_role" -> "role"))
+    }
+    assert(e.getMessage.contains(
+      "You cannot use 'data_api_user' when connecting to a serverless workgroup"))
+  }
 }
