@@ -61,7 +61,8 @@ This library is more suited to ETL than interactive queries, since large amounts
 
 - [Installation](#installation)
   - [Release builds](#release-builds)
-  - [Snapshot builds](#snapshot-builds)
+  - [Local builds](#local-builds)
+  - [Library dependencies](#library-dependencies)
 - [Usage](#usage)
   - [Data Sources API](#data-sources-api)
     - [Scala](#scala)
@@ -125,6 +126,17 @@ You may use this library in your applications with the following dependency info
     libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "6.3.0-spark_3.5"
     ```
 
+### Local builds
+You may also build the connector locally by following the below steps.
+1. Download the project
+2. Install Java 1.8
+3. Install scala (https://www.scala-lang.org/download/)
+4. Install sbt (https://www.scala-sbt.org/download/)
+5. Modify the value `sparkVersion` within `build.sbt` to the target version of Spark. The connector supports Spark 3.3.x, 3.4.x, and 3.5.x
+6. Build the connector `sbt clean package`
+7. The jar file can be found in `target\scala-2.12\`
+
+### Library dependencies
 
 You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommends that you use [the latest official Amazon Redshift JDBC driver](https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42/), which is available on Maven Central. Additionally, is hosted in S3 and can be found in the [official AWS documentation for the Redshift JDBC Driver](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-install.html).
 
