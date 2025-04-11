@@ -105,7 +105,7 @@ You may use this library in your applications with the following dependency info
     spark-submit \
       --deploy-mode cluster \
       --master yarn \
-      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.32,org.apache.spark:spark-avro_2.12:3.5.4,io.github.spark-redshift-community:spark-redshift_2.12:6.3.0-spark_3.5 \
+      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.32,org.apache.spark:spark-avro_2.12:3.5.5,io.github.spark-redshift-community:spark-redshift_2.12:6.3.0-spark_3.5 \
       my_script.py
     ```
 

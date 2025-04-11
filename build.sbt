@@ -26,7 +26,7 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
-val sparkVersion = "3.5.4"
+val sparkVersion = "3.5.5"
 val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
