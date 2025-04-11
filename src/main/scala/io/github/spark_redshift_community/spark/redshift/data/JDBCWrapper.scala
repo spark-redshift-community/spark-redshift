@@ -21,6 +21,7 @@ package io.github.spark_redshift_community.spark.redshift.data
 
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import io.github.spark_redshift_community.spark.redshift.Utils
+import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper.{POSTGRESQL_DRIVER, REDSHIFT_JDBC_4_1_DRIVER, REDSHIFT_JDBC_4_2_DRIVER, REDSHIFT_JDBC_4_DRIVER, SECRET_MANAGER_REDSHIFT_DRIVER}
 import org.apache.spark.SPARK_VERSION
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.types.StructType
@@ -134,15 +135,15 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
       jdbcSubprotocol match {
         case "redshift" =>
           try {
-            Utils.classForName("com.amazon.redshift.jdbc42.Driver").getName
+            Utils.classForName(REDSHIFT_JDBC_4_2_DRIVER).getName
           } catch {
             case _: ClassNotFoundException =>
               try {
-                Utils.classForName("com.amazon.redshift.jdbc41.Driver").getName
+                Utils.classForName(REDSHIFT_JDBC_4_1_DRIVER).getName
               } catch {
                 case _: ClassNotFoundException =>
                   try {
-                    Utils.classForName("com.amazon.redshift.jdbc4.Driver").getName
+                    Utils.classForName(REDSHIFT_JDBC_4_DRIVER).getName
                   } catch {
                     case e: ClassNotFoundException =>
                       throw new ClassNotFoundException(
@@ -153,11 +154,8 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
                   }
               }
           }
-        case "postgresql" =>
-          "org.postgresql.Driver"
-        case "jdbc-secretsmanager" =>
-          "com.amazonaws.secretsmanager.sql.AWSSecretsManagerRedshiftDriver"
-
+        case "postgresql" => POSTGRESQL_DRIVER
+        case "jdbc-secretsmanager" => SECRET_MANAGER_REDSHIFT_DRIVER
         case other => throw new IllegalArgumentException(s"Unsupported JDBC protocol: '$other'")
       }
     }
@@ -212,6 +210,8 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
       require(driverWrapperClass.isAssignableFrom(d.getClass))
       driverWrapperClass.getDeclaredMethod("wrapped").invoke(d).asInstanceOf[Driver]
     }
+
+    Utils.checkJDBCSecurity(driverClass, updatedURL, driverProperties)
 
     // Note that we purposely don't call DriverManager.getConnection() here: we want to ensure
     // that an explicitly-specified user-provided driver class can take precedence over the default
@@ -592,4 +592,19 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
 
     statement
   }
+}
+
+
+private[redshift] object JDBCWrapper {
+  val REDSHIFT_JDBC_4_2_DRIVER = "com.amazon.redshift.jdbc42.Driver"
+  val REDSHIFT_JDBC_4_1_DRIVER = "com.amazon.redshift.jdbc41.Driver"
+  val REDSHIFT_JDBC_4_DRIVER = "com.amazon.redshift.jdbc4.Driver"
+  val POSTGRESQL_DRIVER = "org.postgresql.Driver"
+  val SECRET_MANAGER_REDSHIFT_DRIVER =
+    "com.amazonaws.secretsmanager.sql.AWSSecretsManagerRedshiftDriver"
+
+  // PostgreSQL drivers are not tested and not supported by the Amazon Redshift team -
+  // https://docs.aws.amazon.com/redshift/latest/mgmt/configuring-connections.html#connecting-drivers
+  val REDSHIFT_FIRST_PARTY_DRIVERS = Seq(REDSHIFT_JDBC_4_2_DRIVER, REDSHIFT_JDBC_4_1_DRIVER,
+    REDSHIFT_JDBC_4_DRIVER, SECRET_MANAGER_REDSHIFT_DRIVER)
 }

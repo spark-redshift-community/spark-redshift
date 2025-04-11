@@ -25,8 +25,10 @@ import com.amazonaws.services.redshiftdataapi.{AWSRedshiftDataAPI, AWSRedshiftDa
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3URI}
+import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper.{REDSHIFT_FIRST_PARTY_DRIVERS, REDSHIFT_JDBC_4_1_DRIVER, REDSHIFT_JDBC_4_2_DRIVER, REDSHIFT_JDBC_4_DRIVER, SECRET_MANAGER_REDSHIFT_DRIVER}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -62,6 +64,8 @@ class RedshiftPushdownUnsupportedException(message: String,
                                             val details: String,
                                             val isKnownUnsupportedOperation: Boolean)
   extends Exception(message)
+
+class RedshiftConstraintViolationException(message: String) extends Exception(message)
 
 /**
  * Various arbitrary helper functions
@@ -214,6 +218,40 @@ private[redshift] object Utils {
     }
   }
 
+  def checkJDBCSecurity(driverClass: String,
+                        updatedURL: String,
+                        driverProperties: Properties): Unit = {
+    if (!Utils.isUnsecureJDBCConnectionRejected()) {
+      return
+    }
+
+    // we don't allow arbitrary JDBC driver implementation since we don't trust them
+    if (!REDSHIFT_FIRST_PARTY_DRIVERS.contains(driverClass)) {
+      throw new RedshiftConstraintViolationException("Arbitrary driver class is not supported " +
+        "when using spark-redshift connector with " +
+        s"$CONNECTOR_REJECT_UNSECURE_JDBC_CONNECTION set to true: $driverClass")
+    }
+
+    def urlContainsSSLDisable(): Boolean = {
+      (updatedURL.toLowerCase().contains(";ssl=false")
+        || updatedURL.toLowerCase().contains("&ssl=false")
+        || updatedURL.toLowerCase().contains("?ssl=false"))
+    }
+
+    // Redshift jdbc enables ssl via url option "ssl=true", which is enabled by default. See
+    // https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-build-connection-url.html
+    // https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-configuration-options.html#jdbc20-ssl-option
+    // SecretManager redshift driver also uses Redshift JDBC driver:
+    // https://github.com/aws/aws-secretsmanager-jdbc/blob/v2/src/main/java/com/amazonaws/secretsmanager/sql/AWSSecretsManagerRedshiftDriver.java
+    if (urlContainsSSLDisable()
+      || (driverProperties.containsKey("ssl")
+      && driverProperties.getProperty("ssl").equalsIgnoreCase("false"))) {
+      throw new RedshiftConstraintViolationException("To use spark-redshift connector " +
+        s"with $CONNECTOR_REJECT_UNSECURE_JDBC_CONNECTION turned on, " +
+        "SSL must be enabled for the JDBC connection. ")
+    }
+  }
+
   /*
    * Gets the resource name for an IAM ARN.
    * See: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html
@@ -363,6 +401,28 @@ private[redshift] object Utils {
     } else {
       sparkSession.conf.get(key, default)
     }
+  }
+
+  def getSparkStaticConfigValue(key: String, default: String): String = {
+    val sparkSession = SparkSession.getActiveSession.getOrElse(
+      SparkSession.getDefaultSession.orNull)
+    if (sparkSession == null) {
+      default
+    } else {
+      sparkSession.sparkContext.getConf.get(key, default)
+    }
+  }
+
+  val CONNECTOR_REJECT_UNSECURE_JDBC_CONNECTION =
+    "spark.datasource.redshift.community.reject_unsecure_jdbc_connection"
+  def isUnsecureJDBCConnectionRejected(): Boolean = {
+    getSparkStaticConfigValue(CONNECTOR_REJECT_UNSECURE_JDBC_CONNECTION, "false").toBoolean
+  }
+
+  val CONNECTOR_REDSHIFT_S3_CONNECTION_IAM_ROLE_ONLY =
+    "spark.datasource.redshift.community.redshift_s3_connection_iam_role_only"
+  def isRedshiftS3ConnectionViaIAMRoleOnly(): Boolean = {
+    getSparkStaticConfigValue(CONNECTOR_REDSHIFT_S3_CONNECTION_IAM_ROLE_ONLY, "false").toBoolean
   }
 
   val CONNECTOR_DATA_API_ENDPOINT = "spark.datasource.redshift.community.data_api_endpoint"

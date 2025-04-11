@@ -417,6 +417,7 @@ The following describes how each connection can be authenticated:
         [_Authorizing COPY and UNLOAD Operations Using IAM Roles_](http://docs.aws.amazon.com/redshift/latest/mgmt/copy-unload-iam-role.html)
         guide to associate that IAM role with your Redshift cluster.
         4. Set this library's `aws_iam_role` option to the role's ARN.
+        5. (Optional) [Use a Spark config to enforce IAM role authentication for all Redshift-to-S3 access.](#redshift_s3_connection_iam_role_only)
     2. **Forward Spark's S3 credentials to Redshift**: if the `forward_spark_s3_credentials` option is
         set to `true` then this library will automatically discover the credentials that Spark is
         using to connect to S3 and will forward those credentials to Redshift over JDBC. If Spark
@@ -510,6 +511,7 @@ sqlContext.sparkSession.sql("SET spark.datasource.redshift.community.data_api_re
     instructions in the Redshift documentation. Then, follow the instructions in
     [_JDBC Driver Configuration Options_](http://docs.aws.amazon.com/redshift/latest/mgmt/configure-jdbc-options.html) to add the appropriate SSL options
     to the JDBC `url` used with this library.
+    - (Optional) [Use a Spark config to block JDBC connections where `ssl=false` is specified in the connection string.](#reject_unsecure_jdbc_connection)
 
 - **Encrypting `UNLOAD` data stored in S3 (data stored when reading from Redshift)**: According to the Redshift documentation
     on [_Unloading Data to S3_](http://docs.aws.amazon.com/redshift/latest/dg/t_Unloading_tables.html),
@@ -1051,6 +1053,22 @@ To disable it, run following command:
 
 ```sparksql
 SET spark.datasource.redshift.community.autopushdown.lazyMode=false
+```
+
+### redshift_s3_connection_iam_role_only
+Use the `redshift_s3_connection_iam_role_only` Spark configuration to enforce the use of an IAM role for authenticating Redshift's access to S3. When enabled, any attempt to use temporary credentials or other authentication methods will be rejected.
+
+#### Scala
+```scala
+var sparkConf = new SparkConf().set("spark.datasource.redshift.community.redshift_s3_connection_iam_role_only", "true")
+```
+
+### reject_unsecure_jdbc_connection
+The `reject_unsecure_jdbc_connection` configuration enforces secure JDBC connections by requiring SSL. When this setting is enabled, any connection string with `ssl=false` will be rejected to prevent unencrypted traffic between Spark and Redshift.
+
+#### Scala
+```scala
+var sparkConf = new SparkConf().set("spark.datasource.redshift.community.reject_unsecure_jdbc_connection", "true")
 ```
 
 ### trace_id

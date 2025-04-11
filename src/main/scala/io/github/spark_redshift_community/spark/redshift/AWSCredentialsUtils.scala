@@ -20,6 +20,7 @@ package io.github.spark_redshift_community.spark.redshift
 import java.net.URI
 import com.amazonaws.auth._
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.Utils.CONNECTOR_REDSHIFT_S3_CONNECTION_IAM_ROLE_ONLY
 import org.apache.hadoop.conf.Configuration
 
 private[redshift] object AWSCredentialsUtils {
@@ -41,6 +42,13 @@ private[redshift] object AWSCredentialsUtils {
           s"aws_access_key_id=${creds.getAWSAccessKeyId};" +
             s"aws_secret_access_key=${creds.getAWSSecretKey}"
       }
+    }
+
+    if (Utils.isRedshiftS3ConnectionViaIAMRoleOnly() &&
+      (params.temporaryAWSCredentials.isDefined || params.forwardSparkS3Credentials)) {
+      throw new RedshiftConstraintViolationException("Only the aws_iam_role option for configuring " +
+        "credentials is supported when configuration " +
+        s"$CONNECTOR_REDSHIFT_S3_CONNECTION_IAM_ROLE_ONLY is set to true.")
     }
 
     if (params.iamRole.isDefined) {
