@@ -16,6 +16,10 @@
 
 # spark-redshift Changelog
 
+## 6.4.2 (2025-04-21)
+- Add spark configurations for enforcing secure JDBC connections and usage of aws_iam_role for authorizing Redshift COPY/UNLOAD operations.
+- Verified the connector is compatible with the latest Spark patch release 3.5.5.
+
 ## 6.4.1 (2025-01-07)
 - Corrects an attribute nullability bug when using set operators: UNION, EXCEPT, or INTERSECT [Hari Kishore Chaparala, Beaux Sharifi]
 - Adds a missing validation rule for using the Redshift Data API [Beaux Sharifi]
