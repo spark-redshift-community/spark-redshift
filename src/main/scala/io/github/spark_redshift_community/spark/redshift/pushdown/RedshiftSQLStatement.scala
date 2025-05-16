@@ -165,3 +165,6 @@ private[redshift] case class BooleanVariable(override val variable: Option[Boole
 
 private[redshift] case class ByteVariable(override val variable: Option[Byte])
   extends VariableElement[Byte]
+
+private[redshift] case class BinaryVariable(override val variable: Option[Array[Byte]])
+  extends VariableElement[Array[Byte]]
