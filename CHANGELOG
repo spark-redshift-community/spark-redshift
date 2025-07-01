@@ -16,6 +16,13 @@
 
 # spark-redshift Changelog
 
+## 6.4.3 (2025-07-01)
+- Upgraded Apache Spark dependency to version 3.5.6
+- Upgraded to JDBC version 2.1.0.33
+- Upgraded sbt build tool to version 1.11.2
+- Updated Sonatype publishing from OSSRH to Central Publisher Portal
+- Fixed getDefaultRegion handling to return null on exceptions, aligning with AWS SDK behavior
+
 ## 6.4.2 (2025-04-21)
 - Add spark configurations for enforcing secure JDBC connections and usage of aws_iam_role for authorizing Redshift COPY/UNLOAD operations.
 - Verified the connector is compatible with the latest Spark patch release 3.5.5.
