@@ -26,7 +26,7 @@ import java.io.FileInputStream
 
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
 val sparkVersion = "3.5.5"
-val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
+val isInternalRepo = "true" equalsIgnoreCase System.getProperty("config.InternalRepo")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.
@@ -46,6 +46,7 @@ val releaseSparkVersion = testSparkVersion.substring(0, testSparkVersion.lastInd
 val releaseScalaVersion = buildScalaVersion.substring(0, buildScalaVersion.lastIndexOf("."))
 
 lazy val runOnPrebuiltJar = sys.props.contains("ci.integrationtest")
+lazy val usePrebuiltJar = sys.props.get("prebuiltJarPath").map(file).filter(_.exists)
 
 def incompatibleSparkVersions(): FileFilter = {
   val versionArray = releaseSparkVersion.split("""\.""").map(Integer.parseInt)
@@ -90,6 +91,9 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
     )
   }
   else Seq(
+    credentials += Credentials(baseDirectory.value / "sonatype_credentials"),
+    resolvers += "Sonatype" at "https://oss.sonatype.org/content/groups/public",
+    useGpg := true,
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
       if (isSnapshot.value) {
@@ -98,6 +102,8 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
         Some("releases"  at nexus + "service/local/staging/deploy/maven2")
       }
     },
+    publishMavenStyle := true,
+    pomIncludeRepository := { _ => false },
     // Add publishing to spark packages as another step.
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
@@ -126,7 +132,7 @@ lazy val root = Project("spark-redshift", file("."))
     else Defaults.coreDefaultSettings
     )
   .settings(Defaults.itSettings: _*)
-  .settings(ciPipelineSettings(isCI))
+  .settings(ciPipelineSettings(isInternalRepo))
   .settings(
     if (runOnPrebuiltJar) Seq(
       ItTest / unmanagedJars += Attributed.blank(baseDirectory.value / "lib" / "main.jar")
@@ -184,6 +190,13 @@ lazy val root = Project("spark-redshift", file("."))
     Test / javaOptions ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M",
       "-Duser.timezone=GMT", "-Dscala.concurrent.context.maxThreads=5"),
 
+    Compile / sources := {
+      if (usePrebuiltJar.isDefined) Seq.empty
+      else (Compile / sources).value
+    },
+    Compile / packageBin := {
+        usePrebuiltJar.getOrElse((Compile / packageBin).value)
+    },
     /********************
      * Release settings *
      ********************/
