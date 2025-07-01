@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.Conversions
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
 

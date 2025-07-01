@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
 import java.io.{ByteArrayInputStream, OutputStreamWriter}
 import java.net.URI
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
+import io.github.spark_redshift_community.spark.redshift.{Parameters, Utils}
+import io.github.spark_redshift_community.spark.redshift.{TableName, DefaultSource, DefaultRedshiftWriter}
+import io.github.spark_redshift_community.spark.redshift.{RedshiftRelation, RedshiftWriter}
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_USER_QUERY_GROUP_LABEL}
+import io.github.spark_redshift_community.spark.redshift.{Conversions, Parameters, RowEncoderUtils}
+import io.github.spark_redshift_community.spark.redshift.test.InMemoryS3AFileSystem
 import org.apache.http.client.methods.HttpRequestBase
 import org.mockito.ArgumentMatchers.{anyString, endsWith}
 import org.mockito.Mockito

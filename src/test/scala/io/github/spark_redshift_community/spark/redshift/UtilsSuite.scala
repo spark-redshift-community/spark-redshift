@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.Utils
+import io.github.spark_redshift_community.spark.redshift.{BuildInfo, Parameters}
 import java.net.URI
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration

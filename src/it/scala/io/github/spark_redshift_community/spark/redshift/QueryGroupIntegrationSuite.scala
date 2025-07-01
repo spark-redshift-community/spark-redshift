@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.Parameters
 import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper
 import org.mockito.Mockito.verify
 import org.scalatestplus.mockito.MockitoSugar.mock

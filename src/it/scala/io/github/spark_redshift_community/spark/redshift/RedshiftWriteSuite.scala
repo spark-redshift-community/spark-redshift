@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.Parameters
 import java.sql.SQLException
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._

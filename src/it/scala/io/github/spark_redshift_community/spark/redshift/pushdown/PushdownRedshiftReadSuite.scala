@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
+import io.github.spark_redshift_community.spark.redshift.pushdown.RedshiftScanExec
 import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper
-import io.github.spark_redshift_community.spark.redshift.{IntegrationSuiteBase, OverrideNullableSuite}
+import io.github.spark_redshift_community.spark.redshift.test.{IntegrationSuiteBase, OverrideNullableSuite}
 import org.apache.spark.sql.execution.adaptive.AdaptiveSparkPlanExec
 
 class PushdownRedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite {

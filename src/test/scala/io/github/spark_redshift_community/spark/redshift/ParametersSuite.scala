@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.{Parameters, TableName}
+import io.github.spark_redshift_community.spark.redshift
 import org.scalatest.matchers.should._
 import org.scalatest.funsuite.AnyFunSuite
 

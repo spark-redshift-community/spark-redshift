@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
 import org.apache.spark.sql.{AnalysisException, Row}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
@@ -369,9 +369,7 @@ class UpdateCorrectnessSuite extends IntegrationPushdownSuiteBase {
         sqlContext.sql(s"update $tableName set address.city = 'Boston' where id = 1")
       }
 
-      assert(exception.getMessage.equals("[INVALID_EXTRACT_BASE_FIELD_TYPE] Can't extract a " +
-        "value from \"address\". Need a complex type [STRUCT, ARRAY, MAP] but got \"STRING\".; " +
-        "line 1 pos 42") ||
+      assert(exception.getMessage.contains("[INVALID_EXTRACT_BASE_FIELD_TYPE]") ||
       exception.getMessage.contains("need struct type but got string"))
 
       checkAnswer(

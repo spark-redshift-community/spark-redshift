@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
-import io.github.spark_redshift_community.spark.redshift.{IntegrationSuiteBase, Utils}
+import io.github.spark_redshift_community.spark.redshift.test.IntegrationSuiteBase
+import io.github.spark_redshift_community.spark.redshift.Utils
+import io.github.spark_redshift_community.spark.redshift.pushdown.SqlToS3TempCache
 import io.github.spark_redshift_community.spark.redshift.Parameters._
 import org.apache.spark.sql.{DataFrameReader, SQLContext}
 

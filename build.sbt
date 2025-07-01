@@ -182,7 +182,7 @@ lazy val root = Project("spark-redshift", file("."))
     Test / testOptions += Tests.Argument("-oF"),
     Test / fork := true,
     Test / javaOptions ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M",
-      "-Duser.timezone=GMT", "-Dscala.concurrent.context.maxThreads=10"),
+      "-Duser.timezone=GMT", "-Dscala.concurrent.context.maxThreads=5"),
 
     /********************
      * Release settings *

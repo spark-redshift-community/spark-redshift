@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapred._

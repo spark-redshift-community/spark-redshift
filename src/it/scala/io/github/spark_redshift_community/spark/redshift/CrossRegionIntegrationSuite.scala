@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
 import io.github.spark_redshift_community.spark.redshift.Parameters.PARAM_TEMPDIR_REGION
 import org.apache.spark.sql.Row

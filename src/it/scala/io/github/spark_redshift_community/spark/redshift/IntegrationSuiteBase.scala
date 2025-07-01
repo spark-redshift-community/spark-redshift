@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.Parameters
 import io.github.spark_redshift_community.spark.redshift.Parameters._
+import io.github.spark_redshift_community.spark.redshift.ComparableVersion
 import io.github.spark_redshift_community.spark.redshift.data.{RedshiftConnection, RedshiftWrapper, RedshiftWrapperFactory}
 
 import java.net.URI

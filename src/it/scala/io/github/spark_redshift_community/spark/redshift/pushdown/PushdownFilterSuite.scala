@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
-import io.github.spark_redshift_community.spark.redshift.TestUtils
+import io.github.spark_redshift_community.spark.redshift.test.TestUtils
 import org.apache.spark.sql.Row
 
 abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {

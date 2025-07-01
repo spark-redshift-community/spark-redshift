@@ -13,8 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package io.github.spark_redshift_community.spark.redshift.pushdown.deoptimize
+package io.github.spark_redshift_community.spark.redshift.pushdown.deoptimize.test
 
+import io.github.spark_redshift_community.spark.redshift.pushdown.deoptimize.ReadSidePadding
+import io.github.spark_redshift_community.spark.redshift.pushdown.deoptimize.UndoCharTypePadding
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions.{Alias, AttributeReference, Expression, IsNotNull, Literal}

@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift.pushdown.lst
+package io.github.spark_redshift_community.spark.redshift.pushdown.lst.test
 
-import io.github.spark_redshift_community.spark.redshift.pushdown.{ TestCase }
+import io.github.spark_redshift_community.spark.redshift.pushdown.test.{ TestCase }
 import org.apache.spark.sql.Row
 
 class LST_CorrectnessSuite extends LSTIntegrationPushdownSuiteBase {

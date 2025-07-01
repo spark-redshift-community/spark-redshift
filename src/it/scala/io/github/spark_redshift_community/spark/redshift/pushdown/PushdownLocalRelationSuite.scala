@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
 class PushdownLocalRelationSuite extends IntegrationPushdownSuiteBase {
   // These tests cannot disable pushdown since insert happens in pushdown

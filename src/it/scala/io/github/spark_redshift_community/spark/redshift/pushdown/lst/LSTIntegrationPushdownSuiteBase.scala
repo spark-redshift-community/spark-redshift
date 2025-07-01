@@ -14,10 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown.lst
+package io.github.spark_redshift_community.spark.redshift.pushdown.lst.test
 
 import com.amazonaws.util.IOUtils
-import io.github.spark_redshift_community.spark.redshift.pushdown.{IntegrationPushdownSuiteBase, SqlToS3TempCache}
+import io.github.spark_redshift_community.spark.redshift.pushdown.test.IntegrationPushdownSuiteBase
+import io.github.spark_redshift_community.spark.redshift.pushdown.SqlToS3TempCache
 
 class LSTIntegrationPushdownSuiteBase extends IntegrationPushdownSuiteBase{
 

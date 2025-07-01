@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
 import com.amazonaws.auth.{AWSSessionCredentials, BasicAWSCredentials, BasicSessionCredentials, DefaultAWSCredentialsProviderChain}
+import io.github.spark_redshift_community.spark.redshift.Parameters
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_TEMPORARY_AWS_ACCESS_KEY_ID, PARAM_TEMPORARY_AWS_SECRET_ACCESS_KEY, PARAM_TEMPORARY_AWS_SESSION_TOKEN}
+import io.github.spark_redshift_community.spark.redshift.AWSCredentialsUtils
 import org.apache.hadoop.conf.Configuration
 import org.scalatest.funsuite.AnyFunSuite
 

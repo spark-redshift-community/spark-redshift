@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.Conversions
 import java.sql.{Date, Timestamp}
 import java.time.ZoneId
 import java.util.{Calendar, Locale, TimeZone}
