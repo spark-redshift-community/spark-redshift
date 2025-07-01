@@ -357,7 +357,12 @@ private[redshift] object Utils {
     // Either the user didn't provide a region or its malformed. Try to use the
     // connector's region as the tempdir region since they are usually collocated.
     // If they aren't, S3's default provider chain will help resolve the difference.
-    val currRegion = new DefaultAwsRegionProviderChain().getRegion
+    val currRegion = try {
+      new DefaultAwsRegionProviderChain().getRegion
+    } catch {
+      case _: Throwable =>
+        null
+    }
 
     // If the user didn't provide a valid tempdir region and we cannot determine
     // the connector's region, the connector is likely running outside of AWS.
