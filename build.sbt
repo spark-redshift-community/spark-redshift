@@ -27,6 +27,7 @@ import java.io.FileInputStream
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
 val sparkVersion = "3.5.6"
 val isInternalRepo = "true" equalsIgnoreCase System.getProperty("config.InternalRepo")
+val publishSonatypeCentral = "true" equalsIgnoreCase System.getProperty("config.publishSonatypeCentral")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.
@@ -58,53 +59,81 @@ def incompatibleSparkVersions(): FileFilter = {
   }
 }
 
-def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
-  if (condition) {
-    val (fetchRealm, publishRealm, fetchUrl, publishUrl, fetchRepo, publishRepo, userName) =
-      try {
-        val prop = new Properties()
-        prop.load(new FileInputStream("ci/internal_ci.properties"))
-        (
-          prop.getProperty("fetchRealm"),
-          prop.getProperty("publishRealm"),
-          prop.getProperty("fetchUrl"),
-          prop.getProperty("publishUrl"),
-          prop.getProperty("fetchRepo"),
-          prop.getProperty("publishRepo"),
-          prop.getProperty("userName")
-        )
-      } catch {
-        case e: Exception =>
-          e.printStackTrace()
-          sys.exit(1)
+def loadCiProperties(): (String, String, String, String, String, String, String) = {
+  try {
+    val prop = new Properties()
+    prop.load(new FileInputStream("ci/internal_ci.properties"))
+    (
+      prop.getProperty("fetchRealm"),
+      prop.getProperty("publishRealm"),
+      prop.getProperty("fetchUrl"),
+      prop.getProperty("publishUrl"),
+      prop.getProperty("fetchRepo"),
+      prop.getProperty("publishRepo"),
+      prop.getProperty("userName")
+    )
+  } catch {
+    case e: Exception =>
+      e.printStackTrace()
+      sys.exit(1)
+  }
+}
+
+def internalRepoSettings(): Seq[Def.Setting[_]] = {
+  val props = loadCiProperties()
+  val (fetchRealm, publishRealm, fetchUrl, publishUrl, fetchRepo, publishRepo, userName) = props
+  
+  val baseCredentials = Seq(
+    Credentials(fetchRealm.replace("--", "/"), fetchUrl, userName, awsSharedRepoPass),
+    Credentials(publishRealm.replace("--", "/"), publishUrl, userName, internalReleaseRepoPass)
+  )
+  
+  val baseSettings = Seq(
+    credentials := {
+      if (publishSonatypeCentral) {
+        Credentials(baseDirectory.value / "sonatype_central_credentials") +: baseCredentials
+      } else {
+        baseCredentials
       }
+    },
+    resolvers := Seq(fetchRealm at fetchRepo),
+    externalResolvers := Resolver.combineDefaultResolvers(resolvers.value.toVector, mavenCentral = false),
+    releaseProcess := Seq[ReleaseStep](publishArtifacts)
+  )
+  
+  val publishSettings = if (publishSonatypeCentral) {
     Seq(
-      credentials := Seq(
-        Credentials(fetchRealm.replace("--", "/"), fetchUrl, userName, awsSharedRepoPass),
-        Credentials(publishRealm.replace("--", "/"), publishUrl, userName, internalReleaseRepoPass)
-      ),
-      resolvers := Seq(fetchRealm at fetchRepo),
-      externalResolvers := Resolver.combineDefaultResolvers(resolvers.value.toVector, mavenCentral = false),
-      publishTo := Some (publishRealm at publishRepo),
-      pomIncludeRepository := { (_: MavenRepository) => false },
-      releaseProcess := Seq[ReleaseStep](publishArtifacts)
+      publishTo := {
+        val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+        if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+        else localStaging.value
+      },
+      useGpg := true,
+      publishMavenStyle := true,
+      pomIncludeRepository := { _ => false }
+    )
+  } else {
+    Seq(
+      publishTo := Some(publishRealm at publishRepo),
+      pomIncludeRepository := { (_: MavenRepository) => false }
     )
   }
-  else Seq(
-    credentials += Credentials(baseDirectory.value / "sonatype_credentials"),
+  
+  baseSettings ++ publishSettings
+}
+
+def externalRepoSettings(): Seq[Def.Setting[_]] = {
+  Seq(
+    credentials += Credentials(baseDirectory.value / "sonatype_central_credentials"),
     resolvers += "Sonatype" at "https://oss.sonatype.org/content/groups/public",
     useGpg := true,
     publishTo := {
-      val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value) {
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      } else {
-        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-      }
+      val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+      if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+      else localStaging.value
     },
     publishMavenStyle := true,
     pomIncludeRepository := { _ => false },
-    // Add publishing to spark packages as another step.
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
@@ -118,6 +147,11 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
       pushChanges
     )
   )
+}
+
+def ciPipelineSettings(useInternalRepo: Boolean): Seq[Def.Setting[_]] = {
+  if (useInternalRepo) internalRepoSettings()
+  else externalRepoSettings()
 }
 
 lazy val root = Project("spark-redshift", file("."))
@@ -151,7 +185,6 @@ lazy val root = Project("spark-redshift", file("."))
     organization := "io.github.spark-redshift-community",
     scalaVersion := buildScalaVersion,
     licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0"),
-    credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
     scalacOptions ++= Seq("-target:jvm-1.8"),
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
