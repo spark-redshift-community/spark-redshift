@@ -30,7 +30,7 @@ val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.
-lazy val IntegrationTest = config("it") extend Test
+lazy val ItTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.4")
 val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.32")
@@ -44,6 +44,8 @@ val internalReleaseRepoPass = sys.props.get("ci.internalTeamMvnPassword").getOrE
 // e.g. MAJOR.MINOR.PATCH => MAJOR.MINOR
 val releaseSparkVersion = testSparkVersion.substring(0, testSparkVersion.lastIndexOf("."))
 val releaseScalaVersion = buildScalaVersion.substring(0, buildScalaVersion.lastIndexOf("."))
+
+lazy val runOnPrebuiltJar = sys.props.contains("ci.integrationtest")
 
 def incompatibleSparkVersions(): FileFilter = {
   val versionArray = releaseSparkVersion.split("""\.""").map(Integer.parseInt)
@@ -114,10 +116,28 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
 
 lazy val root = Project("spark-redshift", file("."))
   .enablePlugins(BuildInfoPlugin)
-  .configs(IntegrationTest)
-  .settings(Defaults.coreDefaultSettings: _*)
+  .configs(ItTest)
+  .settings(
+    if (runOnPrebuiltJar) Nil
+    else inConfig(ItTest)(Defaults.testSettings)
+  )
+  .settings(
+    if (runOnPrebuiltJar) Nil
+    else Defaults.coreDefaultSettings
+    )
   .settings(Defaults.itSettings: _*)
   .settings(ciPipelineSettings(isCI))
+  .settings(
+    if (runOnPrebuiltJar) Seq(
+      ItTest / unmanagedJars += Attributed.blank(baseDirectory.value / "lib" / "main.jar")
+    )
+    else Nil
+  )
+  .settings(
+    if (runOnPrebuiltJar) 
+      Seq( Compile / sources := Seq.empty)
+    else Nil
+  )  
   .settings(
     unmanagedSources / excludeFilter ~= { _ || HiddenFileFilter || incompatibleSparkVersions()},
     name := "spark-redshift",
