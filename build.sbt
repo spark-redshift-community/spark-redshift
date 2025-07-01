@@ -25,7 +25,7 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
-val sparkVersion = "3.5.5"
+val sparkVersion = "3.5.6"
 val isInternalRepo = "true" equalsIgnoreCase System.getProperty("config.InternalRepo")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
@@ -140,10 +140,10 @@ lazy val root = Project("spark-redshift", file("."))
     else Nil
   )
   .settings(
-    if (runOnPrebuiltJar) 
+    if (runOnPrebuiltJar)
       Seq( Compile / sources := Seq.empty)
     else Nil
-  )  
+  )
   .settings(
     unmanagedSources / excludeFilter ~= { _ || HiddenFileFilter || incompatibleSparkVersions()},
     name := "spark-redshift",
