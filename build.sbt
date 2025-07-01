@@ -16,7 +16,6 @@
  */
 
 import com.jsuereth.sbtpgp.PgpKeys
-import org.scalastyle.sbt.ScalastylePlugin.rawScalastyleSettings
 import sbt.Keys._
 import sbt._
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
@@ -116,7 +115,6 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
 lazy val root = Project("spark-redshift", file("."))
   .enablePlugins(BuildInfoPlugin)
   .configs(IntegrationTest)
-  .settings(Project.inConfig(IntegrationTest)(rawScalastyleSettings()): _*)
   .settings(Defaults.coreDefaultSettings: _*)
   .settings(Defaults.itSettings: _*)
   .settings(ciPipelineSettings(isCI))
@@ -152,7 +150,6 @@ lazy val root = Project("spark-redshift", file("."))
         exclude("org.apache.hadoop", "hadoop-common")
         exclude("com.amazonaws", "aws-java-sdk-s3")  force()
         exclude("com.amazonaws", "aws-java-sdk-bundle"),
-
       "org.apache.spark" %% "spark-core" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-sql" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-hive" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
