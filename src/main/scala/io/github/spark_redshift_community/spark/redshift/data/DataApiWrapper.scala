@@ -22,7 +22,7 @@ import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import io.github.spark_redshift_community.spark.redshift.TimestampNTZTypeExtractor
-import io.github.spark_redshift_community.spark.redshift.pushdown.{BooleanVariable, ByteVariable, ConstantString, DoubleVariable, FloatVariable, IntVariable, LongVariable, RedshiftSQLStatement, ShortVariable, StatementElement, StringVariable}
+import io.github.spark_redshift_community.spark.redshift.pushdown.{BinaryVariable, BooleanVariable, ByteVariable, ConstantString, DoubleVariable, FloatVariable, IntVariable, LongVariable, RedshiftSQLStatement, ShortVariable, StatementElement, StringVariable}
 import org.slf4j.LoggerFactory
 
 import java.util.concurrent.{ConcurrentHashMap, Executors, ThreadFactory}
@@ -365,6 +365,7 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
       case "float8" => DoubleType
       case "char" => StringType
       case "varchar" => StringType
+      case "varbyte" => BinaryType
       case "bool" => BooleanType
       case "date" => DateType
       case "time" => TimestampType
@@ -473,6 +474,7 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
             case ele: DoubleVariable => QueryParameter(name, ele.variable, java.sql.Types.DOUBLE)
             case ele: BooleanVariable => QueryParameter(name, ele.variable, java.sql.Types.BOOLEAN)
             case ele: ByteVariable => QueryParameter(name, ele.variable, java.sql.Types.TINYINT)
+            case ele: BinaryVariable => QueryParameter(name, ele.variable, java.sql.Types.LONGVARBINARY)
             case _ =>
               throw new IllegalArgumentException(
                 "Unexpected Element Type: " + element.getClass.getName
