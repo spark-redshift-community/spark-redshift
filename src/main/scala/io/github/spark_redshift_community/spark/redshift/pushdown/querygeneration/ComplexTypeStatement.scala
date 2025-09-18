@@ -17,7 +17,7 @@ package io.github.spark_redshift_community.spark.redshift.pushdown.querygenerati
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, Identifier, RedshiftSQLStatement}
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GetArrayItem, GetMapValue, GetStructField, Literal}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GetArrayItem, GetStructField, Literal}
 import org.apache.spark.sql.types.{LongType, StringType}
 
 /* Extractors for projections of complex types (Structs, Arrays, Maps) */
@@ -29,11 +29,23 @@ private[querygeneration] object ComplexTypeStatement {
     val fields = expAttr._2
 
     Option(expr match {
-      case GetStructField(child, _, _) => {
-        handleComplexTypeSubfieldConversion(expr,
-          convertStatement(child, fields) + "." +
-            Identifier(expr.asInstanceOf[GetStructField].extractFieldName))
-      }
+      case gsf @ GetStructField(child, _, _) =>
+        child match {
+          case ScalarSubqueryExtractor(subquery, _, _, joinCond) if joinCond.isEmpty =>
+            val qb = new QueryBuilder(subquery)
+            blockStatement(
+              ConstantString("SELECT") +
+                handleComplexTypeSubfieldConversion(expr,
+                  Identifier(wrap(qb.treeRoot.helper.output.head.name)) + "." +
+                  Identifier(wrap(gsf.extractFieldName))) +
+              ConstantString("FROM") + blockStatement(qb.statement)
+            )
+          case _ =>
+            handleComplexTypeSubfieldConversion(expr,
+              convertStatement(child, fields) + "." +
+                Identifier(wrap(gsf.extractFieldName)))
+        }
+
       // redshift has lax super semantics by default, let spark handle strict case
       case GetArrayItem(_, _, true) => throw cannotPushdownStrictIndexOperatorExpression(expr)
       case GetMapValueExtractor(_, _, true) =>

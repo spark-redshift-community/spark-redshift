@@ -14,11 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
 import java.io.{DataOutputStream, File, FileOutputStream}
 
 import com.google.common.io.Files
+import io.github.spark_redshift_community.spark.redshift.RedshiftContext
+import io.github.spark_redshift_community.spark.redshift.RedshiftInputFormat
 import io.github.spark_redshift_community.spark.redshift.RedshiftInputFormat._
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.SparkContext

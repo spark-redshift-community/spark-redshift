@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.Parameters
 import java.sql.Timestamp
 import org.apache.spark.sql.types.{CalendarIntervalType, ByteType, DoubleType, FloatType, IntegerType, LongType, ShortType, StructField, StructType}
 import org.apache.spark.sql.{AnalysisException, Row, execution}
@@ -30,13 +31,13 @@ class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite 
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    conn.prepareStatement(s"drop table if exists $test_table").executeUpdate()
+    redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table")
     createTestDataInRedshift(test_table)
   }
 
   override def afterAll(): Unit = {
     try {
-      conn.prepareStatement(s"drop table if exists $test_table").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table")
     } finally {
       super.afterAll()
     }
@@ -48,7 +49,7 @@ class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite 
   }
 
   protected def createTestRealDataInRedshift(tableName: String): Unit = {
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          | create table $tableName (
          | testreal real
@@ -56,14 +57,14 @@ class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite 
          |""".stripMargin
     )
 
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""insert into $tableName values
          | (1.0), (null), (-1.0)
          |""".stripMargin
     )
   }
   protected def createSmallintDataInRedshift(tableName: String): Unit = {
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          | create table $tableName (
          | test_smallint smallint
@@ -71,7 +72,7 @@ class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite 
          |""".stripMargin
     )
 
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""insert into $tableName values
          | (1), (2), (32767), (-32768)
          |""".stripMargin
@@ -223,26 +224,26 @@ class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite 
   test("read special float values (regression test for #261)") {
     val tableName = s"roundtrip_special_float_values_$randomSuffix"
     try {
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"CREATE TABLE $tableName (x real)")
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"INSERT INTO $tableName VALUES ('NaN'), ('Infinity'), ('-Infinity')")
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(
         read.option("dbtable", tableName).load(),
         Seq(Float.NaN, Float.PositiveInfinity, Float.NegativeInfinity).map(x => Row.apply(x)))
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 
   test("test empty string and null") {
     withTempRedshiftTable("records_with_empty_and_null_characters") { tableName =>
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"CREATE TABLE $tableName (x varchar(256))")
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"INSERT INTO $tableName VALUES ('null'), (''), (null)")
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(
         read.option("dbtable", tableName).load(),
         Seq("null", "", null).map(x => Row.apply(x)))
@@ -251,10 +252,10 @@ class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite 
 
   test("test timestamptz parsing") {
     withTempRedshiftTable("luca_test_timestamptz_spark_redshift") { tableName =>
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"CREATE TABLE $tableName (x timestamptz)"
       )
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"INSERT INTO $tableName VALUES ('2015-07-03 00:00:00.000 -0300')"
       )
 
@@ -270,26 +271,26 @@ class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite 
   test("read special double values (regression test for #261)") {
     val tableName = s"roundtrip_special_double_values_$randomSuffix"
     try {
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"CREATE TABLE $tableName (x double precision)")
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"INSERT INTO $tableName VALUES ('NaN'), ('Infinity'), ('-Infinity')")
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(
         read.option("dbtable", tableName).load(),
         Seq(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity).map(x => Row.apply(x)))
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 
   test("read records containing escaped characters") {
     withTempRedshiftTable("records_with_escaped_characters") { tableName =>
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"CREATE TABLE $tableName (x text)")
-      conn.createStatement().executeUpdate(
+      redshiftWrapper.executeUpdate(conn,
         s"""INSERT INTO $tableName VALUES ('a\\nb'), ('\\\\'), ('"')""")
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(
         read.option("dbtable", tableName).load(),
         Seq("a\nb", "\\", "\"").map(x => Row.apply(x)))
@@ -387,7 +388,7 @@ class RedshiftReadSuite extends IntegrationSuiteBase with OverrideNullableSuite 
     // Tests with text unload format as parquet implements its own check for supported data types
     assertThrows[AnalysisException] {
       withTempRedshiftTable("testTable") { name =>
-        conn.createStatement().executeUpdate(s"create table $name (id integer)")
+        redshiftWrapper.executeUpdate(conn, s"create table $name (id integer)")
         val invalidSchema = StructType(StructField("id", CalendarIntervalType) :: Nil)
         read
           .schema(invalidSchema)

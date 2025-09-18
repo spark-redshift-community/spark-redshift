@@ -15,11 +15,13 @@
 * limitations under the License.
 */
 
+//import io.github.spark_redshift_community.spark.redshift
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.{ConstantString, EmptyRedshiftSQLStatement, IntVariable, RedshiftSQLStatement}
-import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Coalesce, Descending, Expression, If, In, InSet, Literal, MakeDecimal, NullsFirst, NullsLast, SortOrder, UnscaledValue}
+import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException, TimestampNTZTypeExtractor}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, CaseWhen, Coalesce, CreateNamedStruct, Descending, Exists, Expression, If, In, InSet, InSubquery, Literal, MakeDecimal, NullsFirst, NullsLast, SortOrder, UnscaledValue}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -36,21 +38,33 @@ private[querygeneration] object MiscStatement {
       case Alias(child: Expression, name: String) =>
         blockStatement(convertStatement(child, fields), name)
 
-      // Spark 3.2 introduces below new parameter.
-      //   override val ansiEnabled: Boolean = SQLConf.get.ansiEnabled
-      // So support to pushdown, if ansiEnabled is false.
-      // https://github.com/apache/spark/commit/6f51e37eb52f21b50c8d7b15c68bf9969fee3567
+      case CreateNamedStruct(children: Seq[Expression])
+        if children.zipWithIndex.forall(pair =>
+          if (pair._2 % 2 == 1) {
+              // Redshift doesn't support time/date for values in Objects
+              pair._1.dataType match {
+                case DateType | TimestampType | TimestampNTZTypeExtractor(_) => false
+                case _ => true
+              }
+          } else true
+        ) =>
+        ConstantString("OBJECT(") + mkStatement( children.map(convertStatement(_, fields)), ",") +
+        ConstantString(")")
 
-      // To support spark 3.1 as below
-      // case Cast(child, t, _) =>
-      case CastExtractor(child, t, ansiEnabled) if !ansiEnabled =>
+      // Context for removing the ansi condition check:
+      // Snowflake added this ansi check during the Spark 3.2 upgrade
+      // as a precaution for Cast push down, even though the ansi property existed
+      // before 3.2. Cast push down worked regardless of ansi settings, and tests
+      // pass without the check. We’re removing it since it’s redundant. See where
+      // Snowflake introduced this: https://github.com/snowflakedb/spark-snowflake/pull/408
+      case CastExtractor(child, t, _) =>
         getCastType(t) match {
           case Some(cast) =>
             // For known unsupported data conversion, raise exception to break the
             // pushdown process.
             (child.dataType, t) match {
-              case (_: DateType | _: TimestampType,
-              _: IntegerType | _: LongType | _: FloatType | _: DoubleType | _: DecimalType) =>
+              case (_: DateType | _: TimestampType | TimestampNTZTypeExtractor(_),
+                    _: IntegerType | _: LongType | _: FloatType | _: DoubleType | _: DecimalType) =>
                 // This exception will not break the connector. It will be caught in
                 // QueryBuilder.treeRoot.
                 throw new RedshiftPushdownUnsupportedException(
@@ -123,6 +137,14 @@ private[querygeneration] object MiscStatement {
       case ScalarSubqueryExtractor(subquery, _, _, joinCond) if joinCond.isEmpty =>
         blockStatement(new QueryBuilder(subquery).statement)
 
+      case InSubquery(values, subQuery) =>
+        blockStatement(
+          mkStatement(values.map(convertStatement(_, fields)), ", ")
+        ) + ConstantString("IN") + convertSubQuery(fields, subQuery.plan, subQuery.joinCond)
+
+      case ExistsExtractor(subQuery, joinCond) =>
+        ConstantString("EXISTS").toStatement + convertSubQuery(fields, subQuery, joinCond)
+
       case UnscaledValue(child) =>
         child.dataType match {
           case d: DecimalType =>
@@ -156,6 +178,28 @@ private[querygeneration] object MiscStatement {
 
       case _ => null
     })
+  }
+
+  def convertSubQuery(fields: Seq[Attribute], subQuery: LogicalPlan, joinCond: Seq[Expression]):
+  RedshiftSQLStatement = {
+    val subQueryBuilder = new QueryBuilder(subQuery)
+    val suffix =
+      if (joinCond.nonEmpty) {
+        // When there is a join condition, we need a separate query builder and helper
+        // for retrieving the aliases for the join conditions.
+        val subQueryHelper =
+            QueryHelper(
+              children = Seq(subQueryBuilder.treeRoot),
+              projections = None,
+              outputAttributes = None,
+              alias = "")
+        ConstantString("WHERE") + mkStatement(
+          joinCond.map(convertStatement(_, fields ++ subQueryHelper.pureColSet)), "AND")
+      } else {
+        EmptyRedshiftSQLStatement()
+      }
+
+    blockStatement(subQueryBuilder.statement + suffix)
   }
 
   final def setToExpr(set: Set[Any]): Seq[Expression] = {

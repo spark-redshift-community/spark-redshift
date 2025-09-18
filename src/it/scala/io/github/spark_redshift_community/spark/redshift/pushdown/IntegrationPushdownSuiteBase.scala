@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
-import io.github.spark_redshift_community.spark.redshift.{IntegrationSuiteBase, Utils}
-import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_PUSHDOWN_S3_RESULT_CACHE, PARAM_TEMPDIR_REGION, PARAM_UNLOAD_S3_FORMAT}
+import io.github.spark_redshift_community.spark.redshift.test.IntegrationSuiteBase
+import io.github.spark_redshift_community.spark.redshift.Utils
+import io.github.spark_redshift_community.spark.redshift.pushdown.SqlToS3TempCache
+import io.github.spark_redshift_community.spark.redshift.Parameters._
 import org.apache.spark.sql.{DataFrameReader, SQLContext}
 
 import java.time.format.DateTimeFormatter
@@ -51,8 +53,8 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     if (!preloaded_data.toBoolean) {
-      conn.prepareStatement(s"drop table if exists $test_table").executeUpdate()
-      conn.prepareStatement(s"drop table if exists $test_table_safe_null").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table")
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table_safe_null")
       createTestDataInRedshift(test_table)
     }
   }
@@ -60,8 +62,8 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   override def afterAll(): Unit = {
     try {
       if (!preloaded_data.toBoolean) {
-        conn.prepareStatement(s"drop table if exists $test_table").executeUpdate()
-        conn.prepareStatement(s"drop table if exists $test_table_safe_null").executeUpdate()
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table")
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $test_table_safe_null")
       }
     } finally {
       super.afterAll()
@@ -79,14 +81,8 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   }
 
   override def read: DataFrameReader = {
-    sqlContext.read
-      .format("io.github.spark_redshift_community.spark.redshift")
-      .option("url", jdbcUrl)
-      .option("tempdir", tempDir)
-      .option("forward_spark_s3_credentials", "true")
-      .option(PARAM_AUTO_PUSHDOWN, auto_pushdown)
+    super.read
       .option(PARAM_UNLOAD_S3_FORMAT, s3format)
-      .option(PARAM_TEMPDIR_REGION, AWS_S3_SCRATCH_SPACE_REGION)
       .option(PARAM_PUSHDOWN_S3_RESULT_CACHE, s3_result_cache)
   }
 
@@ -97,7 +93,7 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
       // Make sure there is at least one match.
       val threadName = Thread.currentThread.getName
       val lastBuildStmt = Utils.lastBuildStmt(threadName).replaceAll("\\s", "")
-      assert(expectedAnswers.exists(_.replaceAll("\\s", "") == lastBuildStmt),
+      assert(expectedAnswers.exists(_.replaceAll("\\s", "").toUpperCase == lastBuildStmt.toUpperCase),
         s"\n\nActual sql: ${Utils.lastBuildStmt}")
     }
   }

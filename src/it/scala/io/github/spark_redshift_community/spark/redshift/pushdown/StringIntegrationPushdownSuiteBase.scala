@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
 class StringIntegrationPushdownSuiteBase extends IntegrationPushdownSuiteBase {
   override def createTestDataInRedshift(tableName: String): Unit = {
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          |create table $tableName (
          |testid int,
@@ -37,7 +37,7 @@ class StringIntegrationPushdownSuiteBase extends IntegrationPushdownSuiteBase {
     """.stripMargin
     )
     // scalastyle:off
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          |insert into $tableName values
          |(0, null, null, null, null, null, null, null, null, null, null, null, null),

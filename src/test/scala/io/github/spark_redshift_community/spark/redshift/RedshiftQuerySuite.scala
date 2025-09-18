@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
 import io.github.spark_redshift_community.spark.redshift.pushdown.RedshiftScanExec
 import org.apache.spark.sql.SparkSession
@@ -57,7 +57,7 @@ class RedshiftQuerySuite extends AnyFunSuite with BeforeAndAfterAll {
     assert(plan.isInstanceOf[RedshiftScanExec])
     val rsPlan = plan.asInstanceOf[RedshiftScanExec]
     assert(rsPlan.query.statementString ==
-      """SELECT * FROM "public"."parquet_struct_table_view" AS "RS_CONNECTOR_QUERY_ALIAS""""
+      """SELECT * FROM "public"."parquet_struct_table_view" AS "RCQ_ALIAS""""
         .stripMargin)
   }
 

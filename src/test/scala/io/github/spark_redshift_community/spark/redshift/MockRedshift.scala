@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.data.RedshiftWrapper
 
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import org.apache.spark.sql.types.StructType
@@ -44,7 +45,7 @@ class MockRedshift(
 
   private[this] val jdbcConnections: mutable.Buffer[Connection] = mutable.Buffer.empty
 
-  val jdbcWrapper: JDBCWrapper = spy(new JDBCWrapper)
+  val redshiftWrapper: RedshiftWrapper = spy(new RedshiftWrapper)
 
   private def createMockConnection(): Connection = {
     val conn = mock(classOf[Connection], RETURNS_SMART_NULLS)
@@ -67,23 +68,6 @@ class MockRedshift(
     })
     conn
   }
-
-  doAnswer(new Answer[Connection] {
-      override def answer(invocation: InvocationOnMock): Connection = createMockConnection()
-    }).when(jdbcWrapper)
-      .getConnector(any[Option[String]](), same(jdbcUrl), any[Option[MergedParameters]])
-
-  doAnswer(new Answer[Boolean] {
-    override def answer(invocation: InvocationOnMock): Boolean = {
-      existingTablesAndSchemas.contains(invocation.getArguments()(1).asInstanceOf[String])
-    }
-  }).when(jdbcWrapper).tableExists(any[Connection], anyString())
-
-  doAnswer(new Answer[StructType] {
-    override def answer(invocation: InvocationOnMock): StructType = {
-      existingTablesAndSchemas(invocation.getArguments()(1).asInstanceOf[String])
-    }
-  }).when(jdbcWrapper).resolveTable(any[Connection], anyString(), any[Option[MergedParameters]])
 
   def verifyThatConnectionsWereClosed(): Unit = {
     jdbcConnections.foreach { conn =>

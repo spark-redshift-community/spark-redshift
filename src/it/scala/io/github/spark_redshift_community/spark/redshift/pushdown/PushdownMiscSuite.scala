@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.sql.types.{BooleanType, DateType, IntegerType, ShortType, StringType, StructField, StructType, TimestampType}
+
+import java.sql.{Date, Timestamp}
 
 abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
 
@@ -26,10 +30,10 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       Seq(Row("true")))
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTBOOL" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM (
-         | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-         | ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND "SUBQUERY_0"."TESTBOOL" ) ) AS
-         | "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( "SQ_1"."TESTBOOL" ) AS "SQ_2_COL_0" FROM ( SELECT * FROM (
+         | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" WHERE
+         | ( ( "SQ_0"."TESTBOOL" IS NOT NULL ) AND "SQ_0"."TESTBOOL" ) ) AS
+         | "SQ_1"""".stripMargin
     )
   }
 
@@ -40,11 +44,11 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       Seq(Row("true")))
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
-         | WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0" FROM
-         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND
-         | "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin
+      s"""SELECT * FROM ( SELECT ( CASE "SQ_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
+         | WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SQ_2_COL_0" FROM
+         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         | AS "SQ_0" WHERE ( ( "SQ_0"."TESTBOOL" IS NOT NULL ) AND
+         | "SQ_0"."TESTBOOL" ) ) AS "SQ_1" ) AS "SQ_2" LIMIT 1""".stripMargin
     )
   }
 
@@ -55,11 +59,11 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       Seq(Row("false")))
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
-         | WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0" FROM
-         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         | AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND NOT
-         | ( "SUBQUERY_0"."TESTBOOL" ) ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin
+      s"""SELECT * FROM ( SELECT ( CASE "SQ_1"."TESTBOOL" WHEN TRUE THEN \\'true\\'
+         | WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SQ_2_COL_0" FROM
+         | ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         | AS "SQ_0" WHERE ( ( "SQ_0"."TESTBOOL" IS NOT NULL ) AND NOT
+         | ( "SQ_0"."TESTBOOL" ) ) ) AS "SQ_1" ) AS "SQ_2" LIMIT 1""".stripMargin
     )
   }
 
@@ -70,10 +74,10 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       Seq(Row(null)))
 
     checkSqlStatement(
-      s"""SELECT * FROM ( SELECT ( CASE "SUBQUERY_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE
-        | THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
-        | $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTBOOL"
-        | IS NULL ) ) AS "SUBQUERY_1" ) AS "SUBQUERY_2" LIMIT 1""".stripMargin
+      s"""SELECT * FROM ( SELECT ( CASE "SQ_1"."TESTBOOL" WHEN TRUE THEN \\'true\\' WHEN FALSE
+        | THEN \\'false\\' ELSE null END ) AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+        | $test_table AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( "SQ_0"."TESTBOOL"
+        | IS NULL ) ) AS "SQ_1" ) AS "SQ_2" LIMIT 1""".stripMargin
     )
   }
 
@@ -84,10 +88,10 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
       Seq(Row("true")))
 
     checkSqlStatement(
-      s"""SELECT ( CASE ( CAST ( "SUBQUERY_1"."TESTINT" AS FLOAT4 ) > "SUBQUERY_1"."TESTFLOAT" )
-         | WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SUBQUERY_2_COL_0"
-         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         | WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( CASE ( CAST ( "SQ_1"."TESTINT" AS FLOAT4 ) > "SQ_1"."TESTFLOAT" )
+         | WHEN TRUE THEN \\'true\\' WHEN FALSE THEN \\'false\\' ELSE null END ) AS "SQ_2_COL_0"
+         | FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0"
+         | WHERE ( ( "SQ_0"."TESTBOOL" IS NOT NULL ) AND "SQ_0"."TESTBOOL" ) ) AS "SQ_1"""".stripMargin
     )
   }
 
@@ -112,11 +116,11 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
         Seq(Row(result)))
 
       checkSqlStatement(
-        s"""SELECT ( CAST ( "SUBQUERY_1"."${column.toUpperCase}" AS VARCHAR ) )
-           | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
-           | AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( (
-           | "SUBQUERY_0"."TESTBOOL" IS NOT NULL ) AND "SUBQUERY_0"."TESTBOOL" ) )
-           | AS "SUBQUERY_1"""".stripMargin
+        s"""SELECT ( CAST ( "SQ_1"."${column.toUpperCase}" AS VARCHAR ) )
+           | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+           | AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( (
+           | "SQ_0"."TESTBOOL" IS NOT NULL ) AND "SQ_0"."TESTBOOL" ) )
+           | AS "SQ_1"""".stripMargin
       )
     })
   }
@@ -133,14 +137,185 @@ abstract class PushdownMiscSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT
-         | * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |  AS "SUBQUERY_0" WHERE "SUBQUERY_0"."TESTINT" IN
+      s"""SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT
+         | * FROM $test_table AS "RCQ_ALIAS" )
+         |  AS "SQ_0" WHERE "SQ_0"."TESTINT" IN
          | ( 4 , 13 , 8 , 9 , 10 , 7 , 2 , 42 , 11 , 1 , 4141214 , 12 , 5 ) )
-         |  AS "SUBQUERY_1"""".stripMargin)
+         |  AS "SQ_1"""".stripMargin)
+  }
+
+  test("Test basic CreateNamedStruct") {
+    val innerSchema = StructType(StructField("testString", StringType) ::
+      StructField("testInt", IntegerType) :: Nil)
+    val outerSchema = StructType(
+      StructField("named_struct(testString, testString, testInt, testInt)",
+        innerSchema, nullable = false) :: Nil)
+    val expectedRow =
+      Seq(new GenericRowWithSchema(
+        Array(new GenericRowWithSchema(Array("f", 4141214), innerSchema)), outerSchema))
+
+    checkAnswer(sqlContext.sql(
+      s"""SELECT NAMED_STRUCT('a', teststring, 'b', testint)
+         | FROM test_table WHERE testint = 4141214""".stripMargin),
+      expectedRow)
+
+    checkSqlStatement(
+      s"""SELECT ( OBJECT( \\'a\\', "SQ_1" . "TESTSTRING",
+         |                 \\'b\\', "SQ_1" . "TESTINT" ) )
+         | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+         | AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( "SQ_0" .
+         | "TESTINT" IS NOT NULL ) AND ( "SQ_0"."TESTINT" = 4141214 ) ) )
+         | AS "SQ_1"""".stripMargin)
+  }
+
+  test("Test basic CreateNamedStruct All types except DATE and TIMESTAMP") {
+    val innerSchema = StructType(
+      StructField("testbyte", ShortType) ::
+        StructField("testbool", BooleanType) ::
+        StructField("testdouble", StringType) ::
+        StructField("testfloat", StringType) ::
+        StructField("testint", StringType) ::
+        StructField("testlong", StringType) ::
+        StructField("testshort", IntegerType) ::
+        StructField("testString", StringType) :: Nil)
+    val outerSchema = StructType(
+      StructField("named_struct(testbyte, testbyte, testbool, testbool, " +
+        "testdouble, testdouble, testfloat, testfloat, " +
+        "testint, testint, testlong, testlong, testshort, testshort," +
+        "teststring, teststring)",
+        innerSchema, nullable = false) :: Nil)
+    val expectedRow =
+      Seq(new GenericRowWithSchema(
+        Array(new GenericRowWithSchema(Array(0, null, 0.0, -1.0, 4141214,
+          1239012341823719L, null, "f"), innerSchema)), outerSchema))
+
+    checkAnswer(sqlContext.sql(
+      s"""select named_struct('a', testbyte, 'b', testbool, 'd', testdouble,
+         | 'e', testfloat, 'f', testint, 'g', testlong, 'h', testshort,
+         | 'i', teststring)
+         | from test_table where testint = 4141214""".stripMargin),
+      expectedRow)
+
+    checkSqlStatement(
+      s"""SELECT ( OBJECT( \\'a\\' , "SQ_1"."TESTBYTE" , \\'b\\' , "SQ_1"."TESTBOOL",
+         | \\'d\\' , "SQ_1"."TESTDOUBLE" , \\'e\\' , "SQ_1"."TESTFLOAT" ,
+         | \\'f\\' , "SQ_1"."TESTINT" , \\'g\\' , "SQ_1"."TESTLONG" ,
+         | \\'h\\' , "SQ_1"."TESTSHORT" , \\'i\\' , "SQ_1"."TESTSTRING" ) )
+         |  AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table
+         |  AS "RCQ_ALIAS" ) AS "SQ_0" WHERE (
+         |  ( "SQ_0"."TESTINT" IS NOT NULL ) AND ( "SQ_0"."TESTINT" = 4141214 ) ) )
+         |   AS "SQ_1"""".stripMargin)
+  }
+
+  test("Negative Test CreateNamedStruct: DATE type not convertible to super") {
+    val innerSchema = StructType(StructField("testdate", DateType) ::
+      StructField("testint", IntegerType) ::Nil)
+    val outerSchema = StructType(
+      StructField("named_struct(testdate, testdate, testint, testint)",
+        innerSchema, nullable = false) :: Nil)
+    val expectedRow =
+      Seq(new GenericRowWithSchema(
+        Array(new GenericRowWithSchema(Array(Date.valueOf("2015-07-03"), 4141214), innerSchema)),
+        outerSchema))
+
+    checkAnswer(sqlContext.sql(
+         s"""select named_struct('a', testdate, 'b', testint) from test_table
+         |where testint = 4141214""".stripMargin),
+      expectedRow)
+
+    checkSqlStatement(
+      s"""SELECT "testdate", "testint" FROM $test_table WHERE "testint" IS NOT NULL AND
+         |"testint" = 4141214""".stripMargin)
+  }
+
+  test("Negative Test CreateNamedStruct: TIMESTAMP type not convertible to super") {
+    val innerSchema = StructType(StructField("testtimestamp", TimestampType) :: Nil)
+    val outerSchema = StructType(
+      StructField("named_struct(testtimestamp, testtimestamp)",
+        innerSchema, nullable = false) :: Nil)
+    val expectedRow =
+      Seq(new GenericRowWithSchema(
+        Array(new GenericRowWithSchema(Array(Timestamp.valueOf("2015-07-03 12:34:56")),
+          innerSchema)), outerSchema))
+
+    checkAnswer( sqlContext.sql(
+        s"""select named_struct('a', testtimestamp) from test_table
+           | where testint = 4141214""".stripMargin), expectedRow)
+
+    checkSqlStatement(
+      s"""SELECT "testtimestamp" FROM $test_table WHERE "testint"
+         | IS NOT NULL AND "testint" = 4141214""".stripMargin)
+  }
+
+  test("Test CreateNamedStruct with inner select") {
+    val innerSchema = StructType(StructField("testString", StringType) ::
+      StructField("testShort", ShortType) :: Nil)
+    val outerSchema = StructType(
+      StructField("named_struct(testString, testString, testShort, testShort)",
+        innerSchema, nullable = false) :: Nil)
+    val expectedData = Seq(
+      ("Unicode's樂趣", 24),
+      ("___|_123", 24),
+      ("asdf", 24),
+      ("f", 24),
+      (null, 24)
+    )
+    val expectedRows = expectedData.map { case (str, num) =>
+      new GenericRowWithSchema(
+        Array(new GenericRowWithSchema(Array(str, num), innerSchema)),
+        outerSchema
+      )
+    }
+
+    checkAnswer(sqlContext.sql(
+      s"""SELECT NAMED_STRUCT('a', teststring, 'b', (SELECT MAX(testshort)
+         | FROM test_table)) FROM test_table""".stripMargin),
+      expectedRows)
+
+    checkSqlStatement(
+      s"""SELECT ( OBJECT( \\'a\\' , "SQ_0"."TESTSTRING" ,
+         |                 \\'b\\' , ( SELECT ( MAX ( "SQ_1"."SQ_1_COL_0" )
+         | ) AS "SQ_2_COL_0" FROM ( SELECT ( "SQ_0"."TESTSHORT" )
+         | AS "SQ_1_COL_0" FROM ( SELECT * FROM $test_table AS
+         | "RCQ_ALIAS" ) AS "SQ_0" ) AS "SQ_1" LIMIT 1 ) ) )
+         | AS "SQ_1_COL_0" FROM ( SELECT * FROM $test_table AS
+         | "RCQ_ALIAS" ) AS "SQ_0"""".stripMargin)
+  }
+
+  test("Test nested CreateNamedStructs") {
+    val innerSchema2 = StructType(StructField("testInt", IntegerType) :: Nil)
+    val innerSchema = StructType(StructField("named_struct(testInt, testInt)",
+        innerSchema2, nullable = false) :: Nil)
+    val outerSchema = StructType(
+      StructField("named_struct(testString, testString, " +
+        "named_struct(testint, testint), named_struct(testint, testint))",
+        innerSchema, nullable = false) :: Nil)
+
+    val expectedRow =
+      Seq(new GenericRowWithSchema(
+        Array(new GenericRowWithSchema(Array("asdf",
+          new GenericRowWithSchema(Array(4141214), innerSchema2)), innerSchema)), outerSchema))
+
+    checkAnswer(sqlContext.sql(
+      s"""SELECT NAMED_STRUCT(
+            'a', teststring,
+            'b', (SELECT NAMED_STRUCT('c', testint) FROM test_table WHERE testint = 4141214)
+           ) FROM test_table WHERE testshort = -13
+         """.stripMargin),
+      expectedRow)
+
+    checkSqlStatement(
+      s"""SELECT ( OBJECT( \\'a\\' , "SQ_1"."TESTSTRING" ,
+         |                 \\'b\\' , ( SELECT ( OBJECT( \\'c\\' , "SQ_1"."TESTINT" ) )
+         | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+         | $test_table AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( (
+         | "SQ_0"."TESTINT" IS NOT NULL ) AND ( "SQ_0"."TESTINT" = 4141214 ) ) )
+         | AS "SQ_1" ) ) ) AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+         | $test_table AS "RCQ_ALIAS" ) AS "SQ_0" WHERE ( (
+         | "SQ_0"."TESTSHORT" IS NOT NULL ) AND ( "SQ_0"."TESTSHORT" = -13 ) ) )
+         | AS "SQ_1"""".stripMargin)
   }
 }
-
 
 class TextPushdownMiscSuite extends PushdownMiscSuite {
   override protected val s3format: String = "TEXT"

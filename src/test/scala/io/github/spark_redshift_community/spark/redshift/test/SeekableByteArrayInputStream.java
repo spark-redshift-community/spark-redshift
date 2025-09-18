@@ -20,7 +20,7 @@
    https://github.com/apache/accumulo/blob/master/core/src/test/java/org/apache/accumulo/core/file/rfile/RFileTest.java
  */
 
-package io.github.spark_redshift_community.spark.redshift;
+package io.github.spark_redshift_community.spark.redshift.test;
 
 import org.apache.hadoop.fs.PositionedReadable;
 import org.apache.hadoop.fs.Seekable;

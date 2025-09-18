@@ -16,7 +16,6 @@
  */
 
 import com.jsuereth.sbtpgp.PgpKeys
-import org.scalastyle.sbt.ScalastylePlugin.rawScalastyleSettings
 import sbt.Keys._
 import sbt._
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
@@ -26,18 +25,21 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
+
 crossScalaVersions := Seq(buildScalaVersion, "2.13.9")
-val sparkVersion = "3.5.1"
-val isCI = "true" equalsIgnoreCase System.getProperty("config.CI")
+
+val sparkVersion = "3.5.6"
+val isInternalRepo = "true" equalsIgnoreCase System.getProperty("config.InternalRepo")
+val publishSonatypeCentral = "true" equalsIgnoreCase System.getProperty("config.publishSonatypeCentral")
 
 // Define a custom test configuration so that unit test helper classes can be re-used under
 // the integration tests configuration; see http://stackoverflow.com/a/20635808.
-lazy val IntegrationTest = config("it") extend Test
+lazy val ItTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
-val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.3")
-val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.29")
+val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.4")
+val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.33")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
-val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.11.1033")
+val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.12.262")
 // access tokens for aws/shared and our own internal CodeArtifacts repo
 // these are retrieved during CodeBuild steps
 val awsSharedRepoPass = sys.props.get("ci.internalCentralMvnPassword").getOrElse("")
@@ -45,6 +47,10 @@ val internalReleaseRepoPass = sys.props.get("ci.internalTeamMvnPassword").getOrE
 // remove the PATCH portion of the spark version number for use in release binary
 // e.g. MAJOR.MINOR.PATCH => MAJOR.MINOR
 val releaseSparkVersion = testSparkVersion.substring(0, testSparkVersion.lastIndexOf("."))
+val releaseScalaVersion = buildScalaVersion.substring(0, buildScalaVersion.lastIndexOf("."))
+
+lazy val runOnPrebuiltJar = sys.props.contains("ci.integrationtest")
+lazy val usePrebuiltJar = sys.props.get("prebuiltJarPath").map(file).filter(_.exists)
 
 def incompatibleSparkVersions(): FileFilter = {
   val versionArray = releaseSparkVersion.split("""\.""").map(Integer.parseInt)
@@ -52,51 +58,85 @@ def incompatibleSparkVersions(): FileFilter = {
   val minor = versionArray(1)
 
   new FileFilter {
-    def accept(f: File) = f.getPath.containsSlice("_spark_") && !f.getPath.containsSlice(s"_spark_${major}_${minor}_")
+    def accept(f: File): Boolean = f.getPath.containsSlice("_spark_") && !f.getPath.containsSlice(s"_spark_${major}_${minor}_")
   }
 }
 
-def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
-  if (condition) {
-    val (fetchRealm, publishRealm, fetchUrl, publishUrl, fetchRepo, publishRepo, userName) =
-      try {
-        val prop = new Properties()
-        prop.load(new FileInputStream("ci/internal_ci.properties"))
-        (
-          prop.getProperty("fetchRealm"),
-          prop.getProperty("publishRealm"),
-          prop.getProperty("fetchUrl"),
-          prop.getProperty("publishUrl"),
-          prop.getProperty("fetchRepo"),
-          prop.getProperty("publishRepo"),
-          prop.getProperty("userName")
-        )
-      } catch {
-        case e: Exception =>
-          e.printStackTrace()
-          sys.exit(1)
+def loadCiProperties(): (String, String, String, String, String, String, String) = {
+  try {
+    val prop = new Properties()
+    prop.load(new FileInputStream("ci/internal_ci.properties"))
+    (
+      prop.getProperty("fetchRealm"),
+      prop.getProperty("publishRealm"),
+      prop.getProperty("fetchUrl"),
+      prop.getProperty("publishUrl"),
+      prop.getProperty("fetchRepo"),
+      prop.getProperty("publishRepo"),
+      prop.getProperty("userName")
+    )
+  } catch {
+    case e: Exception =>
+      e.printStackTrace()
+      sys.exit(1)
+  }
+}
+
+def internalRepoSettings(): Seq[Def.Setting[_]] = {
+  val props = loadCiProperties()
+  val (fetchRealm, publishRealm, fetchUrl, publishUrl, fetchRepo, publishRepo, userName) = props
+  
+  val baseCredentials = Seq(
+    Credentials(fetchRealm.replace("--", "/"), fetchUrl, userName, awsSharedRepoPass),
+    Credentials(publishRealm.replace("--", "/"), publishUrl, userName, internalReleaseRepoPass)
+  )
+  
+  val baseSettings = Seq(
+    credentials := {
+      if (publishSonatypeCentral) {
+        Credentials(baseDirectory.value / "sonatype_central_credentials") +: baseCredentials
+      } else {
+        baseCredentials
       }
+    },
+    resolvers := Seq(fetchRealm at fetchRepo),
+    externalResolvers := Resolver.combineDefaultResolvers(resolvers.value.toVector, mavenCentral = false),
+    releaseProcess := Seq[ReleaseStep](publishArtifacts)
+  )
+  
+  val publishSettings = if (publishSonatypeCentral) {
     Seq(
-      credentials := Seq(
-        Credentials(fetchRealm.replace("--", "/"), fetchUrl, userName, awsSharedRepoPass),
-        Credentials(publishRealm.replace("--", "/"), publishUrl, userName, internalReleaseRepoPass)
-      ),
-      resolvers := Seq(fetchRealm at fetchRepo),
-      externalResolvers := Resolver.combineDefaultResolvers(resolvers.value.toVector, mavenCentral = false),
-      publishTo := Some (publishRealm at publishRepo),
-      pomIncludeRepository := { (_: MavenRepository) => false },
-      releaseProcess := Seq[ReleaseStep](publishArtifacts)
+      publishTo := {
+        val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+        if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+        else localStaging.value
+      },
+      useGpg := true,
+      publishMavenStyle := true,
+      pomIncludeRepository := { _ => false }
+    )
+  } else {
+    Seq(
+      publishTo := Some(publishRealm at publishRepo),
+      pomIncludeRepository := { (_: MavenRepository) => false }
     )
   }
-  else Seq(
+  
+  baseSettings ++ publishSettings
+}
+
+def externalRepoSettings(): Seq[Def.Setting[_]] = {
+  Seq(
+    credentials += Credentials(baseDirectory.value / "sonatype_central_credentials"),
+    resolvers += "Sonatype" at "https://oss.sonatype.org/content/groups/public",
+    useGpg := true,
     publishTo := {
-      val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value)
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+      val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+      if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+      else localStaging.value
     },
-    // Add publishing to spark packages as another step.
+    publishMavenStyle := true,
+    pomIncludeRepository := { _ => false },
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
@@ -112,13 +152,35 @@ def ciPipelineSettings[P](condition: Boolean): Seq[Def.Setting[_]] = {
   )
 }
 
+def ciPipelineSettings(useInternalRepo: Boolean): Seq[Def.Setting[_]] = {
+  if (useInternalRepo) internalRepoSettings()
+  else externalRepoSettings()
+}
+
 lazy val root = Project("spark-redshift", file("."))
   .enablePlugins(BuildInfoPlugin)
-  .configs(IntegrationTest)
-  .settings(Project.inConfig(IntegrationTest)(rawScalastyleSettings()): _*)
-  .settings(Defaults.coreDefaultSettings: _*)
+  .configs(ItTest)
+  .settings(
+    if (runOnPrebuiltJar) Nil
+    else inConfig(ItTest)(Defaults.testSettings)
+  )
+  .settings(
+    if (runOnPrebuiltJar) Nil
+    else Defaults.coreDefaultSettings
+    )
   .settings(Defaults.itSettings: _*)
-  .settings(ciPipelineSettings(isCI))
+  .settings(ciPipelineSettings(isInternalRepo))
+  .settings(
+    if (runOnPrebuiltJar) Seq(
+      ItTest / unmanagedJars += Attributed.blank(baseDirectory.value / "lib" / "main.jar")
+    )
+    else Nil
+  )
+  .settings(
+    if (runOnPrebuiltJar)
+      Seq( Compile / sources := Seq.empty)
+    else Nil
+  )
   .settings(
     unmanagedSources / excludeFilter ~= { _ || HiddenFileFilter || incompatibleSparkVersions()},
     name := "spark-redshift",
@@ -126,20 +188,17 @@ lazy val root = Project("spark-redshift", file("."))
     organization := "io.github.spark-redshift-community",
     scalaVersion := buildScalaVersion,
     licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0"),
-    credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
     scalacOptions ++= Seq("-target:jvm-1.8"),
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api" % "2.0.7",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.1",
-
+      "org.slf4j" % "slf4j-api" % "2.0.7" % "provided",
       "com.google.guava" % "guava" % "32.1.2-jre" % "test",
       "org.scalatest" %% "scalatest" % "3.2.16" % "test",
       "org.scalatestplus" %% "mockito-4-6" % "3.2.15.0" % "test",
       "com.amazon.redshift" % "redshift-jdbc42" % testJDBCVersion % "provided",
 
       "com.amazonaws.secretsmanager" % "aws-secretsmanager-jdbc" % "1.0.12" % "provided" excludeAll
-      (ExclusionRule(organization = "com.fasterxml.jackson.core")),
+        (ExclusionRule(organization = "com.fasterxml.jackson.core")),
 
       "com.amazonaws" % "aws-java-sdk" % testAWSJavaSDKVersion % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core")),
@@ -148,12 +207,11 @@ lazy val root = Project("spark-redshift", file("."))
       "org.apache.hadoop" % "hadoop-common" % testHadoopVersion % "provided" exclude("javax.servlet", "servlet-api") force(),
       "org.apache.hadoop" % "hadoop-common" % testHadoopVersion % "provided" classifier "tests" force(),
 
-      "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion excludeAll
+      "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core"))
         exclude("org.apache.hadoop", "hadoop-common")
         exclude("com.amazonaws", "aws-java-sdk-s3")  force()
         exclude("com.amazonaws", "aws-java-sdk-bundle"),
-
       "org.apache.spark" %% "spark-core" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-sql" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-hive" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
@@ -166,8 +224,15 @@ lazy val root = Project("spark-redshift", file("."))
     Test / testOptions += Tests.Argument("-oF"),
     Test / fork := true,
     Test / javaOptions ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M",
-      "-Duser.timezone=GMT", "-Dscala.concurrent.context.maxThreads=10"),
+      "-Duser.timezone=GMT", "-Dscala.concurrent.context.maxThreads=5"),
 
+    Compile / sources := {
+      if (usePrebuiltJar.isDefined) Seq.empty
+      else (Compile / sources).value
+    },
+    Compile / packageBin := {
+        usePrebuiltJar.getOrElse((Compile / packageBin).value)
+    },
     /********************
      * Release settings *
      ********************/

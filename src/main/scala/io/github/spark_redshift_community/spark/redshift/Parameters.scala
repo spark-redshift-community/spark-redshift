@@ -20,7 +20,6 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.{AWSCredentialsProvider, BasicSessionCredentials}
-import com.amazonaws.regions.Regions
 
 /**
  * All user-specifiable parameters for spark-redshift, along with their validation rules and
@@ -40,7 +39,17 @@ private[redshift] object Parameters {
   val PARAM_SECRET_ID: String = "secret.id"
   val PARAM_SECRET_REGION: String = "secret.region"
   val PARAM_USER_QUERY_GROUP_LABEL: String = "label"
+  val PARAM_DATA_API_REGION: String = "data_api_region"
+  val PARAM_DATA_API_DATABASE: String = "data_api_database"
+  val PARAM_DATA_API_USER: String = "data_api_user"
+  val PARAM_DATA_API_CLUSTER: String = "data_api_cluster"
+  val PARAM_DATA_API_WORKGROUP: String = "data_api_workgroup"
+  val PARAM_TEMPORARY_AWS_ACCESS_KEY_ID = "temporary_aws_access_key_id"
+  val PARAM_TEMPORARY_AWS_SECRET_ACCESS_KEY = "temporary_aws_secret_access_key"
+  val PARAM_TEMPORARY_AWS_SESSION_TOKEN = "temporary_aws_session_token"
   val PARAM_LEGACY_MAPPING_SHORT_TO_INT: String = "legacy_mapping_short_to_int"
+  val PARAM_CHECK_S3_BUCKET_USAGE: String = "check_s3_bucket_usage"
+  val PARAM_HOST_CONNECTOR: String = "host_connector"
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
@@ -68,66 +77,148 @@ private[redshift] object Parameters {
     PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
     PARAM_LEGACY_TRIM_CSV_WRITES -> "false",
     PARAM_TEMPDIR_REGION -> "",
-    PARAM_USER_QUERY_GROUP_LABEL -> "",
-    PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false"
+    PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false",
+    PARAM_CHECK_S3_BUCKET_USAGE -> "true"
   )
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP", "PARQUET")
   val DEFAULT_RETRY_DELAY: Long = 30000
 
-  /**
-   * Merge user parameters with the defaults, preferring user parameters if specified
-   */
-  def mergeParameters(userParameters: Map[String, String]): MergedParameters = {
+  private def dataAPICredentials(userParameters: Map[String, String]): Boolean = {
+    userParameters.contains(PARAM_DATA_API_REGION) ||
+    userParameters.contains(PARAM_DATA_API_DATABASE) ||
+    userParameters.contains(PARAM_DATA_API_USER) ||
+    userParameters.contains(PARAM_DATA_API_CLUSTER) ||
+    userParameters.contains(PARAM_DATA_API_WORKGROUP)
+  }
+
+  private def checkUnsupportedParameters(userParameters: Map[String, String],
+                                                incompatibleType: String,
+                                                unsupportedParams: String*): Unit = {
+    for (unsupportedParam <- unsupportedParams) {
+      if (userParameters.contains(unsupportedParam)) {
+        throw new IllegalArgumentException(
+          s"The parameter '$unsupportedParam' is not compatible with $incompatibleType credentials.")
+      }
+    }
+  }
+
+  private def validateUserParameters(userParameters: Map[String, String]): Unit = {
+    // Common validations
     if (!userParameters.contains("tempdir")) {
       throw new IllegalArgumentException("'tempdir' is required for all Redshift loads and saves")
     }
     if (userParameters.contains("tempformat") &&
-        !VALID_TEMP_FORMATS.contains(userParameters("tempformat").toUpperCase)) {
+      !VALID_TEMP_FORMATS.contains(userParameters("tempformat").toUpperCase)) {
       throw new IllegalArgumentException(
         s"""Invalid temp format: ${userParameters("tempformat")}; """ +
           s"valid formats are: ${VALID_TEMP_FORMATS.mkString(", ")}")
     }
-    if (!userParameters.contains("url")) {
-      throw new IllegalArgumentException("A JDBC URL must be provided with 'url' parameter")
-    }
     if (!userParameters.contains("dbtable") && !userParameters.contains("query")) {
       throw new IllegalArgumentException(
         "You must specify a Redshift table name with the 'dbtable' parameter or a query with the " +
-        "'query' parameter.")
+          "'query' parameter.")
     }
     if (userParameters.contains("dbtable") && userParameters.contains("query")) {
       throw new IllegalArgumentException(
         "You cannot specify both the 'dbtable' and 'query' parameters at the same time.")
     }
-    val credsInURL = userParameters.get("url")
-      .filter(url => url.contains("user=") || url.contains("password=") || url.contains("DbUser="))
-    if (userParameters.contains("user") || userParameters.contains("password")) {
-      if (credsInURL.isDefined) {
-        throw new IllegalArgumentException(
-          "You cannot specify credentials in both the URL and as user/password options")
-        }
-    }
-    if (credsInURL.isDefined && userParameters.contains(PARAM_SECRET_ID)) {
-        throw new IllegalArgumentException(
-          "You cannot give a secret and specify credentials in URL"
-        )
-    }
-    if ((userParameters.contains("user") || userParameters.contains("password")) &&
-      userParameters.contains(PARAM_SECRET_ID)) {
+    if (userParameters.get(PARAM_HOST_CONNECTOR).
+      exists(_.exists(!_.isUnicodeIdentifierPart))) {
+      val invalid = userParameters(PARAM_HOST_CONNECTOR)
+        .find(!_.isUnicodeIdentifierPart).get
       throw new IllegalArgumentException(
-        "You cannot give a secret and specify user/password options"
+        s"All characters in '$PARAM_HOST_CONNECTOR' option must be valid unicode " +
+        s"identifier parts (char.isUnicodeIdentifierPart == true), '${invalid}' character " +
+        s"not allowed"
       )
     }
     if (userParameters.get(PARAM_USER_QUERY_GROUP_LABEL).
       exists(_.exists(!_.isUnicodeIdentifierPart))) {
-      val invalid = userParameters(PARAM_USER_QUERY_GROUP_LABEL).
-        find(!_.isUnicodeIdentifierPart).get
+      val invalid = userParameters(PARAM_USER_QUERY_GROUP_LABEL)
+        .find(!_.isUnicodeIdentifierPart).get
       throw new IllegalArgumentException(
-        "All characters in label option must be valid unicode identifier parts " +
-        s"(char.isUnicodeIdentifierPart == true), '${invalid}' character not allowed"
+        s"All characters in '$PARAM_USER_QUERY_GROUP_LABEL' option must be valid unicode " +
+          s"identifier parts (char.isUnicodeIdentifierPart == true), '${invalid}' character " +
+          s"not allowed"
       )
     }
+
+    // Credential validations - specialized for JDBC vs DataAPI
+    if (!dataAPICredentials(userParameters)) { // JDBC credentials
+      if (!userParameters.contains("url")) {
+        throw new IllegalArgumentException("A JDBC URL must be provided with 'url' parameter")
+      }
+      val credsInURL = userParameters.get("url")
+        .filter(url => url.contains("user=") || url.contains("password=") || url.contains("DbUser="))
+      if (userParameters.contains("user") || userParameters.contains("password")) {
+        if (credsInURL.isDefined) {
+          throw new IllegalArgumentException(
+            "You cannot specify credentials in both the URL and as user/password options")
+        }
+      }
+      if (credsInURL.isDefined && userParameters.contains(PARAM_SECRET_ID)) {
+        throw new IllegalArgumentException(
+          "You cannot give a secret and specify credentials in URL"
+        )
+      }
+      if ((userParameters.contains("user") || userParameters.contains("password")) &&
+        userParameters.contains(PARAM_SECRET_ID)) {
+        throw new IllegalArgumentException(
+          "You cannot give a secret and specify user/password options"
+        )
+      }
+    } else { // Data API credentials
+      // Check for JDBC parameters that are not compatible with DataAPI
+      checkUnsupportedParameters(userParameters, "Data API",
+        "user", "password", "url", "jdbcdriver", PARAM_SECRET_REGION, "secret.vpcEndpointUrl",
+        "secret.vpcEndpointRegion")
+      userParameters.foreach {
+        case (key, _) =>
+          if (key.matches("^jdbc\\..+")) {
+            throw new IllegalArgumentException(
+              s"The parameter '$key' is not compatible with Data API credentials.")
+          }
+      }
+
+      // Make sure the user isn't trying to authenticate in conflicting ways.
+      // The user could also not be providing either of these in the case of using IAM.
+      if (userParameters.contains(PARAM_DATA_API_USER) &&
+        userParameters.contains(PARAM_SECRET_ID)) {
+        throw new IllegalArgumentException(
+          "You cannot specify both the 'data_api_user' and provide a secret at the same time.")
+      }
+
+      if (!userParameters.contains(PARAM_DATA_API_DATABASE)) {
+        throw new IllegalArgumentException(
+          "You must specify a Redshift database name with the 'data_api_database' parameter " +
+            "to use the Redshift Data API")
+      }
+
+      if (userParameters.contains(PARAM_DATA_API_CLUSTER) &&
+          userParameters.contains(PARAM_DATA_API_WORKGROUP)) {
+        throw new IllegalArgumentException(
+          "The parameters 'data_api_cluster' and 'data_api_workgroup' are mutually-exclusive.")
+      }
+
+      if (userParameters.contains(PARAM_DATA_API_WORKGROUP) &&
+        userParameters.contains(PARAM_DATA_API_USER)) {
+        throw new IllegalArgumentException(
+          "You cannot use 'data_api_user' when connecting to a serverless workgroup using " +
+            "'data_api_workgroup'"
+        )
+      }
+    }
+  }
+
+  /**
+   * Merge user parameters with the defaults, preferring user parameters if specified
+   */
+  def mergeParameters(userParameters: Map[String, String]): MergedParameters = {
+    // Make sure the user provided valid parameters.
+    validateUserParameters(userParameters)
+
+    // Merge all the parameters with our defaults.
     MergedParameters(DEFAULT_PARAMETERS ++ userParameters)
   }
 
@@ -142,18 +233,25 @@ private[redshift] object Parameters {
         " between these options, please see the README.")
 
     require(Seq(
-        temporaryAWSCredentials.isDefined,
-        iamRole.isDefined,
-        forwardSparkS3Credentials).count(_ == true) == 1,
+      temporaryAWSCredentials.isDefined,
+      iamRole.isDefined,
+      forwardSparkS3Credentials).count(_ == true) == 1,
       "The aws_iam_role, forward_spark_s3_credentials, and temporary_aws_*. options are " +
         "mutually-exclusive; please specify only one.")
+
+    require(Seq(
+      jdbcUrl.isDefined,
+      dataApiCluster.isDefined,
+      dataApiWorkgroup.isDefined).count(_ == true) <= 1,
+      "The url, data_api_cluster, and data_api_workgroup options are" +
+        " mutually-exclusive; please specify only one.")
 
     /**
      * A root directory to be used for intermediate data exchange, expected to be on S3, or
      * somewhere that can be written to and read from by Redshift. Make sure that AWS credentials
      * are available for S3.
      */
-    def rootTempDir: String = parameters("tempdir")
+    def rootTempDir: String = parameters("tempdir") // Default or Read Only
 
     /**
      * AWS region where the 'tempdir' is located. Setting this option will improve connector
@@ -253,7 +351,7 @@ private[redshift] object Parameters {
      *  - user and password are credentials to access the database, which must be embedded in this
      *    URL for JDBC
      */
-    def jdbcUrl: String = parameters("url")
+    def jdbcUrl: Option[String] = parameters.get("url")
 
     /**
      * The JDBC driver class name. This is used to make sure the driver is registered before
@@ -323,7 +421,7 @@ private[redshift] object Parameters {
     /**
      * A user provided label to add to query group as value for key lbl
      */
-    def user_query_group_label: String = parameters(PARAM_USER_QUERY_GROUP_LABEL)
+    def user_query_group_label: Option[String] = parameters.get(PARAM_USER_QUERY_GROUP_LABEL)
 
     /**
       * List of semi-colon separated SQL statements to run before write operations.
@@ -366,9 +464,9 @@ private[redshift] object Parameters {
      */
     def temporaryAWSCredentials: Option[AWSCredentialsProvider] = {
       for (
-        accessKey <- parameters.get("temporary_aws_access_key_id");
-        secretAccessKey <- parameters.get("temporary_aws_secret_access_key");
-        sessionToken <- parameters.get("temporary_aws_session_token")
+        accessKey <- parameters.get(PARAM_TEMPORARY_AWS_ACCESS_KEY_ID);
+        secretAccessKey <- parameters.get(PARAM_TEMPORARY_AWS_SECRET_ACCESS_KEY);
+        sessionToken <- parameters.get(PARAM_TEMPORARY_AWS_SESSION_TOKEN)
       ) yield {
         AWSCredentialsUtils.staticCredentialsProvider(
           new BasicSessionCredentials(accessKey, secretAccessKey, sessionToken))
@@ -431,5 +529,48 @@ private[redshift] object Parameters {
      */
     def overrideNullable: Boolean =
       parameters(PARAM_OVERRIDE_NULLABLE).toBoolean
+
+
+    /**
+     * DataAPI credentials
+     */
+    def dataApiRegion: Option[String] = parameters.get(PARAM_DATA_API_REGION)
+    def dataApiDatabase: Option[String] = parameters.get(PARAM_DATA_API_DATABASE)
+    def dataApiUser: Option[String] = parameters.get(PARAM_DATA_API_USER)
+    def dataApiCluster: Option[String] = parameters.get(PARAM_DATA_API_CLUSTER)
+    def dataApiWorkgroup: Option[String] = parameters.get(PARAM_DATA_API_WORKGROUP)
+
+    /*
+     * Whether we are using DataAPI-based connections or not.
+     */
+    def dataAPICreds: Boolean = {
+      dataApiRegion.isDefined || dataApiDatabase.isDefined || dataApiUser.isDefined ||
+      dataApiCluster.isDefined || dataApiWorkgroup.isDefined
+    }
+
+    /*
+     * Gets a unique cluster name based upon the available parameters.
+     */
+    def uniqueClusterName: String = {
+      if (jdbcUrl.isDefined) {
+        "JDBC:" + jdbcUrl.get
+      } else if (dataApiCluster.isDefined) {
+        "DataAPI:Cluster:" + dataApiCluster.get
+      } else if (dataApiWorkgroup.isDefined) {
+        "DataAPI:Workgroup:" + dataApiWorkgroup.get
+      } else {
+        "DataAPI:Managed" // DataAPI-managed compute
+      }
+    }
+
+    /**
+     * Whether to perform S3 bucket checks.
+     */
+    def checkS3BucketUsage: Boolean = parameters(PARAM_CHECK_S3_BUCKET_USAGE).toBoolean
+
+    /**
+     * Name of the parent connector hosting this connector (if any)
+     */
+    def hostConnector: Option[String] = parameters.get(PARAM_HOST_CONNECTOR)
   }
 }

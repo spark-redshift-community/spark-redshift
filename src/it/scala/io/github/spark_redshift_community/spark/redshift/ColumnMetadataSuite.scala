@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
+
+import io.github.spark_redshift_community.spark.redshift.data.RedshiftWrapperFactory
 
 import java.sql.SQLException
-
 import org.apache.spark.sql.types.{MetadataBuilder, StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 
@@ -36,17 +37,17 @@ class ColumnMetadataSuite extends IntegrationSuiteBase {
         .option("dbtable", tableName)
         .mode(SaveMode.ErrorIfExists)
         .save()
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(read.option("dbtable", tableName).load(), Seq(Row("a" * 512)))
       // This append should fail due to the string being longer than the maxlength
-      intercept[SQLException] {
+      intercept[Exception] {
         write(sqlContext.createDataFrame(sc.parallelize(Seq(Row("a" * 513))), schema))
           .option("dbtable", tableName)
           .mode(SaveMode.Append)
           .save()
       }
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 
@@ -60,7 +61,7 @@ class ColumnMetadataSuite extends IntegrationSuiteBase {
         .option("dbtable", tableName)
         .mode(SaveMode.ErrorIfExists)
         .save()
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(read.option("dbtable", tableName).load(), Seq(Row("a" * 128)))
       val encodingDF = sqlContext.read
         .format("jdbc")
@@ -70,7 +71,7 @@ class ColumnMetadataSuite extends IntegrationSuiteBase {
         .load()
       checkAnswer(encodingDF, Seq(Row("x", "lzo")))
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 
@@ -85,7 +86,7 @@ class ColumnMetadataSuite extends IntegrationSuiteBase {
         .option("description", "Hello Table")
         .mode(SaveMode.ErrorIfExists)
         .save()
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(read.option("dbtable", tableName).load(), Seq(Row("a" * 128)))
       val tableDF = sqlContext.read
         .format("jdbc")
@@ -110,7 +111,7 @@ class ColumnMetadataSuite extends IntegrationSuiteBase {
         .load()
       checkAnswer(columnDF, Seq(Row("x", "Hello Column")))
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 }

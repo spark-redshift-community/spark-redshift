@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
 import com.amazonaws.auth.{AWSSessionCredentials, BasicAWSCredentials, BasicSessionCredentials, DefaultAWSCredentialsProviderChain}
-import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.Parameters
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_TEMPORARY_AWS_ACCESS_KEY_ID, PARAM_TEMPORARY_AWS_SECRET_ACCESS_KEY, PARAM_TEMPORARY_AWS_SESSION_TOKEN}
+import io.github.spark_redshift_community.spark.redshift.AWSCredentialsUtils
 import org.apache.hadoop.conf.Configuration
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -47,9 +49,9 @@ class AWSCredentialsUtilsSuite extends AnyFunSuite {
 
   test("credentialsString with STS temporary keys") {
     val params = Parameters.mergeParameters(baseParams ++ Map(
-      "temporary_aws_access_key_id" -> "ACCESSKEYID",
-      "temporary_aws_secret_access_key" -> "SECRET/KEY",
-      "temporary_aws_session_token" -> "SESSION/Token"))
+      PARAM_TEMPORARY_AWS_ACCESS_KEY_ID -> "ACCESSKEYID",
+      PARAM_TEMPORARY_AWS_SECRET_ACCESS_KEY -> "SECRET/KEY",
+      PARAM_TEMPORARY_AWS_SESSION_TOKEN -> "SESSION/Token"))
     assert(AWSCredentialsUtils.getRedshiftCredentialsString(params, null) ===
       "aws_access_key_id=ACCESSKEYID;aws_secret_access_key=SECRET/KEY;token=SESSION/Token")
   }
@@ -69,9 +71,9 @@ class AWSCredentialsUtilsSuite extends AnyFunSuite {
 
     val params = Parameters.mergeParameters(baseParams ++ Map(
       "tempdir" -> "s3://URIID:URIKEY@bucket/path",
-      "temporary_aws_access_key_id" -> "key_id",
-      "temporary_aws_secret_access_key" -> "secret",
-      "temporary_aws_session_token" -> "token"
+      PARAM_TEMPORARY_AWS_ACCESS_KEY_ID -> "key_id",
+      PARAM_TEMPORARY_AWS_SECRET_ACCESS_KEY -> "secret",
+      PARAM_TEMPORARY_AWS_SESSION_TOKEN -> "token"
     ))
 
     val creds = AWSCredentialsUtils.load(params, conf).getCredentials

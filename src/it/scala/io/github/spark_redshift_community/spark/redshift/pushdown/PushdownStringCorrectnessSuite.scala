@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
 abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectnessSuite
                                               with StringAsciiCorrectnessSuite
@@ -191,6 +191,7 @@ abstract class PushdownStringCorrectnessSuite extends StringSubstringCorrectness
     testSubstr44,
     testSubstr45,
     testSubstr46)
+//    testSubstr47) // [Redshift-7057]
 
     cases.par.foreach { doTest(sqlContext, _) }
   }

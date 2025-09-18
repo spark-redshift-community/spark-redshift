@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
 import io.github.spark_redshift_community.spark.redshift.FilterPushdown._
 import org.apache.spark.sql.sources._

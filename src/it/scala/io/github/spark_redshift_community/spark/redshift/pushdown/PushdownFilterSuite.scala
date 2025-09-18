@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
-import io.github.spark_redshift_community.spark.redshift.TestUtils
+import io.github.spark_redshift_community.spark.redshift.test.TestUtils
 import org.apache.spark.sql.Row
 
 abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
@@ -28,9 +28,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       ))
 
     checkSqlStatement(s"""SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-         |( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) )""".stripMargin
+         |AS "RCQ_ALIAS" ) AS "SQ_0" WHERE
+         |( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) )""".stripMargin
     )
   }
 
@@ -42,9 +42,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       ))
 
     checkSqlStatement(s"""SELECT * FROM ( SELECT * FROM $test_table
-                         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-                         |( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-                         |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR )
+                         |AS "RCQ_ALIAS" ) AS "SQ_0" WHERE
+                         |( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+                         |AND ( CAST ( "SQ_0"."TESTSTRING" AS VARCHAR )
                          |LIKE CONCAT(\\'asd\\', \\'%\\') ) )""".stripMargin
     )
   }
@@ -57,9 +57,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       ))
 
     checkSqlStatement(s"""SELECT * FROM ( SELECT * FROM $test_table
-                         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-                         |( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-                         |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR )
+                         |AS "RCQ_ALIAS" ) AS "SQ_0" WHERE
+                         |( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+                         |AND ( CAST ( "SQ_0"."TESTSTRING" AS VARCHAR )
                          |LIKE CONCAT(\\'%\\', CONCAT(\\'sd\\', \\'%\\') ) ) )""".stripMargin
     )
   }
@@ -72,9 +72,9 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       ))
 
     checkSqlStatement(s"""SELECT * FROM ( SELECT * FROM $test_table
-                         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-                         |( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-                         |AND ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR )
+                         |AS "RCQ_ALIAS" ) AS "SQ_0" WHERE
+                         |( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+                         |AND ( CAST ( "SQ_0"."TESTSTRING" AS VARCHAR )
                          |LIKE CONCAT(\\'%\\', \\'sdf\\' ) ) )""".stripMargin
     )
   }
@@ -88,11 +88,11 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( ( LENGTH ( "SUBQUERY_0"."TESTSTRING" ) >= 3 )
-         |AND ( ( CAST( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT(\\'as\\', \\'%\\' ) )
-         |AND ( CAST( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT(\\'%\\', \\'f\\') )
+         |AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( ( LENGTH ( "SQ_0"."TESTSTRING" ) >= 3 )
+         |AND ( ( CAST( "SQ_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT(\\'as\\', \\'%\\' ) )
+         |AND ( CAST( "SQ_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT(\\'%\\', \\'f\\') )
          |) ) )""".stripMargin
     )
   }
@@ -104,11 +104,11 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTINT" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTINT" = 4141214 ) ) ) AS "SUBQUERY_1"""".stripMargin
+         |AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTINT" IS NOT NULL )
+         |AND ( "SQ_0"."TESTINT" = 4141214 ) ) ) AS "SQ_1"""".stripMargin
     )
   }
 
@@ -119,11 +119,11 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTINT" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTINT" > 45 ) ) ) AS "SUBQUERY_1"""".stripMargin
+         |AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTINT" IS NOT NULL )
+         |AND ( "SQ_0"."TESTINT" > 45 ) ) ) AS "SQ_1"""".stripMargin
     )
   }
 
@@ -134,11 +134,11 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_1"."TESTINT" ) AS "SQ_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTINT" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTINT" >= 45 ) ) ) AS "SUBQUERY_1"""".stripMargin
+         |AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTINT" IS NOT NULL )
+         |AND ( "SQ_0"."TESTINT" >= 45 ) ) ) AS "SQ_1"""".stripMargin
     )
   }
 
@@ -149,11 +149,11 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSHORT" < 0 ) ) ) AS "SUBQUERY_1"""".stripMargin
+         |AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTSHORT" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSHORT" < 0 ) ) ) AS "SQ_1"""".stripMargin
     )
   }
 
@@ -164,11 +164,11 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSHORT" <= 0 ) ) ) AS "SUBQUERY_1"""".stripMargin
+         |AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTSHORT" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSHORT" <= 0 ) ) ) AS "SQ_1"""".stripMargin
     )
   }
 
@@ -179,12 +179,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
-         |AND ( ( "SUBQUERY_0"."TESTSHORT" >= -15 )
-         |AND ( "SUBQUERY_0"."TESTSHORT" <= 0 ) ) ) ) AS "SUBQUERY_1"""".stripMargin
+         |AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTSHORT" IS NOT NULL )
+         |AND ( ( "SQ_0"."TESTSHORT" >= -15 )
+         |AND ( "SQ_0"."TESTSHORT" <= 0 ) ) ) ) AS "SQ_1"""".stripMargin
     )
   }
 
@@ -195,11 +195,11 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE "SUBQUERY_0"."TESTSHORT" IN (-15,-13,0) )
-         |AS "SUBQUERY_1"""".stripMargin
+         |AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE "SQ_0"."TESTSHORT" IN (-15,-13,0) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -212,12 +212,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL )
-         |AND ( ( "SUBQUERY_0"."TESTSHORT" > -15 )
-         |AND ( "SUBQUERY_0"."TESTSHORT" < 0 ) ) ) ) AS "SUBQUERY_1"""".stripMargin
+         |AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTSHORT" IS NOT NULL )
+         |AND ( ( "SQ_0"."TESTSHORT" > -15 )
+         |AND ( "SQ_0"."TESTSHORT" < 0 ) ) ) ) AS "SQ_1"""".stripMargin
     )
   }
 
@@ -230,13 +230,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0" ,
-         |( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_1"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTSHORT" < 0 )
-         |OR ( "SUBQUERY_0"."TESTINT" > 45 ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_0" ,
+         |( "SQ_1"."TESTINT" ) AS "SQ_2_COL_1"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTSHORT" < 0 )
+         |OR ( "SQ_0"."TESTINT" > 45 ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -248,11 +248,11 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0" ,
-         |( "SUBQUERY_1"."TESTINT" ) AS "SUBQUERY_2_COL_1"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSHORT" IS NULL ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_0" ,
+         |( "SQ_1"."TESTINT" ) AS "SQ_2_COL_1"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( "SQ_0"."TESTSHORT" IS NULL ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -264,10 +264,10 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTSHORT" ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."TESTSHORT" IS NOT NULL ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( "SQ_1"."TESTSHORT" ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( "SQ_0"."TESTSHORT" IS NOT NULL ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -279,12 +279,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTLONG" ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_1"."TESTLONG" ) AS "SQ_2_COL_0"
          |FROM ( SELECT * FROM ( SELECT * FROM $test_table
-         |AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTLONG" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTLONG" != 1239012341823719 ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+         |AS "RCQ_ALIAS" ) AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTLONG" IS NOT NULL )
+         |AND ( "SQ_0"."TESTLONG" != 1239012341823719 ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -298,13 +298,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTSTRING" ) AS "SUBQUERY_2_COL_0" ,
-         |( "SUBQUERY_1"."TESTFLOAT" ) AS "SUBQUERY_2_COL_1"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTFLOAT" IS NOT NULL ) )
-         |AND ( ( "SUBQUERY_0"."TESTSTRING" != \\'asdf\\' )
-         |AND ( "SUBQUERY_0"."TESTFLOAT" <= 0.0::float4 ) ) ) ) AS "SUBQUERY_1"
+      s"""SELECT ( "SQ_1"."TESTSTRING" ) AS "SQ_2_COL_0" ,
+         |( "SQ_1"."TESTFLOAT" ) AS "SQ_2_COL_1"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTFLOAT" IS NOT NULL ) )
+         |AND ( ( "SQ_0"."TESTSTRING" != \\'asdf\\' )
+         |AND ( "SQ_0"."TESTFLOAT" <= 0.0::float4 ) ) ) ) AS "SQ_1"
          |""".stripMargin
     )
   }
@@ -317,22 +317,22 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( "SUBQUERY_1"."TESTLONG" ) AS "SUBQUERY_2_COL_0"
+      s"""SELECT ( "SQ_1"."TESTLONG" ) AS "SQ_2_COL_0"
          |FROM ( SELECT * FROM (
-         |SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0"
-         |WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND NOT ( ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR )
-         |LIKE CONCAT(\\'asd\\', \\'%\\') ) ) ) ) AS "SUBQUERY_1"
+         |SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0"
+         |WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND NOT ( ( CAST ( "SQ_0"."TESTSTRING" AS VARCHAR )
+         |LIKE CONCAT(\\'asd\\', \\'%\\') ) ) ) ) AS "SQ_1"
          |""".stripMargin
     )
   }
 
   test("Filter EqualNullSafe not supported: operator <=>", P0Test, P1Test) {
 
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s""" create table $test_table_safe_null(c1 varchar, c2 varchar)""")
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"insert into $test_table_safe_null values(null, null), ('a', null), ('a', 'a')")
 
     read
@@ -353,39 +353,39 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   val testCountGroupBy2: TestCase = TestCase (
     """SELECT COUNT(testbyte), testbyte FROM test_table GROUP BY testbyte""",
     Seq(Row(0, null), Row(2, 0), Row(2, 1)),
-    s"""SELECT ( COUNT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0" ,
-       |( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_1"
-       |FROM ( SELECT ( "SUBQUERY_0"."TESTBYTE" ) AS "SUBQUERY_1_COL_0"
-       |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-       |AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0"
+    s"""SELECT ( COUNT ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0" ,
+       |( "SQ_1"."SQ_1_COL_0" ) AS "SQ_2_COL_1"
+       |FROM ( SELECT ( "SQ_0"."TESTBYTE" ) AS "SQ_1_COL_0"
+       |FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+       |AS "SQ_1" GROUP BY "SQ_1"."SQ_1_COL_0"
        |""".stripMargin
   )
 
   val testAnd0: TestCase = TestCase(
     """SELECT testbyte, testint FROM test_table WHERE testbyte = 1 AND testint = 42""",
     Seq(Row(1, 42), Row(1, 42)),
-    s"""SELECT("SUBQUERY_1"."TESTBYTE")AS"SUBQUERY_2_COL_0",
-       |("SUBQUERY_1"."TESTINT")AS"SUBQUERY_2_COL_1"
+    s"""SELECT("SQ_1"."TESTBYTE")AS"SQ_2_COL_0",
+       |("SQ_1"."TESTINT")AS"SQ_2_COL_1"
        |FROM(SELECT*FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"WHERE(
-       |(("SUBQUERY_0"."TESTBYTE"ISNOTNULL)AND
-       |("SUBQUERY_0"."TESTINT"ISNOTNULL))AND
-       |(("SUBQUERY_0"."TESTBYTE"=1)AND
-       |("SUBQUERY_0"."TESTINT"=42))))AS"SUBQUERY_1"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"WHERE(
+       |(("SQ_0"."TESTBYTE"ISNOTNULL)AND
+       |("SQ_0"."TESTINT"ISNOTNULL))AND
+       |(("SQ_0"."TESTBYTE"=1)AND
+       |("SQ_0"."TESTINT"=42))))AS"SQ_1"""".stripMargin
        )
 
   val testAnd1: TestCase = TestCase(
   """SELECT testdate, testfloat FROM test_table WHERE testdate = DATE '2015-07-03'
       |and testfloat = -1.0""".stripMargin,
     Seq(Row(TestUtils.toDate(2015, 6, 3), -1.0)),
-    s"""SELECT("SUBQUERY_1"."TESTDATE")AS"SUBQUERY_2_COL_0",
-       |("SUBQUERY_1"."TESTFLOAT")AS"SUBQUERY_2_COL_1"
+    s"""SELECT("SQ_1"."TESTDATE")AS"SQ_2_COL_0",
+       |("SQ_1"."TESTFLOAT")AS"SQ_2_COL_1"
        |FROM(SELECT*FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"
-       |WHERE((("SUBQUERY_0"."TESTDATE"ISNOTNULL)AND
-       |("SUBQUERY_0"."TESTFLOAT"ISNOTNULL))AND
-       |(("SUBQUERY_0"."TESTDATE"=DATEADD(day,16619,TO_DATE(\\'1970-01-01\\',\\'YYYY-MM-DD\\')))
-       |AND("SUBQUERY_0"."TESTFLOAT"=-1.0::float4))))AS"SUBQUERY_1"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"
+       |WHERE((("SQ_0"."TESTDATE"ISNOTNULL)AND
+       |("SQ_0"."TESTFLOAT"ISNOTNULL))AND
+       |(("SQ_0"."TESTDATE"=DATEADD(day,16619,TO_DATE(\\'1970-01-01\\',\\'YYYY-MM-DD\\')))
+       |AND("SQ_0"."TESTFLOAT"=-1.0::float4))))AS"SQ_1"""".stripMargin
   )
 
   val testAnd2: TestCase = TestCase(
@@ -393,89 +393,89 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       """SELECT testbool, testdouble FROM test_table WHERE testbool = true
         |AND testdouble = 1234152.12312498""".stripMargin,
     expectedResult = Seq(Row(true, 1234152.12312498)),
-      s"""SELECT("SUBQUERY_1"."TESTBOOL")AS"SUBQUERY_2_COL_0",
-       |("SUBQUERY_1"."TESTDOUBLE")AS"SUBQUERY_2_COL_1"FROM
+      s"""SELECT("SQ_1"."TESTBOOL")AS"SQ_2_COL_0",
+       |("SQ_1"."TESTDOUBLE")AS"SQ_2_COL_1"FROM
        |(SELECT*FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"WHERE
-       |((("SUBQUERY_0"."TESTBOOL"ISNOTNULL)AND
-       |("SUBQUERY_0"."TESTDOUBLE"ISNOTNULL))AND
-       |(("SUBQUERY_0"."TESTBOOL"=true)AND
-       |("SUBQUERY_0"."TESTDOUBLE"=1234152.12312498))))AS"SUBQUERY_1"""".stripMargin,
-      s"""SELECT("SUBQUERY_1"."TESTBOOL")AS"SUBQUERY_2_COL_0",
-       |("SUBQUERY_1"."TESTDOUBLE")AS"SUBQUERY_2_COL_1"FROM
+       AS"RCQ_ALIAS")AS"SQ_0"WHERE
+       |((("SQ_0"."TESTBOOL"ISNOTNULL)AND
+       |("SQ_0"."TESTDOUBLE"ISNOTNULL))AND
+       |(("SQ_0"."TESTBOOL"=true)AND
+       |("SQ_0"."TESTDOUBLE"=1234152.12312498))))AS"SQ_1"""".stripMargin,
+      s"""SELECT("SQ_1"."TESTBOOL")AS"SQ_2_COL_0",
+       |("SQ_1"."TESTDOUBLE")AS"SQ_2_COL_1"FROM
        |(SELECT*FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"WHERE
-       |((("SUBQUERY_0"."TESTBOOL"ISNOTNULL)AND
-       |("SUBQUERY_0"."TESTDOUBLE"ISNOTNULL))AND
-       |("SUBQUERY_0"."TESTBOOL"AND
-       |("SUBQUERY_0"."TESTDOUBLE"=1234152.12312498))))AS"SUBQUERY_1"""".stripMargin,
+       AS"RCQ_ALIAS")AS"SQ_0"WHERE
+       |((("SQ_0"."TESTBOOL"ISNOTNULL)AND
+       |("SQ_0"."TESTDOUBLE"ISNOTNULL))AND
+       |("SQ_0"."TESTBOOL"AND
+       |("SQ_0"."TESTDOUBLE"=1234152.12312498))))AS"SQ_1"""".stripMargin,
   )
 
   val testAnd3: TestCase = TestCase(
     """SELECT testshort, teststring FROM test_table WHERE testshort = 24 AND
       |teststring = '___|_123'""".stripMargin,
     Seq(Row(24, "___|_123")),
-    s"""SELECT("SUBQUERY_1"."TESTSHORT")AS"SUBQUERY_2_COL_0",
-       |("SUBQUERY_1"."TESTSTRING")AS"SUBQUERY_2_COL_1"FROM
+    s"""SELECT("SQ_1"."TESTSHORT")AS"SQ_2_COL_0",
+       |("SQ_1"."TESTSTRING")AS"SQ_2_COL_1"FROM
        |(SELECT*FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"
-       |WHERE((("SUBQUERY_0"."TESTSHORT"ISNOTNULL)AND
-       |("SUBQUERY_0"."TESTSTRING"ISNOTNULL))AND
-       |(("SUBQUERY_0"."TESTSHORT"=24)AND
-       |("SUBQUERY_0"."TESTSTRING"=\\'___|_123\\'))))AS"SUBQUERY_1"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"
+       |WHERE((("SQ_0"."TESTSHORT"ISNOTNULL)AND
+       |("SQ_0"."TESTSTRING"ISNOTNULL))AND
+       |(("SQ_0"."TESTSHORT"=24)AND
+       |("SQ_0"."TESTSTRING"=\\'___|_123\\'))))AS"SQ_1"""".stripMargin
   )
 
   val testAnd4: TestCase = TestCase(
     s"""SELECT testshort FROM test_table WHERE testbyte IS NULL and testbool IS NULL""",
     Seq(Row(null)),
-    s"""SELECT("SUBQUERY_1"."TESTSHORT")AS"SUBQUERY_2_COL_0"FROM
+    s"""SELECT("SQ_1"."TESTSHORT")AS"SQ_2_COL_0"FROM
        |(SELECT*FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"WHERE
-       |(("SUBQUERY_0"."TESTBYTE"ISNULL)AND
-       |("SUBQUERY_0"."TESTBOOL"ISNULL)))AS"SUBQUERY_1"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"WHERE
+       |(("SQ_0"."TESTBYTE"ISNULL)AND
+       |("SQ_0"."TESTBOOL"ISNULL)))AS"SQ_1"""".stripMargin
   )
 
   val testAnd5: TestCase = TestCase(
     s"""SELECT COUNT(*) FROM test_table WHERE testbyte IS NOT NULL and testbool IS NULL""",
     Seq(Row(1)),
-    s"""SELECT(COUNT(1))AS"SUBQUERY_2_COL_0"FROM(SELECT*FROM(
+    s"""SELECT(COUNT(1))AS"SQ_2_COL_0"FROM(SELECT*FROM(
        |SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"WHERE
-       |(("SUBQUERY_0"."TESTBYTE"ISNOTNULL)AND
-       |("SUBQUERY_0"."TESTBOOL"ISNULL)))AS"SUBQUERY_1"LIMIT1""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"WHERE
+       |(("SQ_0"."TESTBYTE"ISNOTNULL)AND
+       |("SQ_0"."TESTBOOL"ISNULL)))AS"SQ_1"LIMIT1""".stripMargin
   )
 
   val testAnd6: TestCase = TestCase(
     s"""SELECT COUNT(*) FROM test_table WHERE testbyte < testint AND testint < testlong""",
     Seq(Row(3)),
-    s"""SELECT(COUNT(1))AS"SUBQUERY_2_COL_0"FROM(SELECT*FROM
+    s"""SELECT(COUNT(1))AS"SQ_2_COL_0"FROM(SELECT*FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"WHERE(
-       |((("SUBQUERY_0"."TESTBYTE"ISNOTNULL)AND
-       |("SUBQUERY_0"."TESTINT"ISNOTNULL))AND
-       |("SUBQUERY_0"."TESTLONG"ISNOTNULL))AND
-       |((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )<"SUBQUERY_0"."TESTINT")AND
-       |(CAST("SUBQUERY_0"."TESTINT"ASBIGINT)<"SUBQUERY_0"."TESTLONG"))))
-       |AS"SUBQUERY_1"LIMIT1""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"WHERE(
+       |((("SQ_0"."TESTBYTE"ISNOTNULL)AND
+       |("SQ_0"."TESTINT"ISNOTNULL))AND
+       |("SQ_0"."TESTLONG"ISNOTNULL))AND
+       |((CAST ( "SQ_0"."TESTBYTE" AS INTEGER )<"SQ_0"."TESTINT")AND
+       |(CAST("SQ_0"."TESTINT"ASBIGINT)<"SQ_0"."TESTLONG"))))
+       |AS"SQ_1"LIMIT1""".stripMargin
        )
 
   val testAnd7: TestCase = TestCase(
     s"""SELECT COUNT(*) FROM test_table WHERE teststring LIKE 'Unicode%' AND testint > 22""",
     Seq(Row(1)),
-    s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM (
-       | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE
-       | ( ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL ) AND
-       | ( "SUBQUERY_0"."TESTINT" IS NOT NULL ) ) AND
-       | ( ( CAST ( "SUBQUERY_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT (\\'Unicode\\', \\'%\\') ) AND
-       | ("SUBQUERY_0"."TESTINT" > 22 ) ) ) ) AS "SUBQUERY_1" LIMIT 1""".stripMargin
+    s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM ( SELECT * FROM (
+       | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" WHERE
+       | ( ( ( "SQ_0"."TESTSTRING" IS NOT NULL ) AND
+       | ( "SQ_0"."TESTINT" IS NOT NULL ) ) AND
+       | ( ( CAST ( "SQ_0"."TESTSTRING" AS VARCHAR ) LIKE CONCAT (\\'Unicode\\', \\'%\\') ) AND
+       | ("SQ_0"."TESTINT" > 22 ) ) ) ) AS "SQ_1" LIMIT 1""".stripMargin
   )
 
   val testAnd8: TestCase = TestCase(
     s"""SELECT COUNT(*) FROM test_table WHERE 1=1 AND 2=2""",
     Seq(Row(5)),
-    s"""SELECT(COUNT(1))AS"SUBQUERY_1_COL_0"FROM(
+    s"""SELECT(COUNT(1))AS"SQ_1_COL_0"FROM(
        |SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"LIMIT1""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"LIMIT1""".stripMargin
   )
 
   val testOr0: TestCase = TestCase(
@@ -492,13 +492,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
         minutes = 0, seconds = 0, millis = 1)),
     ),
     s"""SELECT*FROM
-       |(SELECT("SUBQUERY_1"."TESTBYTE")AS"SUBQUERY_2_COL_0",
-       |("SUBQUERY_1"."TESTTIMESTAMP")AS"SUBQUERY_2_COL_1"FROM
+       |(SELECT("SQ_1"."TESTBYTE")AS"SQ_2_COL_0",
+       |("SQ_1"."TESTTIMESTAMP")AS"SQ_2_COL_1"FROM
        |(SELECT*FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"WHERE
-       |(("SUBQUERY_0"."TESTTIMESTAMP"=\\'2015-07-0100:00:00.001\\'::TIMESTAMP)OR
-       |("SUBQUERY_0"."TESTBYTE"ISNOTNULL)))AS"SUBQUERY_1")
-       |AS"SUBQUERY_2"ORDERBY("SUBQUERY_2"."SUBQUERY_2_COL_0")ASCNULLSFIRST""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"WHERE
+       |(("SQ_0"."TESTTIMESTAMP"=\\'2015-07-0100:00:00.001\\'::TIMESTAMP)OR
+       |("SQ_0"."TESTBYTE"ISNOTNULL)))AS"SQ_1")
+       |AS"SQ_2"ORDERBY("SQ_2"."SQ_2_COL_0")ASCNULLSFIRST""".stripMargin
   )
 
   val testOr1: TestCase = TestCase(
@@ -507,83 +507,83 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(TestUtils.toDate(2015, 6, 2)),
       Row(TestUtils.toDate(2015, 6, 3))
     ),
-    s"""SELECT("SUBQUERY_1"."TESTDATE")AS"SUBQUERY_2_COL_0"FROM
+    s"""SELECT("SQ_1"."TESTDATE")AS"SQ_2_COL_0"FROM
        |(SELECT*FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"WHERE
-       |(("SUBQUERY_0"."TESTDATE"ISNOTNULL)AND
-       |("SUBQUERY_0"."TESTDATE"<
+       AS"RCQ_ALIAS")AS"SQ_0"WHERE
+       |(("SQ_0"."TESTDATE"ISNOTNULL)AND
+       |("SQ_0"."TESTDATE"<
        |DATEADD(day,19307,TO_DATE(\\'1970-01-01\\',\\'YYYY-MM-DD\\')))))
-       |AS"SUBQUERY_1"""".stripMargin
+       |AS"SQ_1"""".stripMargin
   )
 
   val testOr2: TestCase = TestCase(
     s"""SELECT COUNT(*) FROM test_table WHERE true OR teststring = 'DNE'""",
     Seq(Row(5)),
-    s"""SELECT(COUNT(1))AS"SUBQUERY_1_COL_0"FROM
+    s"""SELECT(COUNT(1))AS"SQ_1_COL_0"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS
-       |"SUBQUERY_0"LIMIT1""".stripMargin
+       AS"RCQ_ALIAS")AS
+       |"SQ_0"LIMIT1""".stripMargin
   )
 
   val testOr3: TestCase = TestCase(
     s"""SELECT COUNT(*) FROM test_table WHERE testbyte IS NOT NULL OR teststring IS NOT NULL""",
     Seq(Row(4)),
-    s"""SELECT(COUNT(1))AS"SUBQUERY_2_COL_0"FROM
+    s"""SELECT(COUNT(1))AS"SQ_2_COL_0"FROM
        |(SELECT*FROM(SELECT*FROM$test_table
-       |AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"WHERE
-       |(("SUBQUERY_0"."TESTBYTE"ISNOTNULL)OR
-       |("SUBQUERY_0"."TESTSTRING"ISNOTNULL)))
-       |AS"SUBQUERY_1"LIMIT1""".stripMargin
+       |AS"RCQ_ALIAS")AS"SQ_0"WHERE
+       |(("SQ_0"."TESTBYTE"ISNOTNULL)OR
+       |("SQ_0"."TESTSTRING"ISNOTNULL)))
+       |AS"SQ_1"LIMIT1""".stripMargin
   )
 
   val testOr4: TestCase = TestCase(
     s"""SELECT COUNT(*) FROM test_table WHERE 1=0 OR 1=1""",
     Seq(Row(5)),
-    s"""SELECT(COUNT(1))AS"SUBQUERY_1_COL_0"FROM
+    s"""SELECT(COUNT(1))AS"SQ_1_COL_0"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"LIMIT1""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"LIMIT1""".stripMargin
   )
 
 
   val testBinaryPlus0: TestCase = TestCase(
     s"""SELECT 1 + testbyte from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(1), Row(1), Row(2), Row(2), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((1+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((1+CAST ( "SQ_0"."TESTBYTE" AS INTEGER )))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus1: TestCase = TestCase(
     s"""SELECT 1.0 + testdouble FROM test_table""",
     Seq(Row(-1234151.12312498), Row(1.0), Row(1.0), Row(1234153.12312498), Row(null)),
-    s"""SELECT((1.0+"SUBQUERY_0"."TESTDOUBLE"))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((1.0+"SQ_0"."TESTDOUBLE"))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryPlus2: TestCase = TestCase(
     s"""SELECT 1.0 + testfloat FROM test_table""",
     Seq(Row(0.0), Row(1.0), Row(100001.0), Row(2.0), Row(null)),
-    s"""SELECT((1.0+CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((1.0+CAST("SQ_0"."TESTFLOAT"ASFLOAT8)))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryPlus3: TestCase = TestCase(
     s"""SELECT 1 + testint from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(43), Row(43), Row(4141215), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((1+"SUBQUERY_0"."TESTINT"))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((1+"SQ_0"."TESTINT"))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus4: TestCase = TestCase(
@@ -594,14 +594,14 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(1239012341823720L),
       Row(1239012341823720L),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((1+"SUBQUERY_0"."TESTLONG"))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((1+"SQ_0"."TESTLONG"))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus5: TestCase = TestCase(
@@ -612,13 +612,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(TestUtils.toDate(2015, 6, 4)),
       Row(null),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(DATEADD(day,1,"SUBQUERY_0"."TESTDATE"))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTDATE")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(DATEADD(day,1,"SQ_0"."TESTDATE"))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTDATE")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS
-       |"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS
+       |"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus6: TestCase = TestCase( // Redshift-6994
@@ -636,71 +636,71 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   val testBinaryPlus8: TestCase = TestCase(
     s"""select 32767 + testbyte from test_table order by testbyte ASC NULLS LAST""",
     Seq(Row(32767), Row(32767), Row(32768), Row(32768), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((32767+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((32767+CAST ( "SQ_0"."TESTBYTE" AS INTEGER )))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus9: TestCase = TestCase(
     s"""select -32767 + testbyte from test_table order by testbyte ASC NULLS LAST""",
     Seq(Row(-32767), Row(-32767), Row(-32766), Row(-32766), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((-32767+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS
-       |"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((-32767+CAST ( "SQ_0"."TESTBYTE" AS INTEGER )))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS
+       |"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus10: TestCase = TestCase(
     s"""SELECT 1.0 + testdouble FROM test_table""",
     Seq(Row(-1234151.12312498), Row(1.0), Row(1.0), Row(1234153.12312498), Row(null)),
-    s"""SELECT((1.0+"SUBQUERY_0"."TESTDOUBLE"))AS"SUBQUERY_1_COL_0"FROM
+    s"""SELECT((1.0+"SQ_0"."TESTDOUBLE"))AS"SQ_1_COL_0"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryPlus11: TestCase = TestCase(
     s"""SELECT -1 + testbyte from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(-1), Row(-1), Row(0), Row(0), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((-1+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((-1+CAST ( "SQ_0"."TESTBYTE" AS INTEGER )))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus12: TestCase = TestCase(
     s"""SELECT -999.0 + testdouble FROM test_table""",
     Seq(Row(-1235151.12312498), Row(-999.0), Row(-999.0), Row(1233153.12312498), Row(null)),
-    s"""SELECT((-999.0+"SUBQUERY_0"."TESTDOUBLE"))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((-999.0+"SQ_0"."TESTDOUBLE"))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryPlus13: TestCase = TestCase(
     s"""SELECT -1.0 + testfloat FROM test_table""",
     Seq(Row(-1.0), Row(-2.0), Row(0.0), Row(99999.0), Row(null)),
-    s"""SELECT((-1.0+CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((-1.0+CAST("SQ_0"."TESTFLOAT"ASFLOAT8)))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryPlus14: TestCase = TestCase(
     s"""SELECT -1 + testint from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(41), Row(41), Row(4141213), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((-1+"SUBQUERY_0"."TESTINT"))AS"SUBQUERY_1_COL_0",
-       |("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((-1+"SQ_0"."TESTINT"))AS"SQ_1_COL_0",
+       |("SQ_0"."TESTINT")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus15: TestCase = TestCase(
@@ -711,12 +711,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(1239012341823718L),
       Row(1239012341823718L),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((-1+"SUBQUERY_0"."TESTLONG"))AS"SUBQUERY_1_COL_0",
-       |("SUBQUERY_0"."TESTLONG")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((-1+"SQ_0"."TESTLONG"))AS"SQ_1_COL_0",
+       |("SQ_0"."TESTLONG")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus16: TestCase = TestCase(
@@ -727,12 +727,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(TestUtils.toDate(2015, 6, 2)),
       Row(null),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(DATEADD(day,-1,"SUBQUERY_0"."TESTDATE"))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTDATE")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(DATEADD(day,-1,"SQ_0"."TESTDATE"))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTDATE")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus17: TestCase = TestCase(
@@ -743,12 +743,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(1239011441823719L),
       Row(1239011441823719L),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM(
-       |SELECT*FROM(SELECT((-900000000+"SUBQUERY_0"."TESTLONG"))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS"SUBQUERY_1_COL_1"
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM(
+       |SELECT*FROM(SELECT((-900000000+"SQ_0"."TESTLONG"))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS"SQ_1_COL_1"
        |FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus18: TestCase = TestCase(
@@ -759,55 +759,55 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(1235806902465280508L),
       Row(1235806902465280508L),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((1234567890123456789+"SUBQUERY_0"."TESTLONG"))
-       |AS"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS"SUBQUERY_1_COL_1"
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((1234567890123456789+"SQ_0"."TESTLONG"))
+       |AS"SQ_1_COL_0",("SQ_0"."TESTLONG")AS"SQ_1_COL_1"
        |FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus19: TestCase = TestCase(
     s"""select -32767 + testbyte from test_table order by testbyte ASC NULLS LAST""",
     Seq(Row(-32767), Row(-32767), Row(-32766), Row(-32766), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((-32767+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS"SUBQUERY_1_COL_1"
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((-32767+CAST ( "SQ_0"."TESTBYTE" AS INTEGER )))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS"SQ_1_COL_1"
        |FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus20: TestCase = TestCase(
     s"""select -32767 + testbyte from test_table order by testbyte ASC NULLS LAST""",
     Seq(Row(-32767), Row(-32767), Row(-32766), Row(-32766), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((-32767+CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((-32767+CAST ( "SQ_0"."TESTBYTE" AS INTEGER )))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryPlus21: TestCase = TestCase(
     s"""SELECT -1.0 + testdouble FROM test_table""",
     Seq(Row(-1.0), Row(-1.0), Row(-1234153.12312498), Row(1234151.12312498), Row(null)),
-    s"""SELECT((-1.0+"SUBQUERY_0"."TESTDOUBLE"))AS"SUBQUERY_1_COL_0"FROM
+    s"""SELECT((-1.0+"SQ_0"."TESTDOUBLE"))AS"SQ_1_COL_0"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinarySubtract0: TestCase = TestCase(
     s"""SELECT testbyte - 1 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(-1), Row(-1), Row(0), Row(0), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )-1))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST ( "SQ_0"."TESTBYTE" AS INTEGER )-1))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract1: TestCase = TestCase(
@@ -818,13 +818,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(TestUtils.toDate(2015, 6, 2)),
       Row(null),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(DATEADD(day,(0-(1)),"SUBQUERY_0"."TESTDATE"))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTDATE")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(DATEADD(day,(0-(1)),"SQ_0"."TESTDATE"))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTDATE")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS
-       |"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS
+       |"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract2: TestCase = TestCase( // Redshift-6996
@@ -836,30 +836,30 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
   val testBinarySubtract3: TestCase = TestCase(
     s"""SELECT testdouble - 1.0 FROM test_table""",
     Seq(Row(-1.0), Row(-1.0), Row(-1234153.12312498), Row(1234151.12312498), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"-1.0))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT(("SQ_0"."TESTDOUBLE"-1.0))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinarySubtract4: TestCase = TestCase(
     s"""SELECT testfloat - 1.0 FROM test_table""",
     Seq(Row(-1.0), Row(-2.0), Row(0.0), Row(99999.0), Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)-1.0))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)-1.0))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinarySubtract5: TestCase = TestCase(
     s"""SELECT testint - 1 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(41), Row(41), Row(4141213), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTINT"-1))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTINT"-1))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract6: TestCase = TestCase(
@@ -870,56 +870,56 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(1239012341823718L),
       Row(1239012341823718L),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTLONG"-1))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTLONG"-1))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract7: TestCase = TestCase(
     s"""SELECT testbyte - 32767 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(-32767), Row(-32767), Row(-32766), Row(-32766), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )-32767))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST ( "SQ_0"."TESTBYTE" AS INTEGER )-32767))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract8: TestCase = TestCase(
     s"""SELECT testdouble - 1.5 FROM test_table""",
     Seq(Row(-1.5), Row(-1.5), Row(-1234153.62312498), Row(1234150.62312498), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"-1.5))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT(("SQ_0"."TESTDOUBLE"-1.5))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinarySubtract9: TestCase = TestCase(
     s"""SELECT testfloat - 1.5 FROM test_table""",
     Seq(Row(-0.5), Row(-1.5), Row(-2.5), Row(99998.5), Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)-1.5))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)-1.5))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinarySubtract10: TestCase = TestCase(
     s"""SELECT testint - 2147483648 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(-2147483606), Row(-2147483606), Row(-2143342434), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASBIGINT)-2147483648))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASBIGINT)-2147483648))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract11: TestCase = TestCase(
@@ -932,45 +932,45 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-9222133024512952089L),
       Row(-9222133024512952089L),
       Row(null)),
-        s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
+        s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
        |(SELECT*FROM(SELECT
-       |(CAST((CAST(CAST("SUBQUERY_0"."TESTLONG"ASDECIMAL(20,0))
+       |(CAST((CAST(CAST("SQ_0"."TESTLONG"ASDECIMAL(20,0))
        |ASDECIMAL(21,0))-9223372036854775808)ASDECIMAL(21,0)))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin,
-        s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin,
+        s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
        |(SELECT*FROM(SELECT
-       |(CAST((CAST("SUBQUERY_0"."TESTLONG"ASDECIMAL(21,0))
+       |(CAST((CAST("SQ_0"."TESTLONG"ASDECIMAL(21,0))
        |-9223372036854775808)ASDECIMAL(21,0)))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin,
-    s"""SELECT ( "SUBQUERY_2"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_3_COL_0" FROM
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin,
+    s"""SELECT ( "SQ_2"."SQ_1_COL_0" ) AS "SQ_3_COL_0" FROM
        |( SELECT * FROM ( SELECT
-       |( ( CAST ( "SUBQUERY_0"."TESTLONG" AS DECIMAL(20, 0) )
-       |- 9223372036854775808 ) ) AS "SUBQUERY_1_COL_0" ,
-       |( "SUBQUERY_0"."TESTLONG" ) AS "SUBQUERY_1_COL_1"
-       |FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-       |AS "SUBQUERY_0" ) AS "SUBQUERY_1" ORDER BY
-       |( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) ASC NULLS LAST ) AS "SUBQUERY_2"""".stripMargin
+       |( ( CAST ( "SQ_0"."TESTLONG" AS DECIMAL(20, 0) )
+       |- 9223372036854775808 ) ) AS "SQ_1_COL_0" ,
+       |( "SQ_0"."TESTLONG" ) AS "SQ_1_COL_1"
+       |FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+       |AS "SQ_0" ) AS "SQ_1" ORDER BY
+       |( "SQ_1"."SQ_1_COL_1" ) ASC NULLS LAST ) AS "SQ_2"""".stripMargin
   )
 
   val testBinarySubtract12: TestCase = TestCase(
     s"""SELECT testbyte - -1 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(1), Row(1), Row(2), Row(2), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )--1))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST ( "SQ_0"."TESTBYTE" AS INTEGER )--1))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract13: TestCase = TestCase(
@@ -981,13 +981,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(TestUtils.toDate(2015, 6, 4)),
       Row(null),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(DATEADD(day,(0-(-1)),"SUBQUERY_0"."TESTDATE"))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTDATE")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(DATEADD(day,(0-(-1)),"SQ_0"."TESTDATE"))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTDATE")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS
-       |"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS
+       |"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract14: TestCase = TestCase(
@@ -998,42 +998,42 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(TestUtils.toDate(2015, 9, 1)),
       Row(null),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(DATEADD(day,(0-(-90)),"SUBQUERY_0"."TESTDATE"))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTDATE")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(DATEADD(day,(0-(-90)),"SQ_0"."TESTDATE"))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTDATE")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS
-       |"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS
+       |"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract15: TestCase = TestCase(
     s"""SELECT testdouble - -1.0 FROM test_table""",
     Seq(Row(-1234151.12312498), Row(1.0), Row(1.0), Row(1234153.12312498), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"--1.0))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT(("SQ_0"."TESTDOUBLE"--1.0))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinarySubtract16: TestCase = TestCase(
     s"""SELECT testfloat - -1.0 FROM test_table""",
     Seq(Row(0.0), Row(1.0), Row(100001.0), Row(2.0), Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)--1.0))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)--1.0))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinarySubtract17: TestCase = TestCase(
     s"""SELECT testint - -1 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(43), Row(43), Row(4141215), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTINT"--1))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTINT"--1))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract18: TestCase = TestCase(
@@ -1044,56 +1044,56 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(1239012341823720L),
       Row(1239012341823720L),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTLONG"--1))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTLONG"--1))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract19: TestCase = TestCase(
     s"""SELECT testbyte - -32767 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(32767), Row(32767), Row(32768), Row(32768), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )--32767))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST ( "SQ_0"."TESTBYTE" AS INTEGER )--32767))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract20: TestCase = TestCase(
     s"""SELECT testdouble - -1.5 FROM test_table""",
     Seq(Row(-1234150.62312498), Row(1.5), Row(1.5), Row(1234153.62312498), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"--1.5))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT(("SQ_0"."TESTDOUBLE"--1.5))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinarySubtract21: TestCase = TestCase(
     s"""SELECT testfloat - -1.5 FROM test_table""",
     Seq(Row(0.5), Row(1.5), Row(100001.5), Row(2.5), Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)--1.5))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)--1.5))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinarySubtract22: TestCase = TestCase(
     s"""SELECT testint - -2147483647 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(null), Row(null), Row(-2147483607), Row(-2147483607), Row(-2143342435)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASBIGINT)--2147483647))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASBIGINT)--2147483647))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinarySubtract23: TestCase = TestCase(
@@ -1104,29 +1104,29 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-9222133024512952089L),
       Row(-9222133024512952089L),
       Row(-9222133024512952089L)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
        |(SELECT*FROM(SELECT
-       |(CAST((CAST(CAST("SUBQUERY_0"."TESTLONG"ASDECIMAL(20,0))
+       |(CAST((CAST(CAST("SQ_0"."TESTLONG"ASDECIMAL(20,0))
        |ASDECIMAL(21,0))--9223372036854775808)ASDECIMAL(21,0)))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
 
   val testBinaryMultiply0: TestCase = TestCase(
     s"""SELECT testbyte * 2 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(0), Row(0), Row(2), Row(2), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )*2))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST ( "SQ_0"."TESTBYTE" AS INTEGER )*2))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply1: TestCase = TestCase(
@@ -1138,13 +1138,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(null),
       Row(null),
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTINT"*-9))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTINT"*-9))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply2: TestCase = TestCase(
@@ -1156,42 +1156,42 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-6195061709118595000L),
       Row(null)
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTLONG"*-5000))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS
-       |"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTLONG"*-5000))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS
+       |"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply3: TestCase = TestCase(
     s"""SELECT testdouble * 2.0 FROM test_table""",
     Seq(Row(-2468304.24624996), Row(0.0), Row(0.0), Row(2468304.24624996), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"*2.0))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT(("SQ_0"."TESTDOUBLE"*2.0))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryMultiply4: TestCase = TestCase(
     s"""SELECT testfloat * 2.0 FROM test_table""",
     Seq(Row(-2.0), Row(0.0), Row(2.0), Row(200000.0), Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)*2.0))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)*2.0))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryMultiply5: TestCase = TestCase(
     s"""SELECT testint * 2 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(84), Row(84), Row(8282428), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTINT"*2))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTINT"*2))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply6: TestCase = TestCase(
@@ -1202,56 +1202,56 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(2478024683647438L),
       Row(2478024683647438L),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTLONG"*2))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTLONG"*2))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply7: TestCase = TestCase(
     s"""SELECT testbyte * 32767 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(0), Row(0), Row(32767), Row(32767), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )*32767))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST ( "SQ_0"."TESTBYTE" AS INTEGER )*32767))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply8: TestCase = TestCase(
     s"""SELECT testdouble * 212.123 FROM test_table""",
     Seq(Row(-2.617920508136401E8), Row(0.0), Row(0.0), Row(2.617920508136401E8), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"*212.123))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT(("SQ_0"."TESTDOUBLE"*212.123))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryMultiply9: TestCase = TestCase(
     s"""SELECT testfloat * 123.45678 FROM test_table""",
     Seq(Row(-123.45678), Row(0.0), Row(1.2345678E7), Row(123.45678), Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)*123.45678))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)*123.45678))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryMultiply10: TestCase = TestCase(
     s"""SELECT testint * 2147483648 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(90194313216L), Row(90194313216L), Row(8893189347868672L), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASBIGINT)*2147483648))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASBIGINT)*2147483648))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply11: TestCase = TestCase(
@@ -1263,14 +1263,14 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-9109584468603241452L),
       Row(-9109584468603241452L),
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(CAST((CAST("SUBQUERY_0"."TESTLONG"ASDECIMAL(21,0))*9223372)ASDECIMAL(21,0)))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(CAST((CAST("SQ_0"."TESTLONG"ASDECIMAL(21,0))*9223372)ASDECIMAL(21,0)))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply12: TestCase = TestCase(
@@ -1282,26 +1282,26 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(null),
       Row(null),
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTINT"*-9000))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTINT"*-9000))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply13: TestCase = TestCase(
     s"""SELECT testbyte * -2 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(0), Row(0), Row(-2), Row(-2), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )*-2))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST ( "SQ_0"."TESTBYTE" AS INTEGER )*-2))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply14: TestCase = TestCase(
@@ -1313,13 +1313,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(null),
       Row(null),
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTINT"*-98))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTINT"*-98))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply15: TestCase = TestCase(
@@ -1331,42 +1331,42 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-7344865162331006232L),
       Row(null)
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTLONG"*-5928))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS
-       |"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTLONG"*-5928))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS
+       |"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply16: TestCase = TestCase(
     s"""SELECT testdouble * -2.0 FROM test_table""",
     Seq(Row(-0.0), Row(-0.0), Row(-2468304.24624996), Row(2468304.24624996), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"*-2.0))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT(("SQ_0"."TESTDOUBLE"*-2.0))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryMultiply17: TestCase = TestCase(
     s"""SELECT testfloat * -2.0 FROM test_table""",
     Seq(Row(-0.0), Row(-2.0), Row(-200000.0), Row(2.0), Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)*-2.0))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)*-2.0))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryMultiply18: TestCase = TestCase(
     s"""SELECT testint * -2 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(-84), Row(-84), Row(-8282428), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTINT"*-2))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTINT"*-2))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply19: TestCase = TestCase(
@@ -1377,56 +1377,56 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-2478024683647438L),
       Row(-2478024683647438L),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTLONG"*-2))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTLONG"*-2))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply20: TestCase = TestCase(
     s"""SELECT testbyte * -32767 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(0), Row(0), Row(-32767), Row(-32767), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST ( "SUBQUERY_0"."TESTBYTE" AS INTEGER )*-32767))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST ( "SQ_0"."TESTBYTE" AS INTEGER )*-32767))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply21: TestCase = TestCase(
     s"""SELECT testdouble * -212.123 FROM test_table""",
     Seq(Row(-0.0), Row(-0.0), Row(-2.617920508136401E8), Row(2.617920508136401E8), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"*-212.123))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT(("SQ_0"."TESTDOUBLE"*-212.123))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryMultiply22: TestCase = TestCase(
     s"""SELECT testfloat * -123.45678 FROM test_table""",
     Seq(Row(123.45678), Row(-0.0), Row(-1.2345678E7), Row(-123.45678), Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)*-123.45678))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)*-123.45678))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryMultiply23: TestCase = TestCase(
     s"""SELECT testint * -214 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(-8988), Row(-8988), Row(-886219796), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS
-       |"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTINT"*-214))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)
-       |AS"SUBQUERY_2"""".stripMargin
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS
+       |"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTINT"*-214))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)
+       |AS"SQ_2"""".stripMargin
   )
 
   val testBinaryMultiply24: TestCase = TestCase(
@@ -1438,24 +1438,24 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-1142369379161468918L),
       Row(null)
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT(("SUBQUERY_0"."TESTLONG"*-922))AS"SUBQUERY_1_COL_0",
-       |("SUBQUERY_0"."TESTLONG")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT(("SQ_0"."TESTLONG"*-922))AS"SQ_1_COL_0",
+       |("SQ_0"."TESTLONG")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
 
   val testBinaryDivide0: TestCase = TestCase(
     s"""SELECT testbyte / 2 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(0.0), Row(0.0), Row(0.5), Row(0.5), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTBYTE"ASFLOAT8)/2.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTBYTE"ASFLOAT8)/2.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"
-       |ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"
+       |ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide1: TestCase = TestCase(
@@ -1467,13 +1467,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(null),
       Row(null),
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASFLOAT8)/-9.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASFLOAT8)/-9.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS
-       |"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS
+       |"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide2: TestCase = TestCase(
@@ -1485,39 +1485,39 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-2.478024683647438E11),
       Row(null)
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTLONG"ASFLOAT8)/-5000.0))
-       |AS"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTLONG"ASFLOAT8)/-5000.0))
+       |AS"SQ_1_COL_0",("SQ_0"."TESTLONG")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide3: TestCase = TestCase(
     s"""SELECT testdouble / 2.0 FROM test_table""",
     Seq(Row(-617076.06156249), Row(0.0), Row(0.0), Row(617076.06156249), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"/2.0))AS"SUBQUERY_1_COL_0"FROM
+    s"""SELECT(("SQ_0"."TESTDOUBLE"/2.0))AS"SQ_1_COL_0"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryDivide4: TestCase = TestCase(
     s"""SELECT testfloat / 2.0 FROM test_table""",
     Seq(Row(-0.5), Row(0.0), Row(0.5), Row(50000.0), Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)/2.0))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)/2.0))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryDivide5: TestCase = TestCase(
     s"""SELECT testint / 2 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(21.0), Row(21.0), Row(2070607.0), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASFLOAT8)/2.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASFLOAT8)/2.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide6: TestCase = TestCase(
@@ -1528,52 +1528,52 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(6.195061709118595E14),
       Row(6.195061709118595E14),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTLONG"ASFLOAT8)/2.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTLONG"ASFLOAT8)/2.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide7: TestCase = TestCase(
     s"""SELECT testbyte / 32767 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(0), Row(0), Row(3.051850947599719E-5), Row(3.051850947599719E-5), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTBYTE"ASFLOAT8)/32767.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTBYTE"ASFLOAT8)/32767.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide8: TestCase = TestCase(
     s"""SELECT testdouble / 212.123 FROM test_table""",
     Seq(Row(-5818.096685059989), Row(0.0), Row(0.0), Row(5818.096685059989), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"/212.123))AS"SUBQUERY_1_COL_0"FROM
+    s"""SELECT(("SQ_0"."TESTDOUBLE"/212.123))AS"SQ_1_COL_0"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryDivide9: TestCase = TestCase(
     s"""SELECT testfloat / 123.45678 FROM test_table""",
     Seq(Row(-0.008100000664200056), Row(0.008100000664200056), Row(0.0), Row(810.0000664200055),
       Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)/123.45678))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)/123.45678))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryDivide10: TestCase = TestCase(
     s"""SELECT testint / 2147483648 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(1.955777406692505E-8), Row(1.955777406692505E-8), Row(0.0019284030422568321),
       Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASFLOAT8)/2.147483648E9))
-       |AS"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASFLOAT8)/2.147483648E9))
+       |AS"SQ_1_COL_0",("SQ_0"."TESTINT")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide11: TestCase = TestCase(
@@ -1585,12 +1585,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(1.34333987810935E8),
       Row(null)
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTLONG"ASFLOAT8)/9223372.0))
-       |AS"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTLONG"ASFLOAT8)/9223372.0))
+       |AS"SQ_1_COL_0",("SQ_0"."TESTLONG")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       |AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       |AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide12: TestCase = TestCase(
@@ -1602,23 +1602,23 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(null),
       Row(null),
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASFLOAT8)/-9000.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASFLOAT8)/-9000.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide13: TestCase = TestCase(
     s"""SELECT testbyte / -2 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(-0.0), Row(-0.0), Row(-0.5), Row(-0.5), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTBYTE"ASFLOAT8)/-2.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTBYTE"ASFLOAT8)/-2.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"
-       |ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"
+       |ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide14: TestCase = TestCase(
@@ -1630,13 +1630,13 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(null),
       Row(null),
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASFLOAT8)/-987.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASFLOAT8)/-987.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"ORDERBY("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS
-       |"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"ORDERBY("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS
+       |"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide15: TestCase = TestCase(
@@ -1648,39 +1648,39 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-2.3176437370439935E11),
       Row(null)
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTLONG"ASFLOAT8)/-5346.0))
-       |AS"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTLONG"ASFLOAT8)/-5346.0))
+       |AS"SQ_1_COL_0",("SQ_0"."TESTLONG")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide16: TestCase = TestCase(
     s"""SELECT testdouble / -2.0 FROM test_table""",
     Seq(Row(617076.06156249), Row(-0.0), Row(-0.0), Row(-617076.06156249), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"/-2.0))AS"SUBQUERY_1_COL_0"FROM
+    s"""SELECT(("SQ_0"."TESTDOUBLE"/-2.0))AS"SQ_1_COL_0"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryDivide17: TestCase = TestCase(
     s"""SELECT testfloat / -2.0 FROM test_table""",
     Seq(Row(-0.0), Row(-0.5), Row(-50000.0), Row(0.5), Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)/-2.0))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)/-2.0))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryDivide18: TestCase = TestCase(
     s"""SELECT testint / -2 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(-21.0), Row(-21.0), Row(-2070607.0), Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASFLOAT8)/-2.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASFLOAT8)/-2.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide19: TestCase = TestCase(
@@ -1691,52 +1691,52 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-6.195061709118595E14),
       Row(-6.195061709118595E14),
       Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTLONG"ASFLOAT8)/-2.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTLONG"ASFLOAT8)/-2.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTLONG")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide20: TestCase = TestCase(
     s"""SELECT testbyte / -32767 from test_table ORDER BY testbyte ASC NULLS LAST""",
     Seq(Row(-0), Row(-0), Row(-3.051850947599719E-5), Row(-3.051850947599719E-5), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTBYTE"ASFLOAT8)/-32767.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTBYTE")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTBYTE"ASFLOAT8)/-32767.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTBYTE")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide21: TestCase = TestCase(
     s"""SELECT testdouble / -212.123 FROM test_table""",
     Seq(Row(5818.096685059989), Row(-0.0), Row(-0.0), Row(-5818.096685059989), Row(null)),
-    s"""SELECT(("SUBQUERY_0"."TESTDOUBLE"/-212.123))AS"SUBQUERY_1_COL_0"FROM
+    s"""SELECT(("SQ_0"."TESTDOUBLE"/-212.123))AS"SQ_1_COL_0"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryDivide22: TestCase = TestCase(
     s"""SELECT testfloat / -123.45678 FROM test_table""",
     Seq(Row(0.008100000664200056), Row(-0.008100000664200056), Row(-0.0), Row(-810.0000664200055),
       Row(null)),
-    s"""SELECT((CAST("SUBQUERY_0"."TESTFLOAT"ASFLOAT8)/-123.45678))AS
-       |"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0"""".stripMargin
+    s"""SELECT((CAST("SQ_0"."TESTFLOAT"ASFLOAT8)/-123.45678))AS
+       |"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0"""".stripMargin
   )
 
   val testBinaryDivide23: TestCase = TestCase(
     s"""SELECT testint / -2147483648 from test_table ORDER BY testint ASC NULLS LAST""",
     Seq(Row(-1.955777406692505E-8), Row(-1.955777406692505E-8), Row(-0.0019284030422568321),
       Row(null), Row(null)),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASFLOAT8)/-2.147483648E9))
-       |AS"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASFLOAT8)/-2.147483648E9))
+       |AS"SQ_1_COL_0",("SQ_0"."TESTINT")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide24: TestCase = TestCase(
@@ -1748,12 +1748,12 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(-1.34333987810935E8),
       Row(null)
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTLONG"ASFLOAT8)/-9223372.0))
-       |AS"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTLONG")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTLONG"ASFLOAT8)/-9223372.0))
+       |AS"SQ_1_COL_0",("SQ_0"."TESTLONG")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       |AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       |AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
   val testBinaryDivide25: TestCase = TestCase(
@@ -1765,50 +1765,50 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
       Row(null),
       Row(null),
     ),
-    s"""SELECT("SUBQUERY_2"."SUBQUERY_1_COL_0")AS"SUBQUERY_3_COL_0"FROM
-       |(SELECT*FROM(SELECT((CAST("SUBQUERY_0"."TESTINT"ASFLOAT8)/-96523.0))AS
-       |"SUBQUERY_1_COL_0",("SUBQUERY_0"."TESTINT")AS"SUBQUERY_1_COL_1"FROM
+    s"""SELECT("SQ_2"."SQ_1_COL_0")AS"SQ_3_COL_0"FROM
+       |(SELECT*FROM(SELECT((CAST("SQ_0"."TESTINT"ASFLOAT8)/-96523.0))AS
+       |"SQ_1_COL_0",("SQ_0"."TESTINT")AS"SQ_1_COL_1"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"ORDERBY
-       |("SUBQUERY_1"."SUBQUERY_1_COL_1")ASC NULLS LAST)AS"SUBQUERY_2"""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"ORDERBY
+       |("SQ_1"."SQ_1_COL_1")ASC NULLS LAST)AS"SQ_2"""".stripMargin
   )
 
 
   val testLiteral0: TestCase = TestCase( // byte
     s"""SELECT -128, -127, -1, 0, 1, 126, 127 from test_table LIMIT 1""".stripMargin,
     Seq(Row(-128, -127, -1, 0, 1, 126, 127)),
-    s"""SELECT*FROM(SELECT(-128)AS"SUBQUERY_1_COL_0",(-127)AS
-       |"SUBQUERY_1_COL_1",(-1)AS"SUBQUERY_1_COL_2",(0)AS
-       |"SUBQUERY_1_COL_3",(1)AS"SUBQUERY_1_COL_4",(126)AS
-       |"SUBQUERY_1_COL_5",(127)AS"SUBQUERY_1_COL_6"FROM
+    s"""SELECT*FROM(SELECT(-128)AS"SQ_1_COL_0",(-127)AS
+       |"SQ_1_COL_1",(-1)AS"SQ_1_COL_2",(0)AS
+       |"SQ_1_COL_3",(1)AS"SQ_1_COL_4",(126)AS
+       |"SQ_1_COL_5",(127)AS"SQ_1_COL_6"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"LIMIT1""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"LIMIT1""".stripMargin
   )
 
   val testLiteral1: TestCase = TestCase( // smallint
     s"""SELECT -32768s, -32767s, -1s, 0s, 1s, 32766s, 32767s from test_table LIMIT 1""".stripMargin,
     Seq(Row(-32768, -32767, -1, 0, 1, 32766, 32767)),
-    s"""SELECT*FROM(SELECT(-32768)AS"SUBQUERY_1_COL_0",(-32767)AS
-       |"SUBQUERY_1_COL_1",(-1)AS"SUBQUERY_1_COL_2",(0)AS
-       |"SUBQUERY_1_COL_3",(1)AS"SUBQUERY_1_COL_4",(32766)AS
-       |"SUBQUERY_1_COL_5",(32767)AS"SUBQUERY_1_COL_6"FROM
+    s"""SELECT*FROM(SELECT(-32768)AS"SQ_1_COL_0",(-32767)AS
+       |"SQ_1_COL_1",(-1)AS"SQ_1_COL_2",(0)AS
+       |"SQ_1_COL_3",(1)AS"SQ_1_COL_4",(32766)AS
+       |"SQ_1_COL_5",(32767)AS"SQ_1_COL_6"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")
-       |AS"SUBQUERY_1"LIMIT1""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")
+       |AS"SQ_1"LIMIT1""".stripMargin
   )
 
   val testLiteral2: TestCase = TestCase( // int
     s"""SELECT -2147483647, -2147483646, -1, 0, 1, 2147483646, 2147483647 from test_table
        |LIMIT 1""".stripMargin,
     Seq(Row(-2147483647, -2147483646, -1, 0, 1, 2147483646, 2147483647)),
-    s"""SELECT*FROM(SELECT(-2147483647)AS"SUBQUERY_1_COL_0",(-2147483646)AS
-       |"SUBQUERY_1_COL_1",(-1)AS"SUBQUERY_1_COL_2",(0)AS"SUBQUERY_1_COL_3",
-       |(1)AS"SUBQUERY_1_COL_4",(2147483646)AS"SUBQUERY_1_COL_5",
-       |(2147483647)AS"SUBQUERY_1_COL_6"FROM
+    s"""SELECT*FROM(SELECT(-2147483647)AS"SQ_1_COL_0",(-2147483646)AS
+       |"SQ_1_COL_1",(-1)AS"SQ_1_COL_2",(0)AS"SQ_1_COL_3",
+       |(1)AS"SQ_1_COL_4",(2147483646)AS"SQ_1_COL_5",
+       |(2147483647)AS"SQ_1_COL_6"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"LIMIT1""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"LIMIT1""".stripMargin
   )
 
   val testLiteral3: TestCase = TestCase( // long
@@ -1816,44 +1816,44 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
        |9223372036854775807l from test_table LIMIT 1""".stripMargin,
     Seq(Row(-9223372036854775807L, -9223372036854775806L, -1L, 0L, 9223372036854775806L,
       9223372036854775807L)),
-    s"""SELECT*FROM(SELECT(-9223372036854775807)AS"SUBQUERY_1_COL_0",
-       |(-9223372036854775806)AS"SUBQUERY_1_COL_1",
-       |(-1)AS"SUBQUERY_1_COL_2",
-       |(0)AS"SUBQUERY_1_COL_3",
-       |(9223372036854775806)AS"SUBQUERY_1_COL_4",
-       |(9223372036854775807)AS"SUBQUERY_1_COL_5"FROM(
+    s"""SELECT*FROM(SELECT(-9223372036854775807)AS"SQ_1_COL_0",
+       |(-9223372036854775806)AS"SQ_1_COL_1",
+       |(-1)AS"SQ_1_COL_2",
+       |(0)AS"SQ_1_COL_3",
+       |(9223372036854775806)AS"SQ_1_COL_4",
+       |(9223372036854775807)AS"SQ_1_COL_5"FROM(
        |SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"LIMIT1""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"LIMIT1""".stripMargin
   )
 
   val testLiteral4: TestCase = TestCase( // boolean
     s"""SELECT false, true from test_table LIMIT 1""".stripMargin,
     Seq(Row(false, true)),
-    s"""SELECT*FROM(SELECT(false)AS"SUBQUERY_1_COL_0",(true)AS
-       |"SUBQUERY_1_COL_1"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"LIMIT1""".stripMargin
+    s"""SELECT*FROM(SELECT(false)AS"SQ_1_COL_0",(true)AS
+       |"SQ_1_COL_1"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"LIMIT1""".stripMargin
   )
 
   val testLiteral5: TestCase = TestCase( // string
     s"""SELECT 'hello world', '', 'redshift', 'spark', 'scala', '�', 'Ј', 'Ͱ' from test_table
        |LIMIT 1""".stripMargin,
     Seq(Row("hello world", "", "redshift", "spark", "scala", "�", "Ј", "Ͱ")),
-    s"""SELECT*FROM(SELECT(\\'helloworld\\')AS"SUBQUERY_1_COL_0",(\\'\\')AS
-       |"SUBQUERY_1_COL_1",(\\'redshift\\')AS"SUBQUERY_1_COL_2",(\\'spark\\')AS
-       |"SUBQUERY_1_COL_3",(\\'scala\\')AS"SUBQUERY_1_COL_4",(\\'�\\')AS
-       |"SUBQUERY_1_COL_5",(\\'Ј\\')AS"SUBQUERY_1_COL_6",(\\'Ͱ\\')AS
-       |"SUBQUERY_1_COL_7"FROM(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")
-       |AS"SUBQUERY_1"LIMIT1""".stripMargin
+    s"""SELECT*FROM(SELECT(\\'helloworld\\')AS"SQ_1_COL_0",(\\'\\')AS
+       |"SQ_1_COL_1",(\\'redshift\\')AS"SQ_1_COL_2",(\\'spark\\')AS
+       |"SQ_1_COL_3",(\\'scala\\')AS"SQ_1_COL_4",(\\'�\\')AS
+       |"SQ_1_COL_5",(\\'Ј\\')AS"SQ_1_COL_6",(\\'Ͱ\\')AS
+       |"SQ_1_COL_7"FROM(SELECT*FROM$test_table
+       AS"RCQ_ALIAS")AS"SQ_0")
+       |AS"SQ_1"LIMIT1""".stripMargin
   )
 
   val testLiteral6: TestCase = TestCase( // floating point
     s"""SELECT 12.578 from test_table LIMIT 1""".stripMargin,
     Seq(Row(12.578)),
-    s"""SELECT*FROM(SELECT(12.578)AS"SUBQUERY_1_COL_0"FROM(SELECT*FROM$test_table
-    AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS"SUBQUERY_1"LIMIT1""".stripMargin
+    s"""SELECT*FROM(SELECT(12.578)AS"SQ_1_COL_0"FROM(SELECT*FROM$test_table
+    AS"RCQ_ALIAS")AS"SQ_0")AS"SQ_1"LIMIT1""".stripMargin
 
   )
 
@@ -1861,10 +1861,10 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
     s"""SELECT DATE '1997' from test_table LIMIT 1""".stripMargin,
     Seq(Row(TestUtils.toDate(year = 1997, zeroBasedMonth = 0, date = 1))),
     s"""SELECT*FROM(SELECT(DATEADD(day,9862,TO_DATE
-       |(\\'1970-01-01\\',\\'YYYY-MM-DD\\')))AS"SUBQUERY_1_COL_0"FROM
+       |(\\'1970-01-01\\',\\'YYYY-MM-DD\\')))AS"SQ_1_COL_0"FROM
        |(SELECT*FROM$test_table
-       AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-       |"SUBQUERY_1"LIMIT1""".stripMargin
+       AS"RCQ_ALIAS")AS"SQ_0")AS
+       |"SQ_1"LIMIT1""".stripMargin
   )
 
     val testLiteral8: TestCase = TestCase( // timestamp
@@ -1879,11 +1879,11 @@ abstract class PushdownFilterSuite extends IntegrationPushdownSuiteBase {
           seconds = 0, millis = 0),
       )),
       s"""SELECT*FROM(SELECT(\\'1997-01-3109:26:56.123\\'::TIMESTAMP)AS
-         |"SUBQUERY_1_COL_0",(\\'2000-02-0110:11:56.666\\'::TIMESTAMP)AS
-         |"SUBQUERY_1_COL_1",(\\'1997-01-0100:00:00\\'::TIMESTAMP)AS
-         |"SUBQUERY_1_COL_2"FROM(SELECT*FROM$test_table
-         AS"RS_CONNECTOR_QUERY_ALIAS")AS"SUBQUERY_0")AS
-         |"SUBQUERY_1"LIMIT1""".stripMargin
+         |"SQ_1_COL_0",(\\'2000-02-0110:11:56.666\\'::TIMESTAMP)AS
+         |"SQ_1_COL_1",(\\'1997-01-0100:00:00\\'::TIMESTAMP)AS
+         |"SQ_1_COL_2"FROM(SELECT*FROM$test_table
+         AS"RCQ_ALIAS")AS"SQ_0")AS
+         |"SQ_1"LIMIT1""".stripMargin
     )
 
   test("Test AND statements", P1Test) {

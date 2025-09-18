@@ -17,12 +17,14 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
-import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException}
+import io.github.spark_redshift_community.spark.redshift
+import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownUnsupportedException, TimestampNTZTypeExtractor}
 import io.github.spark_redshift_community.spark.redshift.pushdown._
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, BinaryOperator, BitwiseAnd, BitwiseNot, BitwiseOr, BitwiseXor, EqualNullSafe, Expression, Literal, Or}
 import org.apache.spark.sql.types._
 
 import scala.language.postfixOps
+import org.apache.spark.sql.catalyst.plans.logical.Assignment
 
 /**
   * Extractor for basic (attributes and literals) expressions.
@@ -47,6 +49,8 @@ private[querygeneration] object BasicStatement {
 
     Option(expr match {
       case a: Attribute => addAttributeStatement(a, fields)
+      case Assignment(key, value) =>
+          convertStatement(key, fields) + "=" + convertStatement(value, fields)
       case And(left, right) =>
         blockStatement(
           convertStatement(left, fields) + "AND" + convertStatement(
@@ -86,7 +90,11 @@ private[querygeneration] object BasicStatement {
               Option(l.value).map(_.asInstanceOf[Int])
             ) +
               ", TO_DATE('1970-01-01', 'YYYY-MM-DD'))"
+          case TimestampType if redshift.legacyTimestampHandling =>
+            StringVariable(Option(l.toString)) + "::TIMESTAMP"
           case TimestampType =>
+            StringVariable(Option(l.toString)) + "::TIMESTAMPTZ"
+          case TimestampNTZTypeExtractor(_) if !redshift.legacyTimestampHandling =>
             StringVariable(Option(l.toString)) + "::TIMESTAMP"
           case _: StructType | _: MapType | _: ArrayType =>
             throw new RedshiftPushdownUnsupportedException(

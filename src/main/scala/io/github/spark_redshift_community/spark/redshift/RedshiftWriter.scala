@@ -20,6 +20,7 @@ package io.github.spark_redshift_community.spark.redshift
 import com.amazonaws.auth.AWSCredentialsProvider
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_COPY_DELAY}
 import com.amazonaws.services.s3.AmazonS3
+import io.github.spark_redshift_community.spark.redshift.data.{RedshiftConnection, RedshiftWrapper}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
@@ -30,7 +31,7 @@ import org.apache.spark.sql.functions.{col, to_json}
 import org.slf4j.LoggerFactory
 
 import java.net.URI
-import java.sql.{Connection, Date, SQLException, Timestamp}
+import java.sql.{Date, SQLException, Timestamp}
 import java.time.ZoneId
 import scala.util.control.NonFatal
 
@@ -58,8 +59,8 @@ import scala.util.control.NonFatal
  *     the Avro data into the appropriate table.
  */
 private[redshift] class RedshiftWriter(
-    jdbcWrapper: JDBCWrapper,
-    s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3) {
+   redshiftWrapper: RedshiftWrapper,
+   s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3) {
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -68,7 +69,7 @@ private[redshift] class RedshiftWriter(
    */
   // Visible for testing.
   private[redshift] def createTableSql(data: DataFrame, params: MergedParameters): String = {
-    val schemaSql = jdbcWrapper.schemaString(data.schema, Some(params))
+    val schemaSql = redshiftWrapper.schemaString(data.schema, Some(params))
     val distStyleDef = params.distStyle match {
       case Some(style) => s"DISTSTYLE $style"
       case None => ""
@@ -138,7 +139,7 @@ private[redshift] class RedshiftWriter(
    * Perform the Redshift load by issuing a COPY statement.
    */
   private def doRedshiftLoad(
-      conn: Connection,
+      conn: RedshiftConnection,
       data: DataFrame,
       params: MergedParameters,
       creds: AWSCredentialsProvider,
@@ -147,14 +148,14 @@ private[redshift] class RedshiftWriter(
     // If the table doesn't exist, we need to create it first, using JDBC to infer column types
     val createStatement = createTableSql(data, params)
     log.info("Creating table within Redshift: {}", params.table.get)
-    jdbcWrapper.executeInterruptibly(conn.prepareStatement(createStatement))
+    redshiftWrapper.executeInterruptibly(conn, createStatement)
 
     val preActions = commentActions(params.description, data.schema) ++ params.preActions
 
     // Execute preActions
     preActions.foreach { action =>
       val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
-      jdbcWrapper.executeInterruptibly(conn.prepareStatement(actionSql))
+      redshiftWrapper.executeInterruptibly(conn, actionSql)
     }
 
     manifestUrl.foreach { manifestUrl =>
@@ -162,14 +163,14 @@ private[redshift] class RedshiftWriter(
       val copyStatement = copySql(data.sqlContext, data.schema, params, creds, manifestUrl)
 
       try {
-        jdbcWrapper.executeInterruptibly(conn.prepareStatement(copyStatement))
+        redshiftWrapper.executeInterruptibly(conn, copyStatement)
       } catch {
         case e: SQLException =>
           log.error("SQLException thrown while running COPY query; will attempt to retrieve " +
-            "more information by querying the STL_LOAD_ERRORS table", e)
+            "more information by querying the STL_LOAD_ERRORS table: {}", e.getMessage)
           // Try to query Redshift's STL_LOAD_ERRORS table to figure out why the load failed.
           // See http://docs.aws.amazon.com/redshift/latest/dg/r_STL_LOAD_ERRORS.html for details.
-          conn.rollback()
+          redshiftWrapper.rollback(conn)
           val errorLookupQuery =
             """
               | SELECT *
@@ -177,8 +178,9 @@ private[redshift] class RedshiftWriter(
               | WHERE query = pg_last_query_id()
             """.stripMargin
           val detailedException: Option[SQLException] = try {
-            val results =
-              jdbcWrapper.executeQueryInterruptibly(conn.prepareStatement(errorLookupQuery))
+            val results = {
+              redshiftWrapper.executeQueryInterruptibly(conn, errorLookupQuery)
+            }
             if (results.next()) {
               val errCode = results.getInt("err_code")
               val errReason = results.getString("err_reason").trim
@@ -203,7 +205,7 @@ private[redshift] class RedshiftWriter(
             }
           } catch {
             case NonFatal(e2) =>
-              log.error("Error occurred while querying STL_LOAD_ERRORS", e2)
+              log.error("Error occurred while querying STL_LOAD_ERRORS: {}", e2.getMessage)
               None
           }
           throw detailedException.getOrElse(e)
@@ -213,7 +215,7 @@ private[redshift] class RedshiftWriter(
     // Execute postActions
     params.postActions.foreach { action =>
       val actionSql = if (action.contains("%s")) action.format(params.table.get) else action
-      jdbcWrapper.executeInterruptibly(conn.prepareStatement(actionSql))
+      redshiftWrapper.executeInterruptibly(conn, actionSql)
     }
   }
 
@@ -440,15 +442,10 @@ private[redshift] class RedshiftWriter(
         "https://github.com/databricks/spark-redshift/pull/157")
     }
 
-    val creds: AWSCredentialsProvider =
+    val credsProvider: AWSCredentialsProvider =
       AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
 
-    // Make sure a cross-region write has the necessary connector parameters set.
-    if (params.tempFormat == "PARQUET") {
-      Utils.checkRedshiftAndS3OnSameRegionParquetWrite(params, s3ClientFactory(creds, params))
-    } else {
-      Utils.checkRedshiftAndS3OnSameRegion(params, s3ClientFactory(creds, params))
-    }
+    checkS3BucketUsage(params, credsProvider)
 
     // When using the Avro tempformat, log an informative error message in case any column names
     // are unsupported by Avro's schema validation:
@@ -468,11 +465,11 @@ private[redshift] class RedshiftWriter(
       }
     }
 
-    Utils.assertThatFileSystemIsNotS3BlockFileSystem(
-      new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
+    if (params.checkS3BucketUsage) {
+      Utils.assertThatFileSystemIsNotS3BlockFileSystem(
+        new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
+    }
 
-    Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      params.rootTempDir, s3ClientFactory(creds, params))
     Utils.collectMetrics(params)
 
     // Save the table's rows to S3:
@@ -490,36 +487,50 @@ private[redshift] class RedshiftWriter(
       log.info("Sleeping {} milliseconds before proceeding to redshift copy", params.copyDelay)
       Thread.sleep(params.copyDelay)
     }
-    val queryGroup = Utils.queryGroupInfo(Utils.Write, params.user_query_group_label, sqlContext)
-
+    val queryGroup = Utils.queryGroupInfo(Utils.Write, params, sqlContext)
     Utils.retry(params.copyRetryCount, params.copyDelay) {
-      val conn = jdbcWrapper.getConnectorWithQueryGroup(
-        params.jdbcDriver, params.jdbcUrl, Some(params), queryGroup)
-      conn.setAutoCommit(false)
+      val conn = redshiftWrapper.getConnectorWithQueryGroup(params, queryGroup)
+
+      redshiftWrapper.setAutoCommit(conn, false)
       try {
         val table: TableName = params.table.get
+
+        // Check if we are writing to a data share. If so, set the database context.
+        if (table.unescapedDatabaseName.nonEmpty) {
+          val useDbStr = s"""use ${table.escapedDatabaseName}"""
+          redshiftWrapper.executeInterruptibly(conn, useDbStr)
+        }
+
         if (saveMode == SaveMode.Overwrite) {
           // Overwrites must drop the table in case there has been a schema update
           log.info("Dropping table within Redshift: {}", table)
-          jdbcWrapper.executeInterruptibly(conn.prepareStatement(s"DROP TABLE IF EXISTS $table;"))
+          redshiftWrapper.executeInterruptibly(conn, s"DROP TABLE IF EXISTS $table;")
           if (!params.useStagingTable) {
             // If we're not using a staging table, commit now so that Redshift doesn't have to
             // maintain a snapshot of the old table during the COPY; this sacrifices atomicity for
             // performance.
-            conn.commit()
+            redshiftWrapper.commit(conn)
+
+            // Check if we are writing to a data share. If so, we must set the
+            // database context again since we are starting a new transaction.
+            if (table.unescapedDatabaseName.nonEmpty) {
+              val useDbStr = s"""use ${table.escapedDatabaseName}"""
+              redshiftWrapper.executeInterruptibly(conn, useDbStr)
+            }
           }
         }
+
         log.info("Loading new Redshift data to: {}", table)
-        doRedshiftLoad(conn, data, params, creds, manifestUrl)
-        conn.commit()
+        doRedshiftLoad(conn, data, params, credsProvider, manifestUrl)
+        redshiftWrapper.commit(conn)
       } catch {
         case NonFatal(e) =>
           try {
-            log.error("Exception thrown during Redshift load; will roll back transaction", e)
-            conn.rollback()
+            log.error("Exception thrown during Redshift load; will roll back transaction: {}", e.getMessage)
+            redshiftWrapper.rollback(conn)
           } catch {
             case NonFatal(e2) =>
-              log.error("Exception while rolling back transaction", e2)
+              log.error("Exception while rolling back transaction: {}", e2.getMessage)
           }
           throw e
       } finally {
@@ -527,6 +538,23 @@ private[redshift] class RedshiftWriter(
       }
     }
   }
+
+  private def checkS3BucketUsage(params: MergedParameters,
+                                 credsProvider: AWSCredentialsProvider): Unit = {
+    if (!params.checkS3BucketUsage) return
+
+    val s3Client: AmazonS3 = s3ClientFactory(credsProvider, params)
+
+    // Make sure a cross-region write has the necessary connector parameters set.
+    if (params.tempFormat == "PARQUET") {
+      Utils.checkRedshiftAndS3OnSameRegionParquetWrite(params, s3Client)
+    } else {
+      Utils.checkRedshiftAndS3OnSameRegion(params, s3Client)
+    }
+
+    Utils.checkThatBucketHasObjectLifecycleConfiguration(params, s3Client)
+  }
 }
 
-object DefaultRedshiftWriter extends RedshiftWriter(DefaultJDBCWrapper, Utils.s3ClientBuilder)
+object DefaultRedshiftWriter extends
+  RedshiftWriter(new RedshiftWrapper(), Utils.s3ClientBuilder)

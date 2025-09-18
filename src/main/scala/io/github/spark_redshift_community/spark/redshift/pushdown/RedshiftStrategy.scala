@@ -17,19 +17,20 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown
 
-import io.github.spark_redshift_community.spark.redshift.{RedshiftPushdownException, RedshiftRelation}
+import io.github.spark_redshift_community.spark.redshift.RedshiftRelation
 import io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration.QueryBuilder
 import org.apache.spark.sql.{SparkSession, Strategy}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
+import org.apache.spark.sql.catalyst.trees.TreeNode
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.{InsertIntoDataSourceCommand, LogicalRelation}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Clean up the plan, then try to generate a query from it for Redshift.
  */
-class RedshiftStrategy(session: SparkSession) extends Strategy {
-  private val LAZY_CONF_KEY = "spark.datasource.redshift.community.autopushdown.lazyMode"
-
+case class RedshiftStrategy(session: SparkSession) extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     try {
       buildQueryRDD(plan.transform({
@@ -39,13 +40,39 @@ class RedshiftStrategy(session: SparkSession) extends Strategy {
     } catch {
 
       case t: UnsupportedOperationException =>
-        log.warn(s"Unsupported Operation:${t.getMessage}")
+        log.warn("Unsupported Operation: {}", t.getMessage)
         Nil
 
       case e: Exception =>
-        log.warn(s"Pushdown failed:${e.getMessage}", e)
+        log.warn("Pushdown failed: {}", e.getMessage)
         Nil
     }
+  }
+
+  /** Enumerates over the full tree structure of a logical query plan while looking for
+   * RedshiftRelations.
+   *
+   * @param node A node in the logical Spark plan
+   * @param allRedshiftInstances A collection of the found RedshiftRelation objects.
+   * @return Nothing
+   */
+  private def findRedshiftRelations(node: TreeNode[_],
+                                    allRedshiftInstances: ArrayBuffer[String]): Unit = {
+    // Check whether this node is a RedshiftRelation. We must special-case inserts because it
+    // embeds the target RedshiftRelation as a constructor parameter rather than a child node.
+    node match {
+      case LogicalRelation(relation: RedshiftRelation, _, _, _) =>
+        allRedshiftInstances += relation.params.uniqueClusterName
+      case InsertIntoDataSourceCommand(
+        LogicalRelation(relation: RedshiftRelation, _, _, _), _, _) =>
+          allRedshiftInstances += relation.params.uniqueClusterName
+      case _ =>
+    }
+
+    // Enumerate over both the inner and outer children.
+    node.innerChildren.foreach(findRedshiftRelations(_, allRedshiftInstances))
+    node.children.map(_.asInstanceOf[TreeNode[_]])
+      .foreach(findRedshiftRelations(_, allRedshiftInstances))
   }
 
   /** Attempts to get a SparkPlan from the provided LogicalPlan.
@@ -55,34 +82,28 @@ class RedshiftStrategy(session: SparkSession) extends Strategy {
    *         query generation was successful, None if not.
    */
   private def buildQueryRDD(plan: LogicalPlan): Option[Seq[SparkPlan]] = {
-    val useLazyMode = session.conf.get(LAZY_CONF_KEY, "true")
+    val useLazyMode = session.conf.get(RedshiftStrategy.LAZY_CONF_KEY, "true")
       .toBoolean
 
-    val allRedshiftUrls = plan.map {
-      case LogicalRelation(relation: RedshiftRelation, _, _, _) =>
-        relation.params.jdbcUrl
-      case _ => ""
-    }.filter(_.nonEmpty)
+    // Gather the list of Redshift clusters for all referenced tables in the query plan.
+    // We must special-case inserts because it embeds the RedshiftRelation as a constructor
+    // parameter rather than as a child node.
+    val allRedshiftInstances = new ArrayBuffer[String]
+    findRedshiftRelations(plan, allRedshiftInstances)
 
-    // cannot produce a valid plan if multiple clusters are needed
-    if (!allRedshiftUrls.forall(_ == allRedshiftUrls.head)) {
+    // Make sure the query plan spans only a single cluster since cross-cluster queries
+    // may fail or produce incorrect results when run from a single cluster.
+    if (allRedshiftInstances.isEmpty) {
+      None
+    } else if (!allRedshiftInstances.forall(_ == allRedshiftInstances.head)) {
       logWarning("Unable to pushdown query across multiple clusters")
       None
-    }
-    else if (useLazyMode) {
-      logInfo("Using lazy mode for redshift query push down")
-      QueryBuilder.getQueryFromPlan(plan).map {
-        case (output, query, relation) =>
-          Seq(RedshiftScanExec(output, query, relation))
-      }
     } else {
-      logWarning("Using eager mode for redshift query push down. " +
-        "To improve performance please run " +
-        s"`SET $LAZY_CONF_KEY=true`")
-      QueryBuilder.getRDDFromPlan(plan).map {
-        case (output, rdd) =>
-          Seq(RedshiftPlan(output, rdd))
-      }
+      QueryBuilder.getSparkPlanFromLogicalPlan(plan, useLazyMode)
     }
   }
+}
+
+object RedshiftStrategy {
+  val LAZY_CONF_KEY = "spark.datasource.redshift.community.autopushdown.lazyMode"
 }

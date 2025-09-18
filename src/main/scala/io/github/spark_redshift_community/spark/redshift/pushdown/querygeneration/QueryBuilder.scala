@@ -17,14 +17,20 @@
 
 package io.github.spark_redshift_community.spark.redshift.pushdown.querygeneration
 
-import io.github.spark_redshift_community.spark.redshift.pushdown.RedshiftSQLStatement
+import io.github.spark_redshift_community.spark.redshift.pushdown.deoptimize.UndoCharTypePadding
+import io.github.spark_redshift_community.spark.redshift.pushdown.{RedshiftDMLExec, RedshiftPlan, RedshiftSQLStatement, RedshiftScanExec, RedshiftStrategy}
 import io.github.spark_redshift_community.spark.redshift.{RedshiftFailMessage, RedshiftPushdownException, RedshiftPushdownUnsupportedException, RedshiftRelation}
+import io.github.spark_redshift_community.spark.redshift.pushdown.optimizers.LeftSemiAntiJoinOptimizations.{isDistinctAggregate, isPassThroughProjection, isSetOperation, pullUpLeftSemiJoinOverProjectAndInnerJoin}
+import org.apache.oro.text.MatchAction
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.command.ExecutedCommandExec
+import org.apache.spark.sql.execution.datasources.{InsertIntoDataSourceCommand, LogicalRelation}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.slf4j.LoggerFactory
 
@@ -32,26 +38,24 @@ import java.io.{PrintWriter, StringWriter}
 import scala.reflect.ClassTag
 
 /** This class takes a Spark LogicalPlan and attempts to generate
-  * a query for Redshift using tryBuild(). Here we use lazy instantiation
-  * to avoid building the query from the get-go without tryBuild().
-  * TODO: Is laziness actually helpful?
-  */
-private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
-  import QueryBuilder.convertProjections
-
+ * a query for Redshift using tryBuild(). Here we use lazy instantiation
+ * to avoid building the query from the get-go without tryBuild().
+ * TODO: Is laziness actually helpful?
+ */
+class QueryBuilder(plan: LogicalPlan) {
   private val LOG = LoggerFactory.getLogger(getClass)
 
   /** This iterator automatically increments every time it is used,
-    * and is for aliasing subqueries.
-    */
-  private final val alias = Iterator.from(0).map(n => s"SUBQUERY_$n")
+   * and is for aliasing subqueries.
+   */
+  private final val alias = Iterator.from(0).map(n => s"SQ_$n")
 
   /** RDD of [InternalRow] to be used by RedshiftPlan. */
   lazy val rdd: RDD[InternalRow] = toRDD[InternalRow]
 
   /** When referenced, attempts to translate the Spark plan to a SQL query that can be executed
-    * by Redshift. It will be null if this fails.
-    */
+   * by Redshift. It will be null if this fails.
+   */
   lazy val tryBuild: Option[QueryBuilder] =
     if (treeRoot == null) None else Some(this)
 
@@ -97,7 +101,7 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
   private[redshift] lazy val treeRoot: RedshiftQuery = {
     try {
       log.debug("Begin query generation.")
-      generateQueries(plan).get
+      generateQueries(deoptimizeForPushdown(plan)).get
     } catch {
       // Qualify the exception with whether the plan applies to Redshift. Note that it
       // isn't necessarily a problem even when there are redshift tables in the query plan.
@@ -137,18 +141,87 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
   }
 
   /** Attempts to generate the query from the LogicalPlan. The queries are constructed from
-    * the bottom up, but the validation of supported nodes for translation happens on the way down.
-    *
-    * @param plan The LogicalPlan to be processed.
-    * @return An object of type Option[RedshiftQuery], which is None if the plan contains an
-    *         unsupported node type.
-    */
+   * the bottom up, but the validation of supported nodes for translation happens on the way down.
+   *
+   * @param plan The LogicalPlan to be processed.
+   * @return An object of type Option[RedshiftQuery], which is None if the plan contains an
+   *         unsupported node type.
+   */
   private def generateQueries(plan: LogicalPlan): Option[RedshiftQuery] = {
     plan match {
       case l @ LogicalRelation(rsRelation: RedshiftRelation, _, _, _) =>
         Some(SourceQuery(rsRelation, l.output, alias.next))
+      case l @ LocalRelation(output: Seq[Attribute], _, _) =>
+        Some(LocalQuery(l, output, alias.next))
+      case DeleteFromTable(l @ LogicalRelation(relation: RedshiftRelation, _, _, _), condition) =>
+        Some(DeleteQuery(SourceQuery(relation, l.output, alias.next()), condition))
+      case UpdateTable(l @ LogicalRelation(r: RedshiftRelation, _, _, _), assignments, condition) =>
+        Some(UpdateQuery(SourceQuery(r, l.output, alias.next()), assignments, condition))
+      case InsertIntoDataSourceCommand(l@LogicalRelation(relation: RedshiftRelation, _, _, _),
+      plan, overwrite) =>
+        Some(InsertQuery(SourceQuery(relation, l.output, alias.next()),
+          generateQueries(EliminateSubqueryAliasesAndView(plan)), overwrite))
+      case MergeIntoTableExtractor(targetTable, target, sourcePlan, mergeCondition, matchedActions,
+                                   notMatchedActions, notMatchedBySourceActions) =>
+        // If there is only matched action
+        if (notMatchedActions.isEmpty && matchedActions.size == 1 &&
+            notMatchedBySourceActions.isEmpty) {
+          matchedActions.head match {
+            case DeleteAction(None) =>
+              return Some(DeleteQuery(SourceQuery(target, targetTable.output, alias.next()),
+                                mergeCondition, generateQueries(sourcePlan)))
+            case UpdateAction(condition, assignments) =>
+              // TODO: Only UPDATE in matched Action
+              throw new NotImplementedError()
+            case _ =>
+              throw new RedshiftPushdownUnsupportedException(
+                RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
+                s"${plan.nodeName} unsupported match actions=$matchedActions",
+                plan.getClass.getName,
+                true
+              )
+          }
+        }
+        sourcePlan match {
+          case LogicalRelation(source: RedshiftRelation, _, _, _) =>
+            Some(MergeQuery(SourceQuery(target, targetTable.output, alias.next()),
+              SourceQuery(source, sourcePlan.output, alias.next()),
+              mergeCondition, matchedActions, notMatchedActions, notMatchedBySourceActions))
+          case _ =>
+            throw new RedshiftPushdownUnsupportedException(
+            RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_MERGE,
+            s"${plan.nodeName} Sub-query for source unsupported",
+            plan.getClass.getName,
+            true
+          )
+        }
 
       case UnaryOp(child) =>
+
+        if (isDistinctAggregate(plan) && isSetOperation(child, LeftSemi, checkDistinct = false)) {
+          child match {
+            case BinaryOp(left, right) =>
+              return Some(SetQuery(Seq(left, right), alias.next, "INTERSECT"))
+            case _ =>
+          }
+        }
+
+        plan match {
+          case Aggregate(_, _, project: Project) if isDistinctAggregate(plan) =>
+            // Check if the project is a pass-through projection
+            if (isPassThroughProjection(project.projectList, project.child)
+              && isSetOperation(project.child, LeftSemi, checkDistinct = false)) {
+              project.child match {
+                case BinaryOp(left, right) =>
+                  return Some(ProjectQuery(project.projectList,
+                    SetQuery(Seq(left, right), alias.next, "INTERSECT"), alias.next))
+                case _ =>
+              }
+            }
+
+          case _ =>
+        }
+
         generateQueries(child) map { subQuery =>
           plan match {
             case Filter(condition, _) =>
@@ -192,6 +265,15 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
         }
 
       case BinaryOp(left, right) =>
+
+        if (isSetOperation(plan, LeftSemi, checkDistinct = true)) {
+          return Some(SetQuery(Seq(left, right), alias.next, "INTERSECT"))
+        }
+
+        if (isSetOperation(plan, LeftAnti, checkDistinct = true)) {
+          return Some(SetQuery(Seq(left, right), alias.next, "EXCEPT"))
+        }
+
         generateQueries(left).flatMap { l =>
           generateQueries(right) map { r =>
             plan match {
@@ -210,6 +292,32 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
           }
         }
 
+      case Intersect(left, right, isAll) =>
+        if (isAll) {
+          // Redshift Doesn't support INTERSECT ALL based on
+          // the doc: https://docs.aws.amazon.com/redshift/latest/dg/r_UNION.html
+          throw new RedshiftPushdownUnsupportedException(
+            RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_INTERSECT_ALL,
+            s"${plan.nodeName} INTERSECT ALL",
+            plan.getClass.getName,
+            true
+          )
+        } else {
+          Some(SetQuery(Seq(left, right), alias.next, "INTERSECT"))
+        }
+
+      case Except(left, right, isAll) =>
+        if (isAll) {
+          throw new RedshiftPushdownUnsupportedException(
+            RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_EXCEPT_ALL,
+            s"${plan.nodeName} EXCEPT ALL",
+            plan.getClass.getName,
+            true
+          )
+        } else {
+          Some(SetQuery(Seq(left, right), alias.next, "EXCEPT"))
+        }
+
       // From Spark 3.1, Union has 3 parameters
       case Union(children, byName, allowMissingCol) =>
         // Don't support Union by Name. For details about what's UNION by Name,
@@ -221,10 +329,10 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
             RedshiftFailMessage.FAIL_PUSHDOWN_UNSUPPORTED_UNION,
             s"${plan.nodeName} with byName=$byName allowMissingCol=$allowMissingCol",
             plan.getClass.getName,
-            false
+            true
           )
         } else {
-          Some(UnionQuery(children, alias.next))
+          Some(SetQuery(children, alias.next, "UNION ALL"))
         }
 
       case _ =>
@@ -238,11 +346,36 @@ private[querygeneration] class QueryBuilder(plan: LogicalPlan) {
         )
     }
   }
+
+  private def deoptimizeForPushdown(plan: LogicalPlan): LogicalPlan = {
+    val deoptimizeRules: Seq[Rule[LogicalPlan]] = Seq(
+      pullUpLeftSemiJoinOverProjectAndInnerJoin,
+      UndoCharTypePadding)
+    deoptimizeRules.foldLeft(plan)((currentPlan, rule) => rule(currentPlan))
+  }
+
+  /**
+   * Recursively applies transformations to a LogicalPlan to remove unnecessary nodes.
+   *
+   * The method continues to apply transformations until the
+   * LogicalPlan no longer changes, ensuring that all applicable nodes are fully
+   * removed, even if they are nested.
+   *
+   * @param plan The initial LogicalPlan to be simplified.
+   * @return A simplified LogicalPlan with SubqueryAlias, and View nodes removed.
+   */
+  private def EliminateSubqueryAliasesAndView(plan: LogicalPlan): LogicalPlan = {
+    val transformed = plan.transformWithSubqueries {
+      case SubqueryAlias(_, child) => child
+      case View(_, _, child) => child
+    }
+    if (transformed != plan) EliminateSubqueryAliasesAndView(transformed) else transformed
+  }
 }
 
 /** QueryBuilder object that serves as an external interface for building queries.
-  * Right now, this is merely a wrapper around the QueryBuilder class.
-  */
+ * Right now, this is merely a wrapper around the QueryBuilder class.
+ */
 private[redshift] object QueryBuilder {
 
   final def convertProjections(projections: Seq[Expression],
@@ -255,24 +388,26 @@ private[redshift] object QueryBuilder {
     }
   }
 
-  def getRDDFromPlan(
-    plan: LogicalPlan
-  ): Option[(Seq[Attribute], RDD[InternalRow])] = {
+  def getSparkPlanFromLogicalPlan(plan: LogicalPlan, isLazy: Boolean):
+  Option[Seq[SparkPlan]] = {
     val qb = new QueryBuilder(plan)
 
     qb.tryBuild.map { executedBuilder =>
-      (executedBuilder.getOutput, executedBuilder.rdd)
-    }
-  }
-
-  def getQueryFromPlan(plan: LogicalPlan):
-  Option[(Seq[Attribute], RedshiftSQLStatement, RedshiftRelation)] = {
-    val qb = new QueryBuilder(plan)
-
-    qb.tryBuild.map { executedBuilder =>
-      (executedBuilder.getOutput,
-        executedBuilder.statement,
-        executedBuilder.source.relation)
+      executedBuilder.treeRoot match {
+        case _: DeleteQuery | _: UpdateQuery | _: InsertQuery | _: MergeQuery => {
+          val command = RedshiftDMLExec(executedBuilder.statement, executedBuilder.source.relation)
+          Seq(ExecutedCommandExec(command))
+        }
+        case _ if isLazy =>
+          log.info("Using lazy mode for redshift query push down")
+          Seq(RedshiftScanExec(executedBuilder.getOutput,
+          executedBuilder.statement, executedBuilder.source.relation))
+        case _ =>
+          log.warn("Using eager mode for redshift query push down. " +
+          "To improve performance please run " +
+          s"`SET ${RedshiftStrategy.LAZY_CONF_KEY}=true`")
+          Seq(RedshiftPlan(executedBuilder.getOutput, executedBuilder.rdd))
+      }
     }
   }
 }

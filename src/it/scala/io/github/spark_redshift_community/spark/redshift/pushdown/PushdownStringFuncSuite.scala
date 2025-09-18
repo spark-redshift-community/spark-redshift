@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
-
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 import org.apache.spark.sql.Row
 
 abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
@@ -25,12 +24,12 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( UPPER ( "SUBQUERY_1"."TESTSTRING" ) )
-      |AS "SUBQUERY_2_COL_0"
-      |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-      |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-      |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-      |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( UPPER ( "SQ_1"."TESTSTRING" ) )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -41,18 +40,18 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( LOWER ( "SUBQUERY_1"."TESTSTRING" ) )
-      |AS "SUBQUERY_2_COL_0"
-      |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-      |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
-      |AND ( "SUBQUERY_0"."TESTBOOL" = true ) ) ) AS "SUBQUERY_1"
-      |""".stripMargin,
-      s"""SELECT ( LOWER ( "SUBQUERY_1"."TESTSTRING" ) )
-      |AS "SUBQUERY_2_COL_0"
-      |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-      |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTBOOL" IS NOT NULL )
-      |AND "SUBQUERY_0"."TESTBOOL" ) ) AS "SUBQUERY_1"
-      |""".stripMargin
+      s"""SELECT ( LOWER ( "SQ_1"."TESTSTRING" ) )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTBOOL" IS NOT NULL )
+         |AND ( "SQ_0"."TESTBOOL" = true ) ) ) AS "SQ_1"
+         |""".stripMargin,
+      s"""SELECT ( LOWER ( "SQ_1"."TESTSTRING" ) )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTBOOL" IS NOT NULL )
+         |AND "SQ_0"."TESTBOOL" ) ) AS "SQ_1"
+         |""".stripMargin
     )
   }
 
@@ -65,12 +64,12 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTSTRING" , 1 , 2  ) )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( SUBSTRING ( "SQ_1"."TESTSTRING" , 1 , 2  ) )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -83,12 +82,12 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( SUBSTRING ( "SUBQUERY_1"."TESTSTRING" , 1 , 2  ) )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( SUBSTRING ( "SQ_1"."TESTSTRING" , 1 , 2  ) )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -101,12 +100,12 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( LENGTH ( "SUBQUERY_1"."TESTSTRING" ) )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( LENGTH ( "SQ_1"."TESTSTRING" ) )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -119,12 +118,12 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( CONCAT ( "SUBQUERY_1"."TESTSTRING" , \\'Test\\' ) )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( CONCAT ( "SQ_1"."TESTSTRING" , \\'Test\\' ) )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -137,12 +136,12 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( ASCII ( "SUBQUERY_1"."TESTSTRING" ) )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( ASCII ( "SQ_1"."TESTSTRING" ) )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -156,11 +155,11 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT (
-         |TRANSLATE ( "SUBQUERY_1"."TESTSTRING" , \\'ad\\' , \\'ce\\' ) ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+         |TRANSLATE ( "SQ_1"."TESTSTRING" , \\'ad\\' , \\'ce\\' ) ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -173,12 +172,12 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( LPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' )  )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( LPAD ( "SQ_1"."TESTSTRING" , 6 , \\'_\\' )  )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -191,12 +190,12 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
     )
 
     checkSqlStatement(
-      s"""SELECT ( RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' )  )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+      s"""SELECT ( RPAD ( "SQ_1"."TESTSTRING" , 6 , \\'_\\' )  )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -210,11 +209,11 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( TRIM (
-         |RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+         |RPAD ( "SQ_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -228,11 +227,11 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( TRIM (
-         |RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+         |RPAD ( "SQ_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -246,12 +245,12 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( TRIM ( LPAD (
-         |RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\' \\' ) , 8 , \\' \\' ) , \\' \\') )
-         |AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+         |RPAD ( "SQ_1"."TESTSTRING" , 6 , \\' \\' ) , 8 , \\' \\' ) , \\' \\') )
+         |AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -265,11 +264,11 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( LTRIM ( LPAD (
-         |"SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+         |"SQ_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -283,11 +282,11 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( RTRIM (
-         |RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) ,\\'_\\' ) ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+         |RPAD ( "SQ_1"."TESTSTRING" , 6 , \\'_\\' ) ,\\'_\\' ) ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -301,11 +300,11 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( LTRIM (
-         |LPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+         |LPAD ( "SQ_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 
@@ -319,11 +318,11 @@ abstract class PushdownStringFuncSuite extends IntegrationPushdownSuiteBase {
 
     checkSqlStatement(
       s"""SELECT ( RTRIM (
-         |RPAD ( "SUBQUERY_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SUBQUERY_2_COL_0"
-         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-         |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTSTRING" IS NOT NULL )
-         |AND ( "SUBQUERY_0"."TESTSTRING" = \\'asdf\\' ) ) )
-         |AS "SUBQUERY_1"""".stripMargin
+         |RPAD ( "SQ_1"."TESTSTRING" , 6 , \\'_\\' ) , \\'_\\' ) ) AS "SQ_2_COL_0"
+         |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+         |AS "SQ_0" WHERE ( ( "SQ_0"."TESTSTRING" IS NOT NULL )
+         |AND ( "SQ_0"."TESTSTRING" = \\'asdf\\' ) ) )
+         |AS "SQ_1"""".stripMargin
     )
   }
 }

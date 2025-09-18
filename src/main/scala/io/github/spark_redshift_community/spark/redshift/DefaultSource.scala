@@ -26,13 +26,12 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, SparkSession}
 import org.slf4j.LoggerFactory
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
+import io.github.spark_redshift_community.spark.redshift.data.RedshiftWrapperFactory
 
 /**
  * Redshift Source implementation for Spark SQL
  */
-class DefaultSource(
-    jdbcWrapper: JDBCWrapper,
-    s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3)
+class DefaultSource(s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3)
   extends RelationProvider
   with SchemaRelationProvider
   with CreatableRelationProvider {
@@ -42,7 +41,7 @@ class DefaultSource(
   /**
    * Default constructor required by Data Source API
    */
-  def this() = this(DefaultJDBCWrapper, Utils.s3ClientBuilder)
+  def this() = this(Utils.s3ClientBuilder)
 
   /**
    * Create a new RedshiftRelation instance using parameters from Spark SQL DDL. Resolves the schema
@@ -57,36 +56,38 @@ class DefaultSource(
   /**
    * Load a RedshiftRelation using user-provided schema, so no inference over JDBC will be used.
    */
-  override def createRelation(
-      sqlContext: SQLContext,
-      parameters: Map[String, String],
-      schema: StructType): BaseRelation = {
-    val params = Parameters.mergeParameters(parameters)
-    if (params.autoPushdown) {
+  override def createRelation( sqlContext: SQLContext,
+                               userParameters: Map[String, String],
+                               schema: StructType): BaseRelation = {
+    val mergedParams = Parameters.mergeParameters(userParameters)
+
+    if (mergedParams.autoPushdown) {
       enablePushdownSession(sqlContext.sparkSession)
     }
 
-    redshift.RedshiftRelation(jdbcWrapper, s3ClientFactory, params, Option(schema) )(sqlContext)
+    RedshiftRelation(
+      RedshiftWrapperFactory(mergedParams),
+      s3ClientFactory, mergedParams, Option(schema) )(sqlContext)
   }
 
   /**
    * Creates a Relation instance by first writing the contents of the given DataFrame to Redshift
    */
-  override def createRelation(
-      sqlContext: SQLContext,
-      saveMode: SaveMode,
-      parameters: Map[String, String],
-      data: DataFrame): BaseRelation = {
-    val params = Parameters.mergeParameters(parameters)
-    val table = params.table.getOrElse {
+  override def createRelation( sqlContext: SQLContext,
+                               saveMode: SaveMode,
+                               userParameters: Map[String, String],
+                               data: DataFrame): BaseRelation = {
+    val mergedParams = Parameters.mergeParameters(userParameters)
+    val table = mergedParams.table.getOrElse {
       throw new IllegalArgumentException(
         "For save operations you must specify a Redshift table name with the 'dbtable' parameter")
     }
+    val redshiftWrapper = RedshiftWrapperFactory(mergedParams)
 
     def tableExists: Boolean = {
-      val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, Some(params))
+      val conn = redshiftWrapper.getConnector(mergedParams)
       try {
-        jdbcWrapper.tableExists(conn, table.toString)
+        redshiftWrapper.tableExists(conn, table.toString)
       } finally {
         conn.close()
       }
@@ -111,12 +112,13 @@ class DefaultSource(
     }
 
     if (doSave) {
-      val updatedParams = parameters.updated("overwrite", dropExisting.toString)
-      new RedshiftWriter(jdbcWrapper, s3ClientFactory).saveToRedshift(
-        sqlContext, data, saveMode, Parameters.mergeParameters(updatedParams))
+      val updatedUserParameters = userParameters.updated("overwrite", dropExisting.toString)
+      val mergedParameters = Parameters.mergeParameters(updatedUserParameters)
+      new RedshiftWriter(redshiftWrapper, s3ClientFactory).saveToRedshift(
+        sqlContext, data, saveMode, mergedParameters)
     }
 
-    createRelation(sqlContext, parameters)
+    createRelation(sqlContext, userParameters)
   }
 
   /** Enable more advanced query pushdowns to redshift.
@@ -129,7 +131,7 @@ class DefaultSource(
       s => s.isInstanceOf[RedshiftStrategy]
     )) {
       log.info("Enable auto pushdown.")
-      session.experimental.extraStrategies ++= Seq(new RedshiftStrategy(session))
+      session.experimental.extraStrategies ++= Seq(RedshiftStrategy(session))
     }
   }
 }

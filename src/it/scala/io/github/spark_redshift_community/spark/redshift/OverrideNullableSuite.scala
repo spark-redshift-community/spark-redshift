@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.Parameters
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
 trait OverrideNullableSuite extends IntegrationSuiteBase {
   test("read empty strings as null when overridenullable is true") {
     withTempRedshiftTable("overrideNullable") { name =>
-      conn.createStatement().
-        executeUpdate(s"create table $name (name text not null, nullable_name text)")
-      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      redshiftWrapper.executeUpdate(
+        conn, s"create table $name (name text not null, nullable_name text)")
+      redshiftWrapper.executeUpdate(conn, s"insert into $name values ('', '')")
       val df = read
         .option(Parameters.PARAM_OVERRIDE_NULLABLE, true)
         .option("dbtable", name)
@@ -42,9 +43,9 @@ trait OverrideNullableSuite extends IntegrationSuiteBase {
 
   test("read empty strings as null when overridenullable is true and unload_s3_format is TEXT") {
     withTempRedshiftTable("overrideNullable") { name =>
-      conn.createStatement().
-        executeUpdate(s"create table $name (name text not null, nullable_name text)")
-      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      redshiftWrapper.executeUpdate(
+        conn, s"create table $name (name text not null, nullable_name text)")
+      redshiftWrapper.executeUpdate(conn, s"insert into $name values ('', '')")
       val df = read
         .option(Parameters.PARAM_OVERRIDE_NULLABLE, true)
         .option("dbtable", name)
@@ -64,9 +65,9 @@ trait OverrideNullableSuite extends IntegrationSuiteBase {
 
   test("read empty strings as empty strings when overridenullable is false") {
     withTempRedshiftTable("overrideNullable") { name =>
-      conn.createStatement().
-        executeUpdate(s"create table $name (name text not null, nullable_name text)")
-      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      redshiftWrapper.executeUpdate(
+        conn, s"create table $name (name text not null, nullable_name text)")
+      redshiftWrapper.executeUpdate(conn, s"insert into $name values ('', '')")
       val df = read
         .option(Parameters.PARAM_OVERRIDE_NULLABLE, false)
         .option("dbtable", name)
@@ -86,9 +87,9 @@ trait OverrideNullableSuite extends IntegrationSuiteBase {
   test("read empty strings as empty strings when overridenullable" +
     " is false and unload_s3_format is TEXT") {
     withTempRedshiftTable("overrideNullable") { name =>
-      conn.createStatement().
-        executeUpdate(s"create table $name (name text not null, nullable_name text)")
-      conn.createStatement().executeUpdate(s"insert into $name values ('', '')")
+      redshiftWrapper.executeUpdate(
+        conn, s"create table $name (name text not null, nullable_name text)")
+      redshiftWrapper.executeUpdate(conn, s"insert into $name values ('', '')")
       val df = read
         .option(Parameters.PARAM_OVERRIDE_NULLABLE, false)
         .option("dbtable", name)

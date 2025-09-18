@@ -1,3 +1,4 @@
+
 /*
  * Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
@@ -16,15 +17,15 @@
 
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.0.7")
 
-addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "1.0.0")
+addSbtPlugin("com.github.sbt" % "sbt-release" % "1.4.0")
 
-addSbtPlugin("com.github.sbt" % "sbt-release" % "1.1.0")
+addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.1")
 
-addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.2.1")
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.12.0")
 
-addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.11.0")
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.2.0")
 
-addSbtPlugin("au.com.onegeek" % "sbt-dotenv" % "2.1.233")
+addSbtPlugin("nl.gn0s1s" % "sbt-dotenv" % "3.1.1")
 
 libraryDependencies += "org.apache.maven" % "maven-artifact" % "3.3.9"
 

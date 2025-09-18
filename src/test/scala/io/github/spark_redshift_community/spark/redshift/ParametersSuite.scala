@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.{Parameters, TableName}
+import io.github.spark_redshift_community.spark.redshift
 import org.scalatest.matchers.should._
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -37,7 +39,7 @@ class ParametersSuite extends AnyFunSuite with Matchers {
 
     mergedParams.rootTempDir should startWith(params("tempdir"))
     mergedParams.createPerQueryTempDir() should startWith(params("tempdir"))
-    mergedParams.jdbcUrl shouldBe params("url")
+    mergedParams.jdbcUrl.get shouldBe params("url")
     mergedParams.table shouldBe Some(TableName("", "test_schema", "test_table"))
     assert(mergedParams.forwardSparkS3Credentials)
     assert(mergedParams.includeColumnList)
@@ -62,7 +64,8 @@ class ParametersSuite extends AnyFunSuite with Matchers {
 
     val mergedParams = Parameters.mergeParameters(params)
 
-    mergedParams.createPerQueryTempDir() should not equal mergedParams.createPerQueryTempDir()
+    mergedParams.createPerQueryTempDir() should not equal
+      mergedParams.createPerQueryTempDir()
   }
 
   test("Errors are thrown when mandatory parameters are not provided") {
@@ -223,7 +226,7 @@ class ParametersSuite extends AnyFunSuite with Matchers {
       Parameters.mergeParameters(params)
     }
 
-    assert(exception.getMessage == "All characters in label option must " +
+    assert(exception.getMessage == "All characters in 'label' option must " +
       "be valid unicode identifier parts (char.isUnicodeIdentifierPart == true), " +
       "'!' character not allowed")
   }
@@ -239,5 +242,20 @@ class ParametersSuite extends AnyFunSuite with Matchers {
     val mergedParams = Parameters.mergeParameters(params)
 
     assert(mergedParams.tempDirRegion.get == "pre-ga-region")
+  }
+
+  test("Cannot specify both 'data_api_workgroup' and 'data_api_user' simultaneously") {
+    val e = intercept[IllegalArgumentException] {
+      Parameters.mergeParameters(Map(
+        "tempdir" -> "s3://foo/bar",
+        "dbtable" -> "test_schema.test_table",
+        "data_api_database" -> "test_schema.test_table",
+        "data_api_workgroup" -> "my_workgroup",
+        "data_api_user" -> "my_user",
+        "forward_spark_s3_credentials" -> "true",
+        "aws_iam_role" -> "role"))
+    }
+    assert(e.getMessage.contains(
+      "You cannot use 'data_api_user' when connecting to a serverless workgroup"))
   }
 }

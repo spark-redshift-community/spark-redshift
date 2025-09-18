@@ -61,7 +61,8 @@ This library is more suited to ETL than interactive queries, since large amounts
 
 - [Installation](#installation)
   - [Release builds](#release-builds)
-  - [Snapshot builds](#snapshot-builds)
+  - [Local builds](#local-builds)
+  - [Library dependencies](#library-dependencies)
 - [Usage](#usage)
   - [Data Sources API](#data-sources-api)
     - [Scala](#scala)
@@ -71,6 +72,7 @@ This library is more suited to ETL than interactive queries, since large amounts
   - [Hadoop InputFormat](#hadoop-inputformat)
 - [Configuration](#configuration)
   - [Authenticating to S3 and Redshift](#authenticating-to-s3-and-redshift)
+  - [Using the Redshift Data API instead of JDBC](#using-the-redshift-data-api-instead-of-jdbc)
   - [Encryption](#encryption)
   - [Parameters](#parameters)
 - [Additional configuration options](#additional-configuration-options)
@@ -103,7 +105,7 @@ You may use this library in your applications with the following dependency info
     spark-submit \
       --deploy-mode cluster \
       --master yarn \
-      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.29,org.apache.spark:spark-avro_2.12:3.5.1,io.github.spark-redshift-community:spark-redshift_2.12:6.3.0-spark_3.5 \
+      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.33,org.apache.spark:spark-avro_2.12:3.5.6,io.github.spark-redshift-community:spark-redshift_2.12:6.4.3-spark_3.5 \
       my_script.py
     ```
 
@@ -114,16 +116,27 @@ You may use this library in your applications with the following dependency info
     <dependency>
         <groupId>io.github.spark-redshift-community</groupId>
         <artifactId>spark-redshift_2.12</artifactId>
-        <version>6.3.0-spark_3.5</version>
+        <version>6.4.3-spark_3.5</version>
     </dependency>
     ```
 
 - **In SBT**:
 
     ```SBT
-    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "6.3.0-spark_3.5"
+    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "6.4.3-spark_3.5"
     ```
 
+### Local builds
+You may also build the connector locally by following the below steps.
+1. Download the project
+2. Install Java 1.8
+3. Install scala (https://www.scala-lang.org/download/)
+4. Install sbt (https://www.scala-sbt.org/download/)
+5. Modify the value `sparkVersion` within `build.sbt` to the target version of Spark. The connector supports Spark 3.3.x, 3.4.x, and 3.5.x
+6. Build the connector `sbt clean package`
+7. The jar file can be found in `target\scala-2.12\`
+
+### Library dependencies
 
 You will also need to provide a JDBC driver that is compatible with Redshift. Amazon recommends that you use [the latest official Amazon Redshift JDBC driver](https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42/), which is available on Maven Central. Additionally, is hosted in S3 and can be found in the [official AWS documentation for the Redshift JDBC Driver](https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-install.html).
 
@@ -404,6 +417,7 @@ The following describes how each connection can be authenticated:
         [_Authorizing COPY and UNLOAD Operations Using IAM Roles_](http://docs.aws.amazon.com/redshift/latest/mgmt/copy-unload-iam-role.html)
         guide to associate that IAM role with your Redshift cluster.
         4. Set this library's `aws_iam_role` option to the role's ARN.
+        5. (Optional) [Use a Spark config to enforce IAM role authentication for all Redshift-to-S3 access.](#redshift_s3_connection_iam_role_only)
     2. **Forward Spark's S3 credentials to Redshift**: if the `forward_spark_s3_credentials` option is
         set to `true` then this library will automatically discover the credentials that Spark is
         using to connect to S3 and will forward those credentials to Redshift over JDBC. If Spark
@@ -424,6 +438,70 @@ The following describes how each connection can be authenticated:
 
     These three options are mutually-exclusive, and you must explicitly choose which one to use.
 
+### Using the Redshift Data API instead of JDBC
+As an alternative to JDBC, the connector supports using the [Redshift Data API](https://docs.aws.amazon.com/redshift/latest/mgmt/data-api.html) as an alternative mechanism
+for connecting to a Redshift cluster. The Amazon Redshift Data API simplifies access to your Amazon
+Redshift data warehouse by removing the need to provide a database driver and network configurations to your
+cluster and instead makes secure HTTP-based connections.
+There are several new parameters available for utilizing the Redshift Data API with specific options for
+both provisioned clusters and serverless workgroups. As example for connecting to a provisioned database
+is shown below. Note that the Redshift Data API parameters cannot be used with JDBC-based parameters as the two
+connection types are mutually exclusive for a given table.
+
+#### Scala
+```Scala
+import org.apache.spark.sql._
+
+val sc = // existing SparkContext
+val sqlContext = new SQLContext(sc)
+
+// Get some data from a Redshift cluster
+val df1: DataFrame = sqlContext.read
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("data_api_user", "<database user>")
+  .option("data_api_cluster", "<cluster name>")
+  .option("data_api_database", "<database name>")
+  .option("dbtable", "<table name>")
+  .option("tempdir", "s3n://path/for/temp/data")
+  .option("aws_iam_role", "<iam role arn>")
+  .load()
+
+// Get some data from a Redshift serverless workgroup
+val df2: DataFrame = sqlContext.read
+  .format("io.github.spark_redshift_community.spark.redshift")
+  .option("data_api_workgroup", "<workgroup name>")
+  .option("data_api_database", "<database name>")
+  .option("dbtable", "<table name>")
+  .option("tempdir", "s3n://path/for/temp/data")
+  .option("aws_iam_role", "<iam role arn>")
+  .load()
+```
+
+#### Rate Limiting
+Since the Redshift Data API is an asynchronous interface, the connector must poll the interface for when an 
+operation is complete. For very high throughput or concurrent workloads, AWS throttling limits can come into
+affect and result in rate limiting errors returned from the interface. To prevent this, the connector uses
+an exponential backoff and wait strategy for retrieving Redshift Data API results. The frequency of requests
+can be customized by adjusting the following Spark connector properties for controlling the minimum, maximum,
+and incremental wait time used between requests for a result:
+
+* data_api_retry_delay_min (default = 100 ms)
+* data_api_retry_delay_max (default = 250 ms)
+* data_api_retry_delay_mult (default = 1.25)
+
+For example, with the defaults, the connector will initially wait 100 ms before retrieving the first result.
+If the result is not available, it will wait an additional 125 ms (100 * 1.25) before trying again.
+If the result is still not available, it will then wait an additional 156 ms (125 * 1.25) before trying again.
+The delay will increase incrementally to the maximum wait time of 250 ms between requests.
+
+To adjust these value, run the following commands while substituting the desired delays:
+##### Spark SQL
+```
+sqlContext.sparkSession.sql("SET spark.datasource.redshift.community.data_api_retry_delay_min = 500")
+sqlContext.sparkSession.sql("SET spark.datasource.redshift.community.data_api_retry_delay_max = 1000")
+sqlContext.sparkSession.sql("SET spark.datasource.redshift.community.data_api_retry_delay_mult = 1.5")
+```
+
 
 ### Encryption
 
@@ -433,6 +511,7 @@ The following describes how each connection can be authenticated:
     instructions in the Redshift documentation. Then, follow the instructions in
     [_JDBC Driver Configuration Options_](http://docs.aws.amazon.com/redshift/latest/mgmt/configure-jdbc-options.html) to add the appropriate SSL options
     to the JDBC `url` used with this library.
+    - (Optional) [Use a Spark config to block JDBC connections where `ssl=false` is specified in the connection string.](#reject_unsecure_jdbc_connection)
 
 - **Encrypting `UNLOAD` data stored in S3 (data stored when reading from Redshift)**: According to the Redshift documentation
     on [_Unloading Data to S3_](http://docs.aws.amazon.com/redshift/latest/dg/t_Unloading_tables.html),
@@ -496,14 +575,14 @@ The parameter map or <tt>OPTIONS</tt> provided in Spark SQL supports the followi
     <td><tt>secret.id</tt></td>
     <td>No</td>
     <td>No default</td>
-    <td> The Name or ARN of your secret stored in AWS Secrets Manager. May be used to automatically supply Redshift credentials but only if the user, password and DbUser are not passed in the URL or as options.</td>
+    <td> The Name or ARN of your secret stored in AWS Secrets Manager. May be used to automatically supply Redshift credentials but only if the user, password and DbUser are not passed in the URL or as options. Can be used with either JDBC or Redshift Data API connections.</td>
 </tr>
 <tr> 
     <td><tt>secret.region</tt></td>
     <td>No</td>
     <td>No default</td>
     <td>
-       <p>The primary AWS region (e.g., <tt>us-east-1</tt>) for searching for the <tt>secret.id</tt> value. </p>
+       <p>The primary AWS region (e.g., <tt>us-east-1</tt>) for searching for the <tt>secret.id</tt> value. Can only be used with JDBC-based connections. </p>
        <p>If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>secret.id</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
        <ol>
           <li>When the connector is running outside of AWS as automatic region discovery will fail and may prevent authenticating with Redshift.</li>
@@ -531,6 +610,12 @@ need to be configured to allow access from your driver application.
    <td>Only if using IAM roles to authorize Redshift COPY/UNLOAD operations</td>
    <td>No default</td>
    <td>Fully specified ARN of the <a href="http://docs.aws.amazon.com/redshift/latest/mgmt/copy-unload-iam-role.html">IAM Role</a> attached to the Redshift cluster, ex: arn:aws:iam::123456789000:role/redshift_iam_role</td>
+ </tr>
+ <tr>
+   <td><tt>check_s3_bucket_usage</tt></td>
+   <td>No</td>
+   <td>true</td>
+   <td>A flag used to control whether S3 bucket checks are performed (e.g. cross-region and bucket lifecycle policy checks).</td>
  </tr>
   <tr>
     <td><tt>forward_spark_s3_credentials</tt></td>
@@ -816,10 +901,59 @@ for more information.</p>
     <td>""</td>
     <td>
         An identifier to include in the query group set when running queries with the connector. Should be 100 or fewer characters and all characters must be valid unicodeIdentifierParts. Characters in excess of 100 will be trimmed.
-        When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"6.3.0-spark_3.5","op":"Read","lbl":"","tid":""}}`). 
+        When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"6.4.3-spark_3.5","op":"Read","lbl":"","tid":""}}`). 
         This option will be substituted for the value of the `lbl` key.
     </td>
-</tr></table>
+</tr>
+<tr>
+    <td><tt>check_s3_bucket_usage</tt></td>
+    <td>No</td>
+    <td>True</td>
+    <td>
+       Whether to perform S3 bucket checks such as lifecycle and cross-region checks. Setting this parameter to false can reduce logging output and network calls during operation.
+    </td>
+</tr>
+<tr>
+    <td><tt>data_api_user</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+       The database username for the Redshift Data API. This parameter is required when connecting to a cluster as a database user. Cannot be combined with other JDBC-based parameters (e.g. user)
+    </td>
+</tr>
+<tr>
+    <td><tt>data_api_database</tt></td>
+    <td>Yes if using the Redshift Data API</td>
+    <td>No default</td>
+    <td>
+       The name of the database for the Redshift Data API. This parameter is always required for Redshift Data API connections and cannot be combined with other JDBC-based parameters (e.g. user)
+    </td>
+</tr>
+<tr>
+    <td><tt>data_api_cluster</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+       The provisioned cluster identifier for the Redshift Data API. This parameter is mutually exclusive with data_api_workgroup and cannot be combined with other JDBC-based parameters (e.g. user)
+    </td>
+</tr>
+<tr>
+    <td><tt>data_api_workgroup</tt></td>
+    <td>No </td>
+    <td>No default</td>
+    <td>
+       The serverless workgroup name or Amazon Resource Name (ARN) for the Redshift Data API. This parameter is mutually exclusive with data_api_cluster and cannot be combined with other JDBC-based parameters (e.g. user)
+    </td>
+</tr>
+<tr>
+    <td><tt>data_api_region</tt></td>
+    <td>No</td>
+    <td>No default</td>
+    <td>
+       The region where the Redshift cluster resides for the Redshift Data API. Cannot be combined with other JDBC-based parameters (e.g. user)
+    </td>
+</tr>
+</table>
 
 ## Additional configuration options
 
@@ -921,10 +1055,26 @@ To disable it, run following command:
 SET spark.datasource.redshift.community.autopushdown.lazyMode=false
 ```
 
+### redshift_s3_connection_iam_role_only
+Use the `redshift_s3_connection_iam_role_only` Spark configuration to enforce the use of an IAM role for authenticating Redshift's access to S3. When enabled, any attempt to use temporary credentials or other authentication methods will be rejected.
+
+#### Scala
+```scala
+var sparkConf = new SparkConf().set("spark.datasource.redshift.community.redshift_s3_connection_iam_role_only", "true")
+```
+
+### reject_unsecure_jdbc_connection
+The `reject_unsecure_jdbc_connection` configuration enforces secure JDBC connections by requiring SSL. When this setting is enabled, any connection string with `ssl=false` will be rejected to prevent unencrypted traffic between Spark and Redshift.
+
+#### Scala
+```scala
+var sparkConf = new SparkConf().set("spark.datasource.redshift.community.reject_unsecure_jdbc_connection", "true")
+```
+
 ### trace_id
 A new tracing identifier field that is added to the existing `label` parameter. When set, the provided string value will be used as part of label. Otherwise, it will default to the Spark application identifier. For example:
 
-`{"spark-redshift-connector":{"svc":"","ver":"6.3.0-spark_3.5","op":"Read","lbl":"","tid":"..."}}`)
+`{"spark-redshift-connector":{"svc":"","ver":"6.4.3-spark_3.5","op":"Read","lbl":"","tid":"..."}}`)
 
 To set the value, run the following command:
 ```sparksql

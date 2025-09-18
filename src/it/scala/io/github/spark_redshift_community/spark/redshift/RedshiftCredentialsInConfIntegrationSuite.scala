@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{IntegerType, MetadataBuilder, StructField, StructType}
 
@@ -27,29 +28,31 @@ import org.apache.spark.sql.types.{IntegerType, MetadataBuilder, StructField, St
 class RedshiftCredentialsInConfIntegrationSuite extends IntegrationSuiteBase {
 
   test("roundtrip save and load") {
-    val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row(1)), 1),
-      StructType(StructField("foo", IntegerType, true,
-        new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
-    val tableName = s"roundtrip_save_and_load_$randomSuffix"
-    try {
-      write(df)
-        .option("url", jdbcUrlNoUserPassword)
-        .option("user", AWS_REDSHIFT_USER)
-        .option("password", AWS_REDSHIFT_PASSWORD)
-        .option("dbtable", tableName)
-        .save()
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
-      val loadedDf = read
-        .option("url", jdbcUrlNoUserPassword)
-        .option("user", AWS_REDSHIFT_USER)
-        .option("password", AWS_REDSHIFT_PASSWORD)
-        .option("dbtable", tableName)
-        .load()
-      assert(loadedDf.schema === df.schema)
-      checkAnswer(loadedDf, df.collect())
-    } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+    // This test is only valid for JDBC-based connections
+    if (redshiftWrapper.isInstanceOf[JDBCWrapper]) {
+      val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row(1)), 1),
+        StructType(StructField("foo", IntegerType, true,
+          new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil))
+      val tableName = s"roundtrip_save_and_load_$randomSuffix"
+      try {
+        write(df)
+          .option("url", jdbcUrlNoUserPassword)
+          .option("user", AWS_REDSHIFT_USER)
+          .option("password", AWS_REDSHIFT_PASSWORD)
+          .option("dbtable", tableName)
+          .save()
+        assert(redshiftWrapper.tableExists(conn, tableName))
+        val loadedDf = read
+          .option("url", jdbcUrlNoUserPassword)
+          .option("user", AWS_REDSHIFT_USER)
+          .option("password", AWS_REDSHIFT_PASSWORD)
+          .option("dbtable", tableName)
+          .load()
+        assert(loadedDf.schema === df.schema)
+        checkAnswer(loadedDf, df.collect())
+      } finally {
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
+      }
     }
   }
-
 }

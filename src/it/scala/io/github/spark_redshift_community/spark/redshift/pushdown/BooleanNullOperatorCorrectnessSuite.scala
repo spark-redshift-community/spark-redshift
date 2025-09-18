@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
 import org.apache.spark.sql.Row
 
@@ -187,10 +187,10 @@ abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSu
         Seq(Row(0)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM
-           |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."$column_name" IS NULL ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM
+           |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( "SQ_0"."$column_name" IS NULL ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -202,10 +202,10 @@ abstract class BooleanNullOperatorCorrectnessSuite extends IntegrationPushdownSu
         Seq(Row(5000)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM
-           |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( "SUBQUERY_0"."$column_name" IS NOT NULL ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM
+           |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( "SQ_0"."$column_name" IS NOT NULL ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 }

@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.TableName
 import org.scalatest.funsuite.AnyFunSuite
 
 class TableNameSuite extends AnyFunSuite {

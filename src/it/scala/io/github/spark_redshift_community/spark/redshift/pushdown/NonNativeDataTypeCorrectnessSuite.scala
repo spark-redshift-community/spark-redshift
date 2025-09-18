@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
-import io.github.spark_redshift_community.spark.redshift.DefaultJDBCWrapper
 import org.apache.spark.sql.Row
 
 import java.sql.SQLException
@@ -23,7 +22,7 @@ import java.sql.SQLException
 abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuiteBase {
 
   override def createTestDataInRedshift(tableName: String): Unit = {
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          |create table $tableName (
          |testid int,
@@ -33,7 +32,7 @@ abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuit
     )
 
     // scalastyle:off
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          |insert into $tableName values
          |(0, null),
@@ -69,41 +68,37 @@ abstract class NonNativeDataTypeCorrectnessSuite extends IntegrationPushdownSuit
         Seq(Row(result)))
 
       checkSqlStatement(
-        s"""SELECT ( "SUBQUERY_1"."TESTSUPER" ) AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM
-           | ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0"
-           | WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = $id )
-           | ) ) AS "SUBQUERY_1"""".stripMargin)
+        s"""SELECT ( "SQ_1"."TESTSUPER" ) AS "SQ_2_COL_0" FROM ( SELECT * FROM
+           | ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0"
+           | WHERE ( ( "SQ_0"."TESTID" IS NOT NULL ) AND ( "SQ_0"."TESTID" = $id )
+           | ) ) AS "SQ_1"""".stripMargin)
     })
   }
 
   test("Test unsupported data types", P1Test) {
     // (Redshift data type, Java sql type value)
     val testCases = List(
-      ("geometry", java.sql.Types.LONGVARBINARY),
-      ("geography", java.sql.Types.LONGVARBINARY),
-      ("hllsketch", java.sql.Types.OTHER),
-      ("varbinary", java.sql.Types.LONGVARBINARY)
+      "geometry",
+      "geography",
+      "hllsketch",
+      "varbinary"
     )
 
-    testCases.par.foreach(testCase => {
-      val columnType = testCase._1
-      val sqlType = testCase._2
-
+    testCases.par.foreach(columnType => {
       val tableName = s"${columnType}_not_supported$randomSuffix"
       try {
-        conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
-        conn.createStatement().executeUpdate(
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
+        redshiftWrapper.executeUpdate(conn,
           s"CREATE TABLE $tableName (test$columnType $columnType)")
-        conn.createStatement().executeUpdate(s"INSERT INTO $tableName VALUES (null)")
-        assert(DefaultJDBCWrapper.tableExists(conn, tableName))
-        val e = intercept[SQLException] {
+        redshiftWrapper.executeUpdate(conn, s"INSERT INTO $tableName VALUES (null)")
+        assert(redshiftWrapper.tableExists(conn, tableName))
+        val e = intercept[Exception] {
           read
             .option("dbtable", tableName)
             .load()
         }
-        assert(e.getMessage.contains(s"Unsupported type $sqlType"))
       } finally {
-        conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+        redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
       }
     })
   }

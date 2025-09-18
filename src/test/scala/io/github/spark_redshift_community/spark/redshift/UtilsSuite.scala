@@ -15,34 +15,48 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.Utils
+import io.github.spark_redshift_community.spark.redshift.{BuildInfo, Parameters}
 import java.net.URI
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, PARAM_LEGACY_TRIM_CSV_WRITES, PARAM_OVERRIDE_NULLABLE, PARAM_LEGACY_MAPPING_SHORT_TO_INT}
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_HOST_CONNECTOR, PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, PARAM_LEGACY_MAPPING_SHORT_TO_INT, PARAM_LEGACY_TRIM_CSV_WRITES, PARAM_OVERRIDE_NULLABLE}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SQLContext
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar.mock
 import org.scalatest.matchers.should._
 import org.scalatest.funsuite.AnyFunSuite
 import org.slf4j.Logger
 
 import java.sql.Timestamp
+import java.util
 import java.util.Properties
 
 /**
  * Unit tests for helper functions
  */
-class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
+class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private var sc: SparkContext = _
   private var sqlContext: SQLContext = _
+
+  private val fakeCredentials: Map[String, String] =
+    Map[String, String]("forward_spark_s3_credentials" -> "true",
+      Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
+      Parameters.PARAM_LEGACY_TRIM_CSV_WRITES -> "false",
+      Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false",
+      Parameters.PARAM_OVERRIDE_NULLABLE -> "false",
+      "tempdir" -> "s3a://bucket/path/to/temp/dir",
+      "url" -> "jdbc:redshift://redshift/database")
+  private val fakeParams = MergedParameters(fakeCredentials)
+      
   override def beforeAll(): Unit = {
     sc = new SparkContext("local", "UtilsSuite")
     sqlContext = new SQLContext(sc)
@@ -54,12 +68,35 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
     sqlContext = null
   }
 
+  private def resetAll(): Unit = {
+    sqlContext.sparkSession.sql(s"reset ${Utils.CONNECTOR_LABEL_SPARK_CONF}")
+    sqlContext.sparkSession.sql(s"reset ${Utils.CONNECTOR_TRACE_ID_SPARK_CONF}")
+    unsetEnv(Utils.CONNECTOR_SERVICE_NAME_ENV_VAR)
+    unsetEnv(Utils.CONNECTOR_TRACE_ID_ENV_VAR)
+  }
+  override def beforeEach(): Unit = resetAll()
+  override def afterEach(): Unit = resetAll()
+
   test("joinUrls preserves protocol information") {
     Utils.joinUrls("s3n://foo/bar/", "/baz") shouldBe "s3n://foo/bar/baz/"
     Utils.joinUrls("s3n://foo/bar/", "/baz/") shouldBe "s3n://foo/bar/baz/"
     Utils.joinUrls("s3n://foo/bar/", "baz/") shouldBe "s3n://foo/bar/baz/"
     Utils.joinUrls("s3n://foo/bar/", "baz") shouldBe "s3n://foo/bar/baz/"
     Utils.joinUrls("s3n://foo/bar", "baz") shouldBe "s3n://foo/bar/baz/"
+  }
+
+  def getEditableEnv: util.Map[String, String] = {
+    val field = System.getenv().getClass.getDeclaredField("m")
+    field.setAccessible(true)
+    field.get(System.getenv()).asInstanceOf[util.Map[String, String]]
+  }
+
+  def setEnv(key: String, value: String): Unit = {
+    getEditableEnv.put(key, value)
+  }
+
+  def unsetEnv(key: String): Unit = {
+    getEditableEnv.remove(key)
   }
 
   test("joinUrls preserves credentials") {
@@ -112,7 +149,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
         new Rule().withStatus(BucketLifecycleConfiguration.DISABLED)
       ))
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
+      fakeParams, mockS3Client) === true)
   }
 
   test("checkThatBucketHasObjectLifecycleConfiguration when rule with prefix") {
@@ -124,7 +161,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
         new Rule().withPrefix("/path/").withStatus(BucketLifecycleConfiguration.ENABLED)
       ))
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
+      fakeParams, mockS3Client) === true)
   }
 
   test("checkThatBucketHasObjectLifecycleConfiguration when rule without prefix") {
@@ -136,7 +173,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
         new Rule().withStatus(BucketLifecycleConfiguration.ENABLED)
       ))
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      "s3a://bucket/path/to/temp/dir", mockS3Client) === true)
+      fakeParams, mockS3Client) === true)
   }
 
   test("checkThatBucketHasObjectLifecycleConfiguration when error in checking") {
@@ -146,7 +183,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
     when(mockS3Client.getBucketLifecycleConfiguration(anyString()))
       .thenThrow(new NullPointerException())
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
-      "s3a://bucket/path/to/temp/dir", mockS3Client) === false)
+      fakeParams, mockS3Client) === false)
   }
 
   test("retry calls block correct number of times with correct delay") {
@@ -168,16 +205,10 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
     // check that at least timeToSleep passed but allow for slightly longer
     assert(timeTaken >= timeToSleep && timeTaken <= timeToSleep + 50)
   }
- val fakeCredentials: Map[String, String] =
-   Map[String, String]("forward_spark_s3_credentials" -> "true",
-     Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING -> "false",
-     Parameters.PARAM_LEGACY_TRIM_CSV_WRITES -> "false",
-     Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT -> "false",
-     Parameters.PARAM_OVERRIDE_NULLABLE -> "false")
 
   test("collectMetrics logs buildinfo to INFO") {
     val mockLogger = mock[Logger]
-    Utils.collectMetrics(MergedParameters(fakeCredentials), Some(mockLogger))
+    Utils.collectMetrics(fakeParams, Some(mockLogger))
 
     verify(mockLogger).info(BuildInfo.toString)
   }
@@ -224,7 +255,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
   test("collectMetrics does not log when param LegacyJdbcRealTypeMapping is disabled") {
     val mockLogger = mock[Logger]
-    val params = MergedParameters(fakeCredentials)
+    val params = fakeParams
 
     Utils.collectMetrics(params, Some(mockLogger))
     verify(mockLogger, never()).info(s"${Parameters.PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING} is enabled")
@@ -232,7 +263,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
   test("collectMetrics does not log when param LegacyTrimCSV is disabled") {
     val mockLogger = mock[Logger]
-    val params = MergedParameters(fakeCredentials)
+    val params = fakeParams
 
     Utils.collectMetrics(params, Some(mockLogger))
     verify(mockLogger, never()).info(s"${Parameters.PARAM_LEGACY_TRIM_CSV_WRITES} is enabled")
@@ -240,7 +271,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
   test("collectMetrics does not log when param legacyMappingShortToInt is disabled") {
     val mockLogger = mock[Logger]
-    val params = MergedParameters(fakeCredentials)
+    val params = fakeParams
 
     Utils.collectMetrics(params, Some(mockLogger))
     verify(mockLogger, never()).info(s"${Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT} is enabled")
@@ -248,7 +279,7 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
   test("collectMetrics does not log when param OverrideNullable is disabled") {
     val mockLogger = mock[Logger]
-    val params = MergedParameters(fakeCredentials)
+    val params = fakeParams
 
     Utils.collectMetrics(params, Some(mockLogger))
     verify(mockLogger, never()).info(s"${Parameters.PARAM_OVERRIDE_NULLABLE} is enabled")
@@ -282,13 +313,73 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
     assert(destProps.getProperty("drivers.param7") == "value7")
   }
 
-  test("User provided label is trimmed in queryGroupInfo") {
-    val longString = "a" * 1000
+  test("User provided service is trimmed in queryGroupInfo") {
+    val params = fakeParams
+    val longString = ("a" * 10) + ("b" * 10)
+    val expectedService = "a" * 10
+    val expectedString = s""""svc":"$expectedService""""
+    setEnv(Utils.CONNECTOR_SERVICE_NAME_ENV_VAR, longString)
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(expectedString))
+  }
+
+  test("User provided host connector is trimmed in queryGroupInfo") {
+    val longString = ("a" * 10) + ("b" * 10)
+    val expectedHost = "a" * 10
+    val expectedString = s""""hst":"$expectedHost""""
+    val params = MergedParameters(fakeCredentials + (PARAM_HOST_CONNECTOR -> longString))
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(expectedString))
+  }
+
+  test("User provided label from property is trimmed in queryGroupInfo") {
+    val longString = ("a" * 100) + ("b" * 100)
     val expectedLabel = "a" * 100
     val expectedString = s""""lbl":"$expectedLabel""""
-    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, longString, sqlContext)
+    val params = MergedParameters(fakeCredentials + ("label" -> longString))
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(expectedString))
+  }
 
-    actualQueryGroup.contains(expectedString)
+  test("User provided label from config is trimmed in queryGroupInfo") {
+    val params = fakeParams
+    val longString = ("a" * 100) + ("b" * 100)
+    val expectedLabel = "a" * 100
+    val expectedString = s""""lbl":"$expectedLabel""""
+    sqlContext.sparkSession.sql(
+      s"set ${Utils.CONNECTOR_LABEL_SPARK_CONF} = $longString")
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(expectedString))
+  }
+
+  test("User provided trace from config is trimmed in queryGroupInfo") {
+    val params = fakeParams
+    val longString = ("a" * 75) + ("b" * 75)
+    val expectedTrace = "a" * 75
+    val expectedString = s""""tid":"$expectedTrace""""
+    sqlContext.sparkSession.sql(
+      s"set ${Utils.CONNECTOR_TRACE_ID_SPARK_CONF} = $longString")
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(expectedString))
+  }
+
+  test("User provided trace from env is trimmed in queryGroupInfo") {
+    val params = fakeParams
+    val longString = ("a" * 75) + ("b" * 75)
+    val expectedTrace = "a" * 75
+    val expectedString = s""""tid":"$expectedTrace""""
+    setEnv(Utils.CONNECTOR_TRACE_ID_ENV_VAR, longString)
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(expectedString))
+  }
+
+  test("Maximum queryGroupInfo is no more than 320 characters in length") {
+    setEnv(Utils.CONNECTOR_SERVICE_NAME_ENV_VAR, "a" * 1000)
+    val params = MergedParameters(fakeCredentials + (PARAM_HOST_CONNECTOR -> "b" * 1000))
+    sqlContext.sparkSession.sql(s"set ${Utils.CONNECTOR_LABEL_SPARK_CONF} = ${"c" * 1000}")
+    sqlContext.sparkSession.sql(s"set ${Utils.CONNECTOR_TRACE_ID_SPARK_CONF} = ${"d" * 1000}")
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Write, params, sqlContext)
+    assert(actualQueryGroup.length <= 320)
   }
 
   test("pre-GA regions are permitted") {
@@ -297,5 +388,149 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
     val defaultRegion = Utils.getDefaultTempDirRegion(None)
     assert(defaultRegion.isEmpty == false)
+  }
+
+  /*
+   * Validate Utils.getResourceIdForARN()
+   * See: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html
+   */
+  test("Verify splitting resource identifiers from ARNs") {
+    assert(Utils.getResourceIdForARN(
+      "arn:partition:service:region:account-id:resource-id") == "resource-id")
+    assert(Utils.getResourceIdForARN(
+      "arn:partition:service:region:account-id:resource-type/resource-id") == "resource-id")
+    assert(Utils.getResourceIdForARN(
+      "arn:partition:service:region:account-id:resource-type:resource-id") == "resource-id")
+  }
+
+  test("Ensure default app name is non empty and only alpha characters") {
+    assert(Utils.getApplicationName(fakeParams).matches("^[a-zA-Z]+$"))
+  }
+
+  test("Test application name with host service name.") {
+    assert(Utils.getApplicationName(fakeParams).equals(Utils.DEFAULT_APP_NAME))
+
+    // Valid
+    setEnv(Utils.CONNECTOR_SERVICE_NAME_ENV_VAR, "MySvcName")
+    assert(Utils.getApplicationName(fakeParams).equals(Utils.DEFAULT_APP_NAME + "MySvcName"))
+
+    // Invalid
+    setEnv(Utils.CONNECTOR_SERVICE_NAME_ENV_VAR, "MySvc Name")
+    assert(Utils.getApplicationName(fakeParams).equals(Utils.DEFAULT_APP_NAME))
+
+    // Invalid
+    setEnv(Utils.CONNECTOR_SERVICE_NAME_ENV_VAR, "MySvcName1")
+    assert(Utils.getApplicationName(fakeParams).equals(Utils.DEFAULT_APP_NAME))
+  }
+
+
+  test("Test application name with host connector name.") {
+    var params = fakeParams
+    assert(Utils.getApplicationName(params).equals(Utils.DEFAULT_APP_NAME))
+
+    // Valid
+    params = MergedParameters(fakeCredentials + (PARAM_HOST_CONNECTOR -> "MyHstName"))
+    assert(Utils.getApplicationName(params).equals(Utils.DEFAULT_APP_NAME + "MyHstName"))
+
+    // Invalid
+    params = MergedParameters(fakeCredentials + (PARAM_HOST_CONNECTOR -> "MyHst Name"))
+    assert(Utils.getApplicationName(params).equals(Utils.DEFAULT_APP_NAME))
+
+    // Invalid
+    params = MergedParameters(fakeCredentials + (PARAM_HOST_CONNECTOR -> "MyHstName1"))
+    assert(Utils.getApplicationName(params).equals(Utils.DEFAULT_APP_NAME))
+  }
+
+  test("Test application name with both host service and host connector names.") {
+    var params = fakeParams
+    assert(Utils.getApplicationName(params).equals(Utils.DEFAULT_APP_NAME))
+
+    // Valid
+    setEnv(Utils.CONNECTOR_SERVICE_NAME_ENV_VAR, "MySvcName")
+    params = MergedParameters(fakeCredentials + (PARAM_HOST_CONNECTOR -> "MyHstName"))
+    assert(Utils.getApplicationName(params).equals(Utils.DEFAULT_APP_NAME + "MySvcName" + "MyHstName"))
+
+    // Invalid service
+    setEnv(Utils.CONNECTOR_SERVICE_NAME_ENV_VAR, "MySvc Name")
+    params = MergedParameters(fakeCredentials + (PARAM_HOST_CONNECTOR -> "MyHstName"))
+    assert(Utils.getApplicationName(params).equals(Utils.DEFAULT_APP_NAME + "MyHstName"))
+
+    // Invalid host
+    setEnv(Utils.CONNECTOR_SERVICE_NAME_ENV_VAR, "MySvcName")
+    params = MergedParameters(fakeCredentials + (PARAM_HOST_CONNECTOR -> "MyHst Name"))
+    assert(Utils.getApplicationName(params).equals(Utils.DEFAULT_APP_NAME + "MySvcName"))
+
+    // Invalid both
+    setEnv(Utils.CONNECTOR_SERVICE_NAME_ENV_VAR, "MySvc Name")
+    params = MergedParameters(fakeCredentials + (PARAM_HOST_CONNECTOR -> "MyHst Name"))
+    assert(Utils.getApplicationName(params).equals(Utils.DEFAULT_APP_NAME))
+  }
+
+  test("Test supported label names") {
+    // Default
+    var params = fakeParams
+    var actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(""""lbl":"""""))
+
+    // Valid
+    params = MergedParameters(fakeCredentials + ("label" -> "Label1"))
+    actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(""""lbl":"Label1""""))
+
+    // Valid
+    params = MergedParameters(fakeCredentials + ("label" -> "Label_1"))
+    actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(""""lbl":"Label_1""""))
+
+    // Invalid
+    params = MergedParameters(fakeCredentials + ("label" -> "Label 1"))
+    actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(""""lbl":"""""))
+
+    // Invalid
+    params = MergedParameters(fakeCredentials + ("label" -> "Label-1"))
+    actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(""""lbl":"""""))
+  }
+
+  test("Test supported trace identifiers") {
+    // Default is Spark application id
+    var actualQueryGroup = Utils.queryGroupInfo(Utils.Read, fakeParams, sqlContext)
+    assert(actualQueryGroup.contains(s""""tid":"${sc.applicationId}"""))
+
+    // Valid
+    sqlContext.sparkSession.sql(s"set ${Utils.CONNECTOR_TRACE_ID_SPARK_CONF} = Trace-1")
+    actualQueryGroup = Utils.queryGroupInfo(Utils.Read, fakeParams, sqlContext)
+    assert(actualQueryGroup.contains(""""tid":"Trace-1""""))
+
+    // Valid
+    sqlContext.sparkSession.sql(s"set ${Utils.CONNECTOR_TRACE_ID_SPARK_CONF} = Trace_1")
+    actualQueryGroup = Utils.queryGroupInfo(Utils.Read, fakeParams, sqlContext)
+    assert(actualQueryGroup.contains(""""tid":"Trace_1""""))
+
+    // Valid
+    sqlContext.sparkSession.sql(s"set ${Utils.CONNECTOR_TRACE_ID_SPARK_CONF} = 1Trace")
+    actualQueryGroup = Utils.queryGroupInfo(Utils.Read, fakeParams, sqlContext)
+    assert(actualQueryGroup.contains(s""""tid":"1Trace""""))
+
+    // Invalid - Default to spark application id.
+    sqlContext.sparkSession.sql(s"set ${Utils.CONNECTOR_TRACE_ID_SPARK_CONF} = Trace 1")
+    actualQueryGroup = Utils.queryGroupInfo(Utils.Read, fakeParams, sqlContext)
+    assert(actualQueryGroup.contains(s""""tid":"${sc.applicationId}"""))
+  }
+
+  test("Test label property has precedence over Spark configuration") {
+    val params = MergedParameters(fakeCredentials + ("label" -> "Label1"))
+    sqlContext.sparkSession.sql(s"set ${Utils.CONNECTOR_LABEL_SPARK_CONF} = Label2")
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(""""lbl":"Label1""""))
+  }
+
+  test("Test trace configuration setting has precedence over env var") {
+    val params = fakeParams
+    sqlContext.sparkSession.sql(s"set ${Utils.CONNECTOR_TRACE_ID_SPARK_CONF} = Trace-1")
+    setEnv(Utils.CONNECTOR_TRACE_ID_ENV_VAR, "Trace-2")
+    val actualQueryGroup = Utils.queryGroupInfo(Utils.Read, params, sqlContext)
+    assert(actualQueryGroup.contains(""""tid":"Trace-1""""))
   }
 }

@@ -16,6 +16,38 @@
 
 # spark-redshift Changelog
 
+## 6.4.3 (2025-07-01)
+- Upgraded Apache Spark dependency to version 3.5.6
+- Upgraded to JDBC version 2.1.0.33
+- Upgraded sbt build tool to version 1.11.2
+- Updated Sonatype publishing from OSSRH to Central Publisher Portal
+- Fixed getDefaultRegion handling to return null on exceptions, aligning with AWS SDK behavior
+
+## 6.4.2 (2025-04-21)
+- Add spark configurations for enforcing secure JDBC connections and usage of aws_iam_role for authorizing Redshift COPY/UNLOAD operations.
+- Verified the connector is compatible with the latest Spark patch release 3.5.5.
+
+## 6.4.1 (2025-01-07)
+- Corrects an attribute nullability bug when using set operators: UNION, EXCEPT, or INTERSECT [Hari Kishore Chaparala, Beaux Sharifi]
+- Adds a missing validation rule for using the Redshift Data API [Beaux Sharifi]
+- Modifies the visibility of RedshiftRelation to be public for external access [Armin Najafi]
+- Upgrades the connector to work with the latest JDBC driver version 2.1.0.32 [Beaux Sharifi]
+- Validates connector tests pass with the latest Spark patch release 3.5.4 [Beaux Sharifi]
+
+## 6.4.0 (2024-12-02)
+- Supports utilizing the Redshift Data API as an alternative mechanism for communicating with Redshift (see parameters "data_api_*" in the README). [Beaux Sharifi]
+- Adds DML pushdown support for four Spark SQL operators: INSERT, DELETE, UPDATE, and MERGE. [Hari Kishore Chaparala, Ruei Yang Huang, Xiaoxuan Li, Beaux Sharifi, Brooke White]
+- Adds new pushdown support for the following Spark operators: LocalRelation, CreateNamedStruct, Intersect, and Except [Hari Kishore Chaparala, Xiaoxuan Li, Beaux Sharifi]
+- Enhances InSubQuery pushdown to support multiple values. [Beaux Sharifi]
+- Adds pushdown support for join conditions [Beaux Sharifi, Brooke White]
+- Adds sub-field pushdown support to child scalar subqueries. [Beaux Sharifi]
+- Converts left semi and left anti joins into intersect and except set operations in some conditions to improve pushdown performance. [Hari Kishore Chaparala]
+- Reverses readSidePadding Spark optimization rule to improve pushdown performance. [Atul Payapilly]
+- Adds parameter "check_s3_bucket_usage" for disabling S3 bucket checks during operation to reduce network calls. [Armin Najafi]
+- Abbreviates generated pushdown SQL for accommodating Redshift Data API’s smaller maximum query length. [Jack Ye]
+- Strengthens logic for detecting and preventing cross-cluster pushdowns. [Beaux Sharifi]
+- Validates connector tests pass with the latest Spark patch releases 3.3.4, 3.4.4, and 3.5.3 [Beaux Sharifi]
+
 ## 6.3.0 (2024-07-03)
 - Validates connector tests pass with Spark releases 3.4.3 and 3.5.1 [Beaux Sharifi]
 - Adds support for three-part table names to allow connector to query Redshift data sharing tables (#153) [Prashant Singh, Beaux Sharifi]

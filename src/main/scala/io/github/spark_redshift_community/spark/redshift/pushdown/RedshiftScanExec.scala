@@ -54,7 +54,7 @@ case class RedshiftScanExec(output: Seq[Attribute],
             RedshiftPushdownResult(data = Some(data))
           } catch {
             case e: Exception =>
-              logError("Failure in redshift query execution", e)
+              logError(s"Failure in redshift query execution: ${e.getMessage}")
               RedshiftPushdownResult(failure = Some(e))
           }
         }

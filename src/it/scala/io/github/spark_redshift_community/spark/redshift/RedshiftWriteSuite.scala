@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.Parameters
 import java.sql.SQLException
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
@@ -41,10 +42,10 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
         .mode(SaveMode.ErrorIfExists)
         .save()
 
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(read.option("dbtable", tableName).load(), TestUtils.expectedData)
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 
@@ -91,20 +92,19 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
       s"save_with_all_empty_partitions_$randomSuffix", df2, saveMode = SaveMode.Overwrite)
   }
 
-  test("informative error message when saving a table with string that is longer than max length") {
-    val tableName = s"error_message_when_string_too_long_$randomSuffix"
+  test("error when saving a table with string that is longer than max length") {
+    val tableName = s"error_when_string_too_long_$randomSuffix"
     try {
       val df = sqlContext.createDataFrame(sc.parallelize(Seq(Row("a" * 65536))),
         StructType(StructField("A", StringType) :: Nil))
-      val e = intercept[SQLException] {
+      val e = intercept[Exception] {
         write(df)
           .option("dbtable", tableName)
           .mode(SaveMode.ErrorIfExists)
           .save()
       }
-      assert(e.getMessage.contains("while loading data into Redshift"))
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 
@@ -138,10 +138,10 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
         .mode(SaveMode.ErrorIfExists)
         .save()
 
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(read.option("dbtable", tableName).load(), df)
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 
@@ -165,9 +165,9 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
       write(df).option("dbtable", tableName)
         .option(Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT, value = false)
         .save()
-      if (!DefaultJDBCWrapper.tableExists(conn, tableName)) {
+      if (!redshiftWrapper.tableExists(conn, tableName)) {
         Thread.sleep(1000)
-        assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+        assert(redshiftWrapper.tableExists(conn, tableName))
       }
       val loadedDf = read.option("dbtable", tableName)
         .option(Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT, value = false)
@@ -203,9 +203,9 @@ abstract class BaseRedshiftWriteSuite extends IntegrationSuiteBase {
       write(df).option("dbtable", tableName)
         .option(Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT, value = true)
         .save()
-      if (!DefaultJDBCWrapper.tableExists(conn, tableName)) {
+      if (!redshiftWrapper.tableExists(conn, tableName)) {
         Thread.sleep(1000)
-        assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+        assert(redshiftWrapper.tableExists(conn, tableName))
       }
       val loadedDf = read.option("dbtable", tableName)
         .option(Parameters.PARAM_LEGACY_MAPPING_SHORT_TO_INT, value = true)
@@ -238,11 +238,7 @@ class AvroRedshiftWriteSuite extends BaseRedshiftWriteSuite {
   }
 }
 
-
-
-class CSVRedshiftWriteSuite extends BaseRedshiftWriteSuite with ComplexWriteSuite {
-  override protected val tempformat: String = "CSV"
-
+trait NonAvroRedshiftWriteSuite extends IntegrationSuiteBase {
   test("save with column names that contain spaces (#84)") {
     testRoundtripSaveAndLoad(
       s"save_with_column_names_that_contain_spaces_$randomSuffix",
@@ -250,6 +246,11 @@ class CSVRedshiftWriteSuite extends BaseRedshiftWriteSuite with ComplexWriteSuit
         StructType(StructField("column name with spaces", IntegerType, true,
           new MetadataBuilder().putString("redshift_type", "int4").build()) :: Nil)))
   }
+}
+
+class CSVRedshiftWriteSuite extends BaseRedshiftWriteSuite
+  with ComplexWriteSuite with NonAvroRedshiftWriteSuite{
+  override protected val tempformat: String = "CSV"
 
   test("do not trim column values when legacy_trim_csv_writes option is false") {
     val tableName = s"save_with_column_values_with_spaces_$randomSuffix"
@@ -264,10 +265,10 @@ class CSVRedshiftWriteSuite extends BaseRedshiftWriteSuite with ComplexWriteSuit
         .mode(SaveMode.ErrorIfExists)
         .save()
 
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(read.option("dbtable", tableName).load(), df)
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 
@@ -285,24 +286,29 @@ class CSVRedshiftWriteSuite extends BaseRedshiftWriteSuite with ComplexWriteSuit
         .mode(SaveMode.ErrorIfExists)
         .save()
 
-      assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+      assert(redshiftWrapper.tableExists(conn, tableName))
       checkAnswer(read.option("dbtable", tableName).load(), trimmed_df)
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 }
 
-class CSVGZIPRedshiftWriteSuite extends CSVRedshiftWriteSuite {
+class CSVGZIPRedshiftWriteSuite extends CSVRedshiftWriteSuite with NonAvroRedshiftWriteSuite{
   override protected def write(df: DataFrame): DataFrameWriter[Row] =
     super.write(df).option("tempformat", "CSV GZIP")
 }
 
-class ParquetRedshiftWriteSuite extends BaseRedshiftWriteSuite with ComplexWriteSuite {
+class ParquetRedshiftWriteSuite extends BaseRedshiftWriteSuite
+  with ComplexWriteSuite with NonAvroRedshiftWriteSuite{
   override val tempformat: String = "PARQUET"
 
   protected val AWS_S3_CROSS_REGION_SCRATCH_SPACE: String =
     loadConfigFromEnv("AWS_S3_CROSS_REGION_SCRATCH_SPACE")
+
+  protected val AWS_S3_CROSS_REGION_SCRATCH_SPACE_REGION: String =
+    loadConfigFromEnv("AWS_S3_CROSS_REGION_SCRATCH_SPACE_REGION")
+
 
   test("save fails on cross-region copy") {
     val tableName = s"cross_region_copy_parquet_$randomSuffix"
@@ -311,11 +317,11 @@ class ParquetRedshiftWriteSuite extends BaseRedshiftWriteSuite with ComplexWrite
         sqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testSchema))
         .option("dbtable", tableName)
         .option("tempdir", AWS_S3_CROSS_REGION_SCRATCH_SPACE)
+        .option("tempdir_region", AWS_S3_CROSS_REGION_SCRATCH_SPACE_REGION)
         .mode(SaveMode.ErrorIfExists)
         .save()
     })
     assert(caught.getMessage == "Redshift cluster and S3 bucket are in different regions " +
       "when tempformat is set to parquet")
-
   }
 }

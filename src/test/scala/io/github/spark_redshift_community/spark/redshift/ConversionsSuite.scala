@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
+import io.github.spark_redshift_community.spark.redshift.{Conversions, Parameters, RowEncoderUtils}
 import java.sql.Timestamp
 import java.util.Locale
 import org.apache.spark.sql.Row

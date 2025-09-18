@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
 import org.apache.spark.sql.Row
 
@@ -98,24 +98,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >= $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0"
+           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" >= $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name < $expected_res"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" < $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0"
+           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" < $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -158,24 +158,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >= ${math.ceil(expected_res).toInt} ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0"
+           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" >= ${math.ceil(expected_res).toInt} ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name < $expected_res"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" < ${math.ceil(expected_res).toInt} ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0"
+           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" < ${math.ceil(expected_res).toInt} ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -218,24 +218,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <= $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0"
+           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" <= $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $expected_res"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" > $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0"
+           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" > $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -278,24 +278,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <= ${math.floor(expected_res).toInt} ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0"
+           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" <= ${math.floor(expected_res).toInt} ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $expected_res"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0"
-           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" > ${math.floor(expected_res).toInt} ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0"
+           |FROM ( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" > ${math.floor(expected_res).toInt} ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -322,11 +322,11 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) ) >= $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( CAST ( "SQ_0"."$column_name" AS DECIMAL(19, 18) ) >= $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1
            |""".stripMargin)
 
       checkAnswer(
@@ -334,11 +334,11 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) ) < $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( CAST ( "SQ_0"."$column_name" AS DECIMAL(19, 18) ) < $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1
            |""".stripMargin)
     })
   }
@@ -366,11 +366,11 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) ) <= $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( CAST ( "SQ_0"."$column_name" AS DECIMAL(19, 18) ) <= $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1
            |""".stripMargin)
 
       checkAnswer(
@@ -378,11 +378,11 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) ) > $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( CAST ( "SQ_0"."$column_name" AS DECIMAL(19, 18) ) > $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1
            |""".stripMargin)
     })
   }
@@ -410,22 +410,22 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) )
-           |<= -1.000000000000000000 ) ) ) AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( CAST ( "SQ_0"."$column_name" AS DECIMAL(19, 18) )
+           |<= -1.000000000000000000 ) ) ) AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $expected_res"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( CAST ( "SUBQUERY_0"."$column_name" AS DECIMAL(19, 18) )
-           |> -1.000000000000000000 ) ) ) AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( CAST ( "SQ_0"."$column_name" AS DECIMAL(19, 18) )
+           |> -1.000000000000000000 ) ) ) AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -453,24 +453,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >= $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" >= $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name < $expected_res"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" < $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" < $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -497,24 +497,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <= $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" <= $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $expected_res"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" > $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" > $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -578,22 +578,22 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM
-           |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >= $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM
+           |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" >= $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name < $query_in"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM
-           |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" < $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM
+           |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" < $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -657,22 +657,22 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM
-           |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <= $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM
+           |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" <= $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $query_in"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM
-           |( SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" > $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM
+           |( SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" > $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -696,24 +696,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >=
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" >=
            |DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name < $query_in"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" <
            |DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -737,24 +737,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <=
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" <=
            |DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $query_in"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0" WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" >
            |DATEADD(day, 14740 , TO_DATE(\\'1970-01-01\\', \\'YYYY-MM-DD\\')) ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -785,24 +785,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >=\\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" >=\\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name < $query_in"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" < \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" < \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -833,24 +833,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <= \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" <= \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $query_in"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" > \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" > \\'1994-05-19 01:03:02\\' ::TIMESTAMP ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -876,24 +876,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" >= $expected_res $cast ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" >= $expected_res $cast ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name < $expected_res"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" < $expected_res $cast ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" < $expected_res $cast ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -914,24 +914,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <= $expected_res::float4) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" <= $expected_res::float4) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $expected_res"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" > $expected_res::float4 ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" > $expected_res::float4 ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -952,24 +952,24 @@ abstract class BooleanCompareOperatorCorrectnessSuite extends IntegrationPushdow
         Seq(Row(result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" <= $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" <= $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
 
       checkAnswer(
         sqlContext.sql(s"""SELECT count(*) FROM test_table where $column_name > $expected_res"""),
         Seq(Row(5000 - result_size)))
 
       checkSqlStatement(
-        s"""SELECT ( COUNT ( 1 ) ) AS "SUBQUERY_2_COL_0" FROM (
-           |SELECT * FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" )
-           |AS "SUBQUERY_0"
-           |WHERE ( ( "SUBQUERY_0"."$column_name" IS NOT NULL )
-           |AND ( "SUBQUERY_0"."$column_name" > $expected_res ) ) )
-           |AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( COUNT ( 1 ) ) AS "SQ_2_COL_0" FROM (
+           |SELECT * FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" )
+           |AS "SQ_0"
+           |WHERE ( ( "SQ_0"."$column_name" IS NOT NULL )
+           |AND ( "SQ_0"."$column_name" > $expected_res ) ) )
+           |AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
 import org.apache.spark.sql.Row
 
@@ -56,10 +56,10 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
 
       checkSqlStatement(
         s"""SELECT ( CONCAT (
-          | "SUBQUERY_1"."${column.toUpperCase}" , "SUBQUERY_1"."${column.toUpperCase}" ) )
-          | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
-          | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID"
-          | IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = $id ) ) ) AS "SUBQUERY_1"""".stripMargin)
+          | "SQ_1"."${column.toUpperCase}" , "SQ_1"."${column.toUpperCase}" ) )
+          | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
+          | "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( "SQ_0"."TESTID"
+          | IS NOT NULL ) AND ( "SQ_0"."TESTID" = $id ) ) ) AS "SQ_1"""".stripMargin)
 
     })
   }
@@ -96,10 +96,10 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
 
         checkSqlStatement(
           s"""SELECT ( CONCAT (
-             | "SUBQUERY_1"."${column1.toUpperCase}" , "SUBQUERY_1"."${column2.toUpperCase}" ) )
-             | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
-             | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID"
-             | IS NOT NULL ) AND ( "SUBQUERY_0"."TESTID" = $id ) ) ) AS "SUBQUERY_1"""".stripMargin)
+             | "SQ_1"."${column1.toUpperCase}" , "SQ_1"."${column2.toUpperCase}" ) )
+             | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
+             | "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( "SQ_0"."TESTID"
+             | IS NOT NULL ) AND ( "SQ_0"."TESTID" = $id ) ) ) AS "SQ_1"""".stripMargin)
 
       })
     })
@@ -133,11 +133,11 @@ abstract class PushdownStringConcatSuite extends StringIntegrationPushdownSuiteB
           Seq(Row(result)))
 
         checkSqlStatement(
-          s"""SELECT ( CONCAT ( "SUBQUERY_1"."${column1.toUpperCase}" ,
-             | CONCAT ( "SUBQUERY_1"."${column2.toUpperCase}" , \\'$literal\\' ) ) )
-             | AS "SUBQUERY_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
-             | "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" WHERE ( ( "SUBQUERY_0"."TESTID" IS NOT NULL )
-             | AND ( "SUBQUERY_0"."TESTID" = $id ) ) ) AS "SUBQUERY_1"""".stripMargin)
+          s"""SELECT ( CONCAT ( "SQ_1"."${column1.toUpperCase}" ,
+             | CONCAT ( "SQ_1"."${column2.toUpperCase}" , \\'$literal\\' ) ) )
+             | AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM $test_table AS
+             | "RCQ_ALIAS" ) AS "SQ_0" WHERE ( ( "SQ_0"."TESTID" IS NOT NULL )
+             | AND ( "SQ_0"."TESTID" = $id ) ) ) AS "SQ_1"""".stripMargin)
 
       })
     })

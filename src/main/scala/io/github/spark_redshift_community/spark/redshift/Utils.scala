@@ -19,17 +19,20 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.regions.Regions
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.amazonaws.regions.{DefaultAwsRegionProviderChain, Regions}
+import com.amazonaws.services.redshiftdataapi.{AWSRedshiftDataAPI, AWSRedshiftDataAPIClient}
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3URI}
+import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper.{REDSHIFT_FIRST_PARTY_DRIVERS, REDSHIFT_JDBC_4_1_DRIVER, REDSHIFT_JDBC_4_2_DRIVER, REDSHIFT_JDBC_4_DRIVER, SECRET_MANAGER_REDSHIFT_DRIVER}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
-import java.sql.Timestamp
 import java.util.{Properties, UUID}
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -46,6 +49,11 @@ object RedshiftFailMessage {
   final val FAIL_PUSHDOWN_UNSUPPORTED_CONVERSION = "pushdown failed for unsupported conversion"
   final val FAIL_PUSHDOWN_UNSUPPORTED_JOIN = "pushdown failed for unsupported join"
   final val FAIL_PUSHDOWN_UNSUPPORTED_UNION = "pushdown failed for Spark feature: UNION by name"
+  final val FAIL_PUSHDOWN_UNSUPPORTED_MERGE = "pushdown failed for Spark feature: MERGE"
+  final val FAIL_PUSHDOWN_UNSUPPORTED_INTERSECT_ALL =
+    "pushdown failed for Spark feature: INTERSECT ALL"
+  final val FAIL_PUSHDOWN_UNSUPPORTED_EXCEPT_ALL =
+    "pushdown failed for Spark feature: EXCEPT ALL"
 }
 
 class RedshiftPushdownException(message: String)
@@ -56,6 +64,8 @@ class RedshiftPushdownUnsupportedException(message: String,
                                             val details: String,
                                             val isKnownUnsupportedOperation: Boolean)
   extends Exception(message)
+
+class RedshiftConstraintViolationException(message: String) extends Exception(message)
 
 /**
  * Various arbitrary helper functions
@@ -156,10 +166,10 @@ private[redshift] object Utils {
    *                   false if an error prevent the check (useful for testing).
    */
   def checkThatBucketHasObjectLifecycleConfiguration(
-      tempDir: String,
+      params: MergedParameters,
       s3Client: AmazonS3): Boolean = {
     try {
-      val s3URI = createS3URI(Utils.fixS3Url(tempDir))
+      val s3URI = createS3URI(Utils.fixS3Url(params.rootTempDir))
       val bucket = s3URI.getBucket
       assert(bucket != null, "Could not get bucket from S3 URI")
       val key = Option(s3URI.getKey).getOrElse("")
@@ -185,7 +195,7 @@ private[redshift] object Utils {
       true
     } catch {
       case NonFatal(e) =>
-        log.warn("An error occurred while trying to read the S3 bucket lifecycle configuration")
+        log.warn("An error occurred while trying to read the S3 bucket lifecycle configuration: {}", e.getMessage)
         false
     }
   }
@@ -208,12 +218,54 @@ private[redshift] object Utils {
     }
   }
 
+  def checkJDBCSecurity(driverClass: String,
+                        updatedURL: String,
+                        driverProperties: Properties): Unit = {
+    if (!Utils.isUnsecureJDBCConnectionRejected()) {
+      return
+    }
+
+    // we don't allow arbitrary JDBC driver implementation since we don't trust them
+    if (!REDSHIFT_FIRST_PARTY_DRIVERS.contains(driverClass)) {
+      throw new RedshiftConstraintViolationException("Arbitrary driver class is not supported " +
+        "when using spark-redshift connector with " +
+        s"$CONNECTOR_REJECT_UNSECURE_JDBC_CONNECTION set to true: $driverClass")
+    }
+
+    def urlContainsSSLDisable(): Boolean = {
+      (updatedURL.toLowerCase().contains(";ssl=false")
+        || updatedURL.toLowerCase().contains("&ssl=false")
+        || updatedURL.toLowerCase().contains("?ssl=false"))
+    }
+
+    // Redshift jdbc enables ssl via url option "ssl=true", which is enabled by default. See
+    // https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-build-connection-url.html
+    // https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-configuration-options.html#jdbc20-ssl-option
+    // SecretManager redshift driver also uses Redshift JDBC driver:
+    // https://github.com/aws/aws-secretsmanager-jdbc/blob/v2/src/main/java/com/amazonaws/secretsmanager/sql/AWSSecretsManagerRedshiftDriver.java
+    if (urlContainsSSLDisable()
+      || (driverProperties.containsKey("ssl")
+      && driverProperties.getProperty("ssl").equalsIgnoreCase("false"))) {
+      throw new RedshiftConstraintViolationException("To use spark-redshift connector " +
+        s"with $CONNECTOR_REJECT_UNSECURE_JDBC_CONNECTION turned on, " +
+        "SSL must be enabled for the JDBC connection. ")
+    }
+  }
+
+  /*
+   * Gets the resource name for an IAM ARN.
+   * See: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html
+   */
+  def getResourceIdForARN(arn: String): String = {
+      arn.split(Array('/', ':')).last
+  }
+
   /**
    * Attempts to retrieve the region of the S3 bucket.
    */
-  def getRegionForS3Bucket(tempDir: String, s3Client: AmazonS3): Option[String] = {
+  def getRegionForS3Bucket(params: MergedParameters, s3Client: AmazonS3): Option[String] = {
     try {
-      val s3URI = createS3URI(Utils.fixS3Url(tempDir))
+      val s3URI = createS3URI(Utils.fixS3Url(params.rootTempDir))
       val bucket = s3URI.getBucket
       assert(bucket != null, "Could not get bucket from S3 URI")
       val region = s3Client.headBucket(new HeadBucketRequest(bucket)).getBucketRegion match {
@@ -224,7 +276,7 @@ private[redshift] object Utils {
       Some(region)
     } catch {
       case NonFatal(e) =>
-        log.warn("An error occurred while trying to determine the S3 bucket's region", e)
+        log.warn("An error occurred while trying to determine the S3 bucket's region: {}", e.getMessage)
         None
     }
   }
@@ -242,10 +294,24 @@ private[redshift] object Utils {
     }
   }
 
+  /**
+   * Attempts to determine the region of a Redshift cluster based on its URL. It may not be possible
+   * to determine the region in some cases, such as when the Redshift cluster is placed behind a
+   * proxy.
+   */
+  def getRegionForRedshiftCluster(params: MergedParameters): Option[String] = {
+    if (params.jdbcUrl.isDefined) {
+      getRegionForRedshiftCluster(params.jdbcUrl.get)
+    }
+    else {
+      params.dataApiRegion
+    }
+  }
+
   def checkRedshiftAndS3OnSameRegion(params: MergedParameters, s3Client: AmazonS3): Unit = {
     for (
-      redshiftRegion <- Utils.getRegionForRedshiftCluster(params.jdbcUrl);
-      s3Region <- Utils.getRegionForS3Bucket(params.rootTempDir, s3Client)
+      redshiftRegion <- Utils.getRegionForRedshiftCluster(params);
+      s3Region <- Utils.getRegionForS3Bucket(params, s3Client)
     ) {
       if ((redshiftRegion != s3Region) && params.tempDirRegion.isEmpty) {
         log.error("The Redshift cluster and S3 bucket are in different regions " +
@@ -266,13 +332,13 @@ private[redshift] object Utils {
    */
   def checkRedshiftAndS3OnSameRegionParquetWrite
   (params: MergedParameters, s3Client: AmazonS3): Unit = {
-    val redshiftRegion = Utils.getRegionForRedshiftCluster(params.jdbcUrl)
+    val redshiftRegion = Utils.getRegionForRedshiftCluster(params)
     if (redshiftRegion.isEmpty) {
       log.warn("Unable to determine region for redshift cluster, copy may fail if " +
         "S3 bucket region does not match redshift cluster region.")
       return
     }
-    val s3Region = Utils.getRegionForS3Bucket(params.rootTempDir, s3Client)
+    val s3Region = Utils.getRegionForS3Bucket(params, s3Client)
     if (s3Region.isEmpty) {
       log.warn("Unable to determine region for S3 bucket, copy may fail if redshift cluster" +
         " region does not match S3 bucket region.")
@@ -287,20 +353,22 @@ private[redshift] object Utils {
     }
   }
 
-  def getDefaultTempDirRegion(tempDirRegion: Option[String]): String = {
-    // If the user provided a region, use it above everything else.
-    if (tempDirRegion.isDefined) return tempDirRegion.get
-
+  def getDefaultRegion(): String = {
     // Either the user didn't provide a region or its malformed. Try to use the
     // connector's region as the tempdir region since they are usually collocated.
     // If they aren't, S3's default provider chain will help resolve the difference.
-    val currRegion = Regions.getCurrentRegion()
+    val currRegion = try {
+      new DefaultAwsRegionProviderChain().getRegion
+    } catch {
+      case _: Throwable =>
+        null
+    }
 
     // If the user didn't provide a valid tempdir region and we cannot determine
     // the connector's region, the connector is likely running outside of AWS.
     // In this case, warn the user about the performance penalty of not specifying
     // the tempdir region.
-    if (currRegion == null) {
+    if ((currRegion == null) || currRegion.isEmpty) {
       log.warn(
         s"The connector cannot automatically determine a region for 'tempdir'. It " +
           "is highly recommended that the 'tempdir_region' parameter is set to " +
@@ -309,7 +377,16 @@ private[redshift] object Utils {
     }
 
     // If all else fails, pick a default region.
-    if (currRegion != null) currRegion.getName else Regions.US_EAST_1.getName
+    if ((currRegion != null) && currRegion.nonEmpty) currRegion else Regions.US_EAST_1.getName
+  }
+
+  def getDefaultTempDirRegion(tempDirRegion: Option[String]): String = {
+    // If the user provided a region, use it above everything else.
+    if (tempDirRegion.isDefined) {
+      tempDirRegion.get
+    } else {
+      getDefaultRegion()
+    }
   }
 
   def s3ClientBuilder: (AWSCredentialsProvider, MergedParameters) => AmazonS3 =
@@ -319,6 +396,62 @@ private[redshift] object Utils {
         .withForceGlobalBucketAccessEnabled(true)
         .withCredentials(awsCredentials)
         .build()
+  }
+
+  def getSparkConfigValue(key: String, default: String): String = {
+    val sparkSession = SparkSession.getActiveSession.getOrElse(
+      SparkSession.getDefaultSession.orNull)
+    if (sparkSession == null) {
+      default
+    } else {
+      sparkSession.conf.get(key, default)
+    }
+  }
+
+  def getSparkStaticConfigValue(key: String, default: String): String = {
+    val sparkSession = SparkSession.getActiveSession.getOrElse(
+      SparkSession.getDefaultSession.orNull)
+    if (sparkSession == null) {
+      default
+    } else {
+      sparkSession.sparkContext.getConf.get(key, default)
+    }
+  }
+
+  val CONNECTOR_REJECT_UNSECURE_JDBC_CONNECTION =
+    "spark.datasource.redshift.community.reject_unsecure_jdbc_connection"
+  def isUnsecureJDBCConnectionRejected(): Boolean = {
+    getSparkStaticConfigValue(CONNECTOR_REJECT_UNSECURE_JDBC_CONNECTION, "false").toBoolean
+  }
+
+  val CONNECTOR_REDSHIFT_S3_CONNECTION_IAM_ROLE_ONLY =
+    "spark.datasource.redshift.community.redshift_s3_connection_iam_role_only"
+  def isRedshiftS3ConnectionViaIAMRoleOnly(): Boolean = {
+    getSparkStaticConfigValue(CONNECTOR_REDSHIFT_S3_CONNECTION_IAM_ROLE_ONLY, "false").toBoolean
+  }
+
+  val CONNECTOR_DATA_API_ENDPOINT = "spark.datasource.redshift.community.data_api_endpoint"
+  def createDataApiClient(region: Option[String] = None,
+                          creds: Option[AWSCredentialsProvider] = None): AWSRedshiftDataAPI = {
+    // Set the region
+    val tempRegion = region.getOrElse(getDefaultRegion())
+
+    // Set the credentials
+    var client = AWSRedshiftDataAPIClient.builder
+    if (creds.isDefined) {
+      client = client.withCredentials(creds.get)
+    }
+
+    // Set the endpoint or the region (since we can't set both).
+    // We assume the endpoint is in the same region as the connector.
+    val endpoint = getSparkConfigValue(CONNECTOR_DATA_API_ENDPOINT, "")
+    if (endpoint.nonEmpty) {
+      client = client.withEndpointConfiguration(new EndpointConfiguration(endpoint, tempRegion))
+    } else {
+      client = client.withRegion(tempRegion)
+    }
+
+    client.build()
   }
 
   def collectMetrics(params: MergedParameters, logger: Option[Logger] = None): Unit = {
@@ -342,40 +475,93 @@ private[redshift] object Utils {
     }
   }
 
-  val DEFAULT_APP_NAME = "spark-redshift-connector"
-  private val CONNECTOR_SERVICE_NAME_ENV_VAR = "AWS_SPARK_REDSHIFT_CONNECTOR_SERVICE_NAME"
-
+  val CONNECTOR_SERVICE_NAME_ENV_VAR =
+    "AWS_SPARK_REDSHIFT_CONNECTOR_SERVICE_NAME"
   /**
-   * Retrieve the name of the service using the connector.
-   * Is none if environment variable is unset or empty.
+   * Retrieve the name of the service running the connector.
+   * Is none if value is unset, empty, or illegal.
    * @return trimmed service name
    */
-  def connectorServiceName: Option[String] = sys.env.
-    get(CONNECTOR_SERVICE_NAME_ENV_VAR).filter(_.trim.nonEmpty).map(_.trim)
+  private def connectorServiceName: Option[String] = {
+    val configuredValue = sys.env.getOrElse(CONNECTOR_SERVICE_NAME_ENV_VAR, "").trim
+    if (configuredValue.matches("^[a-zA-Z]+$")) {
+      Option(configuredValue)
+    } else {
+      None
+    }
+  }
 
+  /**
+   * Retrieve the name of the connector hosting the connector.
+   * Is none if value is unset, empty, or illegal.
+   * @return trimmed service name
+   */
+  private def connectorHostName(params: MergedParameters): Option[String] = {
+    val configuredValue = params.hostConnector.getOrElse("").trim
+    if (configuredValue.matches("^[a-zA-Z]+$")) {
+      Option(configuredValue)
+    } else {
+      None
+    }
+  }
+
+  // Note: The default app name _must_ only contain alpha characters to be accepted by Data API.
+  val DEFAULT_APP_NAME = "SparkRedshiftConnector"
+
+  /**
+   * Returns the fully defined application name.
+   */
+  def getApplicationName(params: MergedParameters): String = {
+    val app = DEFAULT_APP_NAME
+    val svc = connectorServiceName.getOrElse("")
+    val hst = connectorHostName(params).getOrElse("")
+    s"$app$svc$hst"
+  }
 
   val CONNECTOR_TRACE_ID_ENV_VAR = "AWS_SPARK_REDSHIFT_CONNECTOR_TRACE_ID"
   val CONNECTOR_TRACE_ID_SPARK_CONF = "spark.datasource.redshift.community.trace_id"
   /**
-   * Retrieve the spark configuration for traceId.
-   * If not provided in spark configuration check environment variable.
-   * If neither are provided then use applicationId.
+   * Retrieve the trace identifier for the connector.
+   * Is the Spark application id if unset, empty, or illegal.
    * @param sqlContext Context to check for
-   * @return
+   * @return trimmed trace id
    */
-  def traceId(sqlContext: SQLContext): String = {
-    val configuredValue = sqlContext.
-      getConf(CONNECTOR_TRACE_ID_SPARK_CONF, sys.env.getOrElse(CONNECTOR_TRACE_ID_ENV_VAR, "")).trim
-    val valueIsNotValid = configuredValue.
-      exists(char => !(char.isUnicodeIdentifierPart || char == '-'))
-    if (valueIsNotValid) {
+  private def connectorTraceId(sqlContext: SQLContext): String = {
+    // The Spark configuration has precedence over the environment variable to support mutability.
+    val configuredValue = getSparkConfigValue(CONNECTOR_TRACE_ID_SPARK_CONF,
+      sys.env.getOrElse(CONNECTOR_TRACE_ID_ENV_VAR, "")).trim
+    val validValue = configuredValue.forall(char => char.isUnicodeIdentifierPart || char == '-')
+    if (!validValue) {
       log.warn("Configured trace id is not valid. " +
         "It must only contain characters that are valid unicode identifier parts or '-'.")
     }
-    if (valueIsNotValid || configuredValue.isEmpty) {
-      sqlContext.sparkContext.applicationId
-    } else {
+    if (configuredValue.nonEmpty && validValue) {
       configuredValue
+    } else {
+      sqlContext.sparkContext.applicationId
+    }
+  }
+
+  val CONNECTOR_LABEL_SPARK_CONF = "spark.datasource.redshift.community.label"
+  /**
+   * Retrieve the label for the connector.
+   * Is none if unset, empty, or illegal.
+   * @param params Parameters to use for the property.
+   * @return
+   */
+  private def connectorLabel(params: MergedParameters): Option[String] = {
+    // The property has precence over the Spark configuration since it is more specific.
+    val configuredValue = params.user_query_group_label
+      .getOrElse(getSparkConfigValue(CONNECTOR_LABEL_SPARK_CONF, ""))
+    val validValue = configuredValue.forall(_.isUnicodeIdentifierPart)
+    if (!validValue) {
+      log.warn("Configured query group label is not valid. " +
+        "It must only contain characters that are valid unicode identifier parts.")
+    }
+    if (configuredValue.nonEmpty && validValue) {
+      Option(configuredValue)
+    } else {
+      None
     }
   }
 
@@ -390,23 +576,37 @@ private[redshift] object Utils {
    * ensure the overall length does not exceed the redshift allowed
    * 320 characters for a query group.
    * @param operation the type of operation performed
-   * @param label A user provided identifier to associate with a query
-   *              should be sanitized before use with this function
+   * @param params the user parameters
    * @param sqlContext the sqlContext to check for a trace id
    * @return a string to be used as a query group
    */
-  def queryGroupInfo(operation: MetricOperation, label: String, sqlContext: SQLContext): String = {
-    val MAX_SVC_LENGTH = 30
+  def queryGroupInfo(operation: MetricOperation,
+                     params: MergedParameters,
+                     sqlContext: SQLContext): String = {
+    // Query group field is limited to 320 characters in length so put in some hard limits
+    // on the individual fields.
+    val MAX_SVC_LENGTH = 10
+    val MAX_HST_LENGTH = 10
     val MAX_LBL_LENGTH = 100
     val MAX_TID_LENGTH = 75
-    val svcName = connectorServiceName.getOrElse("")
-    val tid = traceId(sqlContext)
-    val trimmedSvcName = svcName.substring(0, math.min(svcName.length, MAX_SVC_LENGTH))
-    val trimmedLabel = label.substring(0, math.min(label.length, MAX_LBL_LENGTH))
-    val trimmedTID = tid.substring(0, math.min(tid.length, MAX_TID_LENGTH))
-    s"""{"${DEFAULT_APP_NAME}":{"svc":"${trimmedSvcName}",""" +
-      s""""ver":"${BuildInfo.version}","op":"${operation}","lbl":"$trimmedLabel",""" +
-      s""""tid":"${trimmedTID}"}}""".stripMargin
+
+    val svc = connectorServiceName.getOrElse("")
+    val hst = connectorHostName(params).getOrElse("")
+    val lbl = connectorLabel(params).getOrElse("")
+    val tid = connectorTraceId(sqlContext)
+
+    val trimmedSvc = svc.substring(0, math.min(svc.length, MAX_SVC_LENGTH))
+    val trimmedHst = hst.substring(0, math.min(hst.length, MAX_HST_LENGTH))
+    val trimmedLbl = lbl.substring(0, math.min(lbl.length, MAX_LBL_LENGTH))
+    val trimmedTid = tid.substring(0, math.min(tid.length, MAX_TID_LENGTH))
+
+    s"""{"spark-redshift-connector":{""" +
+      s""""svc":"$trimmedSvc",""" +
+      s""""hst":"$trimmedHst",""" +
+      s""""ver":"${BuildInfo.version}",""" +
+      s""""op":"$operation",""" +
+      s""""lbl":"$trimmedLbl",""" +
+      s""""tid":"$trimmedTid"}}""".stripMargin
   }
 
   /**

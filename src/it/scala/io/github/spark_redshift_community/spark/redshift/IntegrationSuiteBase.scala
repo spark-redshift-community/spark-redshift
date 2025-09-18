@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
-import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_TEMPDIR_REGION}
+import io.github.spark_redshift_community.spark.redshift.Parameters
+import io.github.spark_redshift_community.spark.redshift.Parameters._
+import io.github.spark_redshift_community.spark.redshift.ComparableVersion
+import io.github.spark_redshift_community.spark.redshift.data.{RedshiftConnection, RedshiftWrapper, RedshiftWrapperFactory}
 
 import java.net.URI
-import java.sql.Connection
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.SparkContext
@@ -28,6 +30,8 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types.StructType
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should._
+
+import scala.collection.mutable
 import scala.util.Random
 
 
@@ -59,10 +63,21 @@ trait IntegrationSuiteBase
   protected val AWS_REDSHIFT_PASSWORD: String = loadConfigFromEnv("AWS_REDSHIFT_PASSWORD")
   protected val AWS_ACCESS_KEY_ID: String = loadConfigFromEnv("AWS_ACCESS_KEY_ID")
   protected val AWS_SECRET_ACCESS_KEY: String = loadConfigFromEnv("AWS_SECRET_ACCESS_KEY")
-  protected val AWS_SESSION_TOKEN: String = loadConfigFromEnv("AWS_SESSION_TOKEN", isRequired= false)
+  protected val AWS_SESSION_TOKEN: String = loadConfigFromEnv("AWS_SESSION_TOKEN", isRequired = false)
   // Path to a directory in S3 (e.g. 's3a://bucket-name/path/to/scratch/space').
   protected val AWS_S3_SCRATCH_SPACE: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE")
   protected val AWS_S3_SCRATCH_SPACE_REGION: String = loadConfigFromEnv("AWS_S3_SCRATCH_SPACE_REGION")
+
+  protected val AWS_DATA_API_REGION: String = loadConfigFromEnv("AWS_DATA_API_REGION", isRequired = false)
+  protected val AWS_DATA_API_DATABASE: String = loadConfigFromEnv("AWS_DATA_API_DATABASE", isRequired = false)
+  protected val AWS_DATA_API_USER: String = loadConfigFromEnv("AWS_DATA_API_USER", isRequired = false)
+  protected val AWS_DATA_API_CLUSTER: String = loadConfigFromEnv("AWS_DATA_API_CLUSTER", isRequired = false)
+  protected val AWS_DATA_API_WORKGROUP: String = loadConfigFromEnv("AWS_DATA_API_WORKGROUP", isRequired = false)
+  protected val AWS_REDSHIFT_INTERFACE: String = loadConfigFromEnv("AWS_REDSHIFT_INTERFACE", isRequired = false)
+
+  protected val DATA_API_INTERFACE = "DataAPI"
+  protected val JDBC_INTERFACE = "JDBC"
+
   require(AWS_S3_SCRATCH_SPACE.contains("s3a"), "must use s3a:// URL")
 
   protected val auto_pushdown: String = "false"
@@ -88,11 +103,14 @@ trait IntegrationSuiteBase
    */
   protected var sc: SparkContext = _
   protected var sqlContext: SQLContext = _
-  protected var conn: Connection = _
+  protected var redshiftWrapper: RedshiftWrapper = _
+  protected var conn: RedshiftConnection = _
+  protected var sparkVersion: ComparableVersion = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     sc = new SparkContext("local", "RedshiftSourceSuite")
+    sparkVersion = ComparableVersion(sc.version)
     // Bypass Hadoop's FileSystem caching mechanism so that we don't cache the credentials:
     sc.hadoopConfiguration.setBoolean("fs.s3.impl.disable.cache", true)
     sc.hadoopConfiguration.setBoolean("fs.s3n.impl.disable.cache", true)
@@ -106,7 +124,11 @@ trait IntegrationSuiteBase
     }
     sc.hadoopConfiguration.set("fs.s3a.bucket.probe", "2")
     sc.hadoopConfiguration.setBoolean("fs.s3a.bucket.all.committer.magic.enabled", true)
-    conn = DefaultJDBCWrapper.getConnector(None, jdbcUrl, None)
+
+    val params: Map[String, String] = defaultOptions() + ("dbtable" -> "fake_table")
+    val mergedParams = Parameters.mergeParameters(params)
+    redshiftWrapper = RedshiftWrapperFactory(mergedParams)
+    conn = redshiftWrapper.getConnector(mergedParams)
   }
 
   override def afterAll(): Unit = {
@@ -144,17 +166,50 @@ trait IntegrationSuiteBase
     sqlContext = SparkSession.builder().enableHiveSupport().getOrCreate().sqlContext
   }
 
+  protected def defaultOptions(): Map[String, String] = {
+    val options: mutable.HashMap[String, String] = new mutable.HashMap[String, String]()
+
+    // Add the default options
+    options += ("forward_spark_s3_credentials" -> "true")
+    options += ("tempdir" -> tempDir)
+    options += (PARAM_TEMPDIR_REGION -> AWS_S3_SCRATCH_SPACE_REGION)
+    options += (PARAM_AUTO_PUSHDOWN -> auto_pushdown)
+
+    // Add the Redshift interface-specific options
+    if ((AWS_REDSHIFT_INTERFACE == null) || (AWS_REDSHIFT_INTERFACE == JDBC_INTERFACE)) {
+      options += ("url" -> jdbcUrl)
+    } else if (AWS_REDSHIFT_INTERFACE == DATA_API_INTERFACE) {
+      if (AWS_DATA_API_REGION != null) {
+        options += (PARAM_DATA_API_REGION -> AWS_DATA_API_REGION)
+      }
+      if (AWS_DATA_API_DATABASE != null) {
+        options += (PARAM_DATA_API_DATABASE -> AWS_DATA_API_DATABASE)
+      }
+      if (AWS_DATA_API_USER != null) {
+        options += (PARAM_DATA_API_USER -> AWS_DATA_API_USER)
+      }
+      if (AWS_DATA_API_CLUSTER != null) {
+        options += (PARAM_DATA_API_CLUSTER -> AWS_DATA_API_CLUSTER)
+      }
+      if (AWS_DATA_API_WORKGROUP != null) {
+        options += (PARAM_DATA_API_WORKGROUP -> AWS_DATA_API_WORKGROUP)
+      }
+    }
+    else {
+      throw new IllegalArgumentException(
+        s"Unrecognized AWS_REDSHIFT_INTERFACE: $AWS_REDSHIFT_INTERFACE")
+    }
+
+    options.toMap
+  }
+
   /**
    * Create a new DataFrameReader using common options for reading from Redshift.
    */
   protected def read: DataFrameReader = {
     sqlContext.read
       .format("io.github.spark_redshift_community.spark.redshift")
-      .option("url", jdbcUrl)
-      .option("tempdir", tempDir)
-      .option("forward_spark_s3_credentials", "true")
-      .option(PARAM_TEMPDIR_REGION, AWS_S3_SCRATCH_SPACE_REGION)
-      .option(PARAM_AUTO_PUSHDOWN, auto_pushdown)
+      .options(defaultOptions())
   }
 
   /**
@@ -163,14 +218,11 @@ trait IntegrationSuiteBase
   protected def write(df: DataFrame): DataFrameWriter[Row] = {
     df.write
       .format("io.github.spark_redshift_community.spark.redshift")
-      .option("url", jdbcUrl)
-      .option("tempdir", tempDir)
-      .option("forward_spark_s3_credentials", "true")
-      .option(PARAM_TEMPDIR_REGION, AWS_S3_SCRATCH_SPACE_REGION)
+      .options(defaultOptions())
   }
 
   protected def createTestDataInRedshift(tableName: String): Unit = {
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          |create table $tableName (
          |testbyte int2,
@@ -187,7 +239,7 @@ trait IntegrationSuiteBase
       """.stripMargin
     )
     // scalastyle:off
-    conn.createStatement().executeUpdate(
+    redshiftWrapper.executeUpdate(conn,
       s"""
          |insert into $tableName values
          |(null, null, null, null, null, null, null, null, null, null),
@@ -205,7 +257,19 @@ trait IntegrationSuiteBase
     try {
       body(tableName)
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
+    }
+  }
+
+  protected def withTwoTempRedshiftTables[T](namePrefix1: String, namePrefix2: String)
+                                           (body: (String, String) => T): T = {
+    val tableName1 = s"$namePrefix1$randomSuffix"
+    val tableName2 = s"$namePrefix2$randomSuffix"
+    try {
+      body(tableName1, tableName2)
+    } finally {
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName1")
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName2")
     }
   }
 
@@ -234,15 +298,15 @@ trait IntegrationSuiteBase
       // immediately querying for existence from another connection may result in spurious "table
       // doesn't exist" errors; this caused the "save with all empty partitions" test to become
       // flaky (see #146). To work around this, add a small sleep and check again:
-      if (!DefaultJDBCWrapper.tableExists(conn, tableName)) {
+      if (!redshiftWrapper.tableExists(conn, tableName)) {
         Thread.sleep(1000)
-        assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+        assert(redshiftWrapper.tableExists(conn, tableName))
       }
       val loadedDf = read.option("dbtable", tableName).load()
       assert(loadedDf.schema === expectedSchemaAfterLoad.getOrElse(df.schema))
       checkAnswer(loadedDf, df.collect())
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 }

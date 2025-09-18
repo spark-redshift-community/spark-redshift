@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.spark_redshift_community.spark.redshift.pushdown
+package io.github.spark_redshift_community.spark.redshift.pushdown.test
 
 import org.apache.spark.sql.Row
 
@@ -660,13 +660,13 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
 
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT * FROM (
-         | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2_COL_0",
-         | ( COUNT ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
-         | SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SUBQUERY_1_COL_0" FROM (
-         | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-         | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_0" ) AS "SUBQUERY_2"
-         | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS"SUBQUERY_3"
-         | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+         | SELECT ( "SQ_1"."SQ_1_COL_0" ) AS "SQ_2_COL_0",
+         | ( COUNT ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_1" FROM (
+         | SELECT ( "SQ_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SQ_1_COL_0" FROM (
+         | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+         | AS "SQ_1" GROUP BY "SQ_1"."SQ_1_COL_0" ) AS "SQ_2"
+         | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS"SQ_3"
+         | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
          | LIMIT 5""".stripMargin)
   }
 
@@ -699,10 +699,10 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
         expected_res)
 
       checkSqlStatement(
-        s"""SELECT ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-           | FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-           | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( MAX ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+           | FROM ( SELECT ( "SQ_0"."$column_name" ) AS "SQ_1_COL_0"
+           | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+           | AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -726,14 +726,14 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
 
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT * FROM (
-         | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-         | ( MAX ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
-         | SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_LZO" ) AS "SUBQUERY_1_COL_0",
-         | ( "SUBQUERY_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-         | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0")
-         | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-         | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-         | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+         | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+         | ( MAX ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_1" FROM (
+         | SELECT ( "SQ_0"."COL_TIMESTAMPTZ_LZO" ) AS "SQ_1_COL_0",
+         | ( "SQ_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SQ_1_COL_1" FROM (
+         | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0")
+         | AS "SQ_1" GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+         | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+         | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
          | LIMIT 5""".stripMargin)
   }
 
@@ -766,10 +766,10 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
         expected_res)
 
       checkSqlStatement(
-        s"""SELECT ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_0"
-           | FROM ( SELECT ( "SUBQUERY_0"."$column_name" ) AS "SUBQUERY_1_COL_0"
-           | FROM ( SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0" )
-           | AS "SUBQUERY_1" LIMIT 1""".stripMargin)
+        s"""SELECT ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_0"
+           | FROM ( SELECT ( "SQ_0"."$column_name" ) AS "SQ_1_COL_0"
+           | FROM ( SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0" )
+           | AS "SQ_1" LIMIT 1""".stripMargin)
     })
   }
 
@@ -793,14 +793,14 @@ abstract class PushdownAggregateCorrectnessSuite extends AggregateCountCorrectne
 
     checkSqlStatement(
       s"""SELECT * FROM ( SELECT * FROM (
-         | SELECT ( "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2_COL_0",
-         | ( MIN ( "SUBQUERY_1"."SUBQUERY_1_COL_0" ) ) AS "SUBQUERY_2_COL_1" FROM (
-         | SELECT ( "SUBQUERY_0"."COL_TIMESTAMPTZ_LZO" ) AS "SUBQUERY_1_COL_0",
-         | ( "SUBQUERY_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SUBQUERY_1_COL_1" FROM (
-         | SELECT * FROM $test_table AS "RS_CONNECTOR_QUERY_ALIAS" ) AS "SUBQUERY_0")
-         | AS "SUBQUERY_1" GROUP BY "SUBQUERY_1"."SUBQUERY_1_COL_1" ) AS "SUBQUERY_2"
-         | ORDER BY ( "SUBQUERY_2"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST ) AS "SUBQUERY_3"
-         | ORDER BY ( "SUBQUERY_3"."SUBQUERY_2_COL_0" ) ASC NULLS FIRST
+         | SELECT ( "SQ_1"."SQ_1_COL_1" ) AS "SQ_2_COL_0",
+         | ( MIN ( "SQ_1"."SQ_1_COL_0" ) ) AS "SQ_2_COL_1" FROM (
+         | SELECT ( "SQ_0"."COL_TIMESTAMPTZ_LZO" ) AS "SQ_1_COL_0",
+         | ( "SQ_0"."COL_TIMESTAMPTZ_ZSTD" ) AS "SQ_1_COL_1" FROM (
+         | SELECT * FROM $test_table AS "RCQ_ALIAS" ) AS "SQ_0")
+         | AS "SQ_1" GROUP BY "SQ_1"."SQ_1_COL_1" ) AS "SQ_2"
+         | ORDER BY ( "SQ_2"."SQ_2_COL_0" ) ASC NULLS FIRST ) AS "SQ_3"
+         | ORDER BY ( "SQ_3"."SQ_2_COL_0" ) ASC NULLS FIRST
          | LIMIT 5""".stripMargin)
   }
 }

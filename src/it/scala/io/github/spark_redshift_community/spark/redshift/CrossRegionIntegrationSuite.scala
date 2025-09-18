@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.github.spark_redshift_community.spark.redshift
+package io.github.spark_redshift_community.spark.redshift.test
 
 import io.github.spark_redshift_community.spark.redshift.Parameters.PARAM_TEMPDIR_REGION
 import org.apache.spark.sql.Row
@@ -47,12 +47,12 @@ class CrossRegionIntegrationSuite extends IntegrationSuiteBase {
       // immediately querying for existence from another connection may result in spurious "table
       // doesn't exist" errors; this caused the "save with all empty partitions" test to become
       // flaky (see #146). To work around this, add a small sleep and check again:
-      if (!DefaultJDBCWrapper.tableExists(conn, tableName)) {
+      if (!redshiftWrapper.tableExists(conn, tableName)) {
         Thread.sleep(1000)
-        assert(DefaultJDBCWrapper.tableExists(conn, tableName))
+        assert(redshiftWrapper.tableExists(conn, tableName))
       }
     } finally {
-      conn.prepareStatement(s"drop table if exists $tableName").executeUpdate()
+      redshiftWrapper.executeUpdate(conn, s"drop table if exists $tableName")
     }
   }
 }
