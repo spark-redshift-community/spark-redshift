@@ -25,6 +25,9 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse("2.12.15")
+
+crossScalaVersions := Seq(buildScalaVersion, "2.13.9")
+
 val sparkVersion = "3.5.6"
 val isInternalRepo = "true" equalsIgnoreCase System.getProperty("config.InternalRepo")
 val publishSonatypeCentral = "true" equalsIgnoreCase System.getProperty("config.publishSonatypeCentral")
