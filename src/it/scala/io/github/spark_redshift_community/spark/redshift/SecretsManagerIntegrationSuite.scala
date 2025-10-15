@@ -15,11 +15,11 @@
  */
 package io.github.spark_redshift_community.spark.redshift.test
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
-import com.amazonaws.client.builder.AwsClientBuilder
-import com.amazonaws.services.secretsmanager._
-import com.amazonaws.services.secretsmanager.model.{CreateSecretRequest, DeleteSecretRequest}
-import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_AUTO_PUSHDOWN, PARAM_DATA_API_USER, PARAM_SECRET_ID, PARAM_SECRET_REGION, PARAM_TEMPDIR_REGION}
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
+import software.amazon.awssdk.services.secretsmanager.model.{CreateSecretRequest, DeleteSecretRequest}
+import io.github.spark_redshift_community.spark.redshift.Parameters.{PARAM_DATA_API_USER, PARAM_SECRET_ID, PARAM_SECRET_REGION}
 import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper
 import org.apache.spark.sql.types.{IntegerType, MetadataBuilder, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
@@ -40,7 +40,6 @@ class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
   val secretName = "test_secret" + Random.alphanumeric.take(6).mkString
   val secretValue = "{\"username\":\"" + s"$redshiftUsr" + "\",\"password\":\"" + s"$redshiftPwd" + "\"}"
   val secretRegion = AWS_S3_SCRATCH_SPACE_REGION
-  val endpoint = s"secretsmanager.$secretRegion.amazonaws.com"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -54,28 +53,31 @@ class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
     super.afterAll()
   }
 
-  private def createSecretsManagerClient(): AWSSecretsManager = {
-    val config = new AwsClientBuilder.EndpointConfiguration(endpoint, secretRegion)
-    val clientBuilder = AWSSecretsManagerClientBuilder.standard()
-      .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
-      .withEndpointConfiguration(config)
-    clientBuilder.build()
+  private def createSecretsManagerClient(): SecretsManagerClient = {
+    SecretsManagerClient.builder()
+      .region(Region.of(secretRegion))
+      .credentialsProvider(DefaultCredentialsProvider.create())
+      .build()
   }
 
   def createNewSecret: String = {
     val client = createSecretsManagerClient()
-    val secretRequest = new CreateSecretRequest().withName(secretName)
-      .withSecretString(secretValue)
+    val secretRequest = CreateSecretRequest.builder()
+      .name(secretName)
+      .secretString(secretValue)
+      .build()
     val secretResponse = client.createSecret(secretRequest)
-    secretResponse.getARN
+    secretResponse.arn()
   }
 
   def deleteSecret(): String = {
     val client = createSecretsManagerClient()
-    val secretRequest = new DeleteSecretRequest().withSecretId(secretName)
-      .withForceDeleteWithoutRecovery(true)
+    val secretRequest = DeleteSecretRequest.builder()
+      .secretId(secretName)
+      .forceDeleteWithoutRecovery(true)
+      .build()
     val secretResponse = client.deleteSecret(secretRequest)
-    secretResponse.getARN
+    secretResponse.arn()
   }
 
   protected def getDefaultCredentials(): Map[String, String] = {

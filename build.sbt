@@ -200,6 +200,7 @@ lazy val root = Project("spark-redshift", file("."))
       "software.amazon.awssdk" % "redshiftdata" % testAWSJavaSDKVersion % "provided",
       "software.amazon.awssdk" % "regions" % testAWSJavaSDKVersion % "provided",
       "software.amazon.awssdk" % "s3" % testAWSJavaSDKVersion % "provided",
+      "software.amazon.awssdk" % "secretsmanager" % testAWSJavaSDKVersion % "test",
       "software.amazon.awssdk" % "sdk-core" % testAWSJavaSDKVersion % "provided",
       "software.amazon.awssdk" % "utils" % testAWSJavaSDKVersion % "provided",
 
