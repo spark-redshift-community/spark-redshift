@@ -50,7 +50,11 @@ private[redshift] case class DataApiResults(results: GetStatementResultResponse)
   }
 
   override def getInt(columnIndex: Int): Int = {
-    curr.get(columnIndex - 1).longValue().intValue()
+    val longVal = curr.get(columnIndex - 1).longValue()
+    if (longVal < Int.MinValue || longVal > Int.MaxValue) {
+      throw new ArithmeticException(s"Long value $longVal cannot be converted to Int without data loss")
+    }
+    longVal.toInt
   }
 
   override def getLong(columnIndex: Int): Long = {
@@ -62,7 +66,11 @@ private[redshift] case class DataApiResults(results: GetStatementResultResponse)
   }
 
   override def getInt(columnLabel: String): Int = {
-    curr.get(getIndex(columnLabel)).longValue().intValue()
+    val longVal = curr.get(getIndex(columnLabel)).longValue()
+    if (longVal < Int.MinValue || longVal > Int.MaxValue) {
+      throw new ArithmeticException(s"Long value $longVal cannot be converted to Int without data loss")
+    }
+    longVal.toInt
   }
 
   override def getLong(columnLabel: String): Long = {

@@ -130,7 +130,7 @@ private[redshift] object Utils {
   }
 
   private def parsePathStyleUrl(uri: URI): (String, String) = {
-    val path = uri.getPath.stripPrefix("/")
+    val path = Option(uri.getPath).map(_.stripPrefix("/")).getOrElse("")
     val firstSlash = path.indexOf('/')
     if (firstSlash == -1) {
       (path, "") // Just bucket name
