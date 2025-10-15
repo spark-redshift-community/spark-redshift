@@ -16,6 +16,12 @@
 
 # spark-redshift Changelog
 
+## 6.5.0 (2025-10-15)
+- Upgraded to AWS SDK v2
+- Upgraded to JDBC version 2.1.0.34
+- Improved AWS credentials handling by deferring credential resolution until actually needed
+- Fixed string comparison in integration tests to handle cross-platform line ending differences
+
 ## 6.4.3 (2025-07-01)
 - Upgraded Apache Spark dependency to version 3.5.6
 - Upgraded to JDBC version 2.1.0.33
