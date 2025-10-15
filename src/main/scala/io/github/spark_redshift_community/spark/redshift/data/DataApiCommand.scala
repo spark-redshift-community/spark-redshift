@@ -15,8 +15,8 @@
  */
 package io.github.spark_redshift_community.spark.redshift.data
 
-import com.amazonaws.services.redshiftdataapi.AWSRedshiftDataAPI
-import com.amazonaws.services.redshiftdataapi.model._
+import software.amazon.awssdk.services.redshiftdata.RedshiftDataClient
+import software.amazon.awssdk.services.redshiftdata.model._
 import io.github.spark_redshift_community.spark.redshift.Utils
 import org.slf4j.LoggerFactory
 
@@ -29,11 +29,8 @@ class DataApiCommand(connection: DataAPIConnection,
                      params: Option[Seq[QueryParameter[_]]] = None) {
 
   private val log = LoggerFactory.getLogger(getClass)
-  private var client: AWSRedshiftDataAPI = null
+  private var client: RedshiftDataClient = null
   private var requestId: String = ""
-  private val STATUS_FINISHED = "FINISHED"
-  private val STATUS_ABORTED = "ABORTED"
-  private val STATUS_FAILED = "FAILED"
 
   def execute(sql: String): Boolean = {
     // Validate, execute and wait for the command to complete.
@@ -98,7 +95,7 @@ class DataApiCommand(connection: DataAPIConnection,
       sqls
     }
 
-    // Make sure there are not parameters being used with multiple commands or the query group
+    // Make sure there are no parameters being used with multiple commands or the query group
     // since Data API does not support this.
     if (params.isDefined && (updatedSqls.length > 1)) {
       throw new IllegalArgumentException(
@@ -127,45 +124,45 @@ class DataApiCommand(connection: DataAPIConnection,
     initializeDataApiClient()
 
     // Initialize the statement request
-    val statementRequest = new ExecuteStatementRequest()
-    statementRequest.setStatementName(applicationName)
-    statementRequest.setDatabase(connection.params.dataApiDatabase.getOrElse(
-      throw new IllegalArgumentException("Data API database is required!")
-    ))
+    val statementRequestBuilder = ExecuteStatementRequest.builder()
+      .database(connection.params.dataApiDatabase.getOrElse(
+        throw new IllegalArgumentException("Data API database is required!")
+      ))
+      .sql(sql)
+      .statementName(applicationName)
+
     if (connection.params.dataApiCluster.isDefined) {
-      statementRequest.setClusterIdentifier(connection.params.dataApiCluster.get)
+      statementRequestBuilder.clusterIdentifier(connection.params.dataApiCluster.get)
     }
     if (connection.params.dataApiWorkgroup.isDefined) {
-      statementRequest.setWorkgroupName(connection.params.dataApiWorkgroup.get)
+      statementRequestBuilder.workgroupName(connection.params.dataApiWorkgroup.get)
     }
     if (connection.params.dataApiUser.isDefined) {
-      statementRequest.setDbUser(connection.params.dataApiUser.get)
+      statementRequestBuilder.dbUser(connection.params.dataApiUser.get)
     }
     if (connection.params.secretId.isDefined) {
-      statementRequest.setSecretArn(connection.params.secretId.get)
+      statementRequestBuilder.secretArn(connection.params.secretId.get)
     }
-    statementRequest.setSql(sql)
 
     // Initialize any parameters
     if (params.isDefined) {
-      val sqlParams = new ArrayBuffer[SqlParameter]
-      params.get.foreach(qp => {
-        val sqlParam = new SqlParameter().withName(qp.name)
-        if (qp.value.isDefined && !qp.value.get.toString.isEmpty) {
-          sqlParam.setValue(qp.value.get.toString)
-        } else {
+      val sqlParams = params.get.map { qp =>
+        if (qp.value.isEmpty || qp.value.get.toString.isEmpty) {
           throw new IllegalArgumentException("Query parameters must not be null or non-empty!")
         }
-        sqlParams.append(sqlParam)
-      })
-      if (sqlParams.length > 0) {
-        statementRequest.setParameters(sqlParams.asJava)
+        SqlParameter.builder()
+          .name(qp.name)
+          .value(qp.value.get.toString)
+          .build()
+      }
+      if (sqlParams.nonEmpty) {
+        statementRequestBuilder.parameters(sqlParams.asJava)
       }
     }
 
     // Execute the statement request and remember the handle for potential cancellation later.
-    val result = client.executeStatement(statementRequest)
-    requestId = result.getId
+    val result = client.executeStatement(statementRequestBuilder.build())
+    requestId = result.id()
     log.info("Issued Redshift Data API execute statement with request id: {}", requestId)
 
     // Wait for the request to finish.
@@ -174,7 +171,7 @@ class DataApiCommand(connection: DataAPIConnection,
 
   private def batchExecuteAndWait(sqls: Seq[String]): Unit = {
     // Make sure the input is not empty.
-    if (sqls == null || sqls.length <= 0 || sqls.exists(_.isEmpty)) {
+    if (sqls == null || sqls.isEmpty || sqls.exists(_.isEmpty)) {
       throw new IllegalArgumentException("Batch execution requires at least one command!")
     }
 
@@ -182,24 +179,25 @@ class DataApiCommand(connection: DataAPIConnection,
     initializeDataApiClient()
 
     // Initialize the statement request
-    val statementRequest = new BatchExecuteStatementRequest()
-    statementRequest.setStatementName(applicationName)
-    statementRequest.setDatabase(connection.params.dataApiDatabase.getOrElse(
-      throw new IllegalArgumentException("Data API database is required!"))
-    )
+    val statementRequestBuilder = BatchExecuteStatementRequest.builder()
+      .database(connection.params.dataApiDatabase.getOrElse(
+        throw new IllegalArgumentException("Data API database is required!")
+      ))
+      .sqls(sqls.asJava)
+      .statementName(applicationName)
+
     if (connection.params.dataApiCluster.isDefined) {
-      statementRequest.setClusterIdentifier(connection.params.dataApiCluster.get)
+      statementRequestBuilder.clusterIdentifier(connection.params.dataApiCluster.get)
     }
     if (connection.params.dataApiWorkgroup.isDefined) {
-      statementRequest.setWorkgroupName(connection.params.dataApiWorkgroup.get)
+      statementRequestBuilder.workgroupName(connection.params.dataApiWorkgroup.get)
     }
     if (connection.params.dataApiUser.isDefined) {
-      statementRequest.setDbUser(connection.params.dataApiUser.get)
+      statementRequestBuilder.dbUser(connection.params.dataApiUser.get)
     }
     if (connection.params.secretId.isDefined) {
-      statementRequest.setSecretArn(connection.params.secretId.get)
+      statementRequestBuilder.secretArn(connection.params.secretId.get)
     }
-    statementRequest.setSqls(sqls.asJava)
 
     // Make sure there are no parameters since batch statements don't support them.
     if (params.isDefined) {
@@ -208,8 +206,8 @@ class DataApiCommand(connection: DataAPIConnection,
     }
 
     // Execute the statement request and remember the handle for potential cancellation later.
-    val result = client.batchExecuteStatement(statementRequest)
-    requestId = result.getId
+    val result = client.batchExecuteStatement(statementRequestBuilder.build())
+    requestId = result.id()
     log.info("Issued Redshift Data API batch execute statement with request id: {}", requestId)
 
     // Wait for the request to finish.
@@ -241,9 +239,10 @@ class DataApiCommand(connection: DataAPIConnection,
 
   private def awaitCompletion(): Unit = {
     // Check the status of the result.
-    val describeStatementRequest = new DescribeStatementRequest()
-    describeStatementRequest.setId(requestId)
-    var describeResult: DescribeStatementResult = null
+    val describeStatementRequest = DescribeStatementRequest.builder()
+      .id(requestId)
+      .build()
+    var describeResult: DescribeStatementResponse = null
 
     // Get the retry delays.
     val (retryDelayMin, retryDelayMax, retryDelayMult) = getDataApiDelayParams()
@@ -258,20 +257,16 @@ class DataApiCommand(connection: DataAPIConnection,
 
       // Check if the command is complete.
       describeResult = client.describeStatement(describeStatementRequest)
-    } while ((describeResult.getStatus() != STATUS_FINISHED) &&
-           (describeResult.getStatus() != STATUS_ABORTED) &&
-           (describeResult.getStatus() != STATUS_FAILED))
+    } while (describeResult.status() != StatusString.FINISHED &&
+      describeResult.status() != StatusString.ABORTED &&
+      describeResult.status() != StatusString.FAILED)
 
     // Ensure the query completed successfully.
-    if (describeResult.getStatus() == STATUS_ABORTED) {
+    if (describeResult.status() == StatusString.ABORTED) {
       throw new DataApiRuntimeException("DataAPI query was aborted")
     }
-    if (describeResult.getStatus() == STATUS_FAILED) {
-      val error = if (describeResult.getError() != null) {
-        describeResult.getError()
-      } else {
-        "unknown error"
-      }
+    if (describeResult.status() == StatusString.FAILED) {
+      val error = Option(describeResult.error()).getOrElse("unknown error")
       throw new DataApiRuntimeException("DataAPI query execution failed: " + error)
     }
 
@@ -279,52 +274,56 @@ class DataApiCommand(connection: DataAPIConnection,
   }
 
   private def hasResults(): Boolean = {
-    val describeStatementRequest = new DescribeStatementRequest()
-    describeStatementRequest.setId(requestId)
+    val describeStatementRequest = DescribeStatementRequest.builder()
+      .id(requestId)
+      .build()
     val describeResults = client.describeStatement(describeStatementRequest)
-    describeResults.getHasResultSet()
+    describeResults.hasResultSet()
   }
 
   private def getResults(): DataApiResults = {
-    val describeStatementRequest = new DescribeStatementRequest()
-    describeStatementRequest.setId(requestId)
+    val describeStatementRequest = DescribeStatementRequest.builder()
+      .id(requestId)
+      .build()
     val describeResults = client.describeStatement(describeStatementRequest)
 
     // Check if we have sub-statement results. If so, use the last one since we
     // can prefix sqls with the setting of the query group.
-    val resultId = if ((describeResults.getSubStatements == null) ||
-                       describeResults.getSubStatements.asScala.isEmpty) {
-      requestId
-    } else {
-      describeResults.getSubStatements.asScala.last.getId
-    }
+    val resultId = Option(describeResults.subStatements())
+      .map(_.asScala)
+      .filter(_.nonEmpty)
+      .map(_.last.id())
+      .getOrElse(requestId)
 
-    val statementResultRequest = new GetStatementResultRequest()
-    statementResultRequest.setId(resultId)
+    val statementResultRequest = GetStatementResultRequest.builder()
+      .id(resultId)
+      .build()
     val results = client.getStatementResult(statementResultRequest)
     DataApiResults(results)
   }
 
   private def getResultRows(): Long = {
-    val describeStatementRequest = new DescribeStatementRequest()
-    describeStatementRequest.setId(requestId)
+    val describeStatementRequest = DescribeStatementRequest.builder()
+      .id(requestId)
+      .build()
     val describeResults = client.describeStatement(describeStatementRequest)
 
     // Check if we have sub-statement results. If so, use the last one since we
     // can prefix sqls with the setting of the query group.
-    if ((describeResults.getSubStatements == null) ||
-        describeResults.getSubStatements.asScala.isEmpty) {
-      describeResults.getResultRows
+    if ((describeResults.subStatements() == null) ||
+      describeResults.subStatements().asScala.isEmpty) {
+      describeResults.resultRows()
     } else {
-      describeResults.getSubStatements.asScala.last.getResultRows
+      describeResults.subStatements().asScala.last.resultRows()
     }
   }
 
   private def cancelRequest(): Boolean = {
     // Request cancellation
-    val cancelRequest = new CancelStatementRequest()
-    cancelRequest.setId(requestId)
+    val cancelRequest = CancelStatementRequest.builder()
+      .id(requestId)
+      .build()
     val cancelResult = client.cancelStatement(cancelRequest)
-    cancelResult.getStatus()
+    cancelResult.status()
   }
 }

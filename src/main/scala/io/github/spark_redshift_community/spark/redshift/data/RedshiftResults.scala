@@ -15,7 +15,7 @@
  */
 package io.github.spark_redshift_community.spark.redshift.data
 
-import com.amazonaws.services.redshiftdataapi.model.{Field, GetStatementResultResult}
+import software.amazon.awssdk.services.redshiftdata.model.{Field, GetStatementResultResponse}
 
 import java.sql.ResultSet
 import scala.collection.JavaConverters._
@@ -34,47 +34,47 @@ private[redshift] abstract class RedshiftResults() {
 
 }
 
-private[redshift] case class DataApiResults(results: GetStatementResultResult)
+private[redshift] case class DataApiResults(results: GetStatementResultResponse)
   extends RedshiftResults {
 
-  private val iter = results.getRecords.asScala.iterator
-  private var curr : java.util.List[Field] = null
+  private val iter = results.records().asScala.iterator
+  private var curr: java.util.List[Field] = null
 
   override def next(): Boolean = {
     if (!iter.hasNext) {
       false
     } else {
-      curr = iter.next
+      curr = iter.next()
       true
     }
   }
 
   override def getInt(columnIndex: Int): Int = {
-    curr.get(columnIndex - 1).getLongValue.asInstanceOf[Int]
+    curr.get(columnIndex - 1).longValue().intValue()
   }
 
   override def getLong(columnIndex: Int): Long = {
-    curr.get(columnIndex - 1).getLongValue
+    curr.get(columnIndex - 1).longValue()
   }
 
   override def getString(columnIndex: Int): String = {
-    curr.get(columnIndex - 1).getStringValue
+    curr.get(columnIndex - 1).stringValue()
   }
 
   override def getInt(columnLabel: String): Int = {
-    curr.get(getIndex(columnLabel)).getLongValue.asInstanceOf[Int]
+    curr.get(getIndex(columnLabel)).longValue().intValue()
   }
 
   override def getLong(columnLabel: String): Long = {
-    curr.get(getIndex(columnLabel)).getLongValue
+    curr.get(getIndex(columnLabel)).longValue()
   }
 
   override def getString(columnLabel: String): String = {
-    curr.get(getIndex(columnLabel)).getStringValue
+    curr.get(getIndex(columnLabel)).stringValue()
   }
 
   private def getIndex(columnLabel: String): Int = {
-    results.getColumnMetadata.asScala.indexWhere(col => col.getLabel == columnLabel)
+    results.columnMetadata().asScala.indexWhere(col => col.label() == columnLabel)
   }
 }
 

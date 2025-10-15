@@ -19,16 +19,16 @@
 package io.github.spark_redshift_community.spark.redshift
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.regions.{DefaultAwsRegionProviderChain, Regions}
-import com.amazonaws.services.redshiftdataapi.{AWSRedshiftDataAPI, AWSRedshiftDataAPIClient}
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
 import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3URI}
+import software.amazon.awssdk.services.redshiftdata.RedshiftDataClient
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
 import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper.{REDSHIFT_FIRST_PARTY_DRIVERS, REDSHIFT_JDBC_4_1_DRIVER, REDSHIFT_JDBC_4_2_DRIVER, REDSHIFT_JDBC_4_DRIVER, SECRET_MANAGER_REDSHIFT_DRIVER}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
-import org.apache.spark.SparkContext
 import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -354,11 +354,11 @@ private[redshift] object Utils {
   }
 
   def getDefaultRegion(): String = {
-    // Either the user didn't provide a region or its malformed. Try to use the
+    // Either the user didn't provide a region or it's malformed. Try to use the
     // connector's region as the tempdir region since they are usually collocated.
     // If they aren't, S3's default provider chain will help resolve the difference.
     val currRegion = try {
-      new DefaultAwsRegionProviderChain().getRegion
+      new DefaultAwsRegionProviderChain().getRegion.toString
     } catch {
       case _: Throwable =>
         null
@@ -376,8 +376,8 @@ private[redshift] object Utils {
           "a region, especially when operating outside of AWS.")
     }
 
-    // If all else fails, pick a default region.
-    if ((currRegion != null) && currRegion.nonEmpty) currRegion else Regions.US_EAST_1.getName
+    // If all else fails, pick a default region
+    if ((currRegion != null) && currRegion.nonEmpty) currRegion else Region.US_EAST_1.toString
   }
 
   def getDefaultTempDirRegion(tempDirRegion: Option[String]): String = {
@@ -432,26 +432,30 @@ private[redshift] object Utils {
 
   val CONNECTOR_DATA_API_ENDPOINT = "spark.datasource.redshift.community.data_api_endpoint"
   def createDataApiClient(region: Option[String] = None,
-                          creds: Option[AWSCredentialsProvider] = None): AWSRedshiftDataAPI = {
+                          creds: Option[AwsCredentialsProvider] = None): RedshiftDataClient = {
     // Set the region
     val tempRegion = region.getOrElse(getDefaultRegion())
 
-    // Set the credentials
-    var client = AWSRedshiftDataAPIClient.builder
+    // Create the builder
+    var builder = RedshiftDataClient.builder()
+
+    // Set the credentials if provided
     if (creds.isDefined) {
-      client = client.withCredentials(creds.get)
+      builder = builder.credentialsProvider(creds.get)
     }
 
-    // Set the endpoint or the region (since we can't set both).
-    // We assume the endpoint is in the same region as the connector.
+    // Set the endpoint or the region (since we can't set both)
+    // We assume the endpoint is in the same region as the connector
     val endpoint = getSparkConfigValue(CONNECTOR_DATA_API_ENDPOINT, "")
     if (endpoint.nonEmpty) {
-      client = client.withEndpointConfiguration(new EndpointConfiguration(endpoint, tempRegion))
+      builder = builder
+        .endpointOverride(URI.create(endpoint))
+        .region(Region.of(tempRegion))
     } else {
-      client = client.withRegion(tempRegion)
+      builder = builder.region(Region.of(tempRegion))
     }
 
-    client.build()
+    builder.build()
   }
 
   def collectMetrics(params: MergedParameters, logger: Option[Logger] = None): Unit = {

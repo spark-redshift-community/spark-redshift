@@ -260,7 +260,7 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
       val results = executeInterruptibly(
         new DataApiCommand(conn.asInstanceOf[DataAPIConnection]),
         _.executeQueryInterruptibly(sql)).asInstanceOf[DataApiResults].results
-      results.getColumnMetadata.asScala.length
+      results.columnMetadata().asScala.length
     }.isSuccess
   }
 
@@ -274,7 +274,7 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
     log.info("Getting schema from Redshift for table: {}", table)
     val res = executeQueryInterruptibly(conn, s"SELECT * FROM $table LIMIT 1")
       .asInstanceOf[DataApiResults]
-    val rsmd = res.results.getColumnMetadata.asScala
+    val rsmd = res.results.columnMetadata().asScala
     val ncols = rsmd.length
     val fields = {
       new Array[StructField](ncols)
@@ -283,14 +283,14 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
     while (i < ncols) {
       val colmd = rsmd.apply(i)
 
-      val columnName = colmd.getLabel
-      val rsType = colmd.getTypeName
-      val fieldSize = colmd.getPrecision
-      val fieldScale = colmd.getScale
+      val columnName = colmd.label()
+      val rsType = colmd.typeName()
+      val fieldSize = colmd.precision()
+      val fieldScale = colmd.scale()
       val isSigned = colmd.isSigned
       val nullable = if (params.exists(_.overrideNullable)) {
         true
-      } else colmd.getNullable != ResultSetMetaData.columnNoNulls
+      } else colmd.nullable() != ResultSetMetaData.columnNoNulls
       val columnType = getCatalystType(rsType, fieldSize, fieldScale, isSigned, params)
       val meta = new MetadataBuilder().putString("redshift_type", rsType).build()
 
@@ -302,19 +302,19 @@ private[redshift] class DataApiWrapper extends RedshiftWrapper with Serializable
 
   private def resolveTableFromMeta(results: RedshiftResults,
                                     params: MergedParameters): StructType = {
-    val rsmd = results.asInstanceOf[DataApiResults].results.getColumnMetadata.asScala
+    val rsmd = results.asInstanceOf[DataApiResults].results.columnMetadata().asScala
     val ncols = rsmd.length
     val fields = new Array[StructField](ncols)
     var i = 0
     while (i < ncols) {
       val colmd = rsmd.apply(i)
 
-      val columnName = colmd.getLabel
-      val rsType = colmd.getTypeName
-      val fieldSize = colmd.getPrecision
-      val fieldScale = colmd.getScale
+      val columnName = colmd.label()
+      val rsType = colmd.typeName()
+      val fieldSize = colmd.precision()
+      val fieldScale = colmd.scale()
       val isSigned = colmd.isSigned
-      val nullable = colmd.getNullable != ResultSetMetaData.columnNoNulls
+      val nullable = colmd.nullable() != ResultSetMetaData.columnNoNulls
       val columnType = getCatalystType(rsType, fieldSize, fieldScale, isSigned, Some(params))
       val meta = new MetadataBuilder().putString("redshift_type", rsType).build()
       fields(i) = StructField(
