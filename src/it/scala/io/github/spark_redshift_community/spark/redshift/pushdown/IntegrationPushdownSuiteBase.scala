@@ -99,23 +99,15 @@ class IntegrationPushdownSuiteBase extends IntegrationSuiteBase {
   }
 
   def checkResult(expectedResult: String, actualResult: String): Unit = {
-    // Normalizes string by removing leading/trailing whitespace
-    // and converting Windows line endings to Unix
-    def cleanString(str: String): String =
-      str.trim().replaceAll("\r\n", "\n")
-
-    val cleanExpected = cleanString(expectedResult)
-    val cleanActual = cleanString(actualResult)
-
-    if (!cleanExpected.equals(cleanActual)) {
+    if (!expectedResult.trim().equals(actualResult.trim())) {
       val errorMessage =
         s"""
            |Results do not match:
            |== Found ==
-           |$actualResult
+           |${actualResult}
            |== Expected ==
-           |$expectedResult
-         """.stripMargin
+           |${expectedResult}
+            """.stripMargin
       fail(errorMessage)
     }
   }

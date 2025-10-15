@@ -36,7 +36,9 @@ val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.4")
 val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.33")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
-val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("1.12.262")
+val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("2.31.78")
+// Temporary variable, will remove once AWS SDK v2 migration is complete
+val awsJavaSDK1Version = "1.12.262"
 // access tokens for aws/shared and our own internal CodeArtifacts repo
 // these are retrieved during CodeBuild steps
 val awsSharedRepoPass = sys.props.get("ci.internalCentralMvnPassword").getOrElse("")
@@ -194,10 +196,12 @@ lazy val root = Project("spark-redshift", file("."))
       "org.scalatestplus" %% "mockito-4-6" % "3.2.15.0" % "test",
       "com.amazon.redshift" % "redshift-jdbc42" % testJDBCVersion % "provided",
 
+      "software.amazon.awssdk" % "utils" % testAWSJavaSDKVersion % "provided",
+
       "com.amazonaws.secretsmanager" % "aws-secretsmanager-jdbc" % "1.0.12" % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core")),
 
-      "com.amazonaws" % "aws-java-sdk" % testAWSJavaSDKVersion % "provided" excludeAll
+      "com.amazonaws" % "aws-java-sdk" % awsJavaSDK1Version % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core")),
 
       "org.apache.hadoop" % "hadoop-client" % testHadoopVersion % "provided" exclude("javax.servlet", "servlet-api") force(),

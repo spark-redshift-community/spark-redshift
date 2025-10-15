@@ -16,13 +16,12 @@
  */
 package io.github.spark_redshift_community.spark.redshift.pushdown.lst.test
 
-import com.amazonaws.util.IOUtils
+import software.amazon.awssdk.utils.IoUtils
 import io.github.spark_redshift_community.spark.redshift.pushdown.test.IntegrationPushdownSuiteBase
-import io.github.spark_redshift_community.spark.redshift.pushdown.SqlToS3TempCache
 
 class LSTIntegrationPushdownSuiteBase extends IntegrationPushdownSuiteBase{
 
-  // a list of all of the tables used for the LST dataset testing
+  // a list of all the tables used for the LST dataset testing
   protected val tableNames: List[String] = List(
     "catalog_returns",
     "catalog_sales",
@@ -46,7 +45,7 @@ class LSTIntegrationPushdownSuiteBase extends IntegrationPushdownSuiteBase{
 
     // for each of the defined tables, we want to run both the create and load SQL
     for ( lst_table <- tableNames) {
-        val create_stmt = IOUtils.toString(
+        val create_stmt = IoUtils.toUtf8String(
           getClass().getClassLoader().getResourceAsStream(
             s"lst/${filename_prefix}_${lst_table}.sql")
         )
@@ -83,5 +82,4 @@ class LSTIntegrationPushdownSuiteBase extends IntegrationPushdownSuiteBase{
     }
     tableSetUpHelper("2_load")
   }
-
 }
