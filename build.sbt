@@ -37,8 +37,6 @@ val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.4")
 val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.33")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
 val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("2.31.78")
-// Temporary variable, will remove once AWS SDK v2 migration is complete
-val awsJavaSDK1Version = "1.12.262"
 // access tokens for aws/shared and our own internal CodeArtifacts repo
 // these are retrieved during CodeBuild steps
 val awsSharedRepoPass = sys.props.get("ci.internalCentralMvnPassword").getOrElse("")
@@ -204,10 +202,7 @@ lazy val root = Project("spark-redshift", file("."))
       "software.amazon.awssdk" % "sdk-core" % testAWSJavaSDKVersion % "provided",
       "software.amazon.awssdk" % "utils" % testAWSJavaSDKVersion % "provided",
 
-      "com.amazonaws.secretsmanager" % "aws-secretsmanager-jdbc" % "1.0.12" % "provided" excludeAll
-        (ExclusionRule(organization = "com.fasterxml.jackson.core")),
-
-      "com.amazonaws" % "aws-java-sdk" % awsJavaSDK1Version % "provided" excludeAll
+      "com.amazonaws.secretsmanager" % "aws-secretsmanager-jdbc" % "2.0.2" % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core")),
 
       "org.apache.hadoop" % "hadoop-client" % testHadoopVersion % "provided" exclude("javax.servlet", "servlet-api") force(),
@@ -216,9 +211,7 @@ lazy val root = Project("spark-redshift", file("."))
 
       "org.apache.hadoop" % "hadoop-aws" % testHadoopVersion % "provided" excludeAll
         (ExclusionRule(organization = "com.fasterxml.jackson.core"))
-        exclude("org.apache.hadoop", "hadoop-common")
-        exclude("com.amazonaws", "aws-java-sdk-s3")  force()
-        exclude("com.amazonaws", "aws-java-sdk-bundle"),
+        exclude("org.apache.hadoop", "hadoop-common"),
       "org.apache.spark" %% "spark-core" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-sql" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),
       "org.apache.spark" %% "spark-hive" % testSparkVersion % "provided" exclude("org.apache.hadoop", "hadoop-client") force(),

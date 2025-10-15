@@ -363,7 +363,7 @@ The following describes how each connection can be authenticated:
     There are multiple ways of providing these credentials:
 
     1. **Default Credential Provider Chain (best option for most users):**
-        AWS credentials will automatically be retrieved through the [DefaultAWSCredentialsProviderChain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html#id6).
+        AWS credentials will automatically be retrieved through the [DefaultCredentialsProvider](https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html).
 
         If you use IAM instance roles to authenticate to S3 (e.g. on Databricks, EMR, or EC2), then
         you should probably use this method.
@@ -583,7 +583,7 @@ The parameter map or <tt>OPTIONS</tt> provided in Spark SQL supports the followi
     <td>No default</td>
     <td>
        <p>The primary AWS region (e.g., <tt>us-east-1</tt>) for searching for the <tt>secret.id</tt> value. Can only be used with JDBC-based connections. </p>
-       <p>If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>secret.id</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
+       <p>If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html">Default Credentials Provider</a> for resolving where the <tt>secret.id</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
        <ol>
           <li>When the connector is running outside of AWS as automatic region discovery will fail and may prevent authenticating with Redshift.</li>
           <li>When the connector is running in a different region than <tt>secret.id</tt> as it improves the connector's access performance of the secret.</li>
@@ -661,7 +661,7 @@ and use that as a temp location for this data.
     <td>No</td>
     <td>No default</td>
     <td>
-       <p>AWS region where <tt>tempdir</tt> is located. Setting this option will improve connector performance for interactions with <tt>tempdir</tt> as well as automatically supply this value as part of COPY and UNLOAD operations during connector writes and reads. If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> for resolving where the <tt>tempdir</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
+       <p>AWS region where <tt>tempdir</tt> is located. Setting this option will improve connector performance for interactions with <tt>tempdir</tt> as well as automatically supply this value as part of COPY and UNLOAD operations during connector writes and reads. If the region is not specified, the connector will attempt to use the <a href="https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html">Default Credentials Provider</a> for resolving where the <tt>tempdir</tt> region is located. In some cases, such as when the connector is being used outside of an AWS environment, this resolution will fail. Therefore, this setting is highly recommended in the following situations:</p>
        <ol>
           <li>When the connector is running outside of AWS as automatic region discovery will fail and negatively affect connector performance.</li>
           <li>When <tt>tempdir</tt> is in a different region than the Redshift cluster as using this setting alleviates the need to supply the region manually using the <tt>extracopyoptions</tt> and <tt>extraunloadoptions</tt> parameters.</li>
@@ -878,13 +878,13 @@ for more information.</p>
     <td><tt>secret.vpcEndpointUrl</tt></td>
     <td>No</td>
     <td>No default</td>
-    <td>The PrivateLink DNS endpoint URL for AWS Secrets Manager when overriding the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> </td>
+    <td>The PrivateLink DNS endpoint URL for AWS Secrets Manager when overriding the <a href="https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html">Default Credentials Provider</a> </td>
 </tr>
 <tr> 
     <td><tt>secret.vpcEndpointRegion</tt></td>
     <td>No</td>
     <td>No default</td>
-    <td>The PrivateLink DNS endpoint Region for AWS Secrets Manager when overriding the <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">Default Credential Provider Chain</a> </td>
+    <td>The PrivateLink DNS endpoint Region for AWS Secrets Manager when overriding the <a href="https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html">Default Credentials Provider</a> </td>
 </tr>
 <tr>
     <td><tt>jdbc.*</tt></td>
@@ -1253,7 +1253,7 @@ The connector will attempt to automatically determine the cluster's region when 
 
 ```
 WARN EC2MetadataUtils: Unable to retrieve the requested metadata (/latest/dynamic/instance-identity/document). Failed to connect to service endpoint: 
-com.amazonaws.SdkClientException: Failed to connect to service endpoint:
+software.amazon.awssdk.core.exception.SdkClientException: Failed to connect to service endpoint:
 ```
 
 To resolve this, set the <tt>tempdir_region</tt> parameter to the AWS region of the S3 bucket specified in <tt>tempdir</tt> whenever the connector is used outside an AWS environment (e.g., local Spark cluster) like so:

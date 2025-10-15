@@ -44,6 +44,7 @@ class SecretsManagerIntegrationSuite extends IntegrationSuiteBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     createNewSecret
+    redshiftWrapper.executeUpdate(conn, s"DROP USER IF EXISTS $redshiftUsr")
     redshiftWrapper.executeUpdate(conn, s"CREATE USER $redshiftUsr PASSWORD '$redshiftPwd'")
   }
 
