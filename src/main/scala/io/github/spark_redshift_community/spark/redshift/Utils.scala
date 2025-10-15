@@ -18,21 +18,21 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import com.amazonaws.auth.AWSCredentialsProvider
 import io.github.spark_redshift_community.spark.redshift.Parameters.MergedParameters
-import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, HeadBucketRequest}
-import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3URI}
-import software.amazon.awssdk.services.redshiftdata.RedshiftDataClient
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.services.s3.model.{GetBucketLifecycleConfigurationRequest, GetBucketLocationRequest}
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
-import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper.{REDSHIFT_FIRST_PARTY_DRIVERS, REDSHIFT_JDBC_4_1_DRIVER, REDSHIFT_JDBC_4_2_DRIVER, REDSHIFT_JDBC_4_DRIVER, SECRET_MANAGER_REDSHIFT_DRIVER}
+import software.amazon.awssdk.services.redshiftdata.RedshiftDataClient
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.S3Configuration
+import io.github.spark_redshift_community.spark.redshift.data.JDBCWrapper.{REDSHIFT_FIRST_PARTY_DRIVERS}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.net.URI
+import java.net.{URI, URISyntaxException}
 import java.util.{Properties, UUID}
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -76,6 +76,11 @@ private[redshift] object Utils {
 
   val lastBuildStmt: mutable.Map[String, String] = mutable.Map[String, String]()
 
+  /**
+   * Represents a parsed S3 location with bucket and key components
+   */
+  private case class S3Location(bucket: String, key: String)
+
   def classForName(className: String): Class[_] = {
     val classLoader =
       Option(Thread.currentThread().getContextClassLoader).getOrElse(this.getClass.getClassLoader)
@@ -101,19 +106,42 @@ private[redshift] object Utils {
   }
 
   /**
-   * Factory method to create new S3URI in order to handle various library incompatibilities with
-   * older AWS Java Libraries
+   * Factory method to create new S3Location with proper handling of both virtual-hosted and path-style URLs
    */
-  def createS3URI(url: String): AmazonS3URI = {
+  private def parseS3Location(url: String): S3Location = {
     try {
-      // try to instantiate AmazonS3URI with url
-      new AmazonS3URI(url)
-    } catch {
-      case e: IllegalArgumentException if e.getMessage.
-        startsWith("Invalid S3 URI: hostname does not appear to be a valid S3 endpoint") => {
-        new AmazonS3URI(addEndpointToUrl(url))
+      val uri = new URI(url)
+      if (uri.getScheme != "s3") {
+        throw new IllegalArgumentException(s"Not an S3 URI: ${url}")
       }
+
+      val (bucket, key) = if (uri.getHost == "s3.amazonaws.com") {
+        parsePathStyleUrl(uri)
+      } else {
+        parseVirtualHostedUrl(uri)
+      }
+
+      assert(bucket != null && bucket.nonEmpty, "Could not get bucket from S3 URI")
+      S3Location(bucket, key)
+    } catch {
+      case e: URISyntaxException =>
+        throw new IllegalArgumentException(s"Invalid S3 URI: ${url}", e)
     }
+  }
+
+  private def parsePathStyleUrl(uri: URI): (String, String) = {
+    val path = uri.getPath.stripPrefix("/")
+    val firstSlash = path.indexOf('/')
+    if (firstSlash == -1) {
+      (path, "") // Just bucket name
+    } else {
+      (path.substring(0, firstSlash), path.substring(firstSlash + 1))
+    }
+  }
+
+  private def parseVirtualHostedUrl(uri: URI): (String, String) = {
+    val key = Option(uri.getPath).map(_.stripPrefix("/")).getOrElse("")
+    (uri.getHost, key)
   }
 
   /**
@@ -166,27 +194,28 @@ private[redshift] object Utils {
    *                   false if an error prevent the check (useful for testing).
    */
   def checkThatBucketHasObjectLifecycleConfiguration(
-      params: MergedParameters,
-      s3Client: AmazonS3): Boolean = {
+                                                      params: MergedParameters,
+                                                      s3Client: S3Client): Boolean = {
     try {
-      val s3URI = createS3URI(Utils.fixS3Url(params.rootTempDir))
-      val bucket = s3URI.getBucket
-      assert(bucket != null, "Could not get bucket from S3 URI")
-      val key = Option(s3URI.getKey).getOrElse("")
+      val s3Location = parseS3Location(Utils.fixS3Url(params.rootTempDir))
+
       val hasMatchingBucketLifecycleRule: Boolean = {
-        val rules = Option(s3Client.getBucketLifecycleConfiguration(bucket))
-          .map(_.getRules.asScala)
+        val request = GetBucketLifecycleConfigurationRequest.builder()
+          .bucket(s3Location.bucket)
+          .build()
+
+        val rules = Option(s3Client.getBucketLifecycleConfiguration(request))
+          .map(_.rules().asScala)
           .getOrElse(Seq.empty)
+
         rules.exists { rule =>
-          // Note: this only checks that there is an active rule which matches the temp directory;
-          // it does not actually check that the rule will delete the files. This check is still
-          // better than nothing, though, and we can always improve it later.
-          rule.getStatus == BucketLifecycleConfiguration.ENABLED &&
-            (rule.getPrefix == null || key.startsWith(rule.getPrefix))
+          rule.status().toString == "Enabled" &&
+            (rule.prefix() == null || s3Location.key.startsWith(rule.prefix()))
         }
       }
+
       if (!hasMatchingBucketLifecycleRule) {
-        log.warn(s"The S3 bucket $bucket does not have an object lifecycle configuration to " +
+        log.warn(s"The S3 bucket ${s3Location.bucket} does not have an object lifecycle configuration to " +
           "ensure cleanup of temporary files. Consider configuring `tempdir` to point to a " +
           "bucket with an object lifecycle policy that automatically deletes files after an " +
           "expiration period. For more information, see " +
@@ -263,14 +292,18 @@ private[redshift] object Utils {
   /**
    * Attempts to retrieve the region of the S3 bucket.
    */
-  def getRegionForS3Bucket(params: MergedParameters, s3Client: AmazonS3): Option[String] = {
+  def getRegionForS3Bucket(params: MergedParameters, s3Client: S3Client): Option[String] = {
     try {
-      val s3URI = createS3URI(Utils.fixS3Url(params.rootTempDir))
-      val bucket = s3URI.getBucket
-      assert(bucket != null, "Could not get bucket from S3 URI")
-      val region = s3Client.headBucket(new HeadBucketRequest(bucket)).getBucketRegion match {
+      val s3Location = parseS3Location(Utils.fixS3Url(params.rootTempDir))
+
+      val request = GetBucketLocationRequest.builder()
+        .bucket(s3Location.bucket)
+        .build()
+
+      val region = s3Client.getBucketLocation(request)
+        .locationConstraintAsString() match {
         // Map "US Standard" to us-east-1
-        case null | "US" => "us-east-1"
+        case null | "" | "US" => "us-east-1"
         case other => other
       }
       Some(region)
@@ -308,7 +341,7 @@ private[redshift] object Utils {
     }
   }
 
-  def checkRedshiftAndS3OnSameRegion(params: MergedParameters, s3Client: AmazonS3): Unit = {
+  def checkRedshiftAndS3OnSameRegion(params: MergedParameters, s3Client: S3Client): Unit = {
     for (
       redshiftRegion <- Utils.getRegionForRedshiftCluster(params);
       s3Region <- Utils.getRegionForS3Bucket(params, s3Client)
@@ -331,7 +364,7 @@ private[redshift] object Utils {
    * @param s3Client S3 client to use when getting the s3 bucket region
    */
   def checkRedshiftAndS3OnSameRegionParquetWrite
-  (params: MergedParameters, s3Client: AmazonS3): Unit = {
+  (params: MergedParameters, s3Client: S3Client): Unit = {
     val redshiftRegion = Utils.getRegionForRedshiftCluster(params)
     if (redshiftRegion.isEmpty) {
       log.warn("Unable to determine region for redshift cluster, copy may fail if " +
@@ -346,7 +379,7 @@ private[redshift] object Utils {
     }
     if (redshiftRegion.get != s3Region.get) {
       log.error("The Redshift cluster and S3 bucket are in different regions " +
-        s"($redshiftRegion and $s3Region, respectively). Cross-region copy operation is not " +
+        s"(${redshiftRegion.get} and ${s3Region.get}, respectively). Cross-region copy operation is not " +
         "available when tempformat is set to parquet")
       throw new IllegalArgumentException("Redshift cluster and S3 bucket are in different " +
         "regions when tempformat is set to parquet")
@@ -389,12 +422,15 @@ private[redshift] object Utils {
     }
   }
 
-  def s3ClientBuilder: (AWSCredentialsProvider, MergedParameters) => AmazonS3 =
+  def s3ClientBuilder: (AwsCredentialsProvider, MergedParameters) => S3Client =
     (awsCredentials, mergedParameters) => {
-      AmazonS3Client.builder()
-        .withRegion(Utils.getDefaultTempDirRegion(mergedParameters.tempDirRegion))
-        .withForceGlobalBucketAccessEnabled(true)
-        .withCredentials(awsCredentials)
+      S3Client.builder()
+        .region(Region.of(Utils.getDefaultTempDirRegion(mergedParameters.tempDirRegion)))
+        .credentialsProvider(awsCredentials)
+        .serviceConfiguration(S3Configuration.builder()
+          .pathStyleAccessEnabled(true)
+          .useArnRegionEnabled(true)
+          .build())
         .build()
   }
 

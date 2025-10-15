@@ -17,9 +17,8 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.services.s3.AmazonS3
-import io.github.spark_redshift_community.spark.redshift
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.services.s3.S3Client
 import io.github.spark_redshift_community.spark.redshift.pushdown.RedshiftStrategy
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider, RelationProvider, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
@@ -31,7 +30,7 @@ import io.github.spark_redshift_community.spark.redshift.data.RedshiftWrapperFac
 /**
  * Redshift Source implementation for Spark SQL
  */
-class DefaultSource(s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3)
+class DefaultSource(s3ClientFactory: (AwsCredentialsProvider, MergedParameters) => S3Client)
   extends RelationProvider
   with SchemaRelationProvider
   with CreatableRelationProvider {

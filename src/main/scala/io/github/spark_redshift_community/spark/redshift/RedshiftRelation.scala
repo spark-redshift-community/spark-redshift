@@ -18,8 +18,6 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.services.s3.AmazonS3
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.spark_redshift_community.spark.redshift
 import io.github.spark_redshift_community.spark.redshift.Conversions.parquetDataTypeConvert
@@ -37,6 +35,8 @@ import org.apache.spark.sql.functions.{col, from_json}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, Row, SQLContext, SaveMode}
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.services.s3.S3Client
 
 import java.io.InputStreamReader
 import java.net.URI
@@ -46,10 +46,10 @@ import scala.collection.JavaConverters._
  * Data Source API implementation for Amazon Redshift database tables
  */
 case class RedshiftRelation(
-    redshiftWrapper: RedshiftWrapper,
-    s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3,
-    params: MergedParameters,
-    userSchema: Option[StructType])
+                             redshiftWrapper: RedshiftWrapper,
+                             s3ClientFactory: (AwsCredentialsProvider, MergedParameters) => S3Client,
+                             params: MergedParameters,
+                             userSchema: Option[StructType])
     (@transient val sqlContext: SQLContext)
   extends BaseRelation
     with PrunedFilteredScan
@@ -95,11 +95,11 @@ case class RedshiftRelation(
   }
 
   private def checkS3BucketUsage(params: MergedParameters,
-                                 credsProvider: AWSCredentialsProvider): Unit = {
+                                 credsProvider: AwsCredentialsProvider): Unit = {
 
     if (!params.checkS3BucketUsage) return
 
-    val s3Client: AmazonS3 = s3ClientFactory(credsProvider, params)
+    val s3Client: S3Client = s3ClientFactory(credsProvider, params)
 
     // Make sure a cross-region read has the necessary connector parameters set.
     Utils.checkRedshiftAndS3OnSameRegion(params, s3Client)
@@ -174,14 +174,14 @@ case class RedshiftRelation(
                                requiredColumns: Array[String],
                                filters: Array[Filter],
                                tempDir: String,
-                               credsProvider: AWSCredentialsProvider,
+                               credsProvider: AwsCredentialsProvider,
                                sseKmsKey: Option[String]): String = {
     assert(!requiredColumns.isEmpty)
     // Always quote column names:
     val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
     val whereClause = FilterPushdown.buildWhereClause(schema, filters, escapeQuote = true)
     val credsString: String =
-      AWSCredentialsUtils.getRedshiftCredentialsString(params, credsProvider.getCredentials)
+      AWSCredentialsUtils.getRedshiftCredentialsString(params, credsProvider.resolveCredentials())
     val query = {
       // Since the query passed to UNLOAD will be enclosed in single quotes, we need to escape
       // any backslashes and single quotes that appear in the query itself
@@ -217,13 +217,13 @@ case class RedshiftRelation(
                                statement: RedshiftSQLStatement,
                                schema: StructType,
                                tempDir: String,
-                               credsProvider: AWSCredentialsProvider,
+                               credsProvider: AwsCredentialsProvider,
                                sseKmsKey: Option[String],
                                threadName: String): String = {
     assert(schema.nonEmpty)
 
     val credsString: String =
-      AWSCredentialsUtils.getRedshiftCredentialsString(params, credsProvider.getCredentials)
+      AWSCredentialsUtils.getRedshiftCredentialsString(params, credsProvider.resolveCredentials())
 
     // Since the query passed to UNLOAD will be enclosed in single quotes, we need to escape
     // any backslashes and single quotes that appear in the query itself
@@ -355,7 +355,7 @@ case class RedshiftRelation(
   private def unloadDataToS3(statement: RedshiftSQLStatement,
                              conn: RedshiftConnection,
                              resultSchema: StructType,
-                             credsProvider: AWSCredentialsProvider,
+                             credsProvider: AwsCredentialsProvider,
                              threadName: String): Option[String] = {
 
     val newTempDir = params.createPerQueryTempDir()

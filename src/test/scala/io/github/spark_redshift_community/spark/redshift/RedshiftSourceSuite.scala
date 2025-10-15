@@ -17,34 +17,27 @@
 
 package io.github.spark_redshift_community.spark.redshift.test
 
-import java.io.{ByteArrayInputStream, OutputStreamWriter}
-import java.net.URI
-import com.amazonaws.services.s3.AmazonS3Client
-import com.amazonaws.services.s3.model.{BucketLifecycleConfiguration, S3Object, S3ObjectInputStream}
-import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import io.github.spark_redshift_community.spark.redshift.{Parameters, Utils}
-import io.github.spark_redshift_community.spark.redshift.{TableName, DefaultSource, DefaultRedshiftWriter}
-import io.github.spark_redshift_community.spark.redshift.{RedshiftRelation, RedshiftWriter}
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_USER_QUERY_GROUP_LABEL}
-import io.github.spark_redshift_community.spark.redshift.{Conversions, Parameters, RowEncoderUtils}
-import io.github.spark_redshift_community.spark.redshift.test.InMemoryS3AFileSystem
-import org.apache.http.client.methods.HttpRequestBase
-import org.mockito.ArgumentMatchers.{anyString, endsWith}
+import io.github.spark_redshift_community.spark.redshift.{DefaultRedshiftWriter, DefaultSource, Parameters, RedshiftRelation, RedshiftWriter, RowEncoderUtils, TableName, Utils}
+import org.apache.hadoop.fs.{FileSystem, Path, UnsupportedFileSystemException}
+import org.apache.spark.SparkContext
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.sources._
+import org.apache.spark.sql.types._
+import org.mockito.ArgumentMatchers.{any, argThat}
 import org.mockito.Mockito
 import org.mockito.Mockito.when
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.fs.UnsupportedFileSystemException
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.scalatest.matchers.should._
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.sources._
-import org.apache.spark.sql._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.catalyst.InternalRow
 import org.scalatest.exceptions.TestFailedException
+import org.scalatest.matchers.should._
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model._
+import software.amazon.awssdk.core.ResponseInputStream
 
+import java.io.ByteArrayInputStream
+import java.io.OutputStreamWriter
+import java.net.URI
 import java.util
 import scala.util.matching.Regex
 
@@ -67,7 +60,7 @@ class RedshiftSourceSuite
 
   private var expectedDataDF: DataFrame = _
 
-  private var mockS3Client: AmazonS3Client = _
+  private var mockS3Client: S3Client = _
 
   private var s3FileSystem: FileSystem = _
 
@@ -112,42 +105,60 @@ class RedshiftSourceSuite
       testSqlContext.createDataFrame(sc.parallelize(TestUtils.expectedData), TestUtils.testSchema)
 
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    mockS3Client = Mockito.mock(classOf[AmazonS3Client], Mockito.RETURNS_SMART_NULLS)
+    mockS3Client = Mockito.mock(classOf[S3Client], Mockito.RETURNS_SMART_NULLS)
 
-    when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
-      new BucketLifecycleConfiguration().withRules(
-        new Rule().withPrefix("").withStatus(BucketLifecycleConfiguration.ENABLED)
-      ))
+    // Mock getBucketLifecycleConfiguration
+    val lifecycleRule = LifecycleRule.builder()
+      .prefix("")
+      .status("ENABLED")
+      .build()
 
-    val mockManifest = Mockito.mock(classOf[S3Object], Mockito.RETURNS_SMART_NULLS)
+    val lifecycleResponse = GetBucketLifecycleConfigurationResponse.builder()
+      .rules(lifecycleRule)
+      .build()
 
-    when(mockManifest.getObjectContent).thenAnswer {
-      new Answer[S3ObjectInputStream] {
-        override def answer(invocationOnMock: InvocationOnMock): S3ObjectInputStream = {
-          val manifest =
-            s"""
-               | {
-               |   "entries": [
-               |     { "url": "${Utils.fixS3Url(Utils.lastTempPathGenerated)}/part-00000" }
-               |    ]
-               | }
-            """.stripMargin
-          // Write the data to the output file specified in the manifest:
-          val out = s3FileSystem.create(new Path(s"${Utils.lastTempPathGenerated}/part-00000"))
-          val ow = new OutputStreamWriter(out.getWrappedStream)
-          ow.write(unloadedData)
-          ow.close()
-          out.close()
-          val is = new ByteArrayInputStream(manifest.getBytes("UTF-8"))
-          new S3ObjectInputStream(
-            is,
-            Mockito.mock(classOf[HttpRequestBase], Mockito.RETURNS_SMART_NULLS))
-        }
-      }
-    }
+    when(mockS3Client.getBucketLifecycleConfiguration(any[GetBucketLifecycleConfigurationRequest]))
+      .thenReturn(lifecycleResponse)
 
-    when(mockS3Client.getObject(anyString(), endsWith("manifest"))).thenReturn(mockManifest)
-    when(mockS3Client.doesObjectExist(anyString(), endsWith("manifest"))).thenReturn(true)
+    // Mock getObject
+    val manifest =
+      s"""
+         | {
+         |   "entries": [
+         |     { "url": "${Utils.fixS3Url(Utils.lastTempPathGenerated)}/part-00000" }
+         |    ]
+         | }
+    """.stripMargin.getBytes("UTF-8")
+
+    // Write the data to the output file specified in the manifest:
+    val out = s3FileSystem.create(new Path(s"${Utils.lastTempPathGenerated}/part-00000"))
+    val ow = new OutputStreamWriter(out.getWrappedStream)
+    ow.write(unloadedData)
+    ow.close()
+    out.close()
+
+    val getObjectResponse = GetObjectResponse.builder()
+      .contentLength(manifest.length.toLong)
+      .build()
+
+    // Create new stream for each invocation
+    when(mockS3Client.getObject(
+      argThat((request: GetObjectRequest) =>
+        request.key().endsWith("manifest"))
+    )).thenAnswer(_ =>
+      new ResponseInputStream(getObjectResponse, new ByteArrayInputStream(manifest))
+    )
+
+    // Mock headObject (replacement for doesObjectExist)
+    val headObjectResponse = HeadObjectResponse.builder()
+      .contentLength(manifest.length.toLong)
+      .build()
+
+    when(mockS3Client.headObject(
+      argThat((request: HeadObjectRequest) =>
+        request.key().endsWith("manifest"))
+    ))
+      .thenReturn(headObjectResponse)
   }
 
   override def afterEach(): Unit = {

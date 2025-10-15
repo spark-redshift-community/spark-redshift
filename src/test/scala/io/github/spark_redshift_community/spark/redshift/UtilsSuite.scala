@@ -19,23 +19,22 @@ package io.github.spark_redshift_community.spark.redshift.test
 
 import io.github.spark_redshift_community.spark.redshift.Utils
 import io.github.spark_redshift_community.spark.redshift.{BuildInfo, Parameters}
+
 import java.net.URI
-import com.amazonaws.services.s3.AmazonS3Client
-import com.amazonaws.services.s3.model.BucketLifecycleConfiguration
-import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule
-import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_HOST_CONNECTOR, PARAM_LEGACY_JDBC_REAL_TYPE_MAPPING, PARAM_LEGACY_MAPPING_SHORT_TO_INT, PARAM_LEGACY_TRIM_CSV_WRITES, PARAM_OVERRIDE_NULLABLE}
+import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_HOST_CONNECTOR}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SQLContext
-import org.mockito.ArgumentMatchers.anyString
-import org.mockito.Mockito
+import org.mockito.ArgumentMatchers.{any, argThat}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar.mock
 import org.scalatest.matchers.should._
 import org.scalatest.funsuite.AnyFunSuite
 import org.slf4j.Logger
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.{GetBucketLifecycleConfigurationRequest, GetBucketLifecycleConfigurationResponse, LifecycleRule, NoSuchBucketException}
 
-import java.sql.Timestamp
 import java.util
 import java.util.Properties
 
@@ -142,48 +141,113 @@ class UtilsSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll with B
 
   test("checkThatBucketHasObjectLifecycleConfiguration when no rule") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[S3Client](Mockito.RETURNS_SMART_NULLS)
+    val expectedBucketName = "bucket"  // from fakeParams tempdir
 
-    when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
-      new BucketLifecycleConfiguration().withRules(
-        new Rule().withStatus(BucketLifecycleConfiguration.DISABLED)
-      ))
+    // Create the response object
+    val lifecycleRule = LifecycleRule.builder()
+      .status("DISABLED")
+      .build()
+
+    val getBucketLifecycleConfigurationResponse = GetBucketLifecycleConfigurationResponse.builder()
+      .rules(lifecycleRule)
+      .build()
+
+    // Mock the getBucketLifecycleConfiguration method
+    when(mockS3Client.getBucketLifecycleConfiguration(
+      argThat((request: GetBucketLifecycleConfigurationRequest) =>
+        request.bucket() == expectedBucketName)
+    )).thenReturn(getBucketLifecycleConfigurationResponse)
+
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
       fakeParams, mockS3Client) === true)
   }
 
   test("checkThatBucketHasObjectLifecycleConfiguration when rule with prefix") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[S3Client](Mockito.RETURNS_SMART_NULLS)
+    val expectedBucketName = "bucket"  // from fakeParams tempdir
 
-    when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
-      new BucketLifecycleConfiguration().withRules(
-        new Rule().withPrefix("/path/").withStatus(BucketLifecycleConfiguration.ENABLED)
-      ))
+    val lifecycleRule = LifecycleRule.builder()
+      .prefix("/path/")
+      .status("ENABLED")
+      .build()
+
+    val response = GetBucketLifecycleConfigurationResponse.builder()
+      .rules(lifecycleRule)
+      .build()
+
+    when(mockS3Client.getBucketLifecycleConfiguration(
+      argThat((request: GetBucketLifecycleConfigurationRequest) =>
+        request.bucket() == expectedBucketName)
+    )).thenReturn(response)
+
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
       fakeParams, mockS3Client) === true)
   }
 
   test("checkThatBucketHasObjectLifecycleConfiguration when rule without prefix") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[S3Client](Mockito.RETURNS_SMART_NULLS)
+    val expectedBucketName = "bucket"  // from fakeParams tempdir
 
-    when(mockS3Client.getBucketLifecycleConfiguration(anyString())).thenReturn(
-      new BucketLifecycleConfiguration().withRules(
-        new Rule().withStatus(BucketLifecycleConfiguration.ENABLED)
-      ))
+    val lifecycleRule = LifecycleRule.builder()
+      .status("ENABLED")
+      .build()
+
+    val response = GetBucketLifecycleConfigurationResponse.builder()
+      .rules(lifecycleRule)
+      .build()
+
+    when(mockS3Client.getBucketLifecycleConfiguration(
+      argThat((request: GetBucketLifecycleConfigurationRequest) =>
+        request.bucket() == expectedBucketName)
+    )).thenReturn(response)
+
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
       fakeParams, mockS3Client) === true)
   }
 
   test("checkThatBucketHasObjectLifecycleConfiguration when error in checking") {
     // Configure a mock S3 client so that we don't hit errors when trying to access AWS in tests.
-    val mockS3Client = mock[AmazonS3Client](Mockito.RETURNS_SMART_NULLS)
+    val mockS3Client = mock[S3Client](Mockito.RETURNS_SMART_NULLS)
 
-    when(mockS3Client.getBucketLifecycleConfiguration(anyString()))
-      .thenThrow(new NullPointerException())
+    when(mockS3Client.getBucketLifecycleConfiguration(any[GetBucketLifecycleConfigurationRequest]))
+      .thenThrow(NoSuchBucketException.builder().message("Bucket not found").build())
+
     assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
       fakeParams, mockS3Client) === false)
+  }
+
+  test("checkThatBucketHasObjectLifecycleConfiguration handles path-style URLs") {
+    // Configure params with path-style URL
+    val paramsWithPathStyle = MergedParameters(fakeCredentials +
+      ("tempdir" -> "s3://s3.amazonaws.com/my-bucket/path/to/temp/dir"))
+
+    val mockS3Client = mock[S3Client](Mockito.RETURNS_SMART_NULLS)
+    val expectedBucketName = "bucket"  // from fakeParams tempdir
+
+    val lifecycleRule = LifecycleRule.builder()
+      .status("ENABLED")
+      .build()
+
+    val response = GetBucketLifecycleConfigurationResponse.builder()
+      .rules(lifecycleRule)
+      .build()
+
+    when(mockS3Client.getBucketLifecycleConfiguration(
+      argThat((request: GetBucketLifecycleConfigurationRequest) =>
+        request.bucket() == expectedBucketName)
+    )).thenReturn(response)
+
+    // Verify that the correct bucket name is used
+    assert(Utils.checkThatBucketHasObjectLifecycleConfiguration(
+      paramsWithPathStyle, mockS3Client) === true)
+
+    // Verify that the request was made with the correct bucket name
+    val requestCaptor = ArgumentCaptor.forClass(classOf[GetBucketLifecycleConfigurationRequest])
+    verify(mockS3Client).getBucketLifecycleConfiguration(requestCaptor.capture())
+    assert(requestCaptor.getValue.bucket() === "my-bucket")
   }
 
   test("retry calls block correct number of times with correct delay") {

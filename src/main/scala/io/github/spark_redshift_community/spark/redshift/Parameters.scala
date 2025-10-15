@@ -19,7 +19,7 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import com.amazonaws.auth.{AWSCredentialsProvider, BasicSessionCredentials}
+import software.amazon.awssdk.auth.credentials.{AwsCredentialsProvider, AwsSessionCredentials}
 
 /**
  * All user-specifiable parameters for spark-redshift, along with their validation rules and
@@ -462,14 +462,14 @@ private[redshift] object Parameters {
      * the user when Hadoop is configured to authenticate to S3 via IAM roles assigned to EC2
      * instances.
      */
-    def temporaryAWSCredentials: Option[AWSCredentialsProvider] = {
+    def temporaryAWSCredentials: Option[AwsCredentialsProvider] = {
       for (
         accessKey <- parameters.get(PARAM_TEMPORARY_AWS_ACCESS_KEY_ID);
         secretAccessKey <- parameters.get(PARAM_TEMPORARY_AWS_SECRET_ACCESS_KEY);
         sessionToken <- parameters.get(PARAM_TEMPORARY_AWS_SESSION_TOKEN)
       ) yield {
         AWSCredentialsUtils.staticCredentialsProvider(
-          new BasicSessionCredentials(accessKey, secretAccessKey, sessionToken))
+          AwsSessionCredentials.create(accessKey, secretAccessKey, sessionToken))
       }
     }
 

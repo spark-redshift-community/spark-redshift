@@ -17,9 +17,7 @@
 
 package io.github.spark_redshift_community.spark.redshift
 
-import com.amazonaws.auth.AWSCredentialsProvider
 import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParameters, PARAM_COPY_DELAY}
-import com.amazonaws.services.s3.AmazonS3
 import io.github.spark_redshift_community.spark.redshift.data.{RedshiftConnection, RedshiftWrapper}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.TaskContext
@@ -29,6 +27,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, Row, SQLContext, SaveMode}
 import org.apache.spark.sql.functions.{col, to_json}
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.services.s3.S3Client
 
 import java.net.URI
 import java.sql.{Date, SQLException, Timestamp}
@@ -60,7 +60,7 @@ import scala.util.control.NonFatal
  */
 private[redshift] class RedshiftWriter(
    redshiftWrapper: RedshiftWrapper,
-   s3ClientFactory: (AWSCredentialsProvider, MergedParameters) => AmazonS3) {
+   s3ClientFactory: (AwsCredentialsProvider, MergedParameters) => S3Client) {
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -91,10 +91,10 @@ private[redshift] class RedshiftWriter(
       sqlContext: SQLContext,
       schema: StructType,
       params: MergedParameters,
-      creds: AWSCredentialsProvider,
+      creds: AwsCredentialsProvider,
       manifestUrl: String): String = {
     val credsString: String =
-      AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.getCredentials)
+      AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.resolveCredentials())
     val fixedUrl = Utils.fixS3Url(manifestUrl)
     val format = params.tempFormat match {
       case "AVRO" => "AVRO 'auto'"
@@ -142,7 +142,7 @@ private[redshift] class RedshiftWriter(
       conn: RedshiftConnection,
       data: DataFrame,
       params: MergedParameters,
-      creds: AWSCredentialsProvider,
+      creds: AwsCredentialsProvider,
       manifestUrl: Option[String]): Unit = {
 
     // If the table doesn't exist, we need to create it first, using JDBC to infer column types
@@ -442,7 +442,7 @@ private[redshift] class RedshiftWriter(
         "https://github.com/databricks/spark-redshift/pull/157")
     }
 
-    val credsProvider: AWSCredentialsProvider =
+    val credsProvider: AwsCredentialsProvider =
       AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
 
     checkS3BucketUsage(params, credsProvider)
@@ -540,10 +540,10 @@ private[redshift] class RedshiftWriter(
   }
 
   private def checkS3BucketUsage(params: MergedParameters,
-                                 credsProvider: AWSCredentialsProvider): Unit = {
+                                 credsProvider: AwsCredentialsProvider): Unit = {
     if (!params.checkS3BucketUsage) return
 
-    val s3Client: AmazonS3 = s3ClientFactory(credsProvider, params)
+    val s3Client: S3Client = s3ClientFactory(credsProvider, params)
 
     // Make sure a cross-region write has the necessary connector parameters set.
     if (params.tempFormat == "PARQUET") {
