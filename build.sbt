@@ -34,7 +34,7 @@ val publishSonatypeCentral = "true" equalsIgnoreCase System.getProperty("config.
 lazy val ItTest = config("it") extend Test
 val testSparkVersion = sys.props.get("spark.testVersion").getOrElse(sparkVersion)
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.3.4")
-val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.33")
+val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.1.0.34")
 // DON't UPGRADE AWS-SDK-JAVA if not compatible with hadoop version
 val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("2.31.78")
 // access tokens for aws/shared and our own internal CodeArtifacts repo
