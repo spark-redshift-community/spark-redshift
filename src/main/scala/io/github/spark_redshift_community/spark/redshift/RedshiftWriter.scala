@@ -94,7 +94,7 @@ private[redshift] class RedshiftWriter(
       creds: AwsCredentialsProvider,
       manifestUrl: String): String = {
     val credsString: String =
-      AWSCredentialsUtils.getRedshiftCredentialsString(params, creds.resolveCredentials())
+      AWSCredentialsUtils.getRedshiftCredentialsString(params, creds)
     val fixedUrl = Utils.fixS3Url(manifestUrl)
     val format = params.tempFormat match {
       case "AVRO" => "AVRO 'auto'"

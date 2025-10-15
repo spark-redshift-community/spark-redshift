@@ -31,7 +31,7 @@ private[redshift] object AWSCredentialsUtils {
     */
   def getRedshiftCredentialsString(
       params: MergedParameters,
-      sparkAwsCredentials: AwsCredentials): String = {
+      credentialsProvider: AwsCredentialsProvider): String = {
 
     def awsCredsToString(credentials: AwsCredentials): String = {
       credentials match {
@@ -56,7 +56,7 @@ private[redshift] object AWSCredentialsUtils {
     } else if (params.temporaryAWSCredentials.isDefined) {
       awsCredsToString(params.temporaryAWSCredentials.get.resolveCredentials())
     } else if (params.forwardSparkS3Credentials) {
-      awsCredsToString(sparkAwsCredentials)
+      awsCredsToString(credentialsProvider.resolveCredentials())
     } else {
       throw new IllegalStateException("No Redshift S3 authentication mechanism was specified")
     }

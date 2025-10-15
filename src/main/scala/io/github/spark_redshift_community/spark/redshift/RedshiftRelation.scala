@@ -181,7 +181,7 @@ case class RedshiftRelation(
     val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
     val whereClause = FilterPushdown.buildWhereClause(schema, filters, escapeQuote = true)
     val credsString: String =
-      AWSCredentialsUtils.getRedshiftCredentialsString(params, credsProvider.resolveCredentials())
+      AWSCredentialsUtils.getRedshiftCredentialsString(params, credsProvider)
     val query = {
       // Since the query passed to UNLOAD will be enclosed in single quotes, we need to escape
       // any backslashes and single quotes that appear in the query itself
@@ -223,7 +223,7 @@ case class RedshiftRelation(
     assert(schema.nonEmpty)
 
     val credsString: String =
-      AWSCredentialsUtils.getRedshiftCredentialsString(params, credsProvider.resolveCredentials())
+      AWSCredentialsUtils.getRedshiftCredentialsString(params, credsProvider)
 
     // Since the query passed to UNLOAD will be enclosed in single quotes, we need to escape
     // any backslashes and single quotes that appear in the query itself

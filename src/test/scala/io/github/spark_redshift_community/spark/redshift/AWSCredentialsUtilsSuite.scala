@@ -22,7 +22,7 @@ import io.github.spark_redshift_community.spark.redshift.Parameters.{MergedParam
 import io.github.spark_redshift_community.spark.redshift.AWSCredentialsUtils
 import org.apache.hadoop.conf.Configuration
 import org.scalatest.funsuite.AnyFunSuite
-import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsSessionCredentials, DefaultCredentialsProvider}
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentials, AwsCredentialsProvider, AwsSessionCredentials, DefaultCredentialsProvider}
 
 import scala.language.implicitConversions
 
@@ -41,9 +41,13 @@ class AWSCredentialsUtilsSuite extends AnyFunSuite {
 
   test("credentialsString with regular keys") {
     val creds = AwsBasicCredentials.create("ACCESSKEYID", "SECRET/KEY/WITH/SLASHES")
+    // Create a simple AWSCredentialsProvider that returns our test credentials
+    val credProvider = new AwsCredentialsProvider {
+      override def resolveCredentials(): AwsCredentials = creds
+    }
     val params =
       Parameters.mergeParameters(baseParams ++ Map("forward_spark_s3_credentials" -> "true"))
-    assert(AWSCredentialsUtils.getRedshiftCredentialsString(params, creds) ===
+    assert(AWSCredentialsUtils.getRedshiftCredentialsString(params, credProvider) ===
       "aws_access_key_id=ACCESSKEYID;aws_secret_access_key=SECRET/KEY/WITH/SLASHES")
   }
 
