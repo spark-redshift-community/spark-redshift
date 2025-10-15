@@ -105,7 +105,7 @@ You may use this library in your applications with the following dependency info
     spark-submit \
       --deploy-mode cluster \
       --master yarn \
-      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.33,org.apache.spark:spark-avro_2.12:3.5.6,io.github.spark-redshift-community:spark-redshift_2.12:6.4.3-spark_3.5 \
+      --packages com.amazon.redshift:redshift-jdbc42:2.1.0.33,org.apache.spark:spark-avro_2.12:3.5.6,io.github.spark-redshift-community:spark-redshift_2.12:6.5.0-spark_3.5 \
       my_script.py
     ```
 
@@ -116,14 +116,14 @@ You may use this library in your applications with the following dependency info
     <dependency>
         <groupId>io.github.spark-redshift-community</groupId>
         <artifactId>spark-redshift_2.12</artifactId>
-        <version>6.4.3-spark_3.5</version>
+        <version>6.5.0-spark_3.5</version>
     </dependency>
     ```
 
 - **In SBT**:
 
     ```SBT
-    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "6.4.3-spark_3.5"
+    libraryDependencies += "io.github.spark-redshift-community" %% "spark-redshift_2.12" % "6.5.0-spark_3.5"
     ```
 
 ### Local builds
@@ -901,7 +901,7 @@ for more information.</p>
     <td>""</td>
     <td>
         An identifier to include in the query group set when running queries with the connector. Should be 100 or fewer characters and all characters must be valid unicodeIdentifierParts. Characters in excess of 100 will be trimmed.
-        When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"6.4.3-spark_3.5","op":"Read","lbl":"","tid":""}}`). 
+        When running a query with the connector a json formatted string will be set as the query group (for example `{"spark-redshift-connector":{"svc":"","ver":"6.5.0-spark_3.5","op":"Read","lbl":"","tid":""}}`). 
         This option will be substituted for the value of the `lbl` key.
     </td>
 </tr>
@@ -1074,7 +1074,7 @@ var sparkConf = new SparkConf().set("spark.datasource.redshift.community.reject_
 ### trace_id
 A new tracing identifier field that is added to the existing `label` parameter. When set, the provided string value will be used as part of label. Otherwise, it will default to the Spark application identifier. For example:
 
-`{"spark-redshift-connector":{"svc":"","ver":"6.4.3-spark_3.5","op":"Read","lbl":"","tid":"..."}}`)
+`{"spark-redshift-connector":{"svc":"","ver":"6.5.0-spark_3.5","op":"Read","lbl":"","tid":"..."}}`)
 
 To set the value, run the following command:
 ```sparksql
