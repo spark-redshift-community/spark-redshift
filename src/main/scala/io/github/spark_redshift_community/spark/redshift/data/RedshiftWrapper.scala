@@ -56,6 +56,7 @@ private[redshift] class RedshiftWrapper extends Serializable {
             } else {
               s"VARCHAR(MAX)"
             }
+          case BinaryType => "VARBYTE"
           case TimestampType => if (redshift.legacyTimestampHandling) "TIMESTAMP" else "TIMESTAMPTZ"
           case TimestampNTZTypeExtractor(_) if !redshift.legacyTimestampHandling => "TIMESTAMP"
           case DateType => "DATE"
