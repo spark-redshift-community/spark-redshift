@@ -25,8 +25,8 @@ import java.util.Properties
 import java.io.FileInputStream
 
 // The latest connector supports Spark versions 3.3.x, 3.4.x, 3.5.x, and 4.0.x
-val sparkVersion = "4.0.0"
-// val sparkVersion = "3.5.7"
+val sparkVersion = "4.0.2"
+// val sparkVersion = "3.5.8"
 // val sparkVersion = "3.4.4"
 // val sparkVersion = "3.3.4"
 
@@ -44,9 +44,9 @@ val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse {
 val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.4.1")
 
 // DON'T UPGRADE AWS-SDK-JAVA if not compatible with the Hadoop version
-val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("2.31.78")
+val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("2.42.7")
 // Determine JDBC driver version
-val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.2.0")
+val testJDBCVersion = sys.props.get("jdbc.testVersion").getOrElse("2.2.5")
 
 // Determine which binary repo to use
 val isInternalRepo = "true" equalsIgnoreCase System.getProperty("config.InternalRepo")

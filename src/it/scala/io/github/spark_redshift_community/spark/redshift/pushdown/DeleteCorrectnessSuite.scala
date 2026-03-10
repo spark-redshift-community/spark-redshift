@@ -533,6 +533,16 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
              |)
              |""".stripMargin,
             Seq(Row()),
+            // Spark 3.5.8/4.0.2+: optimizer eliminates unnecessary constant,
+            // correlation references projected alias
+            s"""DELETE FROM "PUBLIC"."$tableName" WHERE NOT ( EXISTS ( SELECT (
+               | "SQ_1"."ORDER_ID" ) AS "SQ_2_COL_0" FROM ( SELECT * FROM ( SELECT * FROM
+               | "PUBLIC"."$tableName2" AS "RCQ_ALIAS"
+               |   ) AS "SQ_0" WHERE ( ( "SQ_0"."PRODUCT_ID" IS NOT NULL ) AND
+               |    ( "SQ_0"."PRODUCT_ID" = 'pen11' ) ) ) AS "SQ_1" WHERE (
+               |    "PUBLIC"."$tableName"."ORDER_ID" = "SQ_2_COL_0" ) ) )""".stripMargin,
+            // Spark 3.5.7/4.0.1 and earlier: includes constant column,
+            // correlation references projected alias of inner column
             s"""DELETE FROM "PUBLIC"."$tableName" WHERE NOT ( EXISTS ( SELECT ( 1 ) AS
                | "SQ_2_COL_0" , ( "SQ_1"."ORDER_ID" ) AS "SQ_2_COL_1" FROM
                |  ( SELECT * FROM ( SELECT * FROM "PUBLIC"."$tableName2" AS "RCQ_ALIAS"
@@ -719,6 +729,14 @@ class DeleteCorrectnessSuite extends IntegrationPushdownSuiteBase {
              |""".stripMargin)
 
         checkSqlStatement(
+          // Spark 3.5.8/4.0.2+: removes unnecessary constant, uses projected alias
+          s"""DELETE FROM "PUBLIC"."$table1" WHERE EXISTS ( SELECT (
+             |  "SQ_0"."T1_ID" ) AS "SQ_1_COL_0" FROM ( SELECT * FROM "PUBLIC"."$table2"
+             |  AS "RCQ_ALIAS" ) AS "SQ_0"
+             |  WHERE ( "SQ_1_COL_0" = "PUBLIC"."$table1"."ID" ) )"""
+            .stripMargin,
+          // Spark 3.5.7/4.0.1 and earlier: includes constant column,
+          // correlation references projected alias of inner column
           s"""DELETE FROM "PUBLIC"."$table1" WHERE EXISTS ( SELECT ( 1 ) AS "SQ_1_COL_0" ,
              |  ( "SQ_0"."T1_ID" ) AS "SQ_1_COL_1" FROM ( SELECT * FROM "PUBLIC"."$table2"
              |  AS "RCQ_ALIAS" ) AS "SQ_0"
