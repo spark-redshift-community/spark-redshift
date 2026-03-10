@@ -41,9 +41,7 @@ val buildScalaVersion = sys.props.get("scala.buildVersion").getOrElse {
   if (sparkMajorVersion >= 4) "2.13.16" else "2.12.15"
 }
 
-val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse {
-  if (sparkMajorVersion >= 4) "3.4.1" else "3.3.4"
-}
+val testHadoopVersion = sys.props.get("hadoop.testVersion").getOrElse("3.4.1")
 
 // DON'T UPGRADE AWS-SDK-JAVA if not compatible with the Hadoop version
 val testAWSJavaSDKVersion = sys.props.get("aws.testVersion").getOrElse("2.31.78")
