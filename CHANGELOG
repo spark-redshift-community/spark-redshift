@@ -16,6 +16,11 @@
 
 # spark-redshift Changelog
 
+## 6.6.1 (2026-3-16)
+- Verified the connector is compatible with the latest Spark patch release 3.5.8 and 4.0.2 [Ruei-Yang Huang]
+- Updated dependencies to AWS SDK v2.42.7 and Redshift JDBC driver v2.2.5 [Ruei-Yang Huang]
+- Upgraded and verified Hadoop 3.4.1 to address CVE-2024-23454 [Ruei-Yang Huang]
+
 ## 6.6.0 (2026-1-15)
 - Support for Apache Spark 4.0.0, which includes Scala 2.13 as its bundled Scala version [Ruei-Yang Huang]
 - Updated deprecated syntax and APIs for compatibility with Scala 2.13 [Ruei-Yang Huang]
