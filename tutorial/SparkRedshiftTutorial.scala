@@ -56,9 +56,9 @@ object SparkRedshiftTutorial {
     println(jdbcURL)
     val sc = new SparkContext(new SparkConf().setAppName("SparkSQL").setMaster("local"))
 
-    val tempS3Dir = "s3n://redshift-spark/temp/"
-    sc.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", awsAccessKey)
-    sc.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", awsSecretKey)
+    val tempS3Dir = "s3a://redshift-spark/temp/"
+    sc.hadoopConfiguration.set("fs.s3a.awsAccessKeyId", awsAccessKey)
+    sc.hadoopConfiguration.set("fs.s3a.awsSecretAccessKey", awsSecretKey)
 
     val sqlContext = new SQLContext(sc)
     

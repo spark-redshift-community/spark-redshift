@@ -172,7 +172,7 @@ val df: DataFrame = sqlContext.read
     .format("io.github.spark_redshift_community.spark.redshift")
     .option("url", "jdbc:redshift://redshifthost:5439/database?user=username&password=pass")
     .option("dbtable", "my_table")
-    .option("tempdir", "s3n://path/for/temp/data")
+    .option("tempdir", "s3a://path/for/temp/data")
     .load()
 
 // Can also load data from a Redshift query
@@ -180,7 +180,7 @@ val df: DataFrame = sqlContext.read
     .format("io.github.spark_redshift_community.spark.redshift")
     .option("url", "jdbc:redshift://redshifthost:5439/database?user=username&password=pass")
     .option("query", "select x, count(*) my_table group by x")
-    .option("tempdir", "s3n://path/for/temp/data")
+    .option("tempdir", "s3a://path/for/temp/data")
     .load()
 
 // Apply some transformations to the data as per normal, then you can use the
@@ -190,7 +190,7 @@ df.write
   .format("io.github.spark_redshift_community.spark.redshift")
   .option("url", "jdbc:redshift://redshifthost:5439/database?user=username&password=pass")
   .option("dbtable", "my_table_copy")
-  .option("tempdir", "s3n://path/for/temp/data")
+  .option("tempdir", "s3a://path/for/temp/data")
   .mode("error")
   .save()
 
@@ -200,7 +200,7 @@ df.write
   .option("url", "jdbc:redshift://redshifthost:5439/database?user=username&password=pass")
   .option("dbtable", "my_table_copy")
   .option("aws_iam_role", "arn:aws:iam::123456789000:role/redshift_iam_role")
-  .option("tempdir", "s3n://path/for/temp/data")
+  .option("tempdir", "s3a://path/for/temp/data")
   .mode("error")
   .save()
 ```
@@ -218,7 +218,7 @@ df = sql_context.read \
     .format("io.github.spark_redshift_community.spark.redshift") \
     .option("url", "jdbc:redshift://redshifthost:5439/database?user=username&password=pass") \
     .option("dbtable", "my_table") \
-    .option("tempdir", "s3n://path/for/temp/data") \
+    .option("tempdir", "s3a://path/for/temp/data") \
     .load()
 
 # Read data from a query
@@ -226,7 +226,7 @@ df = sql_context.read \
     .format("io.github.spark_redshift_community.spark.redshift") \
     .option("url", "jdbc:redshift://redshifthost:5439/database?user=username&password=pass") \
     .option("query", "select x, count(*) my_table group by x") \
-    .option("tempdir", "s3n://path/for/temp/data") \
+    .option("tempdir", "s3a://path/for/temp/data") \
     .load()
 
 # Write back to a table
@@ -234,7 +234,7 @@ df.write \
   .format("io.github.spark_redshift_community.spark.redshift") \
   .option("url", "jdbc:redshift://redshifthost:5439/database?user=username&password=pass") \
   .option("dbtable", "my_table_copy") \
-  .option("tempdir", "s3n://path/for/temp/data") \
+  .option("tempdir", "s3a://path/for/temp/data") \
   .mode("error") \
   .save()
 
@@ -243,7 +243,7 @@ df.write \
   .format("io.github.spark_redshift_community.spark.redshift") \
   .option("url", "jdbc:redshift://redshifthost:5439/database?user=username&password=pass") \
   .option("dbtable", "my_table_copy") \
-  .option("tempdir", "s3n://path/for/temp/data") \
+  .option("tempdir", "s3a://path/for/temp/data") \
   .option("aws_iam_role", "arn:aws:iam::123456789000:role/redshift_iam_role") \
   .mode("error") \
   .save()
@@ -258,7 +258,7 @@ CREATE TABLE my_table
 USING io.github.spark_redshift_community.spark.redshift
 OPTIONS (
   dbtable 'my_table',
-  tempdir 's3n://path/for/temp/data',
+  tempdir 's3a://path/for/temp/data',
   url 'jdbc:redshift://redshifthost:5439/database?user=username&password=pass'
 );
 ```
@@ -271,7 +271,7 @@ CREATE TABLE my_table
 USING io.github.spark_redshift_community.spark.redshift
 OPTIONS (
   dbtable 'my_table',
-  tempdir 's3n://path/for/temp/data'
+  tempdir 's3a://path/for/temp/data'
   url 'jdbc:redshift://redshifthost:5439/database?user=username&password=pass'
 )
 AS SELECT * FROM tabletosave;
@@ -287,7 +287,7 @@ Reading data using R:
 df <- read.df(
    NULL,
    "io.github.spark_redshift_community.spark.redshift",
-   tempdir = "s3n://path/for/temp/data",
+   tempdir = "s3a://path/for/temp/data",
    dbtable = "my_table",
    url = "jdbc:redshift://redshifthost:5439/database?user=username&password=pass")
 ```
@@ -373,23 +373,16 @@ The following describes how each connection can be authenticated:
 
     2. **Set keys in Hadoop conf:** You can specify AWS keys via
         [Hadoop configuration properties](https://github.com/apache/hadoop/blob/trunk/hadoop-tools/hadoop-aws/src/site/markdown/tools/hadoop-aws/index.md).
-        For example, if your `tempdir` configuration points to a `s3n://` filesystem then you can
-        set the `fs.s3n.awsAccessKeyId` and `fs.s3n.awsSecretAccessKey` properties in a Hadoop XML
+        For example, if your `tempdir` configuration points to a `s3a://` filesystem then you can
+        set the `fs.s3a.awsAccessKeyId` and `fs.s3a.awsSecretAccessKey` properties in a Hadoop XML
         configuration file or call `sc.hadoopConfiguration.set()` to mutate Spark's global Hadoop
         configuration.
 
-        For example, if you are using the `s3n` filesystem then add
+        For example, if you are using the `s3a` filesystem then add
 
         ```scala
-        sc.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", "YOUR_KEY_ID")
-        sc.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", "YOUR_SECRET_ACCESS_KEY")
-        ```
-
-        and for the `s3a` filesystem add
-
-        ```scala
-        sc.hadoopConfiguration.set("fs.s3a.access.key", "YOUR_KEY_ID")
-        sc.hadoopConfiguration.set("fs.s3a.secret.key", "YOUR_SECRET_ACCESS_KEY")
+        sc.hadoopConfiguration.set("fs.s3a.awsAccessKeyId", "YOUR_KEY_ID")
+        sc.hadoopConfiguration.set("fs.s3a.awsSecretAccessKey", "YOUR_SECRET_ACCESS_KEY")
         ```
 
         Python users will have to use a slightly different method to modify the `hadoopConfiguration`,
@@ -398,8 +391,8 @@ The following describes how each connection can be authenticated:
         break or change in the future:
 
         ```python
-        sc._jsc.hadoopConfiguration().set("fs.s3n.awsAccessKeyId", "YOUR_KEY_ID")
-        sc._jsc.hadoopConfiguration().set("fs.s3n.awsSecretAccessKey", "YOUR_SECRET_ACCESS_KEY")
+        sc._jsc.hadoopConfiguration().set("fs.s3a.awsAccessKeyId", "YOUR_KEY_ID")
+        sc._jsc.hadoopConfiguration().set("fs.s3a.awsSecretAccessKey", "YOUR_SECRET_ACCESS_KEY")
         ```
 
 - **Redshift to S3**: Redshift also connects to S3 during `COPY` and `UNLOAD` queries. There are
@@ -462,7 +455,7 @@ val df1: DataFrame = sqlContext.read
   .option("data_api_cluster", "<cluster name>")
   .option("data_api_database", "<database name>")
   .option("dbtable", "<table name>")
-  .option("tempdir", "s3n://path/for/temp/data")
+  .option("tempdir", "s3a://path/for/temp/data")
   .option("aws_iam_role", "<iam role arn>")
   .load()
 
@@ -472,7 +465,7 @@ val df2: DataFrame = sqlContext.read
   .option("data_api_workgroup", "<workgroup name>")
   .option("data_api_database", "<database name>")
   .option("dbtable", "<table name>")
-  .option("tempdir", "s3n://path/for/temp/data")
+  .option("tempdir", "s3a://path/for/temp/data")
   .option("aws_iam_role", "<iam role arn>")
   .load()
 ```
