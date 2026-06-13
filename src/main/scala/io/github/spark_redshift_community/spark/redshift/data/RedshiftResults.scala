@@ -27,10 +27,12 @@ private[redshift] abstract class RedshiftResults() {
   def getInt(columnIndex: Int): Int
   def getLong(columnIndex: Int): Long
   def getString(columnIndex: Int): String
+  def getBinary(columnIndex: Int): Array[Byte]
 
   def getInt(columnLabel: String): Int
   def getLong(columnLabel: String): Long
   def getString(columnLabel: String): String
+  def getBinary(columnLabel: String): Array[Byte]
 
 }
 
@@ -65,6 +67,10 @@ private[redshift] case class DataApiResults(results: GetStatementResultResponse)
     curr.get(columnIndex - 1).stringValue()
   }
 
+  override def getBinary(columnIndex: Int): Array[Byte] = {
+    curr.get(columnIndex - 1).getBlobValue.array()
+  }
+
   override def getInt(columnLabel: String): Int = {
     val longVal = curr.get(getIndex(columnLabel)).longValue()
     if (longVal < Int.MinValue || longVal > Int.MaxValue) {
@@ -79,6 +85,10 @@ private[redshift] case class DataApiResults(results: GetStatementResultResponse)
 
   override def getString(columnLabel: String): String = {
     curr.get(getIndex(columnLabel)).stringValue()
+  }
+
+  def getBinary(columnLabel: String): Array[Byte] = {
+    curr.get(getIndex(columnLabel)).getBlobValue.array()
   }
 
   private def getIndex(columnLabel: String): Int = {
@@ -103,6 +113,10 @@ private[redshift] case class JDBCResults(results: ResultSet) extends RedshiftRes
     results.getString(columnIndex)
   }
 
+  override def getBinary(columnIndex: Int): Array[Byte] = {
+    results.getBytes(columnIndex)
+  }
+
   override def getInt(columnLabel: String): Int = {
     results.getInt(columnLabel)
   }
@@ -113,5 +127,9 @@ private[redshift] case class JDBCResults(results: ResultSet) extends RedshiftRes
 
   override def getString(columnLabel: String): String = {
     results.getString(columnLabel)
+  }
+
+  override def getBinary(columnLabel: String): Array[Byte] = {
+    results.getBytes(columnLabel)
   }
 }

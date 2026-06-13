@@ -414,6 +414,9 @@ private[redshift] class JDBCWrapper extends RedshiftWrapper with Serializable {
       case java.sql.Types.VARCHAR       => StringType
       case java.sql.Types.LONGVARCHAR   => StringType
 
+      // Binary types
+      case java.sql.Types.LONGVARBINARY => BinaryType
+
       // Datetime Types
       case java.sql.Types.DATE          => DateType
       case java.sql.Types.TIME          => TimestampType
