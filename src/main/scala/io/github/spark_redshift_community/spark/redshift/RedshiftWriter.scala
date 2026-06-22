@@ -162,6 +162,7 @@ private[redshift] class RedshiftWriter(
       val copyStatement = copySql(data.schema, params, creds, manifestUrl)
 
       try {
+        log.info("copy sql: " + copyStatement)
         redshiftWrapper.executeInterruptibly(conn, copyStatement)
       } catch {
         case e: SQLException =>
